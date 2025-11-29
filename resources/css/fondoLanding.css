@@ -1,0 +1,73 @@
+
+.componente-fondo-wrapper {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+
+.hero-section {
+    width: 100%; /* Ancho completo */
+    height: calc(100vh - 64px); /* Altura completa menos el nav */
+    background-image: url('/hall2.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.contenido {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.contenido h1 {
+    color: white;
+    font-size: 2.25rem; /* 4xl */
+    font-weight: bold;
+    line-height: 1.25;
+}
+
+
+.contenido p {
+    margin-top: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem; /* base */
+    max-width: 42rem; /* max-w-2xl */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+@media (min-width: 640px) { /* sm: */
+    .contenido h1 {
+        font-size: 3rem; /* 5xl */
+    }
+    .contenido p {
+        font-size: 1.125rem; /* lg */
+    }
+}
+
+@media (min-width: 768px) { /* md: */
+    .contenido h1 {
+        font-size: 3.75rem; /* 6xl */
+    }
+    .contenido p {
+        font-size: 1.25rem; /* xl */
+    }
+}
