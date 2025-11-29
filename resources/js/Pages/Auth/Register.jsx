@@ -14,8 +14,8 @@ export default function Register() {
         tipo_documento: 'dni',
         numero_documento: '',
         nacionalidad: '',
-        dirección: '',
-        teléfono: '',
+        direccion: '',
+        telefono: '',
     });
 
     const submit = (e) => {
@@ -109,32 +109,32 @@ export default function Register() {
                     </div>
 
                     <div className="flex-1">
-                        <InputLabel htmlFor="teléfono" value="Teléfono" />
+                        <InputLabel htmlFor="telefono" value="Teléfono" />
                         <TextInput
-                            id="teléfono"
+                            id="telefono"
                             type="tel"
-                            name="teléfono"
-                            value={data.teléfono}
+                            name="telefono"
+                            value={data.telefono}
                             className="mt-1 block w-full"
-                            onChange={(e) => setData('teléfono', e.target.value)}
+                            onChange={(e) => setData('telefono', e.target.value)}
                             required
                         />
-                        <InputError message={errors.teléfono} className="mt-1" />
+                        <InputError message={errors.telefono} className="mt-1" />
                     </div>
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="dirección" value="Dirección" />
+                    <InputLabel htmlFor="direccion" value="Dirección" />
                     <textarea
-                        id="dirección"
-                        name="dirección"
-                        value={data.dirección}
+                        id="direccion"
+                        name="direccion"
+                        value={data.direccion}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        onChange={(e) => setData('dirección', e.target.value)}
+                        onChange={(e) => setData('direccion', e.target.value)}
                         rows="2"
                         required
                     />
-                    <InputError message={errors.dirección} className="mt-1" />
+                    <InputError message={errors.direccion} className="mt-1" />
                 </div>
 
                 <div className="flex gap-4 mt-4">
