@@ -4,9 +4,9 @@ import Navbar from '@/Components/Nav';
 
 export default function GuestLayout({ children }) {
     return (
-        <div className="min-h-screen w-full bg-gray-100">
+        <div className="w-full bg-gray-100">
             <Navbar />
-            
+
             <MenuLateral />
 
             <main className="w-full pt-16">
