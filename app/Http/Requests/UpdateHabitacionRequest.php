@@ -11,7 +11,7 @@ class UpdateHabitacionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -19,10 +19,18 @@ class UpdateHabitacionRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+    public function rules()
     {
+        $id = $this->habitacion->id;
+
         return [
-            //
+            'numero' => 'required|string|unique:habitaciones,numero,' . $id,
+            'tipo' => 'required|in:doble,suite,familiar',
+            'precio_noche' => 'required|numeric|min:0',
+            'capacidad' => 'required|integer|min:1',
+            'estado' => 'required|in:disponible,ocupada,mantenimiento,limpieza',
+            'descripcion' => 'nullable|string',
+            'notas' => 'nullable|string',
         ];
     }
 }

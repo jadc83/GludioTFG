@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\HabitacionController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Habitacion;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -31,28 +31,19 @@ Route::middleware('auth')->group(function () {
 Route::get('/panel', function () {
     $habitaciones = Habitacion::with('fotos')->orderBy('numero')->get()->map(function ($habitacion) {
         return [
-            'id' => $habitacion->id,
-            'numero' => $habitacion->numero,
-            'tipo' => $habitacion->tipo,
-            'precio_noche' => $habitacion->precio_noche,
-            'capacidad' => $habitacion->capacidad,
-            'estado' => $habitacion->estado,
-            'descripcion' => $habitacion->descripcion,
-            'notas' => $habitacion->notas,
-            'fotos' => $habitacion->fotos->map(function ($foto) {
-                return [
-                    'id' => $foto->id,
-                    'ruta' => $foto->ruta,
-                    'orden' => $foto->orden,
-                    'url' => asset('storage/' . $foto->ruta),
-                ];
-            })->values(),
-        ];
-    })->values();
+        'id' => $habitacion->id,
+        'numero' => $habitacion->numero,
+        'tipo' => $habitacion->tipo,
+        'precio_noche' => $habitacion->precio_noche,
+        'capacidad' => $habitacion->capacidad,
+        'estado' => $habitacion->estado,
+        'descripcion' => $habitacion->descripcion,
+        'notas' => $habitacion->notas,
+        'fotos' => $habitacion->fotos->map(function ($foto) {
+            return [ 'id' => $foto->id, 'ruta' => $foto->ruta, 'orden' => $foto->orden, 'url' => asset('storage/' . $foto->ruta)]; })->values() ];})->values();
 
-    return Inertia::render('PanelControl', [
-        'habitaciones' => $habitaciones,
-    ]);
-})->name('panel')->middleware(['auth', 'verified']);
+    return Inertia::render('PanelControl', ['habitaciones' => $habitaciones, ]); })->name('panel')->middleware(['auth', 'verified']);
+
+Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion']);
 
 require __DIR__.'/auth.php';
