@@ -1,3 +1,4 @@
+// hooks/useClienteForm.js CORREGIDO - PRECARGA FUNCIONAL
 import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 

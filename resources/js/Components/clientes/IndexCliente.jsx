@@ -3,7 +3,7 @@ import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, EyeIcon, PencilIcon } from 
 import EditCliente from '@/Components/clientes/EditCliente';
 import CreateCliente from '@/Components/clientes/CreateCliente';
 
-export default function IndexCliente({ clientes = [] }) {
+export default function IndexCliente({ clientes = [], users = [] }) {
     const [clienteEditar, setClienteEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
     const [filtroDocumento, setFiltroDocumento] = useState('todos');
@@ -28,39 +28,37 @@ export default function IndexCliente({ clientes = [] }) {
         }
     };
 
+    const todosLosRegistros = useMemo(() => {
+        return [...clientes, ...users];
+    }, [clientes, users]);
+
     const conteos = useMemo(() => ({
-        dni: clientes.filter(c => c.tipo_documento === 'dni').length,
-        pasaporte: clientes.filter(c => c.tipo_documento === 'pasaporte').length,
-        tie: clientes.filter(c => c.tipo_documento === 'tie').length,
-        total: clientes.length
-    }), [clientes]);
+        dni: todosLosRegistros.filter(c => c.tipo_documento === 'dni').length,
+        pasaporte: todosLosRegistros.filter(c => c.tipo_documento === 'pasaporte').length,
+        tie: todosLosRegistros.filter(c => c.tipo_documento === 'tie').length,
+        total: todosLosRegistros.length,
+        registrados: users.length,
+        invitados: clientes.length
+    }), [todosLosRegistros, users.length, clientes.length]);
 
-    const clientesFiltrados = useMemo(() => {
+    const registrosFiltrados = useMemo(() => {
         const busquedaLower = filtroBusqueda.toLowerCase().trim();
-
-        return clientes.filter(cliente => {
-            const cumpleDocumento = filtroDocumento === 'todos' || cliente.tipo_documento === filtroDocumento;
-
+        return todosLosRegistros.filter(registro => {
+            const cumpleDocumento = filtroDocumento === 'todos' || registro.tipo_documento === filtroDocumento;
             const cumpleBusqueda = busquedaLower === '' || [
-                cliente.name,
-                cliente.email,
-                cliente.numero_documento,
-                cliente.telefono
-            ].some(campo =>
-                campo &&
-                campo.toString().toLowerCase().includes(busquedaLower)
+                registro.name,
+                registro.email,
+                registro.numero_documento,
+                registro.telefono
+            ].some(campo => campo && campo.toString().toLowerCase().includes(busquedaLower)
             );
-
             return cumpleDocumento && cumpleBusqueda;
         });
-    }, [clientes, filtroDocumento, filtroBusqueda]);
+    }, [todosLosRegistros, filtroDocumento, filtroBusqueda]);
 
-    const limpiarFiltros = () => {
-        setFiltroDocumento('todos');
-        setFiltroBusqueda('');
-    };
+    const limpiarFiltros = () => { setFiltroDocumento('todos'); setFiltroBusqueda(''); };
 
-    if (clientes.length === 0) {
+    if (todosLosRegistros.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <InboxIcon className="w-24 h-24 text-gray-300" />
@@ -77,14 +75,22 @@ export default function IndexCliente({ clientes = [] }) {
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-                    <div className="stats shadow bg-base-100">
+                    <div className="stats stats-vertical shadow bg-base-100 lg:stats-horizontal">
                         <div className="stat">
                             <div className="stat-title">Total</div>
-                            <div className="stat-value">{conteos.total}</div>
+                            <div className="stat-value text-2xl font-bold text-primary">{conteos.total}</div>
                         </div>
+
                         <div className="stat">
-                            <div className="stat-title">DNI</div>
-                            <div className="stat-value">{conteos.dni}</div>
+                            <div className="stat-title">Registrados</div>
+                            <div className="stat-value text-primary">{conteos.registrados}</div>
+                            <div className="stat-desc">{conteos.total > 0 ? Math.round((conteos.registrados / conteos.total) * 100) : 0}%</div>
+                        </div>
+
+                        <div className="stat">
+                            <div className="stat-title">Invitados</div>
+                            <div className="stat-value text-success">{conteos.invitados}</div>
+                            <div className="stat-desc">{conteos.total > 0 ? Math.round((conteos.invitados / conteos.total) * 100) : 0}%</div>
                         </div>
                     </div>
                 </div>
@@ -97,8 +103,7 @@ export default function IndexCliente({ clientes = [] }) {
                     <input type="text" placeholder="Nombre, email, documento o teléfono..." className="input input-bordered w-full pl-11"
                         value={filtroBusqueda} onChange={(e) => setFiltroBusqueda(e.target.value)}/>
                 </div>
-                <select className="select select-bordered w-full lg:w-auto max-w-xs" value={filtroDocumento}
-                    onChange={(e) => setFiltroDocumento(e.target.value)}>
+                <select className="select select-bordered w-full lg:w-auto max-w-xs" value={filtroDocumento} onChange={(e) => setFiltroDocumento(e.target.value)}>
                     <option value="todos">Todos los documentos</option>
                     <option value="dni">DNI</option>
                     <option value="pasaporte">Pasaporte</option>
@@ -112,7 +117,7 @@ export default function IndexCliente({ clientes = [] }) {
 
             <div className="overflow-x-auto">
                 <div className="text-sm text-gray-500 mb-4">
-                    Mostrando {clientesFiltrados.length} de {clientes.length} clientes
+                    Mostrando {registrosFiltrados.length} de {todosLosRegistros.length} clientes
                 </div>
                 <table className="table table-zebra w-full">
                     <thead>
@@ -128,26 +133,28 @@ export default function IndexCliente({ clientes = [] }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {clientesFiltrados.map((cliente) => (
+                        {registrosFiltrados.map((cliente) => (
                             <tr key={cliente.id} className="hover">
                                 <td className="font-semibold">{cliente.name}</td>
                                 <td className="font-mono text-sm">{cliente.email}</td>
                                 <td>
                                     <div className="flex items-center gap-2">
-                                        <span className={`badge ${obtenerColorDocumento(cliente.tipo_documento)}`}>
-                                            {cliente.tipo_documento?.toUpperCase()}
-                                        </span>
-                                        <span className="font-mono text-sm">{cliente.numero_documento}</span>
+                                        {cliente.tipo_documento ? (
+                                            <>
+                                                <span className={`badge ${obtenerColorDocumento(cliente.tipo_documento)}`}>
+                                                    {cliente.tipo_documento?.toUpperCase()}
+                                                </span>
+                                                <span className="font-mono text-sm">{cliente.numero_documento}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-gray-400 text-xs italic">Sin documento</span>
+                                        )}
                                     </div>
                                 </td>
-                                <td>{cliente.telefono}</td>
-                                <td className="badge badge-outline badge-sm">{cliente.nacionalidad}</td>
+                                <td>{cliente.telefono || '-'}</td>
+                                <td className="badge badge-outline badge-sm">{cliente.nacionalidad || '-'}</td>
                                 <td className="max-w-xs">
-                                    {cliente.direccion ? (
-                                        <span className="line-clamp-2">{cliente.direccion}</span>
-                                    ) : (
-                                        <span className="text-gray-400 italic text-xs">Sin dirección</span>
-                                    )}
+                                    {cliente.direccion ?  cliente.direccion : 'Sin dirección'}
                                 </td>
                                 <td className="text-sm text-gray-500">
                                     {new Date(cliente.created_at).toLocaleDateString('es-ES')}
