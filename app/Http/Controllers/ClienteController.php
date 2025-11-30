@@ -29,7 +29,15 @@ class ClienteController extends Controller
      */
     public function store(StoreClienteRequest $request)
     {
-        //
+        $validado = $request->validated();
+        $cliente = Cliente::create($validado);
+        $cliente->save();
+
+        if ($request->header('X-Inertia')) {
+            return redirect()->back();
+        }
+
+        return redirect()->route('clientes.index');
     }
 
     /**
@@ -53,8 +61,16 @@ class ClienteController extends Controller
      */
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
-        //
+        $validado = $request->validated();
+        $cliente->update($validado);
+
+        if ($request->header('X-Inertia')) {
+            return redirect()->back();
+        }
+
+        return redirect()->route('clientes.index');
     }
+
 
     /**
      * Remove the specified resource from storage.

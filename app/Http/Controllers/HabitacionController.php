@@ -31,15 +31,7 @@ class HabitacionController extends Controller
     public function store(StoreHabitacionRequest $request)
     {
         $validado = $request->validated();
-
-        $habitacion = new Habitacion();
-        $habitacion->numero = $validado['numero'];
-        $habitacion->tipo = $validado['tipo'];
-        $habitacion->precio_noche = $validado['precio_noche'];
-        $habitacion->capacidad = $validado['capacidad'];
-        $habitacion->estado = $validado['estado'] ?? 'disponible';
-        $habitacion->descripcion = $validado['descripcion'] ?? null;
-        $habitacion->notas = $validado['notas'] ?? null;
+        $habitacion = Habitacion::create($validado);
         $habitacion->save();
 
         if ($request->hasFile('fotos')) {
@@ -53,10 +45,10 @@ class HabitacionController extends Controller
         }
 
         if ($request->header('X-Inertia')) {
-            return redirect()->back()->with('success', 'Habitación creada correctamente.');
+            return redirect()->back()->with('success', 'Habitación creada.');
         }
 
-        return redirect()->route('habitaciones.index')->with('success', 'Habitación creada.');
+        return redirect()->route('habitaciones.index');
     }
 
     /**

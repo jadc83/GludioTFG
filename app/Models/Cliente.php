@@ -14,11 +14,11 @@ class Cliente extends Model
     protected $fillable = [
         'name',
         'email',
-        'teléfono',
+        'telefono',
         'tipo_documento',
         'numero_documento',
         'nacionalidad',
-        'dirección',
+        'direccion',
     ];
 
         public function reservas()
