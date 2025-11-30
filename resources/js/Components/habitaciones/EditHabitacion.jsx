@@ -1,16 +1,11 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import '@/../css/createHabitacion.css';
-import useEditHabitacion from '@/hooks/useEditHabitacion';
-import {
-    CheckCircleIcon,
-    LockClosedIcon,
-    CogIcon,
-    SparklesIcon
-} from '@heroicons/react/24/outline';
+import { useHabitacionForm } from '../../hooks/UseHabitacionForm';
+import { CheckCircleIcon, LockClosedIcon, CogIcon, SparklesIcon} from '@heroicons/react/24/outline';
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
-
-    const { data, ui, actions } = useEditHabitacion(habitacion, abierto, onCerrar);
+    const { form, cambiar, errores, guardando, capacidadFija, fotos, previews, fotosGuardadas,
+            agregarFotos, quitarFoto, enviar } = useHabitacionForm(habitacion, onCerrar);
 
     return (
         <dialog className={`drawer-modal ${abierto ? 'modal-open' : ''}`}>
@@ -23,40 +18,39 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                 </header>
 
                 {habitacion && (
-                    <form onSubmit={actions.enviar} className="form-habitacion">
+                    <form onSubmit={enviar} className="form-habitacion">
                         <div className="form-grid">
-
                             <div className="campo">
                                 <label className="campo-label" htmlFor="numero"><span className="campo-label-text">Número</span></label>
-                                <input id="numero" name="numero" type="text" value={data.form.numero} onChange={actions.cambiar} placeholder="Ej: 101"
-                                    className={`campo-input ${ui.errores.numero ? 'error' : ''}`} required/>
-                                {ui.errores.numero && <span className="campo-error">{ui.errores.numero[0]}</span>}
+                                <input id="numero" name="numero" type="text" value={form.numero} onChange={cambiar} placeholder="Ej: 101"
+                                    className={`campo-input ${errores.numero ? 'error' : ''}`} required/>
+                                {errores.numero && <span className="campo-error">{errores.numero[0]}</span>}
                             </div>
 
                             <div className="campo">
                                 <label className="campo-label" htmlFor="tipo"><span className="campo-label-text">Tipo</span></label>
-                                <select id="tipo" name="tipo" value={data.form.tipo} onChange={actions.cambiar}
-                                    className={`campo-select ${ui.errores.tipo ? 'error' : ''}`}>
+                                <select id="tipo" name="tipo" value={form.tipo} onChange={cambiar}
+                                    className={`campo-select ${errores.tipo ? 'error' : ''}`}>
                                     <option value="doble">Doble</option>
                                     <option value="suite">Suite</option>
                                     <option value="familiar">Familiar</option>
                                 </select>
-                                {ui.errores.tipo && <span className="campo-error">{ui.errores.tipo[0]}</span>}
+                                {errores.tipo && <span className="campo-error">{errores.tipo[0]}</span>}
                             </div>
 
                             <div className="campo">
                                 <label className="campo-label" htmlFor="precio_noche"><span className="campo-label-text">Precio (€)</span></label>
-                                <input id="precio_noche" name="precio_noche" type="number" step="0.01" value={data.form.precio_noche}
-                                    onChange={actions.cambiar} className={`campo-input ${ui.errores.precio_noche ? 'error' : ''}`} required/>
-                                {ui.errores.precio_noche && <span className="campo-error">{ui.errores.precio_noche[0]}</span>}
+                                <input id="precio_noche" name="precio_noche" type="number" step="0.01" value={form.precio_noche}
+                                    onChange={cambiar} className={`campo-input ${errores.precio_noche ? 'error' : ''}`} required/>
+                                {errores.precio_noche && <span className="campo-error">{errores.precio_noche[0]}</span>}
                             </div>
 
                             <div className="campo">
                                 <label className="campo-label" htmlFor="capacidad"><span className="campo-label-text">Capacidad</span></label>
-                                <input id="capacidad" name="capacidad" type="number" min="1" value={data.form.capacidad}
-                                    onChange={actions.cambiar} className={`campo-input ${ui.errores.capacidad ? 'error' : ''} ${data.capacidadFija ? 'readonly' : ''}`}
-                                    readOnly={data.capacidadFija} required />
-                                {ui.errores.capacidad && <span className="campo-error">{ui.errores.capacidad[0]}</span>}
+                                <input id="capacidad" name="capacidad" type="number" min="1" value={form.capacidad}
+                                    onChange={cambiar} className={`campo-input ${errores.capacidad ? 'error' : ''} ${capacidadFija ? 'readonly' : ''}`}
+                                    readOnly={capacidadFija} required />
+                                {errores.capacidad && <span className="campo-error">{errores.capacidad[0]}</span>}
                             </div>
                         </div>
 
@@ -68,9 +62,9 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => actions.cambiar({ target: { name: 'estado', value: 'disponible' } })}
+                                    onClick={() => cambiar({ target: { name: 'estado', value: 'disponible' } })}
                                     className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                                        data.form.estado === 'disponible'
+                                        form.estado === 'disponible'
                                             ? 'border-success bg-success/10 text-success'
                                             : 'border-gray-200 hover:border-success/50'
                                     }`}>
@@ -80,9 +74,9 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
 
                                 <button
                                     type="button"
-                                    onClick={() => actions.cambiar({ target: { name: 'estado', value: 'ocupada' } })}
+                                    onClick={() => cambiar({ target: { name: 'estado', value: 'ocupada' } })}
                                     className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                                        data.form.estado === 'ocupada'
+                                        form.estado === 'ocupada'
                                             ? 'border-error bg-error/10 text-error'
                                             : 'border-gray-200 hover:border-error/50'
                                     }`}>
@@ -92,9 +86,9 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
 
                                 <button
                                     type="button"
-                                    onClick={() => actions.cambiar({ target: { name: 'estado', value: 'mantenimiento' } })}
+                                    onClick={() => cambiar({ target: { name: 'estado', value: 'mantenimiento' } })}
                                     className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                                        data.form.estado === 'mantenimiento'
+                                        form.estado === 'mantenimiento'
                                             ? 'border-warning bg-warning/10 text-warning'
                                             : 'border-gray-200 hover:border-warning/50'
                                     }`}>
@@ -104,9 +98,9 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
 
                                 <button
                                     type="button"
-                                    onClick={() => actions.cambiar({ target: { name: 'estado', value: 'limpieza' } })}
+                                    onClick={() => cambiar({ target: { name: 'estado', value: 'limpieza' } })}
                                     className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                                        data.form.estado === 'limpieza'
+                                        form.estado === 'limpieza'
                                             ? 'border-info bg-info/10 text-info'
                                             : 'border-gray-200 hover:border-info/50'
                                     }`}>
@@ -115,29 +109,28 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 </button>
                             </div>
 
-                            {ui.errores.estado && <span className="campo-error">{ui.errores.estado[0]}</span>}
+                            {errores.estado && <span className="campo-error">{errores.estado[0]}</span>}
                         </div>
 
-                        <InputFotos fotos={data.fotos} previews={data.previews} existingFotos={data.existingFotos}
-                            onAgregar={actions.agregarFotos} onQuitar={actions.quitarFoto} error={ui.errores.fotos}
-                            maxFotos={data.MAX_FOTOS}/>
+                        <InputFotos fotos={fotos} previews={previews} fotosGuardadas={fotosGuardadas} onAgregar={agregarFotos} onQuitar={quitarFoto}
+                            error={errores.fotos} maxFotos={4}/>
 
                         <div className="campo">
                             <label className="campo-label" htmlFor="descripcion"><span className="campo-label-text">Descripción</span></label>
-                            <textarea id="descripcion" name="descripcion" value={data.form.descripcion} onChange={actions.cambiar}
-                                placeholder="Detalles públicos..." className={`campo-textarea ${ui.errores.descripcion ? 'error' : ''}`} />
-                            {ui.errores.descripcion && <span className="campo-error">{ui.errores.descripcion[0]}</span>}
+                            <textarea id="descripcion" name="descripcion" value={form.descripcion} onChange={cambiar}
+                                placeholder="Detalles públicos..." className={`campo-textarea ${errores.descripcion ? 'error' : ''}`} />
+                            {errores.descripcion && <span className="campo-error">{errores.descripcion[0]}</span>}
                         </div>
 
                         <div className="campo">
                             <label className="campo-label" htmlFor="notas"><span className="campo-label-text">Notas Privadas</span></label>
-                            <textarea id="notas" name="notas" rows={3} value={data.form.notas} onChange={actions.cambiar}
-                                placeholder="Solo uso interno..." className={`campo-textarea ${ui.errores.notas ? 'error' : ''}`}/>
-                            {ui.errores.notas && <span className="campo-error">{ui.errores.notas[0]}</span>}
+                            <textarea id="notas" name="notas" rows={3} value={form.notas} onChange={cambiar}
+                                placeholder="Solo uso interno..." className={`campo-textarea ${errores.notas ? 'error' : ''}`}/>
+                            {errores.notas && <span className="campo-error">{errores.notas[0]}</span>}
                         </div>
 
-                        <PrimaryButton type="submit">
-                            {ui.guardando ? 'Guardando...' : 'Actualizar Habitación'}
+                        <PrimaryButton type="submit" className="w-full">
+                            {guardando ? 'Guardando...' : 'Actualizar Habitación'}
                         </PrimaryButton>
                     </form>
                 )}
@@ -146,8 +139,8 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
     );
 }
 
-const InputFotos = ({ fotos, previews, existingFotos = [], onAgregar, onQuitar, error, maxFotos }) => {
-    const totalFotos = (existingFotos?.length || 0) + (fotos?.length || 0);
+const InputFotos = ({ fotos, previews, fotosGuardadas = [], onAgregar, onQuitar, error, maxFotos }) => {
+    const totalFotos = (fotosGuardadas?.length || 0) + (fotos?.length || 0);
 
     return (
         <div className="campo">

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 
-export const usePanelControl = (habitaciones = []) => {
+export function useHabitacionControl(habitaciones = []) {
     const [filtroEstado, setFiltroEstado] = useState('todos');
     const [filtroTipo, setFiltroTipo] = useState('todos');
     const [filtroCapacidad, setFiltroCapacidad] = useState('todos');
@@ -69,14 +69,7 @@ export const usePanelControl = (habitaciones = []) => {
             precioMax: filtroPrecioMax,
             setPrecioMax: setFiltroPrecioMax,
         },
-        datos: {
-            habitacionesFiltradas,
-            capacidadesDisponibles,
-            conteos,
-            dataChart,
-        },
-        acciones: {
-            limpiarFiltros
-        }
+        datos: { habitacionesFiltradas, capacidadesDisponibles, conteos, dataChart },
+        acciones: { limpiarFiltros }
     };
-};
+}

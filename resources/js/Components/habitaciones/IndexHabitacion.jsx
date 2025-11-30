@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import EditHabitacion from '@/Components/EditHabitacion';
+import EditHabitacion from '@/Components/habitaciones/EditHabitacion';
 import { InboxIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
 
-export default function Cuadricula({ habitaciones = [] }) {
+export default function IndexHabitacion({ habitaciones = [] }) {
     const [habitacionEditar, setHabitacionEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
 

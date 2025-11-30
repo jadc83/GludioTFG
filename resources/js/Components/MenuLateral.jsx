@@ -1,9 +1,9 @@
 import { es } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
+import PrimaryButton from './PrimaryButton';
 import '../../css/estiloCalendario.css';
 import '../../css/createHabitacion.css';
-import PrimaryButton from './PrimaryButton';
 
 export default function Reservas() {
     const [paso, setPaso] = useState(1);
