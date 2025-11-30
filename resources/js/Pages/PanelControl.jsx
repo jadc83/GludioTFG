@@ -1,6 +1,6 @@
 import CreateHabitacion from "@/Components/habitaciones/CreateHabitacion";
 import TabHabitaciones from "@/Components/habitaciones/TabHabitaciones";
-import TabClientes from "@/Components/TabClientes";
+import TabClientes from "../Components/clientes/TabClientes";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { useState } from 'react';
 import { HomeIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
