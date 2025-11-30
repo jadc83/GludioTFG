@@ -6,6 +6,7 @@ export function useHabitacionControl(habitaciones = []) {
     const [filtroCapacidad, setFiltroCapacidad] = useState('todos');
     const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
     const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
+    const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
     const conteos = useMemo(() => {
         return {
@@ -14,22 +15,20 @@ export function useHabitacionControl(habitaciones = []) {
             mantenimiento: habitaciones.filter(habitacion => habitacion.estado === 'mantenimiento').length,
             limpieza: habitaciones.filter(habitacion => habitacion.estado === 'limpieza').length,
             total: habitaciones.length
-        };
-    }, [habitaciones]);
+        };}, [habitaciones]);
 
     const dataChart = useMemo(() => {
-        return [
-            {
-                name: 'Total',
-                disponible: conteos.disponible,
-                ocupada: conteos.ocupada,
-                mantenimiento: conteos.mantenimiento,
-                limpieza: conteos.limpieza,
-            },
-        ];
-    }, [conteos]);
+        return [{
+            name: 'Total',
+            disponible: conteos.disponible,
+            ocupada: conteos.ocupada,
+            mantenimiento: conteos.mantenimiento,
+            limpieza: conteos.limpieza,
+        }];}, [conteos]);
 
     const habitacionesFiltradas = useMemo(() => {
+        const busquedaLower = filtroBusqueda.toLowerCase().trim();
+
         return habitaciones.filter(habitacion => {
             const cumpleEstado = filtroEstado === 'todos' || habitacion.estado === filtroEstado;
             const cumpleTipo = filtroTipo === 'todos' || habitacion.tipo === filtroTipo;
@@ -39,9 +38,17 @@ export function useHabitacionControl(habitaciones = []) {
             const precioMax = filtroPrecioMax === '' ? Infinity : parseFloat(filtroPrecioMax);
             const cumplePrecio = habitacion.precio_noche >= precioMin && habitacion.precio_noche <= precioMax;
 
-            return cumpleEstado && cumpleTipo && cumpleCapacidad && cumplePrecio;
-        });
-    }, [habitaciones, filtroEstado, filtroTipo, filtroCapacidad, filtroPrecioMin, filtroPrecioMax]);
+            const cumpleBusqueda = busquedaLower === '' || [
+                habitacion.numero?.toString(),
+                habitacion.tipo,
+                habitacion.descripcion
+            ].some(campo =>
+                campo &&
+                campo.toString().toLowerCase().includes(busquedaLower)
+            );
+
+            return cumpleEstado && cumpleTipo && cumpleCapacidad && cumplePrecio && cumpleBusqueda;
+                    });}, [habitaciones, filtroEstado, filtroTipo, filtroCapacidad, filtroPrecioMin, filtroPrecioMax, filtroBusqueda]);
 
     const capacidadesDisponibles = useMemo(() => {
         const caps = [...new Set(habitaciones.map(h => h.capacidad))];
@@ -54,22 +61,17 @@ export function useHabitacionControl(habitaciones = []) {
         setFiltroCapacidad('todos');
         setFiltroPrecioMin('');
         setFiltroPrecioMax('');
+        setFiltroBusqueda('');
     };
 
     return {
         filtros: {
-            estado: filtroEstado,
-            setEstado: setFiltroEstado,
-            tipo: filtroTipo,
-            setTipo: setFiltroTipo,
-            capacidad: filtroCapacidad,
-            setCapacidad: setFiltroCapacidad,
-            precioMin: filtroPrecioMin,
-            setPrecioMin: setFiltroPrecioMin,
-            precioMax: filtroPrecioMax,
-            setPrecioMax: setFiltroPrecioMax,
-        },
-        datos: { habitacionesFiltradas, capacidadesDisponibles, conteos, dataChart },
-        acciones: { limpiarFiltros }
+            estado: filtroEstado, setEstado: setFiltroEstado,
+            tipo: filtroTipo, setTipo: setFiltroTipo,
+            capacidad: filtroCapacidad, setCapacidad: setFiltroCapacidad,
+            precioMin: filtroPrecioMin, setPrecioMin: setFiltroPrecioMin,
+            precioMax: filtroPrecioMax, setPrecioMax: setFiltroPrecioMax,
+            busqueda: filtroBusqueda,  setBusqueda: setFiltroBusqueda,
+        }, datos: { habitacionesFiltradas, capacidadesDisponibles, conteos, dataChart }, acciones: { limpiarFiltros }
     };
 }

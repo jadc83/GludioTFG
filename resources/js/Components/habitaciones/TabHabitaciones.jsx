@@ -5,6 +5,7 @@ import { useHabitacionControl } from "@/hooks/useHabitacionControl";
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Bar } from 'recharts';
 
 export default function TabHabitaciones({ habitaciones = [] }) {
+
     const { filtros, datos, acciones } = useHabitacionControl(habitaciones);
 
     return (
@@ -48,10 +49,22 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                     <label className="label">
                         <span className="label-text font-medium">Buscar</span>
                     </label>
-                    <div className="relative">
-                        <input type="text" placeholder="Número, tipo o descripción..." className="input input-bordered w-full pl-11"
-                            value={filtros.busqueda || ''} onChange={(e) => filtros.setBusqueda?.(e.target.value)}/>
+                    <div className="flex items-center gap-3 p-3 bg-white max-w-md mx-auto mb-6">
+                        <div className="w-10 h-10 bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+
+                        <input type="text" placeholder="Número, tipo o descripción..." className="flex-1 input input-bordered bg-base-100 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                            value={filtros.busqueda || ''} onChange={(e) => filtros.setBusqueda(e.target.value)} />
+                        <div className="w-10 h-10 bg-gradient-to-r from-success/20 to-emerald/20 border border-success/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                            <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
                     </div>
+
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -86,7 +99,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         </label>
                         <select className="select select-bordered w-full" value={filtros.capacidad} onChange={(e) => filtros.setCapacidad(e.target.value)}>
                             <option value="todos">Todas</option>
-                                {datos.capacidadesDisponibles.map(cap => ( <option key={cap} value={cap}>{cap} persona{cap > 1 ? 's' : ''}
+                            {datos.capacidadesDisponibles.map(cap => (<option key={cap} value={cap}>{cap} persona{cap > 1 ? 's' : ''}
                             </option>))}
                         </select>
                     </div>
@@ -97,9 +110,9 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         </label>
                         <div className="flex gap-2">
                             <input type="number" placeholder="Mín" className="input input-bordered input-sm w-full" value={filtros.precioMin || ''}
-                                onChange={(e) => filtros.setPrecioMin(e.target.value)}/>
+                                onChange={(e) => filtros.setPrecioMin(e.target.value)} />
                             <input type="number" placeholder="Máx" className="input input-bordered input-sm w-full" value={filtros.precioMax || ''}
-                                onChange={(e) => filtros.setPrecioMax(e.target.value)}/>
+                                onChange={(e) => filtros.setPrecioMax(e.target.value)} />
                         </div>
                     </div>
                 </div>
@@ -110,11 +123,8 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                     Mostrando <span className="font-bold">{datos.habitacionesFiltradas.length}</span> de {habitaciones.length} habitaciones
                 </div>
                 <div className="flex gap-2">
-                    <PrimaryButton onClick={acciones.limpiarFiltros} className="btn btn-outline btn-sm">
+                    <PrimaryButton onClick={acciones.limpiarFiltros}>
                         Limpiar filtros
-                    </PrimaryButton>
-                    <PrimaryButton>
-                        Nueva Habitación
                     </PrimaryButton>
                 </div>
             </div>
