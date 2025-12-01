@@ -1,4 +1,3 @@
-// resources/js/hooks/useHabitacionForm.js
 import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 
