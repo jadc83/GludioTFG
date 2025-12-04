@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react';
-import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, EyeIcon, PencilIcon, StarIcon } from '@heroicons/react/24/outline';
 import EditCliente from '@/Components/clientes/EditCliente';
 import CreateCliente from '@/Components/clientes/CreateCliente';
+
 
 export default function IndexCliente({ clientes = [], users = [] }) {
     const [clienteEditar, setClienteEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
     const [filtroDocumento, setFiltroDocumento] = useState('todos');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
+
 
     const abrirEdicion = (cliente) => {
         setClienteEditar(cliente);
@@ -27,10 +29,13 @@ export default function IndexCliente({ clientes = [], users = [] }) {
             default: return 'badge-neutral';
         }
     };
-
     const todosLosRegistros = useMemo(() => {
-        return [...clientes, ...users];
+        return [
+            ...clientes.map(c => ({ ...c, tipo_usuario: 'cliente' })),
+            ...users.map(u => ({ ...u, tipo_usuario: 'usuario' }))
+        ];
     }, [clientes, users]);
+
 
     const conteos = useMemo(() => ({
         dni: todosLosRegistros.filter(c => c.tipo_documento === 'dni').length,
@@ -40,6 +45,7 @@ export default function IndexCliente({ clientes = [], users = [] }) {
         registrados: users.length,
         invitados: clientes.length
     }), [todosLosRegistros, users.length, clientes.length]);
+
 
     const registrosFiltrados = useMemo(() => {
         const busquedaLower = filtroBusqueda.toLowerCase().trim();
@@ -57,7 +63,6 @@ export default function IndexCliente({ clientes = [], users = [] }) {
     }, [todosLosRegistros, filtroDocumento, filtroBusqueda]);
 
     const limpiarFiltros = () => { setFiltroDocumento('todos'); setFiltroBusqueda(''); };
-
     if (todosLosRegistros.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -97,11 +102,12 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                 <CreateCliente />
             </div>
 
+
             <div className="flex flex-col lg:flex-row gap-4 items-center mb-6">
                 <div className="flex-1 relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input type="text" placeholder="Nombre, email, documento o teléfono..." className="input input-bordered w-full pl-11"
-                        value={filtroBusqueda} onChange={(e) => setFiltroBusqueda(e.target.value)}/>
+                        value={filtroBusqueda} onChange={(e) => setFiltroBusqueda(e.target.value)} />
                 </div>
                 <select className="select select-bordered w-full lg:w-auto max-w-xs" value={filtroDocumento} onChange={(e) => setFiltroDocumento(e.target.value)}>
                     <option value="todos">Todos los documentos</option>
@@ -134,8 +140,15 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                     </thead>
                     <tbody>
                         {registrosFiltrados.map((cliente) => (
-                            <tr key={cliente.id} className="hover">
-                                <td className="font-semibold">{cliente.name}</td>
+                            <tr key={`${cliente.tipo_usuario}-${cliente.id}`} className="hover">
+                                <td className="font-semibold">
+                                    <div className="flex items-center gap-2">
+                                        {cliente.tipo_usuario === 'usuario' && (
+                                            <StarIcon className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                        )}
+                                        <span>{cliente.name}</span>
+                                    </div>
+                                </td>
                                 <td className="font-mono text-sm">{cliente.email}</td>
                                 <td>
                                     <div className="flex items-center gap-2">
@@ -152,9 +165,11 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                                     </div>
                                 </td>
                                 <td>{cliente.telefono || '-'}</td>
-                                <td className="badge badge-outline badge-sm">{cliente.nacionalidad || '-'}</td>
+                                <td className="text-center">
+                                    <span className="badge badge-outline badge-sm">{cliente.nacionalidad || '-'}</span>
+                                </td>
                                 <td className="max-w-xs">
-                                    {cliente.direccion ?  cliente.direccion : 'Sin dirección'}
+                                    {cliente.direccion ? cliente.direccion : 'Sin dirección'}
                                 </td>
                                 <td className="text-sm text-gray-500">
                                     {new Date(cliente.created_at).toLocaleDateString('es-ES')}
@@ -174,6 +189,7 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                     </tbody>
                 </table>
             </div>
+
 
             <EditCliente cliente={clienteEditar} abierto={drawerAbierto} onCerrar={cerrarEdicion} />
         </>
