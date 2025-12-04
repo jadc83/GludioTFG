@@ -52,8 +52,17 @@ export function useClienteForm(cliente = null, onSuccess) {
         e.preventDefault();
         setGuardando(true);
 
-        const url = cliente ? `/clientes/${cliente.id}` : '/clientes';
-        const method = cliente ? 'put' : 'post';
+        const esUser = cliente && cliente.hasOwnProperty('email_verified_at');
+
+        let url, method;
+
+        if (esUser) {
+            url = cliente ? `/users/${cliente.id}` : '/users';
+            method = cliente ? 'put' : 'post';
+        } else {
+            url = cliente ? `/clientes/${cliente.id}` : '/clientes';
+            method = cliente ? 'put' : 'post';
+        }
 
         router[method](url, form, {
             onSuccess: () => {

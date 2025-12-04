@@ -3,6 +3,7 @@
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\HabitacionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
 use App\Models\Cliente;
 use App\Models\Habitacion;
 use App\Models\User;
@@ -61,5 +62,6 @@ Route::get('/panel', function () {
 
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion']);
 Route::resource('clientes', ClienteController::class);
+Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
 
 require __DIR__.'/auth.php';
