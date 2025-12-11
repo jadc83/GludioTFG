@@ -4,13 +4,13 @@ import LeyendaEstados from "../LeyendaEstados";
 import { useHabitacionControl } from "@/hooks/useHabitacionControl";
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Bar } from 'recharts';
 
-export default function TabHabitaciones({ habitaciones = [] }) {
+export default function TabHabitaciones({ habitaciones = [], estadisticas = {} }) {
 
-    const { filtros, datos, acciones } = useHabitacionControl(habitaciones);
+    const { filtros, datos, acciones } = useHabitacionControl(habitaciones, estadisticas);
 
     return (
         <div className="p-6">
-            <div className="bg-base-100 p-6 rounded-lg mb-6 shadow-sm flex items-center justify-start pl-4">
+            <div className="bg-base-100 p-6 rounded-lg mb-6 shadow-sm">
                 <LeyendaEstados />
                 <div style={{ width: '100%', height: 140 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -120,7 +120,10 @@ export default function TabHabitaciones({ habitaciones = [] }) {
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
                 <div className="text-sm text-gray-500">
-                    Mostrando <span className="font-bold">{datos.habitacionesFiltradas.length}</span> de {habitaciones.length} habitaciones
+                    Mostrando <span className="font-bold">{datos.habitacionesFiltradas.length}</span> habitaciones
+                    {datos.habitacionesFiltradas.length !== habitaciones.length &&
+                        <span> (filtradas de {habitaciones.length} totales)</span>
+                    }
                 </div>
                 <div className="flex gap-2">
                     <PrimaryButton onClick={acciones.limpiarFiltros}>

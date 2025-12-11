@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { useHabitacionForm } from '../../hooks/UseHabitacionForm';
+import { useHabitacionForm } from '@/hooks/useHabitacionForm';
 import '@/../css/createHabitacion.css';
 
 export default function CreateHabitacion() {

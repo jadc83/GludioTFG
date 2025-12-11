@@ -1,6 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import '@/../css/createHabitacion.css';
-import { useHabitacionForm } from '../../hooks/UseHabitacionForm';
+import { useHabitacionForm } from '@/hooks/useHabitacionForm';
 import { CheckCircleIcon, LockClosedIcon, CogIcon, SparklesIcon} from '@heroicons/react/24/outline';
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {

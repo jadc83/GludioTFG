@@ -2,11 +2,10 @@
 
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\HabitacionController;
+use App\Http\Controllers\PanelController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\UserController;
-use App\Models\Cliente;
-use App\Models\Habitacion;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,36 +31,17 @@ Route::middleware('auth')->group(function () {
     })->name('logout.get');
 });
 
-Route::get('/panel', function () {
-    $habitaciones = Habitacion::with('fotos')->orderBy('numero')->get()->map(function ($habitacion) {
-        return [
-            'id' => $habitacion->id,
-            'numero' => $habitacion->numero,
-            'tipo' => $habitacion->tipo,
-            'precio_noche' => $habitacion->precio_noche,
-            'capacidad' => $habitacion->capacidad,
-            'estado' => $habitacion->estado,
-            'descripcion' => $habitacion->descripcion,
-            'notas' => $habitacion->notas,
-            'fotos' => $habitacion->fotos->map(function ($foto) {
-                return [
-                    'id' => $foto->id,
-                    'ruta' => $foto->ruta,
-                    'orden' => $foto->orden,
-                    'url' => asset('storage/' . $foto->ruta)
-                ];
-            })->values()
-        ];
-    })->values();
+Route::get('/panel', [PanelController::class, 'index'])
+    ->name('panel')
+    ->middleware(['auth', 'verified']);
 
-    $clientes = Cliente::select('id', 'name', 'email', 'telefono', 'tipo_documento', 'numero_documento', 'nacionalidad', 'direccion', 'created_at')->get();
-    $users = User::all();
-
-    return Inertia::render('PanelControl', ['habitaciones' => $habitaciones, 'clientes' => $clientes, 'users' => $users]);
-        })->name('panel')->middleware(['auth', 'verified']);
+// Búsqueda de clientes (movido a controller)
+Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])
+    ->name('clientes.buscar');
 
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion']);
 Route::resource('clientes', ClienteController::class);
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
+Route::resource('reservas', ReservaController::class);
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

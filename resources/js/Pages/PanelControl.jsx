@@ -1,21 +1,69 @@
-import CreateHabitacion from "@/Components/habitaciones/CreateHabitacion";
+import { useState } from 'react';
+import { router } from '@inertiajs/react';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import CreateHabitacion from "@/Components/habitaciones/formulario/CreateHabitacion";
+import CreateReserva from "@/Components/reservas/formulario/CreateReserva";
 import TabHabitaciones from "@/Components/habitaciones/TabHabitaciones";
 import TabClientes from "../Components/clientes/TabClientes";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { useState } from 'react';
 import { HomeIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
 import '../../css/estiloPanelControl.css';
+import TabReservas from '../Components/reservas/TabReservas';
 
-export default function PanelControl({ habitaciones = [], clientes = [], users = [] }) {
+const TABS = [
+    { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },
+    { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
+    { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
+    { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
+];
+
+function BotonTab({ id, icon: Icon, label, activa, onClick }) {
+    const clases = `btnPestaña ${activa ? 'activa' : ''}`;
+
+    return (
+        <button onClick={() => onClick(id)} className={clases}>
+            <Icon className="iconoPestaña" />
+            {label}
+            {activa && <div className="indicadorActivo" />}
+        </button>
+    );
+}
+
+function TabContenido({ tabActiva, habitaciones, habitacionesEstadisticas, clientes, clientesFiltrados, users, reservas, clientesEstadisticas, reservasEstadisticas }) {
+    if (tabActiva === 'habitaciones') {
+        return <TabHabitaciones habitaciones={habitaciones} estadisticas={habitacionesEstadisticas} />;
+    }
+
+    if (tabActiva === 'clientes') {
+        return <TabClientes clientes={clientes} users={users} estadisticas={clientesEstadisticas} clientesFiltrados={clientesFiltrados} />;
+    }
+
+    if (tabActiva === 'reservas') {
+        return <TabReservas clientes={clientes} users={users} reservas={reservas} estadisticas={reservasEstadisticas} />;
+    }
+
+    return (
+        <div className="marcadorLugar">
+            <BriefcaseIcon className="iconoMarcadorLugar" />
+            <p className="textoMarcadorLugar">En desarrollo</p>
+        </div>
+    );
+}
+
+export default function PanelControl({ habitaciones = [],
+    habitacionesEstadisticas = {},
+    habitacionesDisponibles = [],
+    clientes = [],
+    clientesFiltrados = [],
+    clientesEstadisticas = {},
+    users = [],
+    reservas = [],
+    reservasEstadisticas = {}
+}) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
 
-    const tabs = [
-        { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },
-        { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
-        { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' }
-    ];
-
-    const getClasesPestaña = (id) => `btnPestaña ${tabActiva === id ? 'activa' : ''}`;
+    const handleReservaSuccess = () => {
+        router.reload({ only: ['habitaciones', 'habitacionesDisponibles', 'reservas'] });
+    };
 
     return (
         <AuthenticatedLayout>
@@ -28,6 +76,10 @@ export default function PanelControl({ habitaciones = [], clientes = [], users =
                                 <p className="subtituloEncabezado">Gestión completa de hotel</p>
                             </div>
                             <CreateHabitacion />
+                            <CreateReserva
+                                habitacionesDisponibles={habitacionesDisponibles}  // ⭐ YA FILTRADO desde backend
+                                onSuccess={handleReservaSuccess}
+                            />
                         </div>
                     </div>
                 </div>
@@ -35,24 +87,23 @@ export default function PanelControl({ habitaciones = [], clientes = [], users =
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
                         <div className="contenedorPestañas">
-                            {tabs.map(({ id, icon: Icon, label }) => (
-                                <button key={id} onClick={() => setTabActiva(id)} className={getClasesPestaña(id)}>
-                                    <Icon className="iconoPestaña" />
-                                    {label}
-                                    {tabActiva === id && <div className="indicadorActivo"></div>}
-                                </button>
+                            {TABS.map(tab => (
+                                <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva} />
                             ))}
                         </div>
 
                         <div className="contenedorContenido">
-                            {tabActiva === 'habitaciones' && <TabHabitaciones habitaciones={habitaciones} />}
-                            {tabActiva === 'clientes' && <TabClientes clientes={clientes} users={users} />}
-                            {tabActiva === 'empleados' && (
-                                <div className="marcadorLugar">
-                                    <BriefcaseIcon className="iconoMarcadorLugar" />
-                                    <p className="textoMarcadorLugar">En desarrollo</p>
-                                </div>
-                            )}
+                            <TabContenido
+                                tabActiva={tabActiva}
+                                habitaciones={habitaciones}
+                                habitacionesEstadisticas={habitacionesEstadisticas}
+                                clientes={clientes}
+                                clientesFiltrados={clientesFiltrados}
+                                users={users}
+                                reservas={reservas}
+                                clientesEstadisticas={clientesEstadisticas}
+                                reservasEstadisticas={reservasEstadisticas}
+                            />
                         </div>
                     </div>
                 </div>

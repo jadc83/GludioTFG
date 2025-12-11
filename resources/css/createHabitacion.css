@@ -1,4 +1,4 @@
-/* ─── Botón principal ─── */
+
 .btnNuevaHabitacion {
   display: inline-flex;
   align-items: center;
@@ -23,7 +23,7 @@
   height: 1.25rem;
 }
 
-/* ─── Modal/Drawer ──── */
+
 .modalDrawer {
   display: block;
   position: fixed;
@@ -81,7 +81,7 @@
   transform: translateX(-100%);
 }
 
-/* ─── Encabezado del drawer ─── */
+
 .encabezadoDrawer {
   display: flex;
   justify-content: center;
@@ -121,7 +121,7 @@
   background-color: #f3f4f6;
 }
 
-/* ─── Contenido del formulario ─── */
+
 .contenidoDrawer {
   flex: 1;
   overflow-y: auto;
@@ -143,7 +143,7 @@
   gap: 1rem;
 }
 
-/* ─── Campos de formulario ─── */
+
 .contenedorCampo {
   display: flex;
   flex-direction: column;
@@ -206,7 +206,7 @@
   margin-top: 0.25rem;
 }
 
-/* ─── Botón submit ─── */
+
 .btnEnviar {
   width: 100%;
   padding: 0.75rem 1.5rem;
@@ -233,11 +233,12 @@
   cursor: not-allowed;
 }
 
-/* ─── Input de fotos ─── */
+
 .rejillaFotos {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-width: 480px;
 }
 
 .vistaPreviaFoto {
@@ -246,6 +247,9 @@
   border-radius: 0.5rem;
   overflow: hidden;
   border: 2px solid #e5e7eb;
+  width: 100%;
+  max-width: 110px;
+  max-height: 110px;
 }
 
 .vistaPreviaFoto img {
@@ -288,6 +292,9 @@
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
   background: #f9fafb;
+  width: 100%;
+  max-width: 110px;
+  max-height: 110px;
 }
 
 .zonaAgregarFoto:hover {
@@ -310,4 +317,84 @@
 .zonaAgregarFoto:hover .iconoAgregarFoto,
 .zonaAgregarFoto:hover .textoAgregarFoto {
   color: #6366f1;
+}
+
+
+.fotos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-width: 480px;
+}
+
+.foto-preview {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  width: 100%;
+  max-width: 110px;
+  max-height: 110px;
+}
+
+.foto-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto-quitar {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.foto-preview:hover .foto-quitar {
+  opacity: 1;
+}
+
+.foto-agregar {
+  aspect-ratio: 1;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+  width: 100%;
+  max-width: 110px;
+  max-height: 110px;
+}
+
+.foto-agregar:hover {
+  border-color: var(--p, #4f46e5);
+  background: rgba(var(--p), 0.05);
+}
+
+.foto-agregar-icon {
+  font-size: 2rem;
+  color: #9ca3af;
+}
+
+.foto-agregar-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
 }

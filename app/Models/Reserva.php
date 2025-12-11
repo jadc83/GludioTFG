@@ -21,6 +21,8 @@ class Reserva extends Model
         'status',
         'pago',
         'notas',
+        'reservable_type',
+        'reservable_id',
     ];
 
     protected $casts = [
@@ -36,4 +38,6 @@ class Reserva extends Model
     {
         return $this->hasMany(HabitacionReserva::class, 'reserva_id');
     }
+
+
 }

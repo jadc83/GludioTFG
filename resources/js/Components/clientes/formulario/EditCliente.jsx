@@ -1,7 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Campo from '@/Components/Campo';
 import '@/../css/createCliente.css';
-import { useClienteForm } from '../../hooks/useClienteForm';
+import { useClienteForm } from '@/hooks/useClienteForm';
 
 export default function EditCliente({ cliente, abierto, onCerrar }) {
     const { form, cambiar, errores, guardando, enviar } = useClienteForm(cliente, onCerrar);

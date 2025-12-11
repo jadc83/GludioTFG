@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import EditHabitacion from '@/Components/habitaciones/EditHabitacion';
+import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
 import { InboxIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 export default function IndexHabitacion({ habitaciones = [] }) {

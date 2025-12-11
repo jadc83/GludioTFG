@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Campo from '@/Components/Campo';
-import { useClienteForm } from '../../hooks/useClienteForm';
+import { useClienteForm } from '@/hooks/useClienteForm';
 import '@/../css/createCliente.css';
 
 export default function CreateCliente() {
