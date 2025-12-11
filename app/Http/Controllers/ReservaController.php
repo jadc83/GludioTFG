@@ -205,7 +205,7 @@ class ReservaController extends Controller
         });
     }
 
-    public function buscar(Request $request)  // ✅ CORREGIDO: Request en lugar de $request
+    public function buscar(Request $request)
     {
         $query = $request->query('query');
 
@@ -216,6 +216,49 @@ class ReservaController extends Controller
             })->select('id', 'name', 'email', 'numero_documento', 'telefono', 'nacionalidad')->limit(10)->get();
 
         return response()->json($users);
+    }
+
+    /**
+     * Obtiene habitaciones disponibles para el rango de fechas especificado
+     */
+    public function habitacionesDisponibles(Request $request)
+    {
+        $checkIn = $request->check_in;
+        $checkOut = $request->check_out;
+
+        $query = Habitacion::with('fotos')->where('estado', 'disponible');
+
+        if ($checkIn && $checkOut) {
+            $query->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut) {
+                $q->where('check_in', '<', $checkOut)
+                  ->where('check_out', '>', $checkIn);
+            });
+        }
+
+        $habitaciones = $query->orderBy('numero')->get();
+
+        $habitacionesFormateadas = $habitaciones->map(function ($habitacion) {
+            return [
+                'id' => $habitacion->id,
+                'numero' => $habitacion->numero,
+                'tipo' => $habitacion->tipo,
+                'precio_noche' => $habitacion->precio_noche,
+                'capacidad' => $habitacion->capacidad,
+                'estado' => $habitacion->estado,
+                'descripcion' => $habitacion->descripcion,
+                'notas' => $habitacion->notas,
+                'fotos' => $habitacion->fotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'ruta' => $foto->ruta,
+                        'orden' => $foto->orden,
+                        'url' => asset('storage/' . $foto->ruta)
+                    ];
+                })->values()
+            ];
+        })->values();
+
+        return response()->json($habitacionesFormateadas);
     }
 
     public function show(Reserva $reserva) { }

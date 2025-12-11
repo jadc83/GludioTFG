@@ -28,7 +28,7 @@ export default function CreateReservaPaso2({ habitaciones, formHabitaciones, gua
                     <div className="text-sm text-gray-600">Capacidad: {habitacion.capacidad} pax</div>
                 </div>
                 <div className="text-right">
-                    <div className="font-bold text-lg text-primary">€{habitacion.precio_noche}</div>
+                    <div className="font-bold text-lg text-primary font-mono">€{habitacion.precio_noche}</div>
                     <div className="text-xs text-gray-500">por noche</div>
                 </div>
             </label>

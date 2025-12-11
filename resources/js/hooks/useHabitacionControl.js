@@ -37,10 +37,7 @@ export function useHabitacionControl(habitaciones = [], estadisticas = {}) {
         }];
     }, [estadisticas]);
 
-    const capacidadesDisponibles = useMemo(() => {
-        const caps = [...new Set(habitaciones.map(h => h.capacidad))];
-        return caps.sort((a, b) => a - b);
-    }, [habitaciones]);
+    const capacidadesDisponibles = estadisticas.capacidades_disponibles || [];
 
     useEffect(() => {
         const filtrosActivos = {

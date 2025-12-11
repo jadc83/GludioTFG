@@ -94,7 +94,7 @@ export default function IndexReserva({ reservas = [], estadisticas = {} }) {
 
     return (
         <>
-            
+
             <div className="grafico-estadisticas">
                 <div className="grafico-header">
                     <h3>Estado de las Reservas</h3>
@@ -263,13 +263,13 @@ export default function IndexReserva({ reservas = [], estadisticas = {} }) {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="celda-fechas">
+                                <td className="celda-fechas font-mono">
                                     <div>{new Date(reserva.check_in).toLocaleDateString('es-ES')}</div>
                                     <div className="fecha-checkout">
                                         → {new Date(reserva.check_out).toLocaleDateString('es-ES')}
                                     </div>
                                 </td>
-                                <td className="celda-precio text-success">
+                                <td className="celda-precio text-success font-mono">
                                     €{parseFloat(reserva.precio_total || 0).toFixed(2)}
                                 </td>
                                 <td>

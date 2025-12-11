@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Mejoras tipográficas globales */
+@layer base {
+  body {
+    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Fuente mono para números, códigos y datos técnicos */
+  .font-mono {
+    font-feature-settings: 'zero', 'cv11', 'ss01';
+    letter-spacing: -0.01em;
+  }
+
+  /* Mejorar legibilidad de títulos */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+    letter-spacing: -0.02em;
+  }
+}

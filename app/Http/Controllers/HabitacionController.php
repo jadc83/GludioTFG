@@ -56,7 +56,12 @@ class HabitacionController extends Controller
                 'ocupada' => Habitacion::where('estado', 'ocupada')->count(),
                 'mantenimiento' => Habitacion::where('estado', 'mantenimiento')->count(),
                 'limpieza' => Habitacion::where('estado', 'limpieza')->count(),
-                'total' => Habitacion::count()
+                'total' => Habitacion::count(),
+                'capacidades_disponibles' => Habitacion::distinct()
+                    ->orderBy('capacidad')
+                    ->pluck('capacidad')
+                    ->values()
+                    ->toArray()
             ];
         });
 
@@ -202,18 +207,16 @@ class HabitacionController extends Controller
      */
     public static function obtenerDisponibles(?string $checkIn = null, ?string $checkOut = null)
     {
-        $consulta = Habitacion::with('fotos')->where('estado', 'disponible');
+        $habitaciones = Habitacion::with('fotos')->where('estado', 'disponible');
 
         if ($checkIn && $checkOut) {
-            $consulta->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                $query->where(function ($subConsulta) use ($checkIn, $checkOut) {
-                    $subConsulta->where('check_in', '<', $checkOut)
-                        ->where('check_out', '>', $checkIn);
-                });
+            $habitaciones->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
+                $query->where('check_in', '<', $checkOut)
+                      ->where('check_out', '>', $checkIn);
             });
         }
 
-        $habitaciones = $consulta->orderBy('numero')->get();
+        $habitaciones = $habitaciones->orderBy('numero')->get();
 
         return self::formatear($habitaciones);
     }

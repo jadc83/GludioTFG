@@ -68,7 +68,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">Precio/noche:</span>
-                                <span className="text-base font-bold text-primary">{habitacion.precio_noche}€</span>
+                                <span className="text-base font-bold text-primary font-mono">{habitacion.precio_noche}€</span>
                             </div>
                         </div>
 

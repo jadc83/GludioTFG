@@ -8,8 +8,6 @@ import CreateReservaPaso2 from './CreateReservaPaso2';
 import '@/../css/createCliente.css';
 
 
-
-
 const FORM_INICIAL = { name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '',
                        check_in: '', check_out: '', notas: ''
 };
@@ -39,32 +37,20 @@ const rellenarFormulario = (cliente) => {
     };
 };
 
-
-
-
-export default function CreateReserva({ habitacionesDisponibles = [], onSuccess }) {
-
+export default function CreateReserva({ habitacionesDisponibles: habitacionesIniciales = [], onSuccess }) {
 
     const [isOpen, setIsOpen] = useState(false);
     const [step, setStep] = useState(1);
     const [guardando, setGuardando] = useState(false);
-
-
     const [form, setForm] = useState(FORM_INICIAL);
     const [errores, setErrores] = useState({});
-
-
     const [modoNuevoCliente, setModoNuevoCliente] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
     const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
     const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-
-
+    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(habitacionesIniciales);
     const formHabitaciones = useReservaForm(habitacionesDisponibles);
-
-
-
 
     useEffect(() => {
         if (modoNuevoCliente) {
@@ -152,8 +138,14 @@ export default function CreateReserva({ habitacionesDisponibles = [], onSuccess 
             const nuevoForm = { ...form, [name]: value };
 
             if (nuevoForm.check_in && nuevoForm.check_out) {
-                router.get(route('panel'), { check_in: nuevoForm.check_in, check_out: nuevoForm.check_out},
-                                           {preserveState: true, preserveScroll: true, only: ['habitacionesDisponibles'], replace: true});
+                fetch(`/reservas/disponibles?check_in=${nuevoForm.check_in}&check_out=${nuevoForm.check_out}`)
+                    .then(res => res.json())
+                    .then(habitaciones => {
+                        setHabitacionesDisponibles(habitaciones);
+                    })
+                    .catch(err => {
+                        console.error('Error al obtener habitaciones disponibles:', err);
+                    });
             }
         }
     };

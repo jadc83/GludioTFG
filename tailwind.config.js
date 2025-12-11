@@ -13,7 +13,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter var', 'Inter', 'system-ui', '-apple-system', ...defaultTheme.fontFamily.sans],
+                mono: ['JetBrains Mono', 'Fira Code', 'Consolas', ...defaultTheme.fontFamily.mono],
             },
             colors: {
                 'gris': '#E2E0DC',

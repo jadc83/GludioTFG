@@ -35,9 +35,13 @@ Route::get('/panel', [PanelController::class, 'index'])
     ->name('panel')
     ->middleware(['auth', 'verified']);
 
-// Búsqueda de clientes (movido a controller)
 Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])
-    ->name('clientes.buscar');
+    ->name('clientes.buscar')
+    ->middleware('auth');
+
+Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])
+    ->name('reservas.disponibles')
+    ->middleware('auth');
 
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion']);
 Route::resource('clientes', ClienteController::class);

@@ -17,13 +17,17 @@ const TABS = [
 ];
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
-    const clases = `btnPestaña ${activa ? 'activa' : ''}`;
-
     return (
-        <button onClick={() => onClick(id)} className={clases}>
-            <Icon className="iconoPestaña" />
+        <button
+            onClick={() => onClick(id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+                ${activa
+                    ? 'bg-white text-primary shadow-sm ring-1 ring-black/5'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                }`}
+        >
+            <Icon className="w-4 h-4" />
             {label}
-            {activa && <div className="indicadorActivo" />}
         </button>
     );
 }
@@ -86,7 +90,7 @@ export default function PanelControl({ habitaciones = [],
 
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
-                        <div className="contenedorPestañas">
+                        <div className="bg-base-200 p-1 rounded-lg inline-flex mb-6">
                             {TABS.map(tab => (
                                 <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva} />
                             ))}
