@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, EyeIcon, PencilIcon, StarIcon } from '@heroicons/react/24/outline';
 import EditCliente from '@/Components/clientes/formulario/EditCliente';
-import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import { useClienteControl } from '@/hooks/useClienteControl';
 
 export default function IndexCliente({ clientes = [], users = [], clientesFiltrados = [] }) {
@@ -29,10 +28,7 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
         }
     };
 
-    const todosLosRegistros = clientesFiltrados.length > 0 ? clientesFiltrados : [
-        ...clientes.map(c => ({ ...c, tipo_usuario: 'cliente' })),
-        ...users.map(u => ({ ...u, tipo_usuario: 'usuario' }))
-    ];
+    const todosLosRegistros = clientesFiltrados;
 
     const noHayClientesEnAbsoluto = clientes.length === 0 && users.length === 0;
 
@@ -151,7 +147,6 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                 </table>
                 )}
             </div>
-
 
             <EditCliente cliente={clienteEditar} abierto={drawerAbierto} onCerrar={cerrarEdicion} />
         </>

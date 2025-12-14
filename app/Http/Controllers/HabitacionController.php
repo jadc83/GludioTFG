@@ -17,38 +17,15 @@ class HabitacionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Habitacion::with('fotos');
-
-        if ($request->filled('estado') && $request->estado !== 'todos') {
-            $query->where('estado', $request->estado);
-        }
-
-        if ($request->filled('tipo') && $request->tipo !== 'todos') {
-            $query->where('tipo', $request->tipo);
-        }
-
-        if ($request->filled('capacidad') && $request->capacidad !== 'todos') {
-            $query->where('capacidad', (int)$request->capacidad);
-        }
-
-        if ($request->filled('precio_min')) {
-            $query->where('precio_noche', '>=', (float)$request->precio_min);
-        }
-
-        if ($request->filled('precio_max')) {
-            $query->where('precio_noche', '<=', (float)$request->precio_max);
-        }
-
-        if ($request->filled('busqueda')) {
-            $busqueda = $request->busqueda;
-            $query->where(function ($q) use ($busqueda) {
-                $q->where('numero', 'ILIKE', "%{$busqueda}%")
-                    ->orWhere('tipo', 'ILIKE', "%{$busqueda}%")
-                    ->orWhere('descripcion', 'ILIKE', "%{$busqueda}%");
-            });
-        }
-
-        $habitaciones = $query->orderBy('numero')->get();
+        $habitaciones = Habitacion::with('fotos')
+            ->buscar($request->busqueda)
+            ->estado($request->estado)
+            ->tipo($request->tipo)
+            ->capacidad($request->capacidad)
+            ->precioMin($request->precio_min)
+            ->precioMax($request->precio_max)
+            ->orderBy('numero')
+            ->get();
 
         if ($request->wantsJson()) {
             return response()->json(self::formatear($habitaciones));
@@ -85,7 +62,7 @@ class HabitacionController extends Controller
                     ]);
                 }
             }
-            return redirect()->back()->with('success', 'Habitación creada.');
+            return redirect()->route('panel')->with('success', 'Habitación creada.');
         });
     }
 

@@ -11,23 +11,33 @@ use Inertia\Inertia;
 
 class PanelController extends Controller
 {
-public function index(Request $request)
-{
-    $habitaciones = Habitacion::with('fotos')->get();
-    $clientes     = Cliente::orderBy('name')->get();
-    $usuarios     = User::orderBy('name')->get();
-    $reservas     = Reserva::with('reservable')->get();
-    $clientesTodos = $clientes->merge($usuarios)->sortBy('name')->values();
+    public function index(Request $request)
+    {
+        $clientes = Cliente::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
 
-    return Inertia::render('PanelControl',
-    [
-        'habitaciones'            => $habitaciones,
-        'habitacionesDisponibles' => HabitacionController::obtenerDisponibles( $request->check_in, $request->check_out ),
-        'clientes'                => $clientes,
-        'clientesFiltrados'       => $clientesTodos,
-        'reservas'                => $reservas,
-        'users'                   => $usuarios,
-    ]);
-}
+        $usuarios = User::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
 
+        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion'])
+            ->status($request->status)
+            ->localizador($request->localizador)
+            ->cliente($request->cliente)
+            ->habitacion($request->habitacion)
+            ->orderBy('check_in', 'desc')
+            ->get();
+
+        return Inertia::render('PanelControl', [
+            'habitaciones'            => Habitacion::with('fotos')->get(),
+            'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
+            'clientes'                => Cliente::orderBy('name')->get(),
+            'users'                   => User::orderBy('name')->get(),
+            'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),
+            'reservas'                => ReservaController::formatear($reservas),
+        ]);
+    }
 }

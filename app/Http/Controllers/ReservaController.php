@@ -20,34 +20,27 @@ class ReservaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Reserva::with(['reservable', 'habitaciones.habitacion']);
+        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion'])
+            ->status($request->status)
+            ->localizador($request->localizador)
+            ->cliente($request->cliente)
+            ->habitacion($request->habitacion)
+            ->orderBy('check_in', 'desc')
+            ->get();
 
-        if ($request->filled('status') && $request->status !== 'todos') {
-            $query->where('status', $request->status);
+        $reservasJson = self::formatear($reservas);
+
+        if ($request->wantsJson()) {
+            return response()->json($reservasJson);
         }
 
-        if ($request->filled('localizador')) {
-            $query->where('localizador', 'LIKE', "%{$request->localizador}%");
-        }
+        return [ 'reservas' => $reservasJson ];
 
-        if ($request->filled('cliente')) {
-            $search = $request->cliente;
-            $query->whereHasMorph('reservable', [Cliente::class, User::class], function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%");
-            });
-        }
+    }
 
-        if ($request->filled('habitacion')) {
-            $habitacionSearch = $request->habitacion;
-            $query->whereHas('habitaciones.habitacion', function ($q) use ($habitacionSearch) {
-                $q->where('numero', 'LIKE', "%{$habitacionSearch}%");
-            });
-        }
-
-        $reservas = $query->orderBy('check_in', 'desc')->get();
-
-        $reservasJson = $reservas->map(function ($reserva) {
-
+    public static function formatear($reservas)
+    {
+        return $reservas->map(function ($reserva) {
             return [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -60,15 +53,7 @@ class ReservaController extends Controller
                 'cliente_name' => $reserva->reservable->name ?? 'Sin cliente',
                 'habitacion_numero' => $reserva->habitaciones->count() ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ') : 'Sin asignar',
             ];
-
         });
-
-        if ($request->wantsJson()) {
-            return response()->json($reservasJson);
-        }
-
-        return [ 'reservas' => $reservasJson ];
-
     }
 
     /**

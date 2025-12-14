@@ -43,9 +43,9 @@ Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisp
     ->name('reservas.disponibles')
     ->middleware('auth');
 
-Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion']);
-Route::resource('clientes', ClienteController::class);
+Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
+Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
-Route::resource('reservas', ReservaController::class);
+Route::resource('reservas', ReservaController::class)->middleware('auth');
 
 require __DIR__ . '/auth.php';

@@ -15,22 +15,10 @@ class ClienteController extends Controller
      */
     public function index(Request $request)
     {
-        $consulta = Cliente::query();
-        if ($request->filled('tipo_documento') && $request->tipo_documento !== 'todos') {
-            $consulta->where('tipo_documento', $request->tipo_documento);
-        }
-
-        if ($request->filled('busqueda')) {
-            $busqueda = $request->busqueda;
-            $consulta->where(function($query) use ($busqueda) {
-                $query->where('name', 'ILIKE', "%{$busqueda}%")
-                  ->orWhere('email', 'ILIKE', "%{$busqueda}%")
-                  ->orWhere('numero_documento', 'ILIKE', "%{$busqueda}%")
-                  ->orWhere('telefono', 'ILIKE', "%{$busqueda}%");
-            });
-        }
-
-        $clientes = $consulta->orderBy('name')->get();
+        $clientes = Cliente::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
 
         $clientes->each(function($cliente) {
             $cliente->tipo_usuario = 'cliente';
@@ -62,7 +50,7 @@ class ClienteController extends Controller
         $cliente = Cliente::create($validado);
         $cliente->save();
 
-        return redirect()->back();
+        return redirect()->route('panel')->with('success', 'Cliente creado.');
 
     }
 
@@ -90,7 +78,7 @@ class ClienteController extends Controller
         $validado = $request->validated();
         $cliente->update($validado);
 
-        return redirect()->back();
+        return redirect()->route('panel')->with('success', 'Cliente actualizado.');
 
     }
 

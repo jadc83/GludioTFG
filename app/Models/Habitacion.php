@@ -37,4 +37,45 @@ public function servicios()
                 ->withPivot('cantidad', 'fecha', 'hora', 'precio_extra')
                 ->withTimestamps();
 }
+
+    public function scopeBuscar($query, $termino)
+    {
+        if (!$termino) return $query;
+
+        return $query->where(function($q) use ($termino) {
+            $q->where('numero', 'ILIKE', "%{$termino}%")
+              ->orWhere('tipo', 'ILIKE', "%{$termino}%")
+              ->orWhere('descripcion', 'ILIKE', "%{$termino}%");
+        });
+    }
+
+    public function scopeEstado($query, $estado)
+    {
+        if (!$estado || $estado === 'todos') return $query;
+        return $query->where('estado', $estado);
+    }
+
+    public function scopeTipo($query, $tipo)
+    {
+        if (!$tipo || $tipo === 'todos') return $query;
+        return $query->where('tipo', $tipo);
+    }
+
+    public function scopeCapacidad($query, $capacidad)
+    {
+        if (!$capacidad || $capacidad === 'todos') return $query;
+        return $query->where('capacidad', (int)$capacidad);
+    }
+
+    public function scopePrecioMin($query, $precioMin)
+    {
+        if (!$precioMin) return $query;
+        return $query->where('precio_noche', '>=', (float)$precioMin);
+    }
+
+    public function scopePrecioMax($query, $precioMax)
+    {
+        if (!$precioMax) return $query;
+        return $query->where('precio_noche', '<=', (float)$precioMax);
+    }
 }

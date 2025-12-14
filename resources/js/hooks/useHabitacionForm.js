@@ -105,7 +105,6 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
                     reset();
                     setGuardando(false);
                     onSuccess?.();
-                    router.reload();
                 },
                 onError: (error) => {
                     setErrores(error || {});
@@ -115,8 +114,9 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         } else {
             router.post('/habitaciones', datos, {
                 forceFormData: true,
+                preserveState: false,
+                preserveScroll: false,
                 onSuccess: () => {
-                    reset();
                     setGuardando(false);
                     onSuccess?.();
                 },
