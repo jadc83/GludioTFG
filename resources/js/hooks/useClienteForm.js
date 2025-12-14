@@ -64,10 +64,7 @@ export function useClienteForm(cliente = null, onSuccess) {
             method = cliente ? 'put' : 'post';
         }
 
-        router[method](url, form, {
-            preserveState: false,
-            preserveScroll: false,
-            onSuccess: () => {
+        router[method](url, form, { preserveState: false, preserveScroll: false, onSuccess: () => {
                 setGuardando(false);
                 onSuccess();
             },
@@ -79,15 +76,7 @@ export function useClienteForm(cliente = null, onSuccess) {
     };
 
     const reset = () => {
-        setForm({
-            name: '',
-            email: '',
-            telefono: '',
-            tipo_documento: 'dni',
-            numero_documento: '',
-            nacionalidad: '',
-            direccion: '',
-        });
+        setForm({ name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '' });
         setErrores({});
     };
 

@@ -95,7 +95,7 @@ export default function PanelControl({ habitaciones = [],
                             ))}
                         </div>
 
-                        <div className="contenedorContenido">
+                        <div className="contenedorContenido bg-gris">
                             <TabContenido
                                 tabActiva={tabActiva}
                                 habitaciones={habitaciones}

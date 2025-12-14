@@ -10,21 +10,9 @@ export default function TabHabitaciones({ habitaciones = [] }) {
         <div className="p-6">
             <div className="space-y-4 mb-6">
                 <div className="form-control">
-                    <label className="label">Buscar</label>
-                    <div className="flex items-center gap-3 p-3 bg-white max-w-md mx-auto mb-6">
-                        <div className="w-10 h-10 bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-
+                    <div className="flex items-center gap-3 p-3 bg-gris max-w-md mx-auto mb-6">
                         <input type="text" placeholder="Número, tipo o descripción..." className="flex-1 input input-bordered bg-base-100 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
                             value={filtros.busqueda || ''} onChange={(e) => filtros.setBusqueda(e.target.value)} />
-                        <div className="w-10 h-10 bg-gradient-to-r from-success/20 to-emerald/20 border border-success/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
                     </div>
 
                 </div>

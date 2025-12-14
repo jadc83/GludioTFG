@@ -5,9 +5,9 @@ import '@/../css/createReserva.css';
 
 export default function IndexReserva({ reservas = [] }) {
     const [filtros, setFiltros] = useState({ status: 'todos', localizador: '', cliente: '', habitacion: '' });
-    const actualizarFiltro = (campo, valor) => { setFiltros(prev => ({ ...prev, [campo]: valor }));};
+    const actualizarFiltro = (campo, valor) => { setFiltros(prev => ({ ...prev, [campo]: valor })); };
     const hayFiltrosActivos = filtros.status !== 'todos' || filtros.localizador !== '' || filtros.cliente !== '' || filtros.habitacion !== '';
-    const limpiarFiltros = () => { setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '' });};
+    const limpiarFiltros = () => { setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '' }); };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -26,13 +26,16 @@ export default function IndexReserva({ reservas = [] }) {
             });
         }, 300);
 
-        return () => clearTimeout(timer); }, [filtros]);
+        return () => clearTimeout(timer);
+    }, [filtros]);
 
     const obtenerColorStatus = (status) => {
 
-        const colores = { 'confirmado': 'badge-success', 'checked_in': 'badge-warning',
-                          'checked_out': 'badge-info', 'cancelado': 'badge-error',
-                          'no_presentado': 'badge-ghost', 'pendiente': 'badge-neutral'};
+        const colores = {
+            'confirmado': 'badge-success', 'checked_in': 'badge-warning',
+            'checked_out': 'badge-info', 'cancelado': 'badge-error',
+            'no_presentado': 'badge-ghost', 'pendiente': 'badge-neutral'
+        };
 
         return colores[status] || 'badge-neutral';
     };
@@ -54,7 +57,7 @@ export default function IndexReserva({ reservas = [] }) {
                 <div>
                     <label className="label">Cliente</label>
                     <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)}
-                        className="input input-bordered w-full"/>
+                        className="input input-bordered w-full" />
                 </div>
 
                 <div>
@@ -65,21 +68,19 @@ export default function IndexReserva({ reservas = [] }) {
 
                 <div>
                     <label className="label">Estado</label>
-                    <select value={filtros.status}
-                            onChange={(e) => actualizarFiltro('status', e.target.value)}
-                            className="select select-bordered w-full">
-                                <option value="todos">Todos los estados</option>
-                                <option value="pendiente">Pendiente</option>
-                                <option value="confirmado">Confirmado</option>
-                                <option value="checked_in">Check-in</option>
-                                <option value="checked_out">Check-out</option>
-                                <option value="cancelado">Cancelado</option>
+                    <select value={filtros.status} onChange={(e) => actualizarFiltro('status', e.target.value)} className="select select-bordered w-full">
+                        <option value="todos">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="checked_in">Check-in</option>
+                        <option value="checked_out">Check-out</option>
+                        <option value="cancelado">Cancelado</option>
                     </select>
 
                 </div>
 
                 <div className="self-end">
-                    <button type="button"  onClick={limpiarFiltros} className="btn btn-outline btn-info w-full hover:btn-info">
+                    <button type="button" onClick={limpiarFiltros} className="btn btn-outline btn-info w-full hover:btn-info">
                         <FunnelIcon className="w-4 h-4 mr-2" /> Limpiar filtros
                     </button>
                 </div>
@@ -103,9 +104,9 @@ export default function IndexReserva({ reservas = [] }) {
                         </button>
                     </div>
                 </div>
-                ) : (
+            ) : (
                 <div className="tabla-reservas-contenedor">
-                    <table className="table table-zebra table-lg w-full">
+                    <table className="table bg-white table-lg w-full">
                         <thead className="bg-base-100/50">
                             <tr>
                                 <th>Localizador</th>
@@ -120,67 +121,67 @@ export default function IndexReserva({ reservas = [] }) {
                         </thead>
                         <tbody>
                             {reservas.map((reserva) => (
-                            <tr key={reserva.id} className="hover">
+                                <tr key={reserva.id} className="hover">
 
-                                <td className="font-mono font-semibold tracking-wider">
-                                    {reserva.localizador}
-                                </td>
+                                    <td className="font-mono font-semibold tracking-wider">
+                                        {reserva.localizador}
+                                    </td>
 
-                                <td className="celda-info-cliente">
+                                    <td className="celda-info-cliente">
 
-                                    <div className="cliente-info-stack">
+                                        <div className="cliente-info-stack">
 
-                                        <div className="cliente-nombre">
-                                            {reserva.cliente_name || 'Sin cliente'}
+                                            <div className="cliente-nombre">
+                                                {reserva.cliente_name || 'Sin cliente'}
+                                            </div>
+
+                                            <div className="cliente-habitacion">
+                                                {reserva.habitacion_numero || 'Sin habitación'}
+                                            </div>
+
                                         </div>
 
-                                        <div className="cliente-habitacion">
-                                            {reserva.habitacion_numero || 'Sin habitación'}
+                                    </td>
+
+                                    <td className="celda-fechas font-mono">
+
+                                        <div>{new Date(reserva.check_in).toLocaleDateString('es-ES')}</div>
+                                        <div className="fecha-checkout"> → {new Date(reserva.check_out).toLocaleDateString('es-ES')} </div>
+
+                                    </td>
+
+                                    <td className="celda-precio text-success font-mono">
+                                        €{parseFloat(reserva.precio_total || 0).toFixed(2)}
+                                    </td>
+
+                                    <td>
+                                        <span className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}>
+                                            {reserva.status?.replace('_', ' ')}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span className={`badge ${obtenerColorPago(reserva.pago)}`}>
+                                            {reserva.pago}
+                                        </span>
+                                    </td>
+
+                                    <td className="celda-notas">
+                                        {reserva.notas ? (<div className="notas-texto">{reserva.notas}</div>) : (<span className="notas-sin">Sin notas</span>)}
+                                    </td>
+
+                                    <td className="text-center">
+                                        <div className="acciones-celda">
+                                            <button className="btn btn-ghost btn-xs" title="Editar reserva" onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
+                                                <PencilIcon className="w-4 h-4" />
+                                            </button>
                                         </div>
-
-                                    </div>
-
-                                </td>
-
-                                <td className="celda-fechas font-mono">
-
-                                    <div>{new Date(reserva.check_in).toLocaleDateString('es-ES')}</div>
-                                    <div className="fecha-checkout"> → {new Date(reserva.check_out).toLocaleDateString('es-ES')} </div>
-
-                                </td>
-
-                                <td className="celda-precio text-success font-mono">
-                                    €{parseFloat(reserva.precio_total || 0).toFixed(2)}
-                                </td>
-
-                                <td>
-                                    <span className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}>
-                                        {reserva.status?.replace('_', ' ')}
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span className={`badge ${obtenerColorPago(reserva.pago)}`}>
-                                        {reserva.pago}
-                                    </span>
-                                </td>
-
-                                <td className="celda-notas">
-                                    {reserva.notas ? ( <div className="notas-texto">{reserva.notas}</div> ) : ( <span className="notas-sin">Sin notas</span>)}
-                                </td>
-
-                                <td className="text-center">
-                                    <div className="acciones-celda">
-                                        <button className="btn btn-ghost btn-xs" title="Editar reserva" onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
-                                            <PencilIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </>
     );
