@@ -38,11 +38,6 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
 
     return (
         <>
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                <CreateCliente />
-            </div>
-
-
             <div className="flex flex-col lg:flex-row gap-4 items-center mb-6">
                 <div className="flex-1 relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />

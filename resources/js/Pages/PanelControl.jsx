@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CreateHabitacion from "@/Components/habitaciones/formulario/CreateHabitacion";
 import CreateReserva from "@/Components/reservas/formulario/CreateReserva";
+import CreateCliente from "@/Components/clientes/formulario/CreateCliente";
 import TabHabitaciones from "@/Components/habitaciones/TabHabitaciones";
 import TabClientes from "../Components/clientes/TabClientes";
 import { HomeIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
@@ -79,11 +80,9 @@ export default function PanelControl({ habitaciones = [],
                                 <h1 className="tituloEncabezado">Panel de Control</h1>
                                 <p className="subtituloEncabezado">Gestión completa de hotel</p>
                             </div>
+                            <CreateCliente />
                             <CreateHabitacion />
-                            <CreateReserva
-                                habitacionesDisponibles={habitacionesDisponibles}  // ⭐ YA FILTRADO desde backend
-                                onSuccess={handleReservaSuccess}
-                            />
+                            <CreateReserva habitacionesDisponibles={habitacionesDisponibles} onSuccess={handleReservaSuccess}/>
                         </div>
                     </div>
                 </div>
