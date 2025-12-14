@@ -21,6 +21,8 @@ class Reserva extends Model
         'status',
         'pago',
         'notas',
+        'reservable_type',
+        'reservable_id',
     ];
 
     protected $casts = [
@@ -35,5 +37,35 @@ class Reserva extends Model
     public function habitaciones()
     {
         return $this->hasMany(HabitacionReserva::class, 'reserva_id');
+    }
+
+    public function scopeStatus($query, $status)
+    {
+        if (!$status || $status === 'todos') return $query;
+        return $query->where('status', $status);
+    }
+
+    public function scopeLocalizador($query, $localizador)
+    {
+        if (!$localizador) return $query;
+        return $query->where('localizador', 'ILIKE', "%{$localizador}%");
+    }
+
+    public function scopeCliente($query, $clienteNombre)
+    {
+        if (!$clienteNombre) return $query;
+
+        return $query->whereHasMorph('reservable', [Cliente::class, \App\Models\User::class], function ($q) use ($clienteNombre) {
+            $q->where('name', 'ILIKE', "%{$clienteNombre}%");
+        });
+    }
+
+    public function scopeHabitacion($query, $habitacionNumero)
+    {
+        if (!$habitacionNumero) return $query;
+
+        return $query->whereHas('habitaciones.habitacion', function ($q) use ($habitacionNumero) {
+            $q->where('numero', 'ILIKE', "%{$habitacionNumero}%");
+        });
     }
 }

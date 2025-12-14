@@ -7,8 +7,8 @@
 
 
 .hero-section {
-    width: 100%; /* Ancho completo */
-    height: calc(100vh - 64px); /* Altura completa menos el nav */
+    width: 100%; 
+    height: calc(100vh - 64px); 
     background-image: url('/hall2.jpg');
     background-size: cover;
     background-position: center;
@@ -38,7 +38,7 @@
 
 .contenido h1 {
     color: white;
-    font-size: 2.25rem; /* 4xl */
+    font-size: 2.25rem; 
     font-weight: bold;
     line-height: 1.25;
 }
@@ -47,27 +47,27 @@
 .contenido p {
     margin-top: 1rem;
     color: rgba(255, 255, 255, 0.9);
-    font-size: 1rem; /* base */
-    max-width: 42rem; /* max-w-2xl */
+    font-size: 1rem; 
+    max-width: 42rem; 
     margin-left: auto;
     margin-right: auto;
 }
 
 
-@media (min-width: 640px) { /* sm: */
+@media (min-width: 640px) { 
     .contenido h1 {
-        font-size: 3rem; /* 5xl */
+        font-size: 3rem; 
     }
     .contenido p {
-        font-size: 1.125rem; /* lg */
+        font-size: 1.125rem; 
     }
 }
 
-@media (min-width: 768px) { /* md: */
+@media (min-width: 768px) { 
     .contenido h1 {
-        font-size: 3.75rem; /* 6xl */
+        font-size: 3.75rem; 
     }
     .contenido p {
-        font-size: 1.25rem; /* xl */
+        font-size: 1.25rem; 
     }
 }

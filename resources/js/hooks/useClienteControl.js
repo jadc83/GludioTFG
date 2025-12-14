@@ -1,33 +1,48 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { router } from '@inertiajs/react';
 
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+}
 export const useClienteControl = (clientes = []) => {
     const [filtroDocumento, setFiltroDocumento] = useState('todos');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
-    const conteos = useMemo(() => {
-        return {
-            dni: clientes.filter(cliente => cliente.tipo_documento === 'dni').length,
-            pasaporte: clientes.filter(cliente => cliente.tipo_documento === 'pasaporte').length,
-            tie: clientes.filter(cliente => cliente.tipo_documento === 'tie').length,
-            total: clientes.length
-        };
-    }, [clientes]);
+    const debouncedBusqueda = useDebounce(filtroBusqueda, 500);
 
-    const clientesFiltrados = useMemo(() => {
-        return clientes.filter(cliente => {
-            const cumpleDocumento = filtroDocumento === 'todos' || cliente.tipo_documento === filtroDocumento;
-            const cumpleBusqueda = filtroBusqueda === '' ||
-                cliente.name?.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-                cliente.email?.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-                cliente.numero_documento?.toLowerCase().includes(filtroBusqueda.toLowerCase());
-
-            return cumpleDocumento && cumpleBusqueda;
+    useEffect(() => {
+        router.get(route('panel'), {
+            tipo_documento: filtroDocumento !== 'todos' ? filtroDocumento : undefined,
+            busqueda: debouncedBusqueda || undefined
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['clientes', 'clientesFiltrados'],
+            replace: true
         });
-    }, [clientes, filtroDocumento, filtroBusqueda]);
+    }, [filtroDocumento, debouncedBusqueda]);
 
     const limpiarFiltros = () => {
         setFiltroDocumento('todos');
         setFiltroBusqueda('');
+
+        router.get(route('panel'), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['clientes', 'clientesFiltrados']
+        });
     };
 
     return {
@@ -37,7 +52,11 @@ export const useClienteControl = (clientes = []) => {
             busqueda: filtroBusqueda,
             setBusqueda: setFiltroBusqueda
         },
-        datos: { clientesFiltrados, conteos },
-        acciones: { limpiarFiltros }
+        datos: {
+            clientesFiltrados: clientes
+        },
+        acciones: {
+            limpiarFiltros
+        }
     };
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 
 const CAPACIDADES = { doble: 2, suite: 2, familiar: 4 };
 const MAX_FOTOS = 4;
@@ -7,7 +7,7 @@ const MAX_FOTOS = 4;
 export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
     const esEdicion = !!habitacionInicial?.id;
 
-    const [form, setForm] = useState({
+    const { data, setData, post, processing, errors, reset: resetForm, clearErrors } = useForm({
         numero: '',
         tipo: 'doble',
         precio_noche: '',
@@ -21,12 +21,10 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
     const [previews, setPreviews] = useState([]);
     const [fotosGuardadas, setFotosGuardadas] = useState([]);
     const [fotosEliminadas, setFotosEliminadas] = useState([]);
-    const [errores, setErrores] = useState({});
-    const [guardando, setGuardando] = useState(false);
 
     useEffect(() => {
         if (esEdicion && habitacionInicial) {
-            setForm({
+            setData({
                 numero: habitacionInicial.numero || '',
                 tipo: habitacionInicial.tipo || 'doble',
                 precio_noche: habitacionInicial.precio_noche || '',
@@ -46,12 +44,12 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
             setFotos([]);
             setFotosEliminadas([]);
         }
-        setErrores({});
+        clearErrors();
     }, [esEdicion, habitacionInicial]);
 
     const cambiar = (e) => {
         const { name, value } = e.target;
-        setForm((prev) => ({
+        setData((prev) => ({
             ...prev,
             [name]: value,
             ...(name === 'tipo' && { capacidad: CAPACIDADES[value] || '' }),
@@ -88,64 +86,41 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
 
     const enviar = (e) => {
         e.preventDefault();
-        setGuardando(true);
-        setErrores({});
 
-        const datos = new FormData();
-        Object.entries(form).forEach(([key, value]) => datos.append(key, value));
-        fotos.forEach((foto, index) => datos.append(`fotos[${index}]`, foto));
+        const url = esEdicion ? `/habitaciones/${habitacionInicial.id}` : '/habitaciones';
 
-        if (esEdicion) {
-            fotosEliminadas.forEach((id) => datos.append('fotos_eliminar[]', id));
-            datos.append('_method', 'PUT');
+        post(url, {
+            forceFormData: true,
+            preserveState: false,
+            preserveScroll: false,
+            onSuccess: () => {
+                reset();
+                onSuccess?.();
+            },
+            transform: (data) => {
+                const formData = new FormData();
+                Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+                fotos.forEach((foto, index) => formData.append(`fotos[${index}]`, foto));
 
-            router.post(`/habitaciones/${habitacionInicial.id}`, datos, {
-                forceFormData: true,
-                onSuccess: () => {
-                    reset();
-                    setGuardando(false);
-                    onSuccess?.();
-                    router.reload();
-                },
-                onError: (error) => {
-                    setErrores(error || {});
-                    setGuardando(false);
-                },
-            });
-        } else {
-            router.post('/habitaciones', datos, {
-                forceFormData: true,
-                onSuccess: () => {
-                    reset();
-                    setGuardando(false);
-                    onSuccess?.();
-                },
-                onError: (error) => {
-                    setErrores(error || {});
-                    setGuardando(false);
-                },
-            });
-        }
+                if (esEdicion) {
+                    fotosEliminadas.forEach((id) => formData.append('fotos_eliminar[]', id));
+                    formData.append('_method', 'PUT');
+                }
+
+                return formData;
+            },
+        });
     };
 
     const reset = () => {
-        setForm({
-            numero: '',
-            tipo: 'doble',
-            precio_noche: '',
-            capacidad: CAPACIDADES['doble'],
-            estado: 'disponible',
-            descripcion: '',
-            notas: ''
-        });
+        resetForm();
         setFotos([]);
         setPreviews([]);
         setFotosGuardadas([]);
         setFotosEliminadas([]);
-        setErrores({});
     };
 
-    const capacidadFija = CAPACIDADES.hasOwnProperty(form.tipo);
+    const capacidadFija = CAPACIDADES.hasOwnProperty(data.tipo);
 
-    return { form, fotos, previews, fotosGuardadas, errores, guardando, capacidadFija, MAX_FOTOS, esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset};
+    return { form: data, fotos, previews, fotosGuardadas, errores: errors, guardando: processing, capacidadFija, MAX_FOTOS, esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset };
 }

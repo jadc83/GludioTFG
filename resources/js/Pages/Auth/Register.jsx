@@ -86,7 +86,7 @@ export default function Register() {
                             id="numero_documento"
                             name="numero_documento"
                             value={data.numero_documento}
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full font-mono"
                             onChange={(e) => setData('numero_documento', e.target.value)}
                             required
                         />
@@ -115,7 +115,7 @@ export default function Register() {
                             type="tel"
                             name="telefono"
                             value={data.telefono}
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full font-mono"
                             onChange={(e) => setData('telefono', e.target.value)}
                             required
                         />

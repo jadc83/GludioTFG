@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Cliente;
+use App\Models\Habitacion;
+use App\Models\Reserva;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class PanelController extends Controller
+{
+    public function index(Request $request)
+    {
+        $clientes = Cliente::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
+
+        $usuarios = User::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
+
+        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion'])
+            ->status($request->status)
+            ->localizador($request->localizador)
+            ->cliente($request->cliente)
+            ->habitacion($request->habitacion)
+            ->orderBy('check_in', 'desc')
+            ->get();
+
+        return Inertia::render('PanelControl', [
+            'habitaciones'            => Habitacion::with('fotos')->get(),
+            'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
+            'clientes'                => Cliente::orderBy('name')->get(),
+            'users'                   => User::orderBy('name')->get(),
+            'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),
+            'reservas'                => ReservaController::formatear($reservas),
+        ]);
+    }
+}

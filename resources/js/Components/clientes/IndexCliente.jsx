@@ -1,15 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, EyeIcon, PencilIcon, StarIcon } from '@heroicons/react/24/outline';
-import EditCliente from '@/Components/clientes/EditCliente';
-import CreateCliente from '@/Components/clientes/CreateCliente';
+import EditCliente from '@/Components/clientes/formulario/EditCliente';
+import { useClienteControl } from '@/hooks/useClienteControl';
 
-
-export default function IndexCliente({ clientes = [], users = [] }) {
+export default function IndexCliente({ clientes = [], users = [], clientesFiltrados = [] }) {
     const [clienteEditar, setClienteEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
-    const [filtroDocumento, setFiltroDocumento] = useState('todos');
-    const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
+    const { filtros, acciones } = useClienteControl(clientesFiltrados);
 
     const abrirEdicion = (cliente) => {
         setClienteEditar(cliente);
@@ -29,103 +27,62 @@ export default function IndexCliente({ clientes = [], users = [] }) {
             default: return 'badge-neutral';
         }
     };
-    const todosLosRegistros = useMemo(() => {
-        return [
-            ...clientes.map(c => ({ ...c, tipo_usuario: 'cliente' })),
-            ...users.map(u => ({ ...u, tipo_usuario: 'usuario' }))
-        ];
-    }, [clientes, users]);
 
+    const todosLosRegistros = clientesFiltrados;
 
-    const conteos = useMemo(() => ({
-        dni: todosLosRegistros.filter(c => c.tipo_documento === 'dni').length,
-        pasaporte: todosLosRegistros.filter(c => c.tipo_documento === 'pasaporte').length,
-        tie: todosLosRegistros.filter(c => c.tipo_documento === 'tie').length,
-        total: todosLosRegistros.length,
-        registrados: users.length,
-        invitados: clientes.length
-    }), [todosLosRegistros, users.length, clientes.length]);
-
-
-    const registrosFiltrados = useMemo(() => {
-        const busquedaLower = filtroBusqueda.toLowerCase().trim();
-        return todosLosRegistros.filter(registro => {
-            const cumpleDocumento = filtroDocumento === 'todos' || registro.tipo_documento === filtroDocumento;
-            const cumpleBusqueda = busquedaLower === '' || [
-                registro.name,
-                registro.email,
-                registro.numero_documento,
-                registro.telefono
-            ].some(campo => campo && campo.toString().toLowerCase().includes(busquedaLower)
-            );
-            return cumpleDocumento && cumpleBusqueda;
-        });
-    }, [todosLosRegistros, filtroDocumento, filtroBusqueda]);
-
-    const limpiarFiltros = () => { setFiltroDocumento('todos'); setFiltroBusqueda(''); };
-    if (todosLosRegistros.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <InboxIcon className="w-24 h-24 text-gray-300" />
-                <div className="text-center">
-                    <p className="text-gray-600 text-xl font-semibold mb-2">No hay clientes registrados</p>
-                    <p className="text-gray-400">Crea un nuevo cliente para comenzar</p>
-                </div>
-            </div>
-        );
-    }
+    const noHayClientesEnAbsoluto = clientes.length === 0 && users.length === 0;
 
     return (
         <>
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-                    <div className="stats stats-vertical shadow bg-base-100 lg:stats-horizontal">
-                        <div className="stat">
-                            <div className="stat-title">Total</div>
-                            <div className="stat-value text-2xl font-bold text-primary">{conteos.total}</div>
-                        </div>
-
-                        <div className="stat">
-                            <div className="stat-title">Registrados</div>
-                            <div className="stat-value text-primary">{conteos.registrados}</div>
-                            <div className="stat-desc">{conteos.total > 0 ? Math.round((conteos.registrados / conteos.total) * 100) : 0}%</div>
-                        </div>
-
-                        <div className="stat">
-                            <div className="stat-title">Invitados</div>
-                            <div className="stat-value text-success">{conteos.invitados}</div>
-                            <div className="stat-desc">{conteos.total > 0 ? Math.round((conteos.invitados / conteos.total) * 100) : 0}%</div>
-                        </div>
-                    </div>
-                </div>
-                <CreateCliente />
-            </div>
-
-
             <div className="flex flex-col lg:flex-row gap-4 items-center mb-6">
                 <div className="flex-1 relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input type="text" placeholder="Nombre, email, documento o teléfono..." className="input input-bordered w-full pl-11"
-                        value={filtroBusqueda} onChange={(e) => setFiltroBusqueda(e.target.value)} />
+                        value={filtros.busqueda} onChange={(e) => filtros.setBusqueda(e.target.value)} />
                 </div>
-                <select className="select select-bordered w-full lg:w-auto max-w-xs" value={filtroDocumento} onChange={(e) => setFiltroDocumento(e.target.value)}>
+                <select className="select select-bordered w-full lg:w-auto max-w-xs" value={filtros.documento} onChange={(e) => filtros.setDocumento(e.target.value)}>
                     <option value="todos">Todos los documentos</option>
                     <option value="dni">DNI</option>
                     <option value="pasaporte">Pasaporte</option>
                     <option value="tie">TIE</option>
                 </select>
-                <button onClick={limpiarFiltros} className="btn btn-outline btn-sm">
-                    <FunnelIcon className="w-4 h-4" />
-                    Limpiar
+                <button
+                    type="button"
+                    onClick={acciones.limpiarFiltros}
+                    className="btn btn-outline btn-info hover:btn-info"
+                >
+                    <FunnelIcon className="w-4 h-4 mr-2" />
+                    Limpiar filtros
                 </button>
             </div>
 
             <div className="overflow-x-auto">
                 <div className="text-sm text-gray-500 mb-4">
-                    Mostrando {registrosFiltrados.length} de {todosLosRegistros.length} clientes
+                    Mostrando {todosLosRegistros.length} cliente{todosLosRegistros.length !== 1 ? 's' : ''}
                 </div>
-                <table className="table table-zebra w-full">
+
+
+                {noHayClientesEnAbsoluto ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <InboxIcon className="w-24 h-24 text-gray-300" />
+                        <div className="text-center">
+                            <p className="text-gray-600 text-xl font-semibold mb-2">No hay clientes registrados</p>
+                            <p className="text-gray-400">Crea un nuevo cliente para comenzar</p>
+                        </div>
+                    </div>
+                ) : todosLosRegistros.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <InboxIcon className="w-24 h-24 text-gray-300" />
+                        <div className="text-center">
+                            <p className="text-gray-600 text-xl font-semibold mb-2">No se encontraron clientes</p>
+                            <p className="text-gray-400">Intenta cambiar los filtros de búsqueda</p>
+                            <button onClick={acciones.limpiarFiltros} className="btn btn-primary btn-sm mt-4">
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <table className="table table-zebra w-full">
                     <thead>
                         <tr>
                             <th>Nombre</th>
@@ -139,7 +96,7 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {registrosFiltrados.map((cliente) => (
+                        {todosLosRegistros.map((cliente) => (
                             <tr key={`${cliente.tipo_usuario}-${cliente.id}`} className="hover">
                                 <td className="font-semibold">
                                     <div className="flex items-center gap-2">
@@ -188,8 +145,8 @@ export default function IndexCliente({ clientes = [], users = [] }) {
                         ))}
                     </tbody>
                 </table>
+                )}
             </div>
-
 
             <EditCliente cliente={clienteEditar} abierto={drawerAbierto} onCerrar={cerrarEdicion} />
         </>

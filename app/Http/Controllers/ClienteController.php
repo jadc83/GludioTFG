@@ -5,15 +5,32 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class ClienteController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $clientes = Cliente::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
+
+        $clientes->each(function($cliente) {
+            $cliente->tipo_usuario = 'cliente';
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json($clientes);
+        }
+
+        return [
+            'clientes' => $clientes
+        ];
     }
 
     /**
@@ -33,11 +50,8 @@ class ClienteController extends Controller
         $cliente = Cliente::create($validado);
         $cliente->save();
 
-        if ($request->header('X-Inertia')) {
-            return redirect()->back();
-        }
+        return redirect()->route('panel')->with('success', 'Cliente creado.');
 
-        return redirect()->route('clientes.index');
     }
 
     /**
@@ -64,11 +78,8 @@ class ClienteController extends Controller
         $validado = $request->validated();
         $cliente->update($validado);
 
-        if ($request->header('X-Inertia')) {
-            return redirect()->back();
-        }
+        return redirect()->route('panel')->with('success', 'Cliente actualizado.');
 
-        return redirect()->route('clientes.index');
     }
 
 
@@ -79,4 +90,39 @@ class ClienteController extends Controller
     {
         //
     }
+
+    public function buscar(Request $request)
+    {
+        $query = $request->get('query');
+
+        if (strlen($query) < 1) {
+            return response()->json([]);
+        }
+
+        $campos = ['id', 'name', 'email', 'numero_documento', 'telefono', 'nacionalidad', 'direccion', 'tipo_documento'];
+
+        $buscarEn = function($modelo) use ($query, $campos) {
+
+            return $modelo::where(function($q) use ($query) {
+                $q->where('name', 'ILIKE', "%{$query}%")
+                  ->orWhere('numero_documento', 'ILIKE', "%{$query}%")
+                  ->orWhere('email', 'ILIKE', "%{$query}%")
+                  ->orWhere('telefono', 'ILIKE', "%{$query}%");
+            })->select($campos)->limit(5)->get();
+        };
+
+        $usuarios = $buscarEn(User::class)->map(fn($u) => array_merge(
+            $u->toArray(),
+            ['tipo_usuario' => 'usuario', 'nombre_completo' => $u->name . ' ⭐']
+        ));
+
+        $clientes = $buscarEn(Cliente::class)->map(fn($c) => array_merge(
+            $c->toArray(),
+            ['tipo_usuario' => 'cliente', 'nombre_completo' => $c->name]
+        ));
+
+        return response()->json($usuarios->concat($clientes)->take(10));
+    }
+
+
 }

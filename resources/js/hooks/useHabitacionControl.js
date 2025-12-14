@@ -1,4 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { router } from '@inertiajs/react';
+
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+}
 
 export function useHabitacionControl(habitaciones = []) {
     const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -7,53 +24,21 @@ export function useHabitacionControl(habitaciones = []) {
     const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
     const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
+    const debouncedBusqueda = useDebounce(filtroBusqueda, 500);
 
-    const conteos = useMemo(() => {
-        return {
-            disponible: habitaciones.filter(habitacion => habitacion.estado === 'disponible').length,
-            ocupada: habitaciones.filter(habitacion => habitacion.estado === 'ocupada').length,
-            mantenimiento: habitaciones.filter(habitacion => habitacion.estado === 'mantenimiento').length,
-            limpieza: habitaciones.filter(habitacion => habitacion.estado === 'limpieza').length,
-            total: habitaciones.length
-        };}, [habitaciones]);
+    useEffect(() => {
+        const filtrosActivos = {
+            estado: filtroEstado !== 'todos' ? filtroEstado : undefined,
+            tipo: filtroTipo !== 'todos' ? filtroTipo : undefined,
+            capacidad: filtroCapacidad !== 'todos' ? filtroCapacidad : undefined,
+            precio_min: filtroPrecioMin || undefined,
+            precio_max: filtroPrecioMax || undefined,
+            busqueda: debouncedBusqueda || undefined
+        };
 
-    const dataChart = useMemo(() => {
-        return [{
-            name: 'Total',
-            disponible: conteos.disponible,
-            ocupada: conteos.ocupada,
-            mantenimiento: conteos.mantenimiento,
-            limpieza: conteos.limpieza,
-        }];}, [conteos]);
-
-    const habitacionesFiltradas = useMemo(() => {
-        const busquedaLower = filtroBusqueda.toLowerCase().trim();
-
-        return habitaciones.filter(habitacion => {
-            const cumpleEstado = filtroEstado === 'todos' || habitacion.estado === filtroEstado;
-            const cumpleTipo = filtroTipo === 'todos' || habitacion.tipo === filtroTipo;
-            const cumpleCapacidad = filtroCapacidad === 'todos' || habitacion.capacidad === parseInt(filtroCapacidad);
-
-            const precioMin = filtroPrecioMin === '' ? 0 : parseFloat(filtroPrecioMin);
-            const precioMax = filtroPrecioMax === '' ? Infinity : parseFloat(filtroPrecioMax);
-            const cumplePrecio = habitacion.precio_noche >= precioMin && habitacion.precio_noche <= precioMax;
-
-            const cumpleBusqueda = busquedaLower === '' || [
-                habitacion.numero?.toString(),
-                habitacion.tipo,
-                habitacion.descripcion
-            ].some(campo =>
-                campo &&
-                campo.toString().toLowerCase().includes(busquedaLower)
-            );
-
-            return cumpleEstado && cumpleTipo && cumpleCapacidad && cumplePrecio && cumpleBusqueda;
-                    });}, [habitaciones, filtroEstado, filtroTipo, filtroCapacidad, filtroPrecioMin, filtroPrecioMax, filtroBusqueda]);
-
-    const capacidadesDisponibles = useMemo(() => {
-        const caps = [...new Set(habitaciones.map(h => h.capacidad))];
-        return caps.sort((a, b) => a - b);
-    }, [habitaciones]);
+        router.get(route('panel'), filtrosActivos, { preserveState: true, preserveScroll: true, only: ['habitaciones'], replace: true
+        });
+    }, [filtroEstado, filtroTipo, filtroCapacidad, filtroPrecioMin, filtroPrecioMax, debouncedBusqueda]);
 
     const limpiarFiltros = () => {
         setFiltroEstado('todos');
@@ -62,6 +47,12 @@ export function useHabitacionControl(habitaciones = []) {
         setFiltroPrecioMin('');
         setFiltroPrecioMax('');
         setFiltroBusqueda('');
+
+        router.get(route('panel'), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['habitaciones']
+        });
     };
 
     return {
@@ -71,7 +62,14 @@ export function useHabitacionControl(habitaciones = []) {
             capacidad: filtroCapacidad, setCapacidad: setFiltroCapacidad,
             precioMin: filtroPrecioMin, setPrecioMin: setFiltroPrecioMin,
             precioMax: filtroPrecioMax, setPrecioMax: setFiltroPrecioMax,
-            busqueda: filtroBusqueda,  setBusqueda: setFiltroBusqueda,
-        }, datos: { habitacionesFiltradas, capacidadesDisponibles, conteos, dataChart }, acciones: { limpiarFiltros }
+            busqueda: filtroBusqueda, setBusqueda: setFiltroBusqueda,
+        },
+        datos: {
+            habitacionesFiltradas: habitaciones,
+            capacidadesDisponibles: [2, 3, 4, 5, 6]
+        },
+        acciones: {
+            limpiarFiltros
+        }
     };
 }

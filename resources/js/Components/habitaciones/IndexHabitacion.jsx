@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import EditHabitacion from '@/Components/habitaciones/EditHabitacion';
+import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
 import { InboxIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
@@ -51,7 +51,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                     <div className="card-body">
                         <div className="flex items-start justify-between mb-2">
                             <div>
-                                <h2 className="font-bold text-sm">Habitación {habitacion.numero}</h2>
+                                <h2 className="font-bold text-sm">Habitación <span className="font-mono">{habitacion.numero}</span></h2>
                                 <p className="text-xs text-gray-600 capitalize mt-1">{habitacion.tipo}</p>
                             </div>
                             <div className={`badge ${obtenerColorEstado(habitacion.estado)} badge-xs capitalize font-medium`}>
@@ -68,7 +68,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">Precio/noche:</span>
-                                <span className="text-base font-bold text-primary">{habitacion.precio_noche}€</span>
+                                <span className="text-base font-bold text-primary font-mono">{habitacion.precio_noche}€</span>
                             </div>
                         </div>
 

@@ -65,6 +65,8 @@ export function useClienteForm(cliente = null, onSuccess) {
         }
 
         router[method](url, form, {
+            preserveState: false,
+            preserveScroll: false,
             onSuccess: () => {
                 setGuardando(false);
                 onSuccess();
