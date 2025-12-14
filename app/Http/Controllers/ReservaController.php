@@ -46,18 +46,8 @@ class ReservaController extends Controller
 
         $reservas = $query->orderBy('check_in', 'desc')->get();
 
-        $estadisticas = [
-            'confirmado' => Reserva::where('status', 'confirmado')->count(),
-            'pendiente' => Reserva::where('status', 'pendiente')->count(),
-            'cancelado' => Reserva::where('status', 'cancelado')->count(),
-            'checked_in' => Reserva::where('status', 'checked_in')->count(),
-            'checked_out' => Reserva::where('status', 'checked_out')->count(),
-            'total' => Reserva::count(),
-            'confirmados' => Reserva::where('status', 'confirmado')->count(),
-            'ingresos' => number_format(Reserva::sum('precio_total'), 2, '.', '')
-        ];
-
         $reservasJson = $reservas->map(function ($reserva) {
+
             return [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -68,20 +58,17 @@ class ReservaController extends Controller
                 'pago' => $reserva->pago,
                 'notas' => $reserva->notas,
                 'cliente_name' => $reserva->reservable->name ?? 'Sin cliente',
-                'habitacion_numero' => $reserva->habitaciones->count()
-                    ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ')
-                    : 'Sin asignar',
+                'habitacion_numero' => $reserva->habitaciones->count() ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ') : 'Sin asignar',
             ];
+
         });
 
         if ($request->wantsJson()) {
             return response()->json($reservasJson);
         }
 
-        return [
-            'reservas' => $reservasJson,
-            'estadisticas' => $estadisticas
-        ];
+        return [ 'reservas' => $reservasJson ];
+
     }
 
     /**
@@ -104,19 +91,18 @@ class ReservaController extends Controller
 
             if ($reservable_id && $tipo_usuario) {
                 if ($tipo_usuario === 'usuario') {
+
                     $user = User::find($reservable_id);
 
-                    if (!$user) {
-                        return back()->withErrors(['error' => 'Usuario no encontrado']);
-                    }
+                    if (!$user) { return back()->withErrors(['error' => 'Usuario no encontrado']); }
 
                     $reservable_type = 'App\\Models\\User';
+
                 } else {
+
                     $cliente = Cliente::find($reservable_id);
 
-                    if (!$cliente) {
-                        return back()->withErrors(['error' => 'Cliente no encontrado']);
-                    }
+                    if (!$cliente) { return back()->withErrors(['error' => 'Cliente no encontrado']); }
 
                     $reservable_type = 'App\\Models\\Cliente';
                 }
@@ -126,17 +112,24 @@ class ReservaController extends Controller
                 $cliente = Cliente::find($reservable_id);
 
                 if ($cliente) {
+
                     $reservable_type = 'App\\Models\\Cliente';
+
                 } else {
+
                     $user = User::find($reservable_id);
 
                     if (!$user) {
+
                         return back()->withErrors(['error' => 'Persona no encontrada']);
+
                     }
+
                     $reservable_type = 'App\\Models\\User';
                 }
             }
             else if ($request->filled('name')) {
+
                 $cliente = Cliente::create([
                     'name' => $request->name,
                     'email' => $request->email ?? null,
@@ -146,8 +139,10 @@ class ReservaController extends Controller
                     'nacionalidad' => $request->nacionalidad ?? null,
                     'direccion' => $request->direccion ?? 'Sin dirección',
                 ]);
+
                 $reservable_id = $cliente->id;
                 $reservable_type = 'App\\Models\\Cliente';
+
             } else {
 
                 return back()->withErrors(['error' => 'Persona requerida']);
@@ -155,7 +150,9 @@ class ReservaController extends Controller
             }
 
             do {
+
                 $localizador = 'R' . strtoupper(Str::random(6));
+
             } while (Reserva::where('localizador', $localizador)->exists());
 
             $preciosHabitaciones = [];

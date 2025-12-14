@@ -1,54 +1,16 @@
 import IndexHabitacion from "./IndexHabitacion";
-import PrimaryButton from "../PrimaryButton";
-import LeyendaEstados from "../LeyendaEstados";
 import { useHabitacionControl } from "@/hooks/useHabitacionControl";
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Bar } from 'recharts';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 
-export default function TabHabitaciones({ habitaciones = [], estadisticas = {} }) {
+export default function TabHabitaciones({ habitaciones = [] }) {
 
-    const { filtros, datos, acciones } = useHabitacionControl(habitaciones, estadisticas);
+    const { filtros, datos, acciones } = useHabitacionControl(habitaciones);
 
     return (
         <div className="p-6">
-            <div className="bg-base-100 p-6 rounded-lg mb-6 shadow-sm">
-                <LeyendaEstados />
-                <div style={{ width: '100%', height: 140 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={datos.dataChart} layout="vertical" margin={{ top: 30, right: 20, left: 20, bottom: 5 }}>
-                            <defs>
-                                <linearGradient id="gradDisponible" x1="0" x2="1">
-                                    <stop offset="0%" stopColor="#22c55e" stopOpacity="1" />
-                                    <stop offset="100%" stopColor="#16a34a" stopOpacity="1" />
-                                </linearGradient>
-                                <linearGradient id="gradOcupada" x1="0" x2="1">
-                                    <stop offset="0%" stopColor="#f87171" stopOpacity="1" />
-                                    <stop offset="100%" stopColor="#dc2626" stopOpacity="1" />
-                                </linearGradient>
-                                <linearGradient id="gradMantenimiento" x1="0" x2="1">
-                                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
-                                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="1" />
-                                </linearGradient>
-                                <linearGradient id="gradLimpieza" x1="0" x2="1">
-                                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="1" />
-                                    <stop offset="100%" stopColor="#0284c7" stopOpacity="1" />
-                                </linearGradient>
-                            </defs>
-                            <XAxis type="number" domain={[0, datos.conteos.total]} axisLine={false} tick={false} tickLine={false} />
-                            <YAxis type="category" dataKey="name" axisLine={false} tick={false} tickLine={false} />
-                            <Bar dataKey="disponible" stackId="a" fill="url(#gradDisponible)" />
-                            <Bar dataKey="ocupada" stackId="a" fill="url(#gradOcupada)" />
-                            <Bar dataKey="mantenimiento" stackId="a" fill="url(#gradMantenimiento)" />
-                            <Bar dataKey="limpieza" stackId="a" fill="url(#gradLimpieza)" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
             <div className="space-y-4 mb-6">
                 <div className="form-control">
-                    <label className="label">
-                        <span className="label-text font-medium">Buscar</span>
-                    </label>
+                    <label className="label">Buscar</label>
                     <div className="flex items-center gap-3 p-3 bg-white max-w-md mx-auto mb-6">
                         <div className="w-10 h-10 bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,11 +29,9 @@ export default function TabHabitaciones({ habitaciones = [], estadisticas = {} }
 
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-medium">Estado</span>
-                        </label>
+                        <label className="label">Estado</label>
                         <select className="select select-bordered w-full" value={filtros.estado} onChange={(e) => filtros.setEstado(e.target.value)}>
                             <option value="todos">Todos</option>
                             <option value="disponible">Disponibles</option>
@@ -94,9 +54,7 @@ export default function TabHabitaciones({ habitaciones = [], estadisticas = {} }
                     </div>
 
                     <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-medium">Capacidad</span>
-                        </label>
+                        <label className="label">Capacidad</label>
                         <select className="select select-bordered w-full" value={filtros.capacidad} onChange={(e) => filtros.setCapacidad(e.target.value)}>
                             <option value="todos">Todas</option>
                             {datos.capacidadesDisponibles.map(cap => (<option key={cap} value={cap}>{cap} persona{cap > 1 ? 's' : ''}
@@ -105,32 +63,28 @@ export default function TabHabitaciones({ habitaciones = [], estadisticas = {} }
                     </div>
 
                     <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-medium">Precio</span>
-                        </label>
+                        <label className="label">Precio</label>
                         <div className="flex gap-2">
-                            <input type="number" placeholder="Mín" className="input input-bordered input-sm w-full" value={filtros.precioMin || ''}
+                            <input type="number" placeholder="Mín" className="input input-bordered w-full" value={filtros.precioMin || ''}
                                 onChange={(e) => filtros.setPrecioMin(e.target.value)} />
-                            <input type="number" placeholder="Máx" className="input input-bordered input-sm w-full" value={filtros.precioMax || ''}
+                            <input type="number" placeholder="Máx" className="input input-bordered w-full" value={filtros.precioMax || ''}
                                 onChange={(e) => filtros.setPrecioMax(e.target.value)} />
                         </div>
+                    </div>
+
+                    <div className="self-end">
+                        <button type="button" onClick={acciones.limpiarFiltros} className="btn btn-outline btn-info w-full hover:btn-info">
+                            <FunnelIcon className="w-4 h-4 mr-2" /> Limpiar filtros
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                <div className="text-sm text-gray-500">
-                    Mostrando <span className="font-bold">{datos.habitacionesFiltradas.length}</span> habitaciones
-                    {datos.habitacionesFiltradas.length !== habitaciones.length &&
-                        <span> (filtradas de {habitaciones.length} totales)</span>
-                    }
+            {acciones.hayFiltrosActivos && (
+                <div className="flex justify-end mb-4">
+                        {datos.habitacionesFiltradas.length} resultados encontrados
                 </div>
-                <div className="flex gap-2">
-                    <PrimaryButton onClick={acciones.limpiarFiltros}>
-                        Limpiar filtros
-                    </PrimaryButton>
-                </div>
-            </div>
+            )}
 
             <IndexHabitacion habitaciones={datos.habitacionesFiltradas} />
         </div>

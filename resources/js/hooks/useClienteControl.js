@@ -16,7 +16,7 @@ function useDebounce(value, delay) {
 
     return debouncedValue;
 }
-export const useClienteControl = (clientes = [], estadisticas = {}) => {
+export const useClienteControl = (clientes = []) => {
     const [filtroDocumento, setFiltroDocumento] = useState('todos');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
@@ -29,21 +29,10 @@ export const useClienteControl = (clientes = [], estadisticas = {}) => {
         }, {
             preserveState: true,
             preserveScroll: true,
-            only: ['clientes', 'clientesFiltrados', 'clientesEstadisticas'],
+            only: ['clientes', 'clientesFiltrados'],
             replace: true
         });
     }, [filtroDocumento, debouncedBusqueda]);
-
-    const aplicarFiltros = () => {
-        router.get(route('panel'), {
-            tipo_documento: filtroDocumento !== 'todos' ? filtroDocumento : undefined,
-            busqueda: filtroBusqueda || undefined
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['clientes', 'clientesFiltrados', 'clientesEstadisticas']
-        });
-    };
 
     const limpiarFiltros = () => {
         setFiltroDocumento('todos');
@@ -52,7 +41,7 @@ export const useClienteControl = (clientes = [], estadisticas = {}) => {
         router.get(route('panel'), {}, {
             preserveState: true,
             preserveScroll: true,
-            only: ['clientes', 'clientesFiltrados', 'clientesEstadisticas']
+            only: ['clientes', 'clientesFiltrados']
         });
     };
 
@@ -64,11 +53,9 @@ export const useClienteControl = (clientes = [], estadisticas = {}) => {
             setBusqueda: setFiltroBusqueda
         },
         datos: {
-            clientesFiltrados: clientes,
-            estadisticas
+            clientesFiltrados: clientes
         },
         acciones: {
-            aplicarFiltros,
             limpiarFiltros
         }
     };

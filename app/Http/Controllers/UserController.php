@@ -73,13 +73,6 @@ class UserController extends Controller
             return response()->json($usuarios);
         }
 
-        $estadisticas = [
-            'dni'       => User::where('tipo_documento', 'dni')->count(),
-            'pasaporte' => User::where('tipo_documento', 'pasaporte')->count(),
-            'tie'       => User::where('tipo_documento', 'tie')->count(),
-            'total'     => User::count(),
-        ];
-
-        return ['usuarios' => $usuarios, 'estadisticas' => $estadisticas,];
+        return ['usuarios' => $usuarios];
     }
 }

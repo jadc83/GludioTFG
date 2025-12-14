@@ -50,28 +50,12 @@ class HabitacionController extends Controller
 
         $habitaciones = $query->orderBy('numero')->get();
 
-        $estadisticas = Cache::remember('habitaciones.conteos', 60, function () {
-            return [
-                'disponible' => Habitacion::where('estado', 'disponible')->count(),
-                'ocupada' => Habitacion::where('estado', 'ocupada')->count(),
-                'mantenimiento' => Habitacion::where('estado', 'mantenimiento')->count(),
-                'limpieza' => Habitacion::where('estado', 'limpieza')->count(),
-                'total' => Habitacion::count(),
-                'capacidades_disponibles' => Habitacion::distinct()
-                    ->orderBy('capacidad')
-                    ->pluck('capacidad')
-                    ->values()
-                    ->toArray()
-            ];
-        });
-
         if ($request->wantsJson()) {
             return response()->json(self::formatear($habitaciones));
         }
 
         return [
-            'habitaciones' => self::formatear($habitaciones),
-            'estadisticas' => $estadisticas
+            'habitaciones' => self::formatear($habitaciones)
         ];
     }
 
@@ -211,9 +195,7 @@ class HabitacionController extends Controller
 
         if ($checkIn && $checkOut) {
             $habitaciones->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                $query->where('check_in', '<', $checkOut)
-                      ->where('check_out', '>', $checkIn);
-            });
+                $query->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn);});
         }
 
         $habitaciones = $habitaciones->orderBy('numero')->get();

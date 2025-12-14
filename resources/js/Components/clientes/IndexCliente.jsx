@@ -4,11 +4,11 @@ import EditCliente from '@/Components/clientes/formulario/EditCliente';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import { useClienteControl } from '@/hooks/useClienteControl';
 
-export default function IndexCliente({ clientes = [], users = [], estadisticas = {}, clientesFiltrados = [] }) {
+export default function IndexCliente({ clientes = [], users = [], clientesFiltrados = [] }) {
     const [clienteEditar, setClienteEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
 
-    const { filtros, acciones } = useClienteControl(clientesFiltrados, estadisticas);
+    const { filtros, acciones } = useClienteControl(clientesFiltrados);
 
     const abrirEdicion = (cliente) => {
         setClienteEditar(cliente);
@@ -34,32 +34,11 @@ export default function IndexCliente({ clientes = [], users = [], estadisticas =
         ...users.map(u => ({ ...u, tipo_usuario: 'usuario' }))
     ];
 
-    const noHayClientesEnAbsoluto = estadisticas.total === 0;
+    const noHayClientesEnAbsoluto = clientes.length === 0 && users.length === 0;
 
     return (
         <>
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-                    <div className="stats stats-vertical shadow bg-base-100 lg:stats-horizontal">
-                        <div className="stat">
-                            <div className="stat-title">Total</div>
-                            <div className="stat-value text-2xl font-bold text-primary">{estadisticas.total || 0}</div>
-                        </div>
-
-                        <div className="stat">
-                            <div className="stat-title">Registrados</div>
-                            <div className="stat-value text-primary">{estadisticas.registrados || 0}</div>
-                            <div className="stat-desc">{estadisticas.total > 0 ? Math.round((estadisticas.registrados / estadisticas.total) * 100) : 0}%</div>
-                        </div>
-
-                        <div className="stat">
-                            <div className="stat-title">Invitados</div>
-                            <div className="stat-value text-success">{estadisticas.invitados || 0}</div>
-                            <div className="stat-desc">{estadisticas.total > 0 ? Math.round((estadisticas.invitados / estadisticas.total) * 100) : 0}%</div>
-                        </div>
-                    </div>
-                </div>
                 <CreateCliente />
             </div>
 
@@ -76,9 +55,13 @@ export default function IndexCliente({ clientes = [], users = [], estadisticas =
                     <option value="pasaporte">Pasaporte</option>
                     <option value="tie">TIE</option>
                 </select>
-                <button onClick={acciones.limpiarFiltros} className="btn btn-outline btn-sm">
-                    <FunnelIcon className="w-4 h-4" />
-                    Limpiar
+                <button
+                    type="button"
+                    onClick={acciones.limpiarFiltros}
+                    className="btn btn-outline btn-info hover:btn-info"
+                >
+                    <FunnelIcon className="w-4 h-4 mr-2" />
+                    Limpiar filtros
                 </button>
             </div>
 
@@ -87,7 +70,7 @@ export default function IndexCliente({ clientes = [], users = [], estadisticas =
                     Mostrando {todosLosRegistros.length} cliente{todosLosRegistros.length !== 1 ? 's' : ''}
                 </div>
 
-                
+
                 {noHayClientesEnAbsoluto ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <InboxIcon className="w-24 h-24 text-gray-300" />

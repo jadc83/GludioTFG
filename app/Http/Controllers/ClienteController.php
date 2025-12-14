@@ -41,13 +41,7 @@ class ClienteController extends Controller
         }
 
         return [
-            'clientes' => $clientes,
-            'estadisticas' => [
-                'dni' => Cliente::where('tipo_documento', 'dni')->count(),
-                'pasaporte' => Cliente::where('tipo_documento', 'pasaporte')->count(),
-                'tie' => Cliente::where('tipo_documento', 'tie')->count(),
-                'total' => Cliente::count(),
-            ]
+            'clientes' => $clientes
         ];
     }
 
