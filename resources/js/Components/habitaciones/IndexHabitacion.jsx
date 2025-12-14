@@ -51,7 +51,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                     <div className="card-body">
                         <div className="flex items-start justify-between mb-2">
                             <div>
-                                <h2 className="font-bold text-sm">Habitación {habitacion.numero}</h2>
+                                <h2 className="font-bold text-sm">Habitación <span className="font-mono">{habitacion.numero}</span></h2>
                                 <p className="text-xs text-gray-600 capitalize mt-1">{habitacion.tipo}</p>
                             </div>
                             <div className={`badge ${obtenerColorEstado(habitacion.estado)} badge-xs capitalize font-medium`}>

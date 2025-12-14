@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import { FunnelIcon, InboxIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, InboxIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
 import '@/../css/createReserva.css';
 
 export default function IndexReserva({ reservas = [] }) {
@@ -47,28 +47,19 @@ export default function IndexReserva({ reservas = [] }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div>
                     <label className="label">Localizador</label>
-                    <input type="text"
-                        placeholder="CLI58C95..."
-                        value={filtros.localizador}
-                        onChange={(e) => actualizarFiltro('localizador', e.target.value)}
-                        className="input input-bordered w-full" />
+                    <input type="text" placeholder="CLI58C95..." value={filtros.localizador} onChange={(e) => actualizarFiltro('localizador', e.target.value)}
+                        className="input input-bordered w-full font-mono" />
                 </div>
 
                 <div>
                     <label className="label">Cliente</label>
-                    <input type="text"
-                        placeholder="Juan Pérez..."
-                        value={filtros.cliente}
-                        onChange={(e) => actualizarFiltro('cliente', e.target.value)}
+                    <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)}
                         className="input input-bordered w-full"/>
                 </div>
 
                 <div>
                     <label className="label">Habitación</label>
-                    <input type="text"
-                        placeholder="101, 102..."
-                        value={filtros.habitacion}
-                        onChange={(e) => actualizarFiltro('habitacion', e.target.value)}
+                    <input type="text" placeholder="101, 102..." value={filtros.habitacion} onChange={(e) => actualizarFiltro('habitacion', e.target.value)}
                         className="input input-bordered w-full" />
                 </div>
 
@@ -131,7 +122,7 @@ export default function IndexReserva({ reservas = [] }) {
                             {reservas.map((reserva) => (
                             <tr key={reserva.id} className="hover">
 
-                                <td className="font-mono font-semibold">
+                                <td className="font-mono font-semibold tracking-wider">
                                     {reserva.localizador}
                                 </td>
 
@@ -180,11 +171,9 @@ export default function IndexReserva({ reservas = [] }) {
 
                                 <td className="text-center">
                                     <div className="acciones-celda">
-
-                                        <button className="btn btn-ghost btn-xs" title="Ver detalles">
-                                            <EyeIcon className="w-4 h-4" />
+                                        <button className="btn btn-ghost btn-xs" title="Editar reserva" onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
+                                            <PencilIcon className="w-4 h-4" />
                                         </button>
-
                                     </div>
                                 </td>
                             </tr>

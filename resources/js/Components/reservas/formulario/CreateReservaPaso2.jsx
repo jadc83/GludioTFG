@@ -22,10 +22,10 @@ export default function CreateReservaPaso2({ habitaciones, formHabitaciones, gua
                 <Checkbox checked={isSelected} onChange={() => toggleHabitacion(habitacion.id)} />
                 <div className="flex-1 min-w-0">
                     <div className="font-bold text-gray-800">
-                        Hab. {habitacion.numero}
+                        Hab. <span className="font-mono">{habitacion.numero}</span>
                         <span className="text-xs font-normal opacity-70 ml-2">({habitacion.tipo})</span>
                     </div>
-                    <div className="text-sm text-gray-600">Capacidad: {habitacion.capacidad} pax</div>
+                    <div className="text-sm text-gray-600">Capacidad: <span className="font-mono">{habitacion.capacidad}</span> pax</div>
                 </div>
                 <div className="text-right">
                     <div className="font-bold text-lg text-primary font-mono">€{habitacion.precio_noche}</div>

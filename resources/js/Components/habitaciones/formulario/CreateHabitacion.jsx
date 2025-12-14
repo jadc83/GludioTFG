@@ -48,7 +48,7 @@ export default function CreateHabitacion() {
 
                         <div className="rejillaFormulario">
                             <Campo id="numero" label="Número" type="text" value={form.numero} onChange={cambiar}
-                                error={errores.numero} required placeholder="Ej: 101"/>
+                                error={errores.numero} required placeholder="Ej: 101" classNameExtra="font-mono"/>
 
                             <Campo id="tipo" label="Tipo" as="select" value={form.tipo} onChange={cambiar} error={errores.tipo}>
                                 <option value="doble">Doble</option>
@@ -57,10 +57,10 @@ export default function CreateHabitacion() {
                             </Campo>
 
                             <Campo id="precio_noche" label="Precio €" type="number" step="0.01" value={form.precio_noche} onChange={cambiar}
-                                error={errores.precio_noche} required />
+                                error={errores.precio_noche} required classNameExtra="font-mono" />
 
                             <Campo id="capacidad" label="Capacidad" type="number" min="1" value={form.capacidad} onChange={cambiar}
-                                error={errores.capacidad} readOnly={capacidadFija} classNameExtra={capacidadFija ? 'soloLectura' : ''}/>
+                                error={errores.capacidad} readOnly={capacidadFija} classNameExtra={capacidadFija ? 'soloLectura font-mono' : 'font-mono'}/>
                         </div>
 
                         <Campo id="estado" label="Estado" as="select" value={form.estado} onChange={cambiar} error={errores.estado}>

@@ -23,7 +23,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             <div className="campo">
                                 <label className="campo-label" htmlFor="numero"><span className="campo-label-text">Número</span></label>
                                 <input id="numero" name="numero" type="text" value={form.numero} onChange={cambiar} placeholder="Ej: 101"
-                                    className={`campo-input ${errores.numero ? 'error' : ''}`} required/>
+                                    className={`campo-input font-mono ${errores.numero ? 'error' : ''}`} required/>
                                 {errores.numero && <span className="campo-error">{errores.numero[0]}</span>}
                             </div>
 
@@ -41,14 +41,14 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             <div className="campo">
                                 <label className="campo-label" htmlFor="precio_noche"><span className="campo-label-text">Precio (€)</span></label>
                                 <input id="precio_noche" name="precio_noche" type="number" step="0.01" value={form.precio_noche}
-                                    onChange={cambiar} className={`campo-input ${errores.precio_noche ? 'error' : ''}`} required/>
+                                    onChange={cambiar} className={`campo-input font-mono ${errores.precio_noche ? 'error' : ''}`} required/>
                                 {errores.precio_noche && <span className="campo-error">{errores.precio_noche[0]}</span>}
                             </div>
 
                             <div className="campo">
                                 <label className="campo-label" htmlFor="capacidad"><span className="campo-label-text">Capacidad</span></label>
                                 <input id="capacidad" name="capacidad" type="number" min="1" value={form.capacidad}
-                                    onChange={cambiar} className={`campo-input ${errores.capacidad ? 'error' : ''} ${capacidadFija ? 'readonly' : ''}`}
+                                    onChange={cambiar} className={`campo-input font-mono ${errores.capacidad ? 'error' : ''} ${capacidadFija ? 'readonly' : ''}`}
                                     readOnly={capacidadFija} required />
                                 {errores.capacidad && <span className="campo-error">{errores.capacidad[0]}</span>}
                             </div>

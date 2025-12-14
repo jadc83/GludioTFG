@@ -23,7 +23,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             <Campo id="email" label="Email" type="email" value={form.email || ''} onChange={cambiar} error={errores.email} required />
                         </div>
 
-                        <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono || ''} onChange={cambiar} error={errores.telefono} />
+                        <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono || ''} onChange={cambiar} error={errores.telefono} classNameExtra="font-mono" />
 
                         <div className="form-grid">
                             <Campo id="tipo_documento" label="Tipo Documento" as="select" value={form.tipo_documento || ''} onChange={cambiar} error={errores.tipo_documento} required>
@@ -32,7 +32,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                                 <option value="pasaporte">Pasaporte</option>
                                 <option value="tie">TIE</option>
                             </Campo>
-                            <Campo id="numero_documento" label="Número Documento" value={form.numero_documento || ''} onChange={cambiar} error={errores.numero_documento} required />
+                            <Campo id="numero_documento" label="Número Documento" value={form.numero_documento || ''} onChange={cambiar} error={errores.numero_documento} required classNameExtra="font-mono" />
                         </div>
 
                         <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad || ''} onChange={cambiar} error={errores.nacionalidad} />

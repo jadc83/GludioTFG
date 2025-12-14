@@ -9,6 +9,7 @@ use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
 use App\Models\Reserva;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -200,9 +201,6 @@ class ReservaController extends Controller
         return response()->json($users);
     }
 
-    /**
-     * Obtiene habitaciones disponibles para el rango de fechas especificado
-     */
     public function habitacionesDisponibles(Request $request)
     {
         $checkIn = $request->check_in;
@@ -244,8 +242,116 @@ class ReservaController extends Controller
     }
 
     public function show(Reserva $reserva) { }
-    public function edit(Reserva $reserva) { }
-    public function update(UpdateReservaRequest $request, Reserva $reserva) { }
+
+    public function edit(Reserva $reserva)
+    {
+        $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
+
+        $reservaData = [
+            'id' => $reserva->id,
+            'localizador' => $reserva->localizador,
+            'check_in' => $reserva->check_in,
+            'check_out' => $reserva->check_out,
+            'precio_total' => $reserva->precio_total,
+            'status' => $reserva->status,
+            'pago' => $reserva->pago,
+            'notas' => $reserva->notas,
+            'cliente' => [
+                'id' => $reserva->reservable->id,
+                'name' => $reserva->reservable->name,
+                'email' => $reserva->reservable->email,
+                'telefono' => $reserva->reservable->telefono ?? null,
+                'numero_documento' => $reserva->reservable->numero_documento ?? null,
+                'tipo_documento' => $reserva->reservable->tipo_documento ?? null,
+            ],
+            'habitaciones' => $reserva->habitaciones->map(function ($hr) {
+                return [
+                    'id' => $hr->habitacion->id,
+                    'numero' => $hr->habitacion->numero,
+                    'tipo' => $hr->habitacion->tipo,
+                    'precio_noche' => $hr->habitacion->precio_noche,
+                    'capacidad' => $hr->habitacion->capacidad,
+                    'precio' => $hr->precio,
+                ];
+            })->values()
+        ];
+
+        $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->toArray();
+
+        // Incluir habitaciones actuales (sin importar estado) + habitaciones disponibles sin conflictos
+        $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'precio_noche', 'capacidad', 'estado')
+            ->where(function($query) use ($reserva, $habitacionesActualesIds) {
+                // Habitaciones actuales de esta reserva (sin filtrar por estado)
+                $query->whereIn('id', $habitacionesActualesIds)
+                    // O habitaciones disponibles sin conflictos de fechas
+                    ->orWhere(function($q) use ($reserva) {
+                        $q->where('estado', 'disponible')
+                          ->whereDoesntHave('reservas', function ($subQ) use ($reserva) {
+                              $subQ->where('reserva_id', '!=', $reserva->id)
+                                   ->where('check_in', '<', $reserva->check_out)
+                                   ->where('check_out', '>', $reserva->check_in);
+                          });
+                    });
+            })
+            ->orderBy('numero')
+            ->get()
+            ->map(function ($hab) use ($habitacionesActualesIds) {
+                return [
+                    'id' => $hab->id,
+                    'numero' => $hab->numero,
+                    'tipo' => $hab->tipo,
+                    'precio_noche' => $hab->precio_noche,
+                    'capacidad' => $hab->capacidad,
+                    'estado' => $hab->estado,
+                    'es_actual' => in_array($hab->id, $habitacionesActualesIds)
+                ];
+            });
+
+        return inertia('EditReserva', [
+            'reserva' => $reservaData,
+            'habitaciones' => $habitacionesDisponibles
+        ]);
+    }
+
+    public function update(UpdateReservaRequest $request, Reserva $reserva)
+    {
+        $validated = $request->validated();
+
+        return DB::transaction(function () use ($validated, $reserva) {
+
+            $reserva->update([
+                'check_in' => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+                'status' => $validated['status'],
+                'pago' => $validated['pago'],
+                'notas' => $validated['notas'] ?? null,
+            ]);
+
+            $reserva->habitaciones()->delete();
+            $dias = Carbon::parse($validated['check_in'])->diffInDays($validated['check_out']);
+
+            foreach ($validated['habitacion_ids'] as $habitacionId) {
+                $habitacion = Habitacion::find($habitacionId);
+                if ($habitacion) {
+                    $precioHabitacion = $habitacion->precio_noche * $dias;
+
+                    HabitacionReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'habitacion_id' => $habitacionId,
+                        'precio' => $precioHabitacion,
+                        'check_in' => $validated['check_in'],
+                        'check_out' => $validated['check_out'],
+                    ]);
+                }
+            }
+
+            $precioTotal = $reserva->habitaciones()->sum('precio');
+            $reserva->update(['precio_total' => $precioTotal]);
+
+            return redirect()->route('panel')->with('success', "✅ Reserva {$reserva->localizador} actualizada correctamente");
+        });
+    }
+
     public function destroy(Reserva $reserva) { }
 
 }
