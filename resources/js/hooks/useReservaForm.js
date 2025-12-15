@@ -136,10 +136,12 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
         };
 
         router.post(route('reservas.store'), payload, {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 setGuardando(false);
                 onSuccess?.();
-                resetear();
+                router.reload({ only: ['reservas', 'habitaciones', 'habitacionesDisponibles'] });
             },
             onError: (erroresServidor) => {
                 setErrores(erroresServidor);
@@ -151,18 +153,22 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
         });
     }, [form, seleccionadas, clienteSeleccionado, modoNuevoCliente, onSuccess]);
 
+    const limpiar = useCallback(() => {
+        setStep(1);
+        setForm(FORM_INICIAL);
+        setErrores({});
+        setModoNuevoCliente(true);
+        setBusqueda('');
+        setClienteSeleccionado(null);
+        setSeleccionadas([]);
+    }, []);
+
     const resetear = useCallback(() => {
         setIsOpen(false);
         setTimeout(() => {
-            setStep(1);
-            setForm(FORM_INICIAL);
-            setErrores({});
-            setModoNuevoCliente(true);
-            setBusqueda('');
-            setClienteSeleccionado(null);
-            setSeleccionadas([]);
+            limpiar();
         }, 200);
-    }, []);
+    }, [limpiar]);
 
     return {
         isOpen, setIsOpen, step, guardando,
@@ -190,6 +196,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
             guardando,
             onBack: retrocederAPaso1,
             onSubmit: confirmarReserva },
-            resetear
+            resetear,
+            limpiar
     };
 }

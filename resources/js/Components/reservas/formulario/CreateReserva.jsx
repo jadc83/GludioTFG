@@ -1,4 +1,5 @@
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import useReservaForm from '@/hooks/useReservaForm';
 import CreateReservaPaso1 from './CreateReservaPaso1';
@@ -6,7 +7,18 @@ import CreateReservaPaso2 from './CreateReservaPaso2';
 import '@/../css/createCliente.css';
 
 export default function CreateReserva({ habitacionesDisponibles = [], onSuccess, iconOnly = false }) {
-    const { isOpen, setIsOpen, step, paso1Props, paso2Props, resetear } = useReservaForm(habitacionesDisponibles, onSuccess);
+    const [modoContinuo, setModoContinuo] = useState(false);
+
+    const onCreated = () => {
+
+        if (!modoContinuo) {
+            resetear();
+        } else {
+            limpiar();
+        }
+    };
+
+    const { isOpen, setIsOpen, step, paso1Props, paso2Props, resetear, limpiar } = useReservaForm(habitacionesDisponibles, onCreated);
 
     return (
         <>
@@ -27,7 +39,17 @@ export default function CreateReserva({ habitacionesDisponibles = [], onSuccess,
                         </button>
                     </header>
 
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="px-6">
+                        <div className="form-control my-4">
+                            <label className="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" className="checkbox checkbox-primary checkbox-sm" checked={modoContinuo}
+                                    onChange={e => setModoContinuo(e.target.checked)} />
+                                <span className="label-text">Creación rápida</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-6">
                         {step === 1 && <CreateReservaPaso1 {...paso1Props} />}
                         {step === 2 && <CreateReservaPaso2 {...paso2Props} />}
                     </div>

@@ -64,9 +64,13 @@ export function useClienteForm(cliente = null, onSuccess) {
             method = cliente ? 'put' : 'post';
         }
 
-        router[method](url, form, { preserveState: false, preserveScroll: false, onSuccess: () => {
+        router[method](url, form, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
                 setGuardando(false);
-                onSuccess();
+                onSuccess?.();
+                router.reload({ only: ['clientes'] });
             },
             onError: (errors) => {
                 setErrores(errors);

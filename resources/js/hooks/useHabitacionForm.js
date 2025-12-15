@@ -104,16 +104,15 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
                     onSuccess?.();
                 },
                 onError: (errors) => {
-                    // Los errores ya están manejados por useForm
                 },
             });
         } else {
             router.post('/habitaciones', formData, {
-                preserveState: false,
-                preserveScroll: false,
+                preserveState: true,
+                preserveScroll: true,
                 onSuccess: () => {
-                    reset();
                     onSuccess?.();
+                    router.reload({ only: ['habitaciones'] });
                 },
             });
         }
