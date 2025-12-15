@@ -1,0 +1,46 @@
+.titulo-rojo { color: #920303; }
+.titulo-espaciado { letter-spacing: -0.02em; color: #920303; }
+.spinner-rojo { color: #920303 !important; }
+.barra-acento { background: #920303; }
+.precio-min { color: #920303; font-weight: 800; }
+.boton-activo { background-color: #920303 !important; border-color: #920303 !important; color: #fff !important; }
+.boton-deshabilitado { background-color: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; opacity: 1 !important; }
+.numero-unidad { color: #920303; min-width: 3rem; display:flex; align-items:center; justify-content:center; }
+.tarjeta-titulo { color: #920303; }
+/* Ajustes menores */
+.join-item { vertical-align: middle; }
+.tarjeta-seleccionada {
+	background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+}
+
+/* Normalizaciones para el formulario del menú lateral */
+.drawer-side form,
+.drawer-side .card,
+.drawer-side .input,
+.drawer-side select,
+.drawer-side textarea {
+	box-sizing: border-box;
+}
+
+.drawer-side form { width: 100%; }
+
+.drawer-side .input,
+.drawer-side select,
+.drawer-side textarea {
+	width: 100%;
+	max-width: 100%;
+}
+
+/* Ajustes para los controles tipo join (habitaciones/huespedes) */
+.join .join-item { vertical-align: middle; }
+.join .btn { min-width: 3rem; }
+.numero-unidad { min-width: 3rem; }
+
+/* Asegurar que tarjetas y secciones no colapsen */
+.drawer-side .card { padding: 1rem; }
+.drawer-side .p-6 { padding: 1.25rem; }
+
+/* Responsive: en pantallas pequeñas el drawer ocupa todo el ancho */
+@media (max-width: 640px) {
+	.drawer-side { width: 100% !important; }
+}

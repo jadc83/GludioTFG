@@ -51,7 +51,9 @@ class ReservaController extends Controller
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'notas' => $reserva->notas,
+                'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
                 'cliente_name' => $reserva->reservable->name ?? 'Sin cliente',
+                'booked_by_user' => $reserva->bookedBy->name ?? null,
                 'habitacion_numero' => $reserva->habitaciones->count() ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ') : 'Sin asignar',
             ];
         });
@@ -122,7 +124,7 @@ class ReservaController extends Controller
                     'telefono' => $request->telefono ?? null,
                     'tipo_documento' => $request->tipo_documento ?? 'dni',
                     'numero_documento' => $request->numero_documento,
-                    'nacionalidad' => $request->nacionalidad ?? null,
+                    'nacionalidad' => $request->nacionalidad ?? '',
                     'direccion' => $request->direccion ?? 'Sin dirección',
                 ]);
 
@@ -145,9 +147,7 @@ class ReservaController extends Controller
             $precioTotalReal = $request->precio_total ?? 0;
 
             if ($request->filled('habitacion_ids') && is_array($request->habitacion_ids)) {
-                $preciosHabitaciones = Habitacion::whereIn('id', $request->habitacion_ids)
-                    ->pluck('precio_noche', 'id')
-                    ->toArray();
+                $preciosHabitaciones = Habitacion::whereIn('id', $request->habitacion_ids)->pluck('precio_noche', 'id')->toArray();
 
                 if (count($preciosHabitaciones) !== count($request->habitacion_ids)) {
                     $preciosHabitaciones = [];
@@ -160,6 +160,7 @@ class ReservaController extends Controller
                 'localizador' => $localizador,
                 'reservable_id' => $reservable_id,
                 'reservable_type' => $reservable_type,
+                'booked_by_user_id' => auth()->id() ?? null,
                 'check_in' => $request->check_in,
                 'check_out' => $request->check_out,
                 'precio_total' => $precioTotalReal,
@@ -168,7 +169,54 @@ class ReservaController extends Controller
                 'notas' => $request->notas ?? "Reserva creada in-situ"
             ]);
 
-            if ($request->filled('habitacion_ids') && is_array($request->habitacion_ids)) {
+            if ($request->filled('habitaciones') && is_array($request->habitaciones)) {
+                $habitacionesAsignadas = [];
+                $precioTotalReal = 0;
+
+                foreach ($request->habitaciones as $solicitud) {
+                    $tipo = $solicitud['tipo'];
+                    $cantidad = $solicitud['cantidad'];
+                    $personas = $solicitud['personas_por_habitacion'] ?? 1;
+                    $disponibles = Habitacion::where('tipo', $tipo)
+                        ->where('estado', 'disponible')
+                        ->where('capacidad', '>=', $personas)
+                        ->whereDoesntHave('reservas', function ($q) use ($request) {
+                            $q->where('check_in', '<', $request->check_out)
+                              ->where('check_out', '>', $request->check_in);
+                        })
+                        ->orderBy('numero')
+                        ->take($cantidad)
+                        ->get();
+
+                    if ($disponibles->count() < $cantidad) {
+
+                        throw new \Exception("No hay suficientes habitaciones de tipo {$tipo} disponibles");
+                    }
+
+
+                    foreach ($disponibles as $habitacion) {
+                        $habitacionReserva = HabitacionReserva::create([
+                            'reserva_id' => $reserva->id,
+                            'habitacion_id' => $habitacion->id,
+                            'precio' => $habitacion->precio_noche,
+                            'check_in' => $request->check_in,
+                            'check_out' => $request->check_out,
+                        ]);
+
+                        $habitacionesAsignadas[] = [
+                            'numero' => $habitacion->numero,
+                            'tipo' => $habitacion->tipo,
+                            'precio' => $habitacion->precio_noche
+                        ];
+
+                        $precioTotalReal += $habitacion->precio_noche;
+                    }
+                }
+
+                $reserva->update(['precio_total' => $precioTotalReal]);
+            }
+
+            else if ($request->filled('habitacion_ids') && is_array($request->habitacion_ids)) {
                 foreach ($request->habitacion_ids as $habitacionId) {
                     $precioHabitacion = $preciosHabitaciones[$habitacionId] ?? ($request->precio_total / count($request->habitacion_ids));
 
@@ -241,13 +289,15 @@ class ReservaController extends Controller
         return response()->json($habitacionesFormateadas);
     }
 
-    public function show(Reserva $reserva) { }
+    public function show(Reserva $reserva)
+    {
+        //
+    }
 
     public function edit(Request $request, Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
 
-        // Usar las fechas del request si existen, si no usar las de la reserva
         $checkIn = $request->check_in ?? $reserva->check_in;
         $checkOut = $request->check_out ?? $reserva->check_out;
 
@@ -281,13 +331,9 @@ class ReservaController extends Controller
         ];
 
         $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->toArray();
-
-        // Incluir habitaciones actuales (sin importar estado) + habitaciones disponibles sin conflictos
         $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'precio_noche', 'capacidad', 'estado')
             ->where(function($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
-                // Habitaciones actuales de esta reserva (sin filtrar por estado)
                 $query->whereIn('id', $habitacionesActualesIds)
-                    // O habitaciones disponibles sin conflictos de fechas
                     ->orWhere(function($q) use ($reserva, $checkIn, $checkOut) {
                         $q->where('estado', 'disponible')
                           ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkIn, $checkOut) {

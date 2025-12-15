@@ -2,7 +2,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import Campo from '@/Components/Campo';
 import { ArrowRightIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
-export default function CreateReservaPaso1({ form, errores, onChange, onNext, searchProps }) {
+export default function CreateReservaPaso1({ form, errores, onChange, onNext, searchProps, hideDates = false, hideNextButton = false }) {
 
     const { modoNuevo, setModoNuevo, query, setQuery, resultados, cargando, seleccionado, onSeleccionar } = searchProps;
 
@@ -50,7 +50,9 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                                 </div>
                             )}
 
-                            {!cargando && resultados.length > 0 && resultados.map(p => (
+                            {!cargando && resultados.length > 0 && resultados
+                                .filter(p => !(seleccionado && p.id === seleccionado.id && p.tipo_usuario === seleccionado.tipo_usuario))
+                                .map(p => (
                                 <div key={`${p.tipo_usuario}-${p.id}`} onClick={() => onSeleccionar(p)}
                                     className="p-3 hover:bg-primary/10 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
 
@@ -71,46 +73,63 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                     )}
 
                     {seleccionado && (
-                        <div className="alert alert-success mt-2 py-2 text-sm shadow-sm">
-                            <UserIcon className="w-5 h-5" />
-                            <span>Cliente seleccionado: <b>{seleccionado.nombre || seleccionado.name}</b></span>
+                        <div className="mt-3">
+                            <div className="card bg-base-100 shadow-sm p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="font-semibold">{seleccionado.nombre || seleccionado.name}</div>
+                                        <div className="text-xs text-gray-500">{seleccionado.numero_documento} {seleccionado.email ? `• ${seleccionado.email}` : ''}</div>
+                                        <div className="text-xs text-gray-500 mt-1">{seleccionado.tipo_usuario === 'usuario' ? 'Usuario' : 'Cliente'}</div>
+                                    </div>
+                                    <div>
+                                        <button type="button" className="btn btn-sm" onClick={() => onSeleccionar(null)}>Limpiar selección</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
             )}
 
-            <div className="divider text-xs uppercase opacity-50">Datos de la Reserva</div>
+            {(modoNuevo || !seleccionado) && (
+                <>
+                    <div className="divider text-xs uppercase opacity-50">Datos de la Reserva</div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Campo id="name" label="Nombre Completo" value={form.name} onChange={onChange} error={errores.name} required />
+                        <Campo id="email" label="Email" type="email" value={form.email} onChange={onChange} error={errores.email} />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Campo id="name" label="Nombre Completo" value={form.name} onChange={onChange} error={errores.name} required />
-                <Campo id="email" label="Email" type="email" value={form.email} onChange={onChange} error={errores.email} />
+                        <Campo id="tipo_documento" label="Tipo Doc" as="select" value={form.tipo_documento} onChange={onChange}>
+                            <option value="dni">DNI</option>
+                            <option value="pasaporte">Pasaporte</option>
+                            <option value="tie">TIE</option>
+                        </Campo>
+                        <Campo id="numero_documento" label="Num. Documento" value={form.numero_documento} onChange={onChange} error={errores.numero_documento} required />
 
-                <Campo id="tipo_documento" label="Tipo Doc" as="select" value={form.tipo_documento} onChange={onChange}>
-                    <option value="dni">DNI</option>
-                    <option value="pasaporte">Pasaporte</option>
-                    <option value="tie">TIE</option>
-                </Campo>
-                <Campo id="numero_documento" label="Num. Documento" value={form.numero_documento} onChange={onChange} error={errores.numero_documento} required />
+                        <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono} onChange={onChange} error={errores.telefono} />
+                        <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad} onChange={onChange} />
+                    </div>
 
-                <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono} onChange={onChange} error={errores.telefono} />
-                <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad} onChange={onChange} />
-            </div>
+                    <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange} />
 
-            <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange} />
+                    {!hideDates && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <Campo id="check_in" label="Entrada" type="date" value={form.check_in} onChange={onChange} error={errores.check_in} required />
+                            <Campo id="check_out" label="Salida" type="date" value={form.check_out} onChange={onChange} error={errores.check_out} required />
+                        </div>
+                    )}
 
-            <div className="grid grid-cols-2 gap-4">
-                <Campo id="check_in" label="Entrada" type="date" value={form.check_in} onChange={onChange} error={errores.check_in} required />
-                <Campo id="check_out" label="Salida" type="date" value={form.check_out} onChange={onChange} error={errores.check_out} required />
-            </div>
+                    {errores.fechas && <div className="text-error text-sm text-center font-medium">{errores.fechas}</div>}
 
-            {errores.fechas && <div className="text-error text-sm text-center font-medium">{errores.fechas}</div>}
-
-            <div className="pt-4 flex justify-end">
-                <PrimaryButton type="submit" disabled={!form.name || !form.numero_documento || !form.check_in || !form.check_out}>
-                    Siguiente Paso <ArrowRightIcon className="w-4 h-4 ml-2" />
-                </PrimaryButton>
-            </div>
+                    {!hideNextButton && (
+                        <div className="pt-4 flex justify-end">
+                            <PrimaryButton type="submit" disabled={!form.name || !form.numero_documento || (!hideDates && (!form.check_in || !form.check_out))}>
+                                Siguiente Paso <ArrowRightIcon className="w-4 h-4 ml-2" />
+                            </PrimaryButton>
+                        </div>
+                    )}
+                </>
+            )}
         </form>
     );
 }

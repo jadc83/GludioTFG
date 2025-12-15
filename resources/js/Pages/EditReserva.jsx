@@ -28,11 +28,10 @@ export default function EditReserva({ reserva, habitaciones }) {
         }
     };
 
-    // Recalcular habitaciones disponibles cuando cambian las fechas
     useEffect(() => {
         if (form.check_in && form.check_out && form.check_in < form.check_out) {
             setRecalculando(true);
-            
+
             router.reload({
                 only: ['habitaciones'],
                 data: {
@@ -65,7 +64,6 @@ export default function EditReserva({ reserva, habitaciones }) {
         const total = form.habitacion_ids.reduce((sum, habId) => {
             const habitacion = habitaciones.find(h => h.id === habId);
             if (!habitacion) {
-                console.warn(`Habitación ${habId} no encontrada en la lista`);
                 return sum;
             }
             return sum + (parseFloat(habitacion.precio_noche) * dias);
@@ -171,26 +169,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             <h3 className="font-bold">Fechas de Reserva</h3>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <Campo
-                                                id="check_in"
-                                                label="Check-in"
-                                                type="date"
-                                                value={form.check_in}
-                                                onChange={cambiar}
-                                                error={errores.check_in}
-                                                classNameExtra="font-mono"
-                                                required
-                                            />
-                                            <Campo
-                                                id="check_out"
-                                                label="Check-out"
-                                                type="date"
-                                                value={form.check_out}
-                                                onChange={cambiar}
-                                                error={errores.check_out}
-                                                classNameExtra="font-mono"
-                                                required
-                                            />
+                                            <Campo id="check_in" label="Check-in" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
+                                                classNameExtra="font-mono" required/>
+                                            <Campo id="check_out" label="Check-out" type="date" value={form.check_out} onChange={cambiar} error={errores.check_out}
+                                                classNameExtra="font-mono" required/>
                                         </div>
                                     </div>
                                 </div>
@@ -206,8 +188,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             <div className="alert alert-info mb-3">
                                                 <span className="loading loading-spinner loading-sm"></span>
                                                 <span>Recalculando disponibilidad...</span>
-                                            </div>
-                                        )}
+                                            </div>)}
 
                                         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                                             {habitaciones.map(habitacion => {
@@ -218,18 +199,12 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         key={habitacion.id}
                                                         onClick={() => toggleHabitacion(habitacion.id)}
                                                         className={`card cursor-pointer transition-all border-2 ${
-                                                            isSelected
-                                                                ? 'bg-red-50 border-[#920303]'
-                                                                : 'bg-base-200 border-transparent hover:border-base-300'
-                                                        }`}
-                                                    >
+                                                            isSelected ? 'bg-red-50 border-[#920303]'
+                                                                       : 'bg-base-200 border-transparent hover:border-base-300'}`}>
                                                         <div className="card-body p-3">
                                                             <div className="flex items-center justify-between mb-2">
-                                                                <input type="checkbox" checked={isSelected}
-                                                                    onChange={() => {}}
-                                                                    className="checkbox checkbox-sm"
-                                                                    style={{ accentColor: '#920303' }}
-                                                                />
+                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm"
+                                                                    style={{ accentColor: '#920303' }}/>
                                                                 <span className="font-bold font-mono">{habitacion.numero}</span>
                                                                 {esActual && (
                                                                     <span className="badge badge-xs badge-info">Actual</span>
@@ -294,13 +269,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                 <label className="label">
                                                     <span className="label-text font-semibold">Estado Reserva</span>
                                                 </label>
-                                                <select 
-                                                    id="status" 
-                                                    name="status"
-                                                    value={form.status} 
-                                                    onChange={cambiar}
-                                                    className="select select-bordered w-full"
-                                                >
+                                                <select id="status" name="status" value={form.status} onChange={cambiar} className="select select-bordered w-full">
                                                     <option value="pendiente">Pendiente</option>
                                                     <option value="confirmado">Confirmado</option>
                                                     <option value="checked_in">Check-in</option>
@@ -319,13 +288,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                 <label className="label">
                                                     <span className="label-text font-semibold">Estado Pago</span>
                                                 </label>
-                                                <select 
-                                                    id="pago" 
-                                                    name="pago"
-                                                    value={form.pago} 
-                                                    onChange={cambiar}
-                                                    className="select select-bordered w-full"
-                                                >
+                                                <select id="pago" name="pago" value={form.pago} onChange={cambiar} className="select select-bordered w-full">
                                                     <option value="pendiente">Pendiente</option>
                                                     <option value="parcial">Parcial</option>
                                                     <option value="pagado">Pagado</option>
@@ -342,15 +305,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                 <label className="label">
                                                     <span className="label-text font-semibold">Notas</span>
                                                 </label>
-                                                <textarea 
-                                                    id="notas" 
-                                                    name="notas"
-                                                    value={form.notas || ''} 
-                                                    onChange={cambiar}
-                                                    placeholder="Observaciones..." 
-                                                    rows={3}
-                                                    className="textarea textarea-bordered w-full"
-                                                />
+                                                <textarea id="notas" name="notas" value={form.notas || ''} onChange={cambiar} placeholder="Observaciones..." rows={3}
+                                                    className="textarea textarea-bordered w-full"/>
                                                 {errores.notas && (
                                                     <label className="label">
                                                         <span className="label-text-alt text-error">{errores.notas}</span>

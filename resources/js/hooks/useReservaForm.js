@@ -53,7 +53,6 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
                 const data = await response.json();
                 setResultadosBusqueda(data || []);
             } catch (error) {
-                console.error('Error al buscar clientes:', error);
                 setResultadosBusqueda([]);
             } finally {
                 setCargandoBusqueda(false);
@@ -67,7 +66,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
             fetch(`/reservas/disponibles?check_in=${form.check_in}&check_out=${form.check_out}`)
                 .then(res => res.json())
                 .then(habitaciones => setHabitacionesDisponibles(habitaciones))
-                .catch(err => console.error('Error al obtener habitaciones:', err));
+                .catch(() => setHabitacionesDisponibles([]));
         }
     }, [form.check_in, form.check_out]);
 

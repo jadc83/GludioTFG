@@ -109,7 +109,7 @@ export default function IndexReserva({ reservas = [] }) {
                                 <th>Precio</th>
                                 <th>Estado</th>
                                 <th>Pago</th>
-                                <th>Notas</th>
+                                <th>Creado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -160,8 +160,12 @@ export default function IndexReserva({ reservas = [] }) {
                                         </span>
                                     </td>
 
-                                    <td className="celda-notas">
-                                        {reserva.notas ? (<div className="notas-texto">{reserva.notas}</div>) : (<span className="notas-sin">Sin notas</span>)}
+                                    <td className="celda-creado font-mono">
+                                        {reserva.created_at ? (
+                                            <div>{new Date(reserva.created_at).toLocaleString('es-ES')}</div>
+                                        ) : (
+                                            <span className="text-gray-400">—</span>
+                                        )}
                                     </td>
 
                                     <td>

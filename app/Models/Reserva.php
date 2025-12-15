@@ -15,6 +15,7 @@ class Reserva extends Model
     protected $fillable = [
         'localizador',
         'user_id',
+        'booked_by_user_id',
         'check_in',
         'check_out',
         'precio_total',
@@ -32,6 +33,11 @@ class Reserva extends Model
     public function reservable()
     {
         return $this->morphTo();
+    }
+
+    public function bookedBy()
+    {
+        return $this->belongsTo(User::class, 'booked_by_user_id');
     }
 
     public function habitaciones()

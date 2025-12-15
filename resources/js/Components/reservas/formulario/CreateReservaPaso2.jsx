@@ -6,11 +6,10 @@ export default function CreateReservaPaso2({ habitaciones, formHabitaciones, gua
     const { seleccionadas, toggleHabitacion, esValido, textoResumen } = formHabitaciones;
 
     const handleSubmit = async () => {
-        console.log('SUBMIT EJECUTADO');
         if (onSubmit) {
             await onSubmit();
         }
-        console.log('SUBMIT TERMINADO');
+        // Submit ejecutado
     };
 
     const renderHabitacion = (habitacion) => {
