@@ -243,9 +243,13 @@ class ReservaController extends Controller
 
     public function show(Reserva $reserva) { }
 
-    public function edit(Reserva $reserva)
+    public function edit(Request $request, Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
+
+        // Usar las fechas del request si existen, si no usar las de la reserva
+        $checkIn = $request->check_in ?? $reserva->check_in;
+        $checkOut = $request->check_out ?? $reserva->check_out;
 
         $reservaData = [
             'id' => $reserva->id,
@@ -280,16 +284,16 @@ class ReservaController extends Controller
 
         // Incluir habitaciones actuales (sin importar estado) + habitaciones disponibles sin conflictos
         $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'precio_noche', 'capacidad', 'estado')
-            ->where(function($query) use ($reserva, $habitacionesActualesIds) {
+            ->where(function($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
                 // Habitaciones actuales de esta reserva (sin filtrar por estado)
                 $query->whereIn('id', $habitacionesActualesIds)
                     // O habitaciones disponibles sin conflictos de fechas
-                    ->orWhere(function($q) use ($reserva) {
+                    ->orWhere(function($q) use ($reserva, $checkIn, $checkOut) {
                         $q->where('estado', 'disponible')
-                          ->whereDoesntHave('reservas', function ($subQ) use ($reserva) {
+                          ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkIn, $checkOut) {
                               $subQ->where('reserva_id', '!=', $reserva->id)
-                                   ->where('check_in', '<', $reserva->check_out)
-                                   ->where('check_out', '>', $reserva->check_in);
+                                   ->where('check_in', '<', $checkOut)
+                                   ->where('check_out', '>', $checkIn);
                           });
                     });
             })
