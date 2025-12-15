@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { UserIcon } from '@heroicons/react/24/outline';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Campo from '@/Components/Campo';
 import { useClienteForm } from '@/hooks/useClienteForm';
 import '@/../css/createCliente.css';
 
-export default function CreateCliente() {
+export default function CreateCliente({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
     const [modoContinuo, setModoContinuo] = useState(false);
 
@@ -27,9 +27,9 @@ export default function CreateCliente() {
 
     return (
         <>
-            <PrimaryButton onClick={() => setAbierto(true)}>
-                <PlusIcon className="w-5 h-5" />
-                Nuevo Cliente
+            <PrimaryButton onClick={() => setAbierto(true)} title="Nuevo Cliente" aria-label="Nuevo Cliente">
+                <UserIcon className="w-5 h-5" />
+                {!iconOnly && ' Nuevo Cliente'}
             </PrimaryButton>
 
             <dialog className={`drawer-modal ${abierto ? 'modal-open' : ''}`}>
@@ -68,7 +68,7 @@ export default function CreateCliente() {
                         <Campo id="direccion" label="Dirección" as="textarea" rows={2} value={form.direccion} onChange={cambiar} error={errores.direccion} />
 
                         <PrimaryButton type="submit" className="w-full mt-4">
-                            {guardando ? 'Guardando...' : 'Crear Cliente'}
+                            Guardar Cliente
                         </PrimaryButton>
                     </form>
                 </div>

@@ -87,27 +87,21 @@ export default function IndexReserva({ reservas = [] }) {
 
             </div>
 
-            {hayFiltrosActivos && (
-                <div className="flex justify-end mb-4">
-                    {reservas.length} resultados encontrados
-                </div>
-            )}
-
-            {reservas.length === 0 ? (
-                <div className="estado-vacio">
-                    <InboxIcon className="estado-vacio-icono" />
-                    <div className="estado-vacio-texto">
-                        <p className="estado-vacio-titulo">No se encontraron reservas</p>
-                        <p className="estado-vacio-descripcion">Seleccione otros criterios de búsqueda</p>
-                        <button onClick={limpiarFiltros} className="btn btn-primary btn-sm mt-4">
-                            Limpiar filtros
-                        </button>
+            <div className="overflow-x-auto">
+                {reservas.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <InboxIcon className="w-24 h-24 text-gray-300" />
+                        <div className="text-center">
+                            <p className="text-gray-600 text-xl font-semibold mb-2">No se encontraron reservas</p>
+                            <p className="text-gray-400">Seleccione otros criterios de búsqueda</p>
+                            <button onClick={limpiarFiltros} className="btn btn-primary btn-sm mt-4">
+                                Limpiar filtros
+                            </button>
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div className="tabla-reservas-contenedor">
-                    <table className="table bg-white table-lg w-full">
-                        <thead className="bg-base-100/50">
+                ) : (
+                    <table className="table table-zebra w-full">
+                        <thead>
                             <tr>
                                 <th>Localizador</th>
                                 <th>Cliente / Habitación</th>
@@ -116,7 +110,7 @@ export default function IndexReserva({ reservas = [] }) {
                                 <th>Estado</th>
                                 <th>Pago</th>
                                 <th>Notas</th>
-                                <th className="text-center">Acciones</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -170,9 +164,12 @@ export default function IndexReserva({ reservas = [] }) {
                                         {reserva.notas ? (<div className="notas-texto">{reserva.notas}</div>) : (<span className="notas-sin">Sin notas</span>)}
                                     </td>
 
-                                    <td className="text-center">
-                                        <div className="acciones-celda">
-                                            <button className="btn btn-ghost btn-xs" title="Editar reserva" onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
+                                    <td>
+                                        <div className="flex gap-1">
+                                            <button className="btn btn-sm btn-ghost btn-outline" title="Ver reserva">
+                                                <EyeIcon className="w-4 h-4" />
+                                            </button>
+                                            <button className="btn btn-sm btn-primary" title="Editar reserva" onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
                                                 <PencilIcon className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -181,8 +178,14 @@ export default function IndexReserva({ reservas = [] }) {
                             ))}
                         </tbody>
                     </table>
-                </div>
-            )}
+                )}
+
+                {hayFiltrosActivos && reservas.length > 0 && (
+                    <div className="flex justify-center mt-4 text-sm text-gray-600">
+                        Mostrando {reservas.length} reserva{reservas.length !== 1 ? 's' : ''}
+                    </div>
+                )}
+            </div>
         </>
     );
 }

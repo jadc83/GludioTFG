@@ -31,6 +31,10 @@ class UpdateHabitacionRequest extends FormRequest
             'estado' => 'required|in:disponible,ocupada,mantenimiento,limpieza',
             'descripcion' => 'nullable|string',
             'notas' => 'nullable|string',
+            'fotos' => 'nullable|array|max:4',
+            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            'fotos_eliminar' => 'nullable|array',
+            'fotos_eliminar.*' => 'integer|exists:fotos,id',
         ];
     }
 }

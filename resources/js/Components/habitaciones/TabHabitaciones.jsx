@@ -11,7 +11,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
             <div className="space-y-4 mb-6">
                 <div className="form-control">
                     <div className="flex items-center gap-3 p-3 bg-gris max-w-md mx-auto mb-6">
-                        <input type="text" placeholder="Número, tipo o descripción..." className="flex-1 input input-bordered bg-base-100 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                        <input type="text" placeholder="Número, tipo o descripción..." className="flex-1 input input-bordered bg-base-100 border-base-300 focus:border-[#920303] focus:ring-2 focus:ring-[#920303]/20 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
                             value={filtros.busqueda || ''} onChange={(e) => filtros.setBusqueda(e.target.value)} />
                     </div>
 

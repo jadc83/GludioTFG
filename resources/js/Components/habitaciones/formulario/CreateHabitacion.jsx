@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { HomeIcon } from '@heroicons/react/24/outline';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
 import '@/../css/createHabitacion.css';
 
-export default function CreateHabitacion() {
+export default function CreateHabitacion({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
     const [modoContinuo, setModoContinuo] = useState(false);
 
@@ -23,9 +23,9 @@ export default function CreateHabitacion() {
 
     return (
         <>
-            <PrimaryButton onClick={() => setAbierto(true)}>
-                <PlusIcon className="w-5 h-5" />
-                Nueva Habitación
+            <PrimaryButton onClick={() => setAbierto(true)} title="Nueva Habitación" aria-label="Nueva Habitación">
+                <HomeIcon className="w-5 h-5" />
+                {!iconOnly && ' Nueva Habitación'}
             </PrimaryButton>
 
             <dialog className={`modalDrawer ${abierto ? 'abierto' : ''}`}>
@@ -110,7 +110,7 @@ const Campo = ({ id, label, as = 'input', error, classNameExtra = '', children, 
     );
 };
 
-const InputFotos = ({ fotos, previews, onAgregar, onQuitar, error, maxFotos }) => (
+const InputFotos = ({ fotos = [], previews = [], onAgregar, onQuitar, error, maxFotos }) => (
     <div className="contenedorCampo">
         <label className="etiquetaCampo">
             <span className="textoEtiquetaCampo">

@@ -9,6 +9,8 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
 
     const { filtros, acciones } = useClienteControl(clientesFiltrados);
 
+    const todosLosRegistros = clientesFiltrados;
+
     const abrirEdicion = (cliente) => {
         setClienteEditar(cliente);
         setDrawerAbierto(true);
@@ -27,8 +29,6 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
             default: return 'badge-neutral';
         }
     };
-
-    const todosLosRegistros = clientesFiltrados;
 
     const noHayClientesEnAbsoluto = clientes.length === 0 && users.length === 0;
 
@@ -57,11 +57,6 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
             </div>
 
             <div className="overflow-x-auto">
-                <div className="text-sm text-gray-500 mb-4">
-                    Mostrando {todosLosRegistros.length} cliente{todosLosRegistros.length !== 1 ? 's' : ''}
-                </div>
-
-
                 {noHayClientesEnAbsoluto ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <InboxIcon className="w-24 h-24 text-gray-300" />
@@ -145,6 +140,12 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                         ))}
                     </tbody>
                 </table>
+                )}
+
+                {todosLosRegistros.length > 0 && (
+                    <div className="flex justify-center mt-4 text-sm text-gray-600">
+                        Mostrando {todosLosRegistros.length} cliente{todosLosRegistros.length !== 1 ? 's' : ''}
+                    </div>
                 )}
             </div>
 

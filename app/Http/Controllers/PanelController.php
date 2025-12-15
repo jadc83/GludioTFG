@@ -31,8 +31,18 @@ class PanelController extends Controller
             ->orderBy('check_in', 'desc')
             ->get();
 
+        $habitaciones = Habitacion::with('fotos')
+            ->buscar($request->busqueda)
+            ->estado($request->estado)
+            ->tipo($request->tipo)
+            ->capacidad($request->capacidad)
+            ->precioMin($request->precio_min)
+            ->precioMax($request->precio_max)
+            ->orderBy('numero')
+            ->get();
+
         return Inertia::render('PanelControl', [
-            'habitaciones'            => Habitacion::with('fotos')->get(),
+            'habitaciones'            => $habitaciones,
             'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
             'clientes'                => Cliente::orderBy('name')->get(),
             'users'                   => User::orderBy('name')->get(),

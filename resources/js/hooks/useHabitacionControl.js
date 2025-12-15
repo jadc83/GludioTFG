@@ -55,6 +55,13 @@ export function useHabitacionControl(habitaciones = []) {
         });
     };
 
+    const hayFiltrosActivos = filtroEstado !== 'todos' ||
+        filtroTipo !== 'todos' ||
+        filtroCapacidad !== 'todos' ||
+        filtroPrecioMin !== '' ||
+        filtroPrecioMax !== '' ||
+        filtroBusqueda !== '';
+
     return {
         filtros: {
             estado: filtroEstado, setEstado: setFiltroEstado,
@@ -69,7 +76,8 @@ export function useHabitacionControl(habitaciones = []) {
             capacidadesDisponibles: [2, 3, 4, 5, 6]
         },
         acciones: {
-            limpiarFiltros
+            limpiarFiltros,
+            hayFiltrosActivos
         }
     };
 }

@@ -23,8 +23,8 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
             onClick={() => onClick(id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
                 ${activa
-                    ? 'bg-white text-primary shadow-sm ring-1 ring-black/5'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                    ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5'
+                    : 'text-[#6b1212] hover:text-[#920303] hover:bg-gray-200/50'
                 }`}
         >
             <Icon className="w-4 h-4" />
@@ -80,19 +80,23 @@ export default function PanelControl({ habitaciones = [],
                                 <h1 className="tituloEncabezado">Panel de Control</h1>
                                 <p className="subtituloEncabezado">Gestión completa de hotel</p>
                             </div>
-                            <CreateCliente />
-                            <CreateHabitacion />
-                            <CreateReserva habitacionesDisponibles={habitacionesDisponibles} onSuccess={handleReservaSuccess}/>
+                            <div className="flex items-center gap-2">
+                                <CreateCliente iconOnly />
+                                <CreateHabitacion iconOnly />
+                                <CreateReserva iconOnly habitacionesDisponibles={habitacionesDisponibles} onSuccess={handleReservaSuccess} />
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
-                        <div className="bg-base-200 p-1 rounded-lg inline-flex mb-6">
-                            {TABS.map(tab => (
-                                <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva} />
-                            ))}
+                        <div className="bg-base-200 p-1 rounded-lg flex justify-center w-full mb-6">
+                            <div className="inline-flex gap-2">
+                                {TABS.map(tab => (
+                                    <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva} />
+                                ))}
+                            </div>
                         </div>
 
                         <div className="contenedorContenido bg-gris">

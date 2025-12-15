@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 
 const CAPACIDADES = { doble: 2, suite: 2, familiar: 4 };
 const MAX_FOTOS = 4;
@@ -36,16 +36,16 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
 
             const fotosExistentes = (habitacionInicial.fotos || []).map(f => ({
                 id: f.id,
-                url: f.url,
+                url: f.url || `/storage/${f.ruta}`,
                 ruta: f.ruta
             }));
             setFotosGuardadas(fotosExistentes);
             setPreviews(fotosExistentes.map(f => f.url));
             setFotos([]);
             setFotosEliminadas([]);
+            clearErrors();
         }
-        clearErrors();
-    }, [esEdicion, habitacionInicial]);
+    }, [esEdicion, habitacionInicial?.id, setData, clearErrors]);
 
     const cambiar = (e) => {
         const { name, value } = e.target;
@@ -87,29 +87,36 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
     const enviar = (e) => {
         e.preventDefault();
 
-        const url = esEdicion ? `/habitaciones/${habitacionInicial.id}` : '/habitaciones';
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+        fotos.forEach((foto) => formData.append('fotos[]', foto));
 
-        post(url, {
-            forceFormData: true,
-            preserveState: false,
-            preserveScroll: false,
-            onSuccess: () => {
-                reset();
-                onSuccess?.();
-            },
-            transform: (data) => {
-                const formData = new FormData();
-                Object.entries(data).forEach(([key, value]) => formData.append(key, value));
-                fotos.forEach((foto, index) => formData.append(`fotos[${index}]`, foto));
+        if (esEdicion) {
+            fotosEliminadas.forEach((id) => formData.append('fotos_eliminar[]', id));
+            formData.append('_method', 'PUT');
 
-                if (esEdicion) {
-                    fotosEliminadas.forEach((id) => formData.append('fotos_eliminar[]', id));
-                    formData.append('_method', 'PUT');
-                }
-
-                return formData;
-            },
-        });
+            router.post(`/habitaciones/${habitacionInicial.id}`, formData, {
+                preserveState: false,
+                preserveScroll: false,
+                onSuccess: () => {
+                    router.reload({ only: ['habitaciones'] });
+                    reset();
+                    onSuccess?.();
+                },
+                onError: (errors) => {
+                    // Los errores ya están manejados por useForm
+                },
+            });
+        } else {
+            router.post('/habitaciones', formData, {
+                preserveState: false,
+                preserveScroll: false,
+                onSuccess: () => {
+                    reset();
+                    onSuccess?.();
+                },
+            });
+        }
     };
 
     const reset = () => {
@@ -120,7 +127,7 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         setFotosEliminadas([]);
     };
 
-    const capacidadFija = CAPACIDADES.hasOwnProperty(data.tipo);
+    const capacidadFija = Object.prototype.hasOwnProperty.call(CAPACIDADES, data.tipo);
 
     return { form: data, fotos, previews, fotosGuardadas, errores: errors, guardando: processing, capacidadFija, MAX_FOTOS, esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset };
 }

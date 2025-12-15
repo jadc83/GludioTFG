@@ -9,19 +9,23 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
     return (
         <form onSubmit={onNext} className="p-6 space-y-5">
 
-            <div className="bg-base-200 p-1 rounded-lg inline-flex w-full sm:w-auto">
-                <button type="button" onClick={() => { setModoNuevo(true); onSeleccionar(null); }}
-                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                        ${modoNuevo ? 'bg-white text-primary shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}>
-                    Nuevo Cliente
-                </button>
-                <button type="button" onClick={() => setModoNuevo(false)} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                        ${!modoNuevo ? 'bg-white text-primary shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}>
-                    Buscar Existente
-                </button>
+            <div className="flex justify-center mb-4">
+                <div className="bg-base-200 p-1 rounded-lg inline-flex w-full sm:w-auto">
+                    <button type="button" onClick={() => { setModoNuevo(true); onSeleccionar(null); }}
+                        className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+                            ${modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        style={modoNuevo ? { color: '#920303' } : {}}>
+                        Nuevo Cliente
+                    </button>
+                    <button type="button" onClick={() => setModoNuevo(false)} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+                            ${!modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                        style={!modoNuevo ? { color: '#920303' } : {}}>
+                        Buscar Existente
+                    </button>
+                </div>
             </div>
 
-            
+
             {!modoNuevo && (
                 <div className="relative z-20">
 
@@ -30,7 +34,7 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                             value={query} onChange={(e) => setQuery(e.target.value)} autoFocus/>
                     </div>
 
-                    
+
                     {query.length >= 3 && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-xl rounded-md max-h-60 overflow-y-auto z-50">
                             {cargando && (
@@ -77,7 +81,7 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
 
             <div className="divider text-xs uppercase opacity-50">Datos de la Reserva</div>
 
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Campo id="name" label="Nombre Completo" value={form.name} onChange={onChange} error={errores.name} required />
                 <Campo id="email" label="Email" type="email" value={form.email} onChange={onChange} error={errores.email} />
