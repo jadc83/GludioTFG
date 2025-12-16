@@ -3,7 +3,6 @@ import { useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import useReservaForm from '@/hooks/useReservaForm';
 import CreateReservaPaso1 from './CreateReservaPaso1';
-import CreateReservaPaso2 from './CreateReservaPaso2';
 import '@/../css/createCliente.css';
 
 export default function CreateReserva({ habitacionesDisponibles = [], onSuccess, iconOnly = false }) {
@@ -18,7 +17,7 @@ export default function CreateReserva({ habitacionesDisponibles = [], onSuccess,
         }
     };
 
-    const { isOpen, setIsOpen, step, paso1Props, paso2Props, resetear, limpiar } = useReservaForm(habitacionesDisponibles, onCreated);
+    const { isOpen, setIsOpen, step, paso1Props, resetear, limpiar } = useReservaForm(habitacionesDisponibles, onCreated);
 
     return (
         <>
@@ -51,7 +50,6 @@ export default function CreateReserva({ habitacionesDisponibles = [], onSuccess,
 
                     <div className="flex-1 overflow-y-auto px-6">
                         {step === 1 && <CreateReservaPaso1 {...paso1Props} />}
-                        {step === 2 && <CreateReservaPaso2 {...paso2Props} />}
                     </div>
                 </div>
             </dialog>

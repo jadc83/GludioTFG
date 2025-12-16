@@ -1,12 +1,14 @@
-.titulo-rojo { color: #920303; }
-.titulo-espaciado { letter-spacing: -0.02em; color: #920303; }
-.spinner-rojo { color: #920303 !important; }
-.barra-acento { background: #920303; }
-.precio-min { color: #920303; font-weight: 800; }
-.boton-activo { background-color: #920303 !important; border-color: #920303 !important; color: #fff !important; }
+.--panel-rojo:root{}
+:root{ --panel-rojo: #920303; }
+.titulo-rojo { color: var(--panel-rojo); }
+.titulo-espaciado { letter-spacing: -0.02em; color: var(--panel-rojo); }
+.spinner-rojo { color: var(--panel-rojo) !important; }
+.barra-acento { background: var(--panel-rojo); }
+.precio-min { color: var(--panel-rojo); font-weight: 800; }
+.boton-activo { background-color: var(--panel-rojo) !important; border-color: var(--panel-rojo) !important; color: #fff !important; }
 .boton-deshabilitado { background-color: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; opacity: 1 !important; }
-.numero-unidad { color: #920303; min-width: 3rem; display:flex; align-items:center; justify-content:center; }
-.tarjeta-titulo { color: #920303; }
+.numero-unidad { color: var(--panel-rojo); min-width: 3rem; display:flex; align-items:center; justify-content:center; }
+.tarjeta-titulo { color: var(--panel-rojo); }
 /* Ajustes menores */
 .join-item { vertical-align: middle; }
 .tarjeta-seleccionada {
@@ -43,4 +45,68 @@
 /* Responsive: en pantallas pequeñas el drawer ocupa todo el ancho */
 @media (max-width: 640px) {
 	.drawer-side { width: 100% !important; }
+}
+
+/* Forzar alineación izquierda dentro del drawer lateral para evitar desajustes
+   al reutilizar clases `.campo` en formularios globales que usan centrado. */
+.drawer-side .campo-label { justify-content: flex-start; }
+.drawer-side .campo-label-text { text-align: left; }
+.drawer-side .campo-input,
+.drawer-side .campo-textarea,
+.drawer-side .campo-select { text-align: left; }
+
+.drawer-side .form-grid { grid-template-columns: 1fr 1fr; }
+
+/* Force labels above inputs inside drawer to avoid side-by-side layout */
+.drawer-side .campo { display: flex; flex-direction: column; align-items: stretch; }
+.drawer-side .campo-label { display: block; margin-bottom: 0.25rem; justify-content: flex-start; }
+.drawer-side .campo-label-text { display: block; text-align: left; }
+.drawer-side .campo-input,
+.drawer-side .campo-textarea,
+.drawer-side .campo-select { width: 100%; text-align: left; }
+
+/* Banner navideño con imagen de Unsplash y overlay para legibilidad */
+.banner-navidad {
+	height: 72px;
+	background-image: linear-gradient(rgba(0,0,0,0.36), rgba(0,0,0,0.12)), url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=80');
+	background-size: cover;
+	background-position: center;
+	display: flex;
+	align-items: center;
+	padding: 0.75rem;
+	box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+	color: #ffffff;
+}
+
+.banner-navidad h4, .banner-navidad p {
+	color: #ffffff;
+}
+
+.banner-logo { opacity: 0.95; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35)); }
+
+/* Professional table styling used across index pages */
+.table-pro-wrapper { background: transparent; }
+.table-pro { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+.table-pro thead th {
+	background: transparent;
+	color: #374151;
+	font-weight: 700;
+	text-transform: uppercase;
+	font-size: 0.75rem;
+	letter-spacing: 0.02em;
+	padding: 0.75rem 0.75rem;
+	text-align: left;
+}
+.table-pro tbody tr { transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease; }
+.table-pro tbody tr:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 10px 30px rgba(2,6,23,0.08);
+	background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+}
+.table-pro td { padding: 0.75rem 0.75rem; border-bottom: none; vertical-align: middle; }
+.table-card { overflow: hidden; border-radius: 0.625rem; }
+
+@media (max-width: 640px) {
+	.table-pro thead th { font-size: 0.65rem; }
+	.table-pro td { padding: 0.5rem; }
 }

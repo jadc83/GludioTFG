@@ -1,7 +1,7 @@
 
 :root {
-  --rdp-accent-color: black; 
-  --rdp-range-border-color: rgb(255, 0, 0); 
+  --rdp-accent-color: black;
+  --rdp-range-border-color: rgb(255, 0, 0);
   --rdp-accent-background-color: #f0f0ff;
 
   --rdp-day-height: 9vh;
@@ -11,7 +11,7 @@
   --rdp-day_button-height: 9vh;
   --rdp-day_button-width: 9vh;
 
-  --rdp-selected-border: 4px solid var(--rdp-accent-color); 
+  --rdp-selected-border: 4px solid var(--rdp-accent-color);
   --rdp-disabled-opacity: 0.5;
   --rdp-outside-opacity: 0.75;
   --rdp-today-color: var(--rdp-accent-color);
@@ -24,7 +24,7 @@
   --rdp-nav_button-width: 2.25rem;
   --rdp-nav-height: 5vh;
 
-  --rdp-range_middle-background-color: transparent; 
+  --rdp-range_middle-background-color: transparent;
   --rdp-range_middle-color: var(--rdp-range-border-color);
 
   --rdp-range_start-color: var(--rdp-range-border-color);
@@ -219,6 +219,21 @@
   font-size: large;
 }
 
+.rdp-month_caption {
+  justify-content: center;
+  text-align: center;
+}
+.rdp-caption_label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: capitalize;
+}
+
+.rdp-nav { z-index: 3; }
+.rdp-button_previous,
+.rdp-button_next { z-index: 4; }
+
 .rdp-root[data-nav-layout="around"] .rdp-month,
 .rdp-root[data-nav-layout="after"] .rdp-month {
   position: relative;
@@ -254,6 +269,28 @@
   flex-wrap: wrap;
   gap: var(--rdp-months-gap);
   max-width: fit-content;
+  align-items: flex-start;
+}
+
+
+.rdp-month {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--rdp-nav-height) + 2rem + (var(--rdp-day_button-height) * 6));
+  overflow: hidden;
+}
+
+.rdp-month_grid {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.rdp-month_grid thead th { height: var(--rdp-weekday-padding); }
+.rdp-month_grid tbody tr { height: var(--rdp-day_button-height); }
+.rdp-month_grid td, .rdp-month_grid th {
+  height: var(--rdp-day_button-height);
+  vertical-align: middle;
+  padding: 0;
 }
 
 .rdp-month_grid {
@@ -305,7 +342,7 @@
   background-color: transparent !important;
   border: 4px solid var(--rdp-accent-color) !important;
   color: var(--rdp-accent-color);
-  border-radius: 4px; 
+  border-radius: 4px;
 }
 
 

@@ -7,6 +7,9 @@ import { useState } from 'react';
 export default function Navbar() {
     const { user } = usePage().props.auth;
     const [AbrirDesplegable, setAbrir] = useState(false);
+    const [openUserMenu, setOpenUserMenu] = useState(false);
+    const initials = user ? (user.name || '').split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() : '';
+    const firstName = user ? (user.name || '').split(' ')[0] : '';
 
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-gray-100 bg-gris">
@@ -36,6 +39,28 @@ export default function Navbar() {
                             Reservar
                         </label>
 
+                        {user ? (
+                            <div className="relative hidden sm:block">
+                                <button onClick={() => setOpenUserMenu(!openUserMenu)} className="inline-flex items-center gap-3 rounded-md px-3 py-1 bg-gris border border-gray-200 text-sm font-medium hover:shadow-sm">
+                                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-sm font-semibold text-gray-900">{initials}</div>
+                                    <span className="truncate max-w-[10rem] text-gray-900">{firstName}</span>
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                {openUserMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 ring-1 ring-black ring-opacity-5">
+                                        <div className="py-1">
+                                            <Link href={route('profile.edit')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Perfil</Link>
+                                            <Link method="post" href={route('logout')} as="button" className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cerrar sesión</Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="hidden sm:block">
+                                <Link href={route('login')} className="inline-flex items-center px-4 py-1 rounded-md border border-gray-200 bg-white text-sm font-medium hover:shadow-sm whitespace-nowrap min-w-[5.5rem] justify-center">Log in</Link>
+                            </div>
+                        )}
+
                         <div className="flex sm:hidden">
                             <button
                                 onClick={() => setAbrir(!AbrirDesplegable)}
@@ -54,8 +79,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            <div
-                className={`${AbrirDesplegable ? 'block' : 'hidden'} bg-red-500 sm:hidden`}>
+            <div className={`${AbrirDesplegable ? 'block' : 'hidden'} bg-red-500 sm:hidden`}>
                 <div className="flex flex-col space-y-1 px-4 py-2">
                     <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')} className="block rounded px-3 py-2 hover:bg-red-600">
                         HABITACIONES
@@ -66,8 +90,7 @@ export default function Navbar() {
                     <ResponsiveNavLink href={route('home')} active={route().current('home')} className="block rounded px-3 py-2 hover:bg-red-600">
                         SERVICIOS
                     </ResponsiveNavLink>
-                    <ResponsiveNavLink href={route('home')} active={route().current('home')} className="block rounded px-3 py-2 hover:bg-red-600"
-                    >
+                    <ResponsiveNavLink href={route('home')} active={route().current('home')} className="block rounded px-3 py-2 hover:bg-red-600">
                         CONTACTO
                     </ResponsiveNavLink>
                 </div>

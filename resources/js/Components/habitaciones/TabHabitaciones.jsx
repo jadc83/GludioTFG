@@ -9,15 +9,12 @@ export default function TabHabitaciones({ habitaciones = [] }) {
     return (
         <div className="p-6">
             <div className="space-y-4 mb-6">
-                <div className="form-control">
-                    <div className="flex items-center gap-3 p-3 bg-gris max-w-md mx-auto mb-6">
-                        <input type="text" placeholder="Número, tipo o descripción..." className="flex-1 input input-bordered bg-base-100 border-base-300 focus:border-[#920303] focus:ring-2 focus:ring-[#920303]/20 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="form-control">
+                        <label className="label"><span className="label-text font-medium">Búsqueda</span></label>
+                        <input type="text" placeholder="busca algun dato" className="input input-bordered w-full"
                             value={filtros.busqueda || ''} onChange={(e) => filtros.setBusqueda(e.target.value)} />
                     </div>
-
-                </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="form-control">
                         <label className="label">Estado</label>
                         <select className="select select-bordered w-full" value={filtros.estado} onChange={(e) => filtros.setEstado(e.target.value)}>
@@ -38,15 +35,6 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                             <option value="doble">Doble</option>
                             <option value="suite">Suite</option>
                             <option value="familiar">Familiar</option>
-                        </select>
-                    </div>
-
-                    <div className="form-control">
-                        <label className="label">Capacidad</label>
-                        <select className="select select-bordered w-full" value={filtros.capacidad} onChange={(e) => filtros.setCapacidad(e.target.value)}>
-                            <option value="todos">Todas</option>
-                            {datos.capacidadesDisponibles.map(cap => (<option key={cap} value={cap}>{cap} persona{cap > 1 ? 's' : ''}
-                            </option>))}
                         </select>
                     </div>
 

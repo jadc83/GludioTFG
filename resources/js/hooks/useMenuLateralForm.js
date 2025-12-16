@@ -28,7 +28,6 @@ export default function useFormularioMenuLateral() {
     const currentUser = page?.props?.auth?.user ?? null;
     const [reservaNoEsParaMi, setReservaNoEsParaMi] = useState(currentUser ? false : true);
 
-    // Búsqueda de clientes con debounce
     useEffect(() => {
         if (modoNuevo) return setResultados([]);
 
@@ -73,9 +72,9 @@ export default function useFormularioMenuLateral() {
         if (paso === 1 && (!rango?.from || !rango?.to))
             return setError('Selecciona un rango de fechas.');
         setError('');
-        // Si estamos en el paso 1 y hay usuario logueado y no se marca el check saltamos el paso 2
+
         if (paso === 1 && currentUser && !reservaNoEsParaMi) {
-            // asegurar que la reserva se asocie al usuario autenticado
+
             setReservableId(currentUser.id);
             setReservableTipo('usuario');
             try {
@@ -93,7 +92,7 @@ export default function useFormularioMenuLateral() {
         setPaso(paso + 1);
     };
     const volverAtras = () => {
-        // Si hay usuario autenticado y estamos en paso 3, volver nos lleva a fechas (paso 1)
+
         if (currentUser && paso === 3)
             { setPaso(1); return; }
             setPaso(paso - 1);
@@ -143,7 +142,6 @@ export default function useFormularioMenuLateral() {
         return `${y}-${m}-${day}`;
     };
 
-    // Fetch de habitaciones disponibles cuando se entra en paso 3
     useEffect(() => {
         const fetchRooms = async () => {
             if (!rango?.from || !rango?.to) return setAvailableRooms([]);
@@ -175,9 +173,10 @@ export default function useFormularioMenuLateral() {
             if (!types[r.tipo]) {
                 types[r.tipo] = { count: 0, maxCap: 0, minPrice: null, rooms: [] };
             }
+            const precio = r.precio_noche ?? r.precio ?? null;
             types[r.tipo].count++;
             types[r.tipo].maxCap = Math.max(types[r.tipo].maxCap, r.capacidad || 1);
-            types[r.tipo].minPrice = types[r.tipo].minPrice === null ? r.precio : Math.min(types[r.tipo].minPrice, r.precio || types[r.tipo].minPrice);
+            types[r.tipo].minPrice = types[r.tipo].minPrice === null ? precio : Math.min(types[r.tipo].minPrice, precio || types[r.tipo].minPrice);
             types[r.tipo].rooms.push(r);
         });
         return types;
@@ -260,19 +259,19 @@ export default function useFormularioMenuLateral() {
                 }));
             formulario.setData('habitaciones', habitaciones);
         }
-        const payload = {
+        const respuesta = {
             ...formulario.data,
             check_in,
             check_out,
         };
 
         if (reservableId && reservableTipo) {
-            payload.reservable_id = reservableId;
-            payload.tipo_usuario = reservableTipo;
+            respuesta.reservable_id = reservableId;
+            respuesta.tipo_usuario = reservableTipo;
         }
 
         if (Object.keys(selectedRooms).length > 0) {
-            payload.habitaciones = Object.entries(selectedRooms)
+            respuesta.habitaciones = Object.entries(selectedRooms)
                 .filter(([_, r]) => r.cantidad > 0)
                 .map(([tipo, r]) => ({
                     tipo,
@@ -281,13 +280,29 @@ export default function useFormularioMenuLateral() {
                 }));
         }
 
-        if (payload.tipo_usuario === 'cliente' && currentUser) {
-            payload.booked_by_user_id = currentUser.id;
+        if (respuesta.tipo_usuario === 'cliente' && currentUser) {
+            respuesta.booked_by_user_id = currentUser.id;
         }
 
-        router.post('/reservas', payload, {
+        router.post('/reservas', respuesta, {
             onSuccess: () => {
                 try { document.getElementById('drawer-toggle').checked = false; } catch (e) {}
+
+                try {
+                    if (typeof formulario.reset === 'function') formulario.reset();
+                } catch (e) {}
+
+                setPaso(1);
+                setRango({ from: undefined, to: undefined });
+                setSelectedRooms({});
+                setAvailableRooms([]);
+                setReservableId(null);
+                setReservableTipo(null);
+                setSeleccionado(null);
+                setModoNuevo(true);
+                setQuery('');
+                setResultados([]);
+                setReservaNoEsParaMi(currentUser ? false : true);
             },
             onError: (errors) => {
                 try {

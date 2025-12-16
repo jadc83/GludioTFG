@@ -126,7 +126,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
         if (seleccionadas.length === 0) return;
 
         setGuardando(true);
-        const payload = {
+        const respuesta = {
             ...form,
             habitacion_ids: seleccionadas,
             reservable_id: clienteSeleccionado?.id || null,
@@ -134,7 +134,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
             crear_cliente: modoNuevoCliente
         };
 
-        router.post(route('reservas.store'), payload, {
+        router.post(route('reservas.store'), respuesta, {
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {

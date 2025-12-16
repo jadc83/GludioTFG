@@ -33,7 +33,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
 
     return (
         <>
-            <div className="overflow-x-auto">
+            <div className="table-pro-wrapper">
                 {habitaciones.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <InboxIcon className="w-24 h-24 text-gray-300" />
@@ -43,7 +43,9 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                         </div>
                     </div>
                 ) : (
-                    <table className="table table-zebra w-full">
+                    <div className="card bg-white shadow-lg rounded-lg overflow-hidden table-card">
+                        <div className="p-4 overflow-x-auto">
+                            <table className="table table-compact w-full table-pro">
                         <thead>
                             <tr>
                                 <th>Número</th>
@@ -88,8 +90,10 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                     </td>
                                 </tr>
                             ))}
-                        </tbody>
-                    </table>
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
                 )}
 
                 {habitaciones.length > 0 && (

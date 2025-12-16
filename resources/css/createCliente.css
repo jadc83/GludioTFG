@@ -86,8 +86,9 @@
 
 .drawer-header {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
+  gap: 0.5rem;
   position: relative;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e7eb;
@@ -99,7 +100,7 @@
   font-size: 1.125rem;
   color: #920303;
   margin: 0;
-  text-align: center;
+  text-align: left;
 }
 
 .btn-cerrar {

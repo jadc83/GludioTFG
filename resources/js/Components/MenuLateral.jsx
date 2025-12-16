@@ -2,6 +2,7 @@ import { es } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import PrimaryButton from './PrimaryButton';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 import CreateReservaPaso1 from './reservas/formulario/CreateReservaPaso1';
 import '../../css/estiloCalendario.css';
 import '../../css/createHabitacion.css';
@@ -106,11 +107,27 @@ export default function Reservas() {
                         {paso === 1 && (
                             <main className="flex h-full flex-col bg-gris p-4">
                                 <header>
-                                    <h2 className="mb-6 text-center text-lg font-bold text-red-700">Reservar fechas</h2>
+                                    <h2 className="mb-4 text-center text-lg font-bold text-red-700">Reservar fechas</h2>
+
+                                    <div className="w-full flex justify-center mb-4">
+                                        <div className="w-full max-w-md overflow-hidden rounded-lg banner-navidad">
+                                            <div className="flex items-center mr-3">
+                                                <ApplicationLogo className="banner-logo h-10 w-10" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-base font-semibold">Oferta de Navidad — 15% dto</h4>
+                                                <p className="text-xs">Reserva entre 20 dic y 5 ene y obtén un 15% de descuento con el código <strong>NAVIDAD15</strong>. Plazas limitadas.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <Migitas />
                                 </header>
+
                                 <div className="flex flex-1 items-center justify-center">
-                                    <DayPicker mode="range" selected={rango} onSelect={setRango} locale={es} disabled={{ before: new Date() }} />
+                                    <div className="w-full max-w-md">
+                                        <DayPicker mode="range" selected={rango} onSelect={setRango} locale={es} disabled={{ before: new Date() }} />
+                                    </div>
                                 </div>
                                 {currentUser && (
                                     <div className="px-4 pt-2">
@@ -188,11 +205,8 @@ export default function Reservas() {
                                                             )}
 
                                                             <div className="relative h-28 overflow-hidden">
-                                                                <img
-                                                                    src={getRoomTypeImage(tipo)}
-                                                                    alt={`Habitación ${tipo}`}
-                                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                                />
+                                                                <img src={getRoomTypeImage(tipo)} alt={`Habitación ${tipo}`}
+                                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
                                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                                                                 <div className="absolute bottom-0 left-0 right-0 p-2">
                                                                     <h4 className="text-base font-bold text-white mb-0 drop-shadow-lg">{tipo}</h4>
@@ -224,19 +238,15 @@ export default function Reservas() {
                                                                             <div className="join">
                                                                                 <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.max(0, (selectedRooms[tipo]?.cantidad || 0) - 1))}
                                                                                     disabled={(selectedRooms[tipo]?.cantidad || 0) === 0}
-                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ (selectedRooms[tipo]?.cantidad || 0) === 0 ? 'boton-deshabilitado' : 'boton-activo' }`}
-                                                                                >
+                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ (selectedRooms[tipo]?.cantidad || 0) === 0 ? 'boton-deshabilitado' : 'boton-activo' }`}>
                                                                                     −
                                                                                 </button>
                                                                                 <span className="join-item flex items-center justify-center bg-white border-y border-gray-300 px-4 text-lg font-black numero-unidad">
                                                                                     {selectedRooms[tipo]?.cantidad || 0}
                                                                                 </span>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.min(Math.min(info.count, 5), (selectedRooms[tipo]?.cantidad || 0) + 1))}
+                                                                                <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.min(Math.min(info.count, 5), (selectedRooms[tipo]?.cantidad || 0) + 1))}
                                                                                     disabled={(selectedRooms[tipo]?.cantidad || 0) >= Math.min(info.count, 5)}
-                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ (selectedRooms[tipo]?.cantidad || 0) >= Math.min(info.count, 5) ? 'boton-deshabilitado' : 'boton-activo' }`}
-                                                                                >
+                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ (selectedRooms[tipo]?.cantidad || 0) >= Math.min(info.count, 5) ? 'boton-deshabilitado' : 'boton-activo' }`}>
                                                                                     +
                                                                                 </button>
                                                                             </div>
@@ -246,23 +256,17 @@ export default function Reservas() {
                                                                                 Huéspedes
                                                                             </label>
                                                                             <div className="join">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.max(1, (selectedRooms[tipo]?.personas || 1) - 1))}
+                                                                                <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.max(1, (selectedRooms[tipo]?.personas || 1) - 1))}
                                                                                     disabled={!isSelected || (selectedRooms[tipo]?.personas || 1) === 1}
-                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ !isSelected || (selectedRooms[tipo]?.personas || 1) === 1 ? 'boton-deshabilitado' : 'boton-activo' }`}
-                                                                                >
+                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ !isSelected || (selectedRooms[tipo]?.personas || 1) === 1 ? 'boton-deshabilitado' : 'boton-activo' }`}>
                                                                                     −
                                                                                 </button>
                                                                                 <span className="join-item flex items-center justify-center bg-white border-y border-gray-300 px-4 text-lg font-black numero-unidad">
                                                                                     {selectedRooms[tipo]?.personas || 1}
                                                                                 </span>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.min(info.maxCap, (selectedRooms[tipo]?.personas || 1) + 1))}
+                                                                                <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.min(info.maxCap, (selectedRooms[tipo]?.personas || 1) + 1))}
                                                                                     disabled={!isSelected || (selectedRooms[tipo]?.personas || 1) >= info.maxCap}
-                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ !isSelected || (selectedRooms[tipo]?.personas || 1) >= info.maxCap ? 'boton-deshabilitado' : 'boton-activo' }`}
-                                                                                >
+                                                                                    className={`btn join-item btn-sm font-bold text-lg min-w-[3rem] ${ !isSelected || (selectedRooms[tipo]?.personas || 1) >= info.maxCap ? 'boton-deshabilitado' : 'boton-activo' }`}>
                                                                                     +
                                                                                 </button>
                                                                             </div>
@@ -279,17 +283,10 @@ export default function Reservas() {
 
                                     <footer className="px-4 py-3 bg-gris border-t border-gray-300">
                                         <div className="flex justify-between items-center gap-3">
-                                            <PrimaryButton type="button"
-                                                onClick={volverAtras}
-                                                className="px-6"
-                                            >
+                                            <PrimaryButton onClick={volverAtras} className="px-6">
                                                 ← Atrás
                                             </PrimaryButton>
-                                            <PrimaryButton
-                                                onClick={continuar}
-                                                disabled={getTotalRoomsSelected() === 0}
-                                                className="px-8"
-                                            >
+                                            <PrimaryButton onClick={continuar} disabled={getTotalRoomsSelected() === 0} className="px-8">
                                                 Continuar →
                                             </PrimaryButton>
                                         </div>

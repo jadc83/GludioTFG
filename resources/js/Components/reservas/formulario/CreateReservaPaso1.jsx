@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Campo from '@/Components/Campo';
 import { ArrowRightIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function CreateReservaPaso1({ form, errores, onChange, onNext, searchProps, hideDates = false, hideNextButton = false }) {
 
@@ -11,15 +12,10 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
 
             <div className="flex justify-center mb-4">
                 <div className="bg-base-200 p-1 rounded-lg inline-flex w-full sm:w-auto">
-                    <button type="button" onClick={() => { setModoNuevo(true); onSeleccionar(null); }}
-                        className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                            ${modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
-                        style={modoNuevo ? { color: '#920303' } : {}}>
+                    <button type="button" onClick={() => { setModoNuevo(true); onSeleccionar(null); }} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`} style={modoNuevo ? { color: '#920303' } : {}}>
                         Nuevo Cliente
                     </button>
-                    <button type="button" onClick={() => setModoNuevo(false)} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                            ${!modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
-                        style={!modoNuevo ? { color: '#920303' } : {}}>
+                    <button type="button" onClick={() => setModoNuevo(false)} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${!modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`} style={!modoNuevo ? { color: '#920303' } : {}}>
                         Buscar Existente
                     </button>
                 </div>
@@ -31,7 +27,7 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
 
                     <div className="join w-full">
                         <input type="text" className="input input-bordered join-item w-full" placeholder="Buscar por nombre, DNI o email..."
-                            value={query} onChange={(e) => setQuery(e.target.value)} autoFocus/>
+                            value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
                     </div>
 
 
@@ -53,22 +49,22 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                             {!cargando && resultados.length > 0 && resultados
                                 .filter(p => !(seleccionado && p.id === seleccionado.id && p.tipo_usuario === seleccionado.tipo_usuario))
                                 .map(p => (
-                                <div key={`${p.tipo_usuario}-${p.id}`} onClick={() => onSeleccionar(p)}
-                                    className="p-3 hover:bg-primary/10 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
+                                    <div key={`${p.tipo_usuario}-${p.id}`} onClick={() => onSeleccionar(p)}
+                                        className="p-3 hover:bg-primary/10 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
 
-                                    <div className="font-semibold text-gray-800 flex items-center gap-2">
-                                        {p.tipo_usuario === 'usuario' && <span className="badge badge-warning badge-sm">⭐ Usuario</span>}
-                                        {p.tipo_usuario === 'cliente' && <span className="badge badge-ghost badge-sm">👤 Cliente</span>}
-                                        {p.nombre || p.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500 flex gap-2 mt-1">
-                                        <span>{p.numero_documento}</span>
-                                        {p.email && <span>{p.email}</span>}
-                                        {p.telefono && <span>{p.telefono}</span>}
-                                    </div>
+                                        <div className="font-semibold text-gray-800 flex items-center gap-2">
+                                            {p.tipo_usuario === 'usuario' && <span className="badge badge-warning badge-sm">⭐ Usuario</span>}
+                                            {p.tipo_usuario === 'cliente' && <span className="badge badge-ghost badge-sm">👤 Cliente</span>}
+                                            {p.nombre || p.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 flex gap-2 mt-1">
+                                            <span>{p.numero_documento}</span>
+                                            {p.email && <span>{p.email}</span>}
+                                            {p.telefono && <span>{p.telefono}</span>}
+                                        </div>
 
-                                </div>
-                            ))}
+                                    </div>
+                                ))}
                         </div>
                     )}
 
@@ -111,6 +107,16 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                     </div>
 
                     <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange} />
+
+                    <div className="mt-6 flex items-start gap-3 text-sm text-gray-700">
+                        <ApplicationLogo className="h-6 w-6 flex-shrink-0 text-gray-500" />
+                        <div>
+                            <span>
+                                Por ley, este establecimiento está obligado a conservar los datos de identidad de los huéspedes (nombre, documento, dirección, teléfono y fechas de estancia) y a facilitarlos a las autoridades cuando se requiera. Los datos se tratarán y almacenarán de forma segura y únicamente para fines administrativos y legales.
+                            </span>
+                            <p className="mt-2 text-sm text-gray-600">Le deseamos una fantástica estancia con nosotros y quedamos a su disposición para cualquier consulta.</p>
+                        </div>
+                    </div>
 
                     {!hideDates && (
                         <div className="grid grid-cols-2 gap-4">

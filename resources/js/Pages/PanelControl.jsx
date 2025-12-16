@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CreateHabitacion from "@/Components/habitaciones/formulario/CreateHabitacion";
-import CreateReserva from "@/Components/reservas/formulario/CreateReserva";
 import CreateCliente from "@/Components/clientes/formulario/CreateCliente";
 import TabHabitaciones from "@/Components/habitaciones/TabHabitaciones";
 import TabClientes from "../Components/clientes/TabClientes";
@@ -19,31 +18,24 @@ const TABS = [
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
     return (
-        <button
-            onClick={() => onClick(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                ${activa
-                    ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5'
-                    : 'text-[#6b1212] hover:text-[#920303] hover:bg-gray-200/50'
-                }`}
-        >
+        <button onClick={() => onClick(id)} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:text-[#920303] hover:bg-gray-200/50'}`}>
             <Icon className="w-4 h-4" />
             {label}
         </button>
     );
 }
 
-function TabContenido({ tabActiva, habitaciones, habitacionesEstadisticas, clientes, clientesFiltrados, users, reservas, clientesEstadisticas, reservasEstadisticas }) {
+function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
     if (tabActiva === 'habitaciones') {
-        return <TabHabitaciones habitaciones={habitaciones} estadisticas={habitacionesEstadisticas} />;
+        return <TabHabitaciones habitaciones={habitaciones} />;
     }
 
     if (tabActiva === 'clientes') {
-        return <TabClientes clientes={clientes} users={users} estadisticas={clientesEstadisticas} clientesFiltrados={clientesFiltrados} />;
+        return <TabClientes clientes={clientes} users={users} clientesFiltrados={clientesFiltrados} />;
     }
 
     if (tabActiva === 'reservas') {
-        return <TabReservas clientes={clientes} users={users} reservas={reservas} estadisticas={reservasEstadisticas} />;
+        return <TabReservas clientes={clientes} users={users} reservas={reservas} />;
     }
 
     return (
@@ -54,21 +46,9 @@ function TabContenido({ tabActiva, habitaciones, habitacionesEstadisticas, clien
     );
 }
 
-export default function PanelControl({ habitaciones = [],
-    habitacionesEstadisticas = {},
-    habitacionesDisponibles = [],
-    clientes = [],
-    clientesFiltrados = [],
-    clientesEstadisticas = {},
-    users = [],
-    reservas = [],
-    reservasEstadisticas = {}
-}) {
-    const [tabActiva, setTabActiva] = useState('habitaciones');
+export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = []}) {
 
-    const handleReservaSuccess = () => {
-        router.reload({ only: ['habitaciones', 'habitacionesDisponibles', 'reservas'] });
-    };
+    const [tabActiva, setTabActiva] = useState('habitaciones');
 
     return (
         <AuthenticatedLayout>
@@ -76,14 +56,14 @@ export default function PanelControl({ habitaciones = [],
                 <div className="seccionEncabezado">
                     <div className="contenidoEncabezado">
                         <div className="flexEncabezado">
-                            <div>
-                                <h1 className="tituloEncabezado">Panel de Control</h1>
-                                <p className="subtituloEncabezado">Gestión completa de hotel</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <CreateCliente iconOnly />
-                                <CreateHabitacion iconOnly />
-                                <CreateReserva iconOnly habitacionesDisponibles={habitacionesDisponibles} onSuccess={handleReservaSuccess} />
+                            <div className="flex items-center gap-3">
+                                <div>
+                                    <h1 className="tituloEncabezado">Panel de Control</h1>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CreateCliente iconOnly />
+                                    <CreateHabitacion iconOnly />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -100,17 +80,8 @@ export default function PanelControl({ habitaciones = [],
                         </div>
 
                         <div className="contenedorContenido bg-gris">
-                            <TabContenido
-                                tabActiva={tabActiva}
-                                habitaciones={habitaciones}
-                                habitacionesEstadisticas={habitacionesEstadisticas}
-                                clientes={clientes}
-                                clientesFiltrados={clientesFiltrados}
-                                users={users}
-                                reservas={reservas}
-                                clientesEstadisticas={clientesEstadisticas}
-                                reservasEstadisticas={reservasEstadisticas}
-                            />
+                            <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados} users={users}
+                                reservas={reservas}/>
                         </div>
                     </div>
                 </div>
