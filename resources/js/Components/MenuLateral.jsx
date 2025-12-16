@@ -12,7 +12,6 @@ import useFormularioMenuLateral from '../hooks/useMenuLateralForm';
 export default function Reservas() {
     const {
         paso,
-        setPaso,
         rango,
         setRango,
         form,
@@ -25,15 +24,10 @@ export default function Reservas() {
         cargando,
         seleccionado,
         seleccionarCliente,
-        reservableId,
-        reservableTipo,
-        availableRooms,
         loadingRooms,
         selectedRooms,
         actualizarSeleccionHabitacion,
-        eliminarTipoHabitacion,
         getTotalRoomsSelected,
-        resetSeleccion,
         error,
         limpiarRango,
         continuar,

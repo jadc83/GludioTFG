@@ -13,12 +13,10 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ReservaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $reservas = Reserva::with(['reservable', 'habitaciones.habitacion'])
@@ -35,8 +33,7 @@ class ReservaController extends Controller
             return response()->json($reservasJson);
         }
 
-        return [ 'reservas' => $reservasJson ];
-
+        return ['reservas' => $reservasJson];
     }
 
     public static function formatear($reservas)
@@ -59,211 +56,161 @@ class ReservaController extends Controller
         });
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreReservaRequest $request)
     {
-        return DB::transaction(function () use ($request) {
+        [$persona_id, $tipo_persona] = $this->porPersona($request);
 
-            $reservable_id = $request->reservable_id;
-            $tipo_usuario = $request->tipo_usuario;
+        if (!$persona_id) {
+            return back()->withErrors(['error' => 'Persona requerida']);
+        }
 
-            if ($reservable_id && $tipo_usuario) {
-                if ($tipo_usuario === 'usuario') {
-
-                    $user = User::find($reservable_id);
-
-                    if (!$user) { return back()->withErrors(['error' => 'Usuario no encontrado']); }
-
-                    $reservable_type = 'App\\Models\\User';
-
-                } else {
-
-                    $cliente = Cliente::find($reservable_id);
-
-                    if (!$cliente) { return back()->withErrors(['error' => 'Cliente no encontrado']); }
-
-                    $reservable_type = 'App\\Models\\Cliente';
-                }
-            }
-            else if ($reservable_id) {
-
-                $cliente = Cliente::find($reservable_id);
-
-                if ($cliente) {
-
-                    $reservable_type = 'App\\Models\\Cliente';
-
-                } else {
-
-                    $user = User::find($reservable_id);
-
-                    if (!$user) {
-
-                        return back()->withErrors(['error' => 'Persona no encontrada']);
-
-                    }
-
-                    $reservable_type = 'App\\Models\\User';
-                }
-            }
-            else if ($request->filled('name')) {
-
-                $cliente = Cliente::create([
-                    'name' => $request->name,
-                    'email' => $request->email ?? null,
-                    'telefono' => $request->telefono ?? null,
-                    'tipo_documento' => $request->tipo_documento ?? 'dni',
-                    'numero_documento' => $request->numero_documento,
-                    'nacionalidad' => $request->nacionalidad ?? '',
-                    'direccion' => $request->direccion ?? 'Sin dirección',
-                ]);
-
-                $reservable_id = $cliente->id;
-                $reservable_type = 'App\\Models\\Cliente';
-
-            } else {
-
-                return back()->withErrors(['error' => 'Persona requerida']);
-
-            }
+        return DB::transaction(function () use ($request, $persona_id, $tipo_persona) {
 
             do {
-
-                $localizador = 'R' . strtoupper(Str::random(6));
-
+                $localizador = 'G' . strtoupper(Str::random(6));
             } while (Reserva::where('localizador', $localizador)->exists());
-
-            $preciosHabitaciones = [];
-            $precioTotalReal = $request->precio_total ?? 0;
-
-            if ($request->filled('habitacion_ids') && is_array($request->habitacion_ids)) {
-                $preciosHabitaciones = Habitacion::whereIn('id', $request->habitacion_ids)->pluck('precio_noche', 'id')->toArray();
-
-                if (count($preciosHabitaciones) !== count($request->habitacion_ids)) {
-                    $preciosHabitaciones = [];
-                } else {
-                    $precioTotalReal = array_sum($preciosHabitaciones);
-                }
-            }
 
             $reserva = Reserva::create([
                 'localizador' => $localizador,
-                'reservable_id' => $reservable_id,
-                'reservable_type' => $reservable_type,
-                'booked_by_user_id' => auth()->id() ?? null,
+                'reservable_id' => $persona_id,
+                'reservable_type' => $tipo_persona,
+                'booked_by_user_id' => Auth::user()->id ?? null,
                 'check_in' => $request->check_in,
                 'check_out' => $request->check_out,
-                'precio_total' => $precioTotalReal,
+                'precio_total' => 0,
                 'status' => $request->status ?? 'pendiente',
                 'pago' => $request->pago ?? 'pendiente',
                 'notas' => $request->notas ?? "Reserva creada in-situ"
             ]);
 
-            if ($request->filled('habitaciones') && is_array($request->habitaciones)) {
-                $habitacionesAsignadas = [];
-                $precioTotalReal = 0;
+            $precioTotalReal = $this->asignarHabitacionesAutomaticamente($reserva, $request);
+            $reserva->update(['precio_total' => $precioTotalReal]);
 
-                foreach ($request->habitaciones as $solicitud) {
-                    $tipo = $solicitud['tipo'];
-                    $cantidad = $solicitud['cantidad'];
-                    $personas = $solicitud['personas_por_habitacion'] ?? 1;
-                    $disponibles = Habitacion::where('tipo', $tipo)
-                        ->where('estado', 'disponible')
-                        ->where('capacidad', '>=', $personas)
-                        ->whereDoesntHave('reservas', function ($q) use ($request) {
-                            $q->where('check_in', '<', $request->check_out)
-                              ->where('check_out', '>', $request->check_in);
-                        })
-                        ->orderBy('numero')
-                        ->take($cantidad)
-                        ->get();
+            $respuesta = [
+                'success' => true,
+                'message' => "Reserva {$localizador} creada (Total: €{$precioTotalReal})",
+                'localizador' => $localizador,
+                'reserva_id' => $reserva->id
+            ];
 
-                    if ($disponibles->count() < $cantidad) {
-
-                        throw new \Exception("No hay suficientes habitaciones de tipo {$tipo} disponibles");
-                    }
-
-
-                    foreach ($disponibles as $habitacion) {
-                        $habitacionReserva = HabitacionReserva::create([
-                            'reserva_id' => $reserva->id,
-                            'habitacion_id' => $habitacion->id,
-                            'precio' => $habitacion->precio_noche,
-                            'check_in' => $request->check_in,
-                            'check_out' => $request->check_out,
-                        ]);
-
-                        $habitacionesAsignadas[] = [
-                            'numero' => $habitacion->numero,
-                            'tipo' => $habitacion->tipo,
-                            'precio' => $habitacion->precio_noche
-                        ];
-
-                        $precioTotalReal += $habitacion->precio_noche;
-                    }
-                }
-
-                $reserva->update(['precio_total' => $precioTotalReal]);
+            if ($request->wantsJson()) {
+                return response()->json($respuesta);
             }
 
-            else if ($request->filled('habitacion_ids') && is_array($request->habitacion_ids)) {
-                foreach ($request->habitacion_ids as $habitacionId) {
-                    $precioHabitacion = $preciosHabitaciones[$habitacionId] ?? ($request->precio_total / count($request->habitacion_ids));
-
-                    HabitacionReserva::create([
-                        'reserva_id' => $reserva->id,
-                        'habitacion_id' => $habitacionId,
-                        'precio' => $precioHabitacion,
-                        'check_in' => $request->check_in,
-                        'check_out' => $request->check_out,
-                    ]);
-                }
-            }
-
-            return redirect()->back()->with(['success' => true, 'message' => "✅ Reserva {$localizador} creada (Total: €{$precioTotalReal})",
-                'localizador' => $localizador
-            ]);
+            return redirect()->back()->with($respuesta);
         });
+    }
+
+    private function obtenerModificadorPrecio($fecha): float
+    {
+        $modificador = 1.0;
+        $mes = $fecha->month;
+        $dia = $fecha->day;
+
+        if (($mes == 7 || $mes == 8) || ($mes == 12 && $dia >= 20)) {
+            $modificador *= 1.5;
+        } elseif (($mes == 3 || $mes == 4) && $dia >= 15 && $dia <= 31) {
+            $modificador *= 1.2;
+        }
+
+        if ($fecha->isWeekend()) $modificador *= 1.25;
+
+        $festivos = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-25'];
+
+        if (in_array($fecha->format('m-d'), $festivos)) $modificador *= 1.5;
+
+        return $modificador;
+    }
+
+    private function calcularPrecioEntreFechas($habitacion, $checkIn, $checkOut): float
+    {
+        $total = 0;
+        $fecha = Carbon::parse($checkIn)->copy();
+        $fechaFin = Carbon::parse($checkOut);
+
+        while ($fecha->lt($fechaFin)) {
+            $precioDia = $habitacion->precio_noche * $this->obtenerModificadorPrecio($fecha);
+            $total += round($precioDia, 2);
+            $fecha->addDay();
+        }
+
+        return $total;
+    }
+
+    private function asignarHabitacionesAutomaticamente(Reserva $reserva, $request): float
+    {
+        $precioTotalReal = 0;
+
+        foreach ($request->habitaciones as $solicitud) {
+            $tipo = $solicitud['tipo'];
+            $cantidad = $solicitud['cantidad'];
+            $personas = $solicitud['personas_por_habitacion'] ?? 1;
+
+            $disponibles = Habitacion::where('tipo', $tipo)
+                ->where('estado', 'disponible')
+                ->where('capacidad', '>=', $personas)
+                ->whereDoesntHave('reservas', function ($q) use ($request) {
+                    $q->where('check_in', '<', $request->check_out)
+                        ->where('check_out', '>', $request->check_in);
+                })
+                ->orderBy('numero')
+                ->take($cantidad)
+                ->get();
+
+            if ($disponibles->count() < $cantidad) {
+                throw new \Exception("No hay suficientes habitaciones de tipo {$tipo} disponibles");
+            }
+
+            foreach ($disponibles as $habitacion) {
+                $precioDinamico = $this->calcularPrecioEntreFechas($habitacion, $request->check_in, $request->check_out);
+
+                HabitacionReserva::create([
+                    'reserva_id' => $reserva->id,
+                    'habitacion_id' => $habitacion->id,
+                    'precio' => $precioDinamico,
+                    'check_in' => $request->check_in,
+                    'check_out' => $request->check_out,
+                ]);
+                $precioTotalReal += $precioDinamico;
+            }
+        }
+
+        return $precioTotalReal;
     }
 
     public function buscar(Request $request)
     {
         $query = $request->query('query');
 
-        $users = User::where(function($q) use ($query) {
-                $q->where('name', 'LIKE', "%{$query}%")
-                  ->orWhere('email', 'LIKE', "%{$query}%")
-                  ->orWhere('numero_documento', 'LIKE', "%{$query}%");
-            })->select('id', 'name', 'email', 'numero_documento', 'telefono', 'nacionalidad')->limit(10)->get();
+        $users = User::where(function ($q) use ($query) {
+            $q->where('name', 'LIKE', "%{$query}%")
+                ->orWhere('email', 'LIKE', "%{$query}%")
+                ->orWhere('numero_documento', 'LIKE', "%{$query}%");
+        })->select('id', 'name', 'email', 'numero_documento', 'telefono', 'nacionalidad')->limit(10)->get();
 
         return response()->json($users);
     }
 
     public function habitacionesDisponibles(Request $request)
     {
-        $checkIn = $request->check_in;
-        $checkOut = $request->check_out;
+        $entrada = $request->check_in;
+        $salida = $request->check_out;
 
-        $query = Habitacion::with('fotos')->where('estado', 'disponible');
+        $consulta = Habitacion::with('fotos')->where('estado', 'disponible');
 
-        if ($checkIn && $checkOut) {
-            $query->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut) {
-                $q->where('check_in', '<', $checkOut)
-                  ->where('check_out', '>', $checkIn);
+        if ($entrada && $salida) {
+            $consulta->whereDoesntHave('reservas', function ($query) use ($entrada, $salida) {
+                $query->where('check_in', '<', $salida)
+                    ->where('check_out', '>', $entrada);
             });
         }
 
-        $habitaciones = $query->orderBy('numero')->get();
+        $habitaciones = $consulta->orderBy('numero')->get();
 
         $habitacionesFormateadas = $habitaciones->map(function ($habitacion) {
             return [
@@ -332,15 +279,15 @@ class ReservaController extends Controller
 
         $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->toArray();
         $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'precio_noche', 'capacidad', 'estado')
-            ->where(function($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
+            ->where(function ($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
                 $query->whereIn('id', $habitacionesActualesIds)
-                    ->orWhere(function($q) use ($reserva, $checkIn, $checkOut) {
+                    ->orWhere(function ($q) use ($reserva, $checkIn, $checkOut) {
                         $q->where('estado', 'disponible')
-                          ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkIn, $checkOut) {
-                              $subQ->where('reserva_id', '!=', $reserva->id)
-                                   ->where('check_in', '<', $checkOut)
-                                   ->where('check_out', '>', $checkIn);
-                          });
+                            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkIn, $checkOut) {
+                                $subQ->where('reserva_id', '!=', $reserva->id)
+                                    ->where('check_in', '<', $checkOut)
+                                    ->where('check_out', '>', $checkIn);
+                            });
                     });
             })
             ->orderBy('numero')
@@ -368,7 +315,6 @@ class ReservaController extends Controller
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated, $reserva) {
-
             $reserva->update([
                 'check_in' => $validated['check_in'],
                 'check_out' => $validated['check_out'],
@@ -402,6 +348,54 @@ class ReservaController extends Controller
         });
     }
 
-    public function destroy(Reserva $reserva) { }
+    public function destroy(Reserva $reserva)
+    {
+        //
+    }
 
+    private function porPersona($request): array
+    {
+        if ($persona = $this->porTipo($request)) {
+            return [$persona->id, get_class($persona)];
+        }
+
+        if ($persona = $this->porId($request->reservable_id)) {
+            return [$persona->id, get_class($persona)];
+        }
+
+        if ($request->filled('name')) {
+            return $this->nuevoCliente($request);
+        }
+
+        return [null, null];
+    }
+
+    private function porTipo($request)
+    {
+        if (!$request->reservable_id || !$request->tipo_usuario) {
+            return null;
+        }
+
+        return $request->tipo_usuario === 'usuario' ? User::find($request->reservable_id) : Cliente::find($request->reservable_id);
+    }
+
+    private function porId($id)
+    {
+        return Cliente::find($id) ?? User::find($id);
+    }
+
+    private function nuevoCliente($request)
+    {
+        $cliente = Cliente::create([
+            'name' => $request->name,
+            'email' => $request->email ?? null,
+            'telefono' => $request->telefono ?? null,
+            'tipo_documento' => $request->tipo_documento ?? 'dni',
+            'numero_documento' => $request->numero_documento,
+            'nacionalidad' => $request->nacionalidad ?? '',
+            'direccion' => $request->direccion ?? 'Sin dirección',
+        ]);
+
+        return [$cliente->id, 'App\\Models\\Cliente'];
+    }
 }

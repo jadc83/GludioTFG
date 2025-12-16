@@ -53,8 +53,8 @@ export default function CreateReservaPaso1({ form, errores, onChange, onNext, se
                                         className="p-3 hover:bg-primary/10 cursor-pointer border-b border-gray-100 last:border-0 transition-colors">
 
                                         <div className="font-semibold text-gray-800 flex items-center gap-2">
-                                            {p.tipo_usuario === 'usuario' && <span className="badge badge-warning badge-sm">⭐ Usuario</span>}
-                                            {p.tipo_usuario === 'cliente' && <span className="badge badge-ghost badge-sm">👤 Cliente</span>}
+                                            {p.tipo_usuario === 'usuario' && <span className="badge badge-warning badge-sm">Usuario</span>}
+                                            {p.tipo_usuario === 'cliente' && <span className="badge badge-ghost badge-sm">Cliente</span>}
                                             {p.nombre || p.name}
                                         </div>
                                         <div className="text-xs text-gray-500 flex gap-2 mt-1">
