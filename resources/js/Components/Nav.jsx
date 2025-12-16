@@ -57,7 +57,7 @@ export default function Navbar() {
                             </div>
                         ) : (
                             <div className="hidden sm:block">
-                                <Link href={route('login')} className="inline-flex items-center px-4 py-1 rounded-md border border-gray-200 bg-white text-sm font-medium hover:shadow-sm whitespace-nowrap min-w-[5.5rem] justify-center">Log in</Link>
+                                <Link href={route('login')} className="inline-flex items-center px-4 py-1 rounded-md border border-gray-200 bg-white text-sm font-medium text-black hover:shadow-sm whitespace-nowrap min-w-[5.5rem] justify-center">Log in</Link>
                             </div>
                         )}
 
@@ -112,7 +112,7 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <ResponsiveNavLink href={route('login')} className="block rounded px-3 py-2 hover:bg-red-600">
+                            <ResponsiveNavLink href={route('login')} className="block rounded px-3 py-2 hover:bg-red-600 text-black">
                                 Log in
                             </ResponsiveNavLink>
                             <ResponsiveNavLink href={route('register')} className="block rounded px-3 py-2 hover:bg-red-600">

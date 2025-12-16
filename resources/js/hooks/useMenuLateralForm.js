@@ -85,7 +85,7 @@ export default function useFormularioMenuLateral() {
                 formulario.setData('numero_documento', currentUser.numero_documento || formulario.data.numero_documento || '');
                 formulario.setData('nacionalidad', currentUser.nacionalidad || formulario.data.nacionalidad || '');
                 formulario.setData('direccion', currentUser.direccion || formulario.data.direccion || '');
-            } catch (e) {}
+            } catch (e) { }
             setPaso(3);
             return;
         }
@@ -93,9 +93,8 @@ export default function useFormularioMenuLateral() {
     };
     const volverAtras = () => {
 
-        if (currentUser && paso === 3)
-            { setPaso(1); return; }
-            setPaso(paso - 1);
+        if (currentUser && paso === 3) { setPaso(1); return; }
+        setPaso(paso - 1);
     };
 
     const cambioCampo = (campo) =>
@@ -167,18 +166,59 @@ export default function useFormularioMenuLateral() {
         if (paso === 3) fetchRooms();
     }, [paso, rango]);
 
+    const calcularPrecioDinamicoFrontend = (habitacion, checkIn, checkOut) => {
+        if (!checkIn || !checkOut) return habitacion.precio_noche || 0;
+
+        let total = 0;
+        let fecha = new Date(checkIn);
+        const fechaFin = new Date(checkOut);
+
+        while (fecha < fechaFin) {
+            let modificador = 1.0;
+
+            const mes = fecha.getMonth() + 1;
+            const dia = fecha.getDate();
+            if (mes === 7 || mes === 8 || (mes === 12 && dia >= 20)) {
+                modificador *= 1.5;
+            } else if ((mes === 3 || mes === 4) && dia >= 15 && dia <= 31) {
+                modificador *= 1.2;
+            }
+
+            if (fecha.getDay() === 0 || fecha.getDay() === 6) {
+                modificador *= 1.25;
+            }
+
+            const fechaFormato = `${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            const festivos = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-25'];
+            if (festivos.includes(fechaFormato)) {
+                modificador *= 1.5;
+            }
+
+            total += (habitacion.precio_noche || 0) * modificador;
+            fecha.setDate(fecha.getDate() + 1);
+        }
+
+        return Math.round(total);
+    };
+
     const getRoomTypes = () => {
         const types = {};
         availableRooms.forEach(r => {
             if (!types[r.tipo]) {
-                types[r.tipo] = { count: 0, maxCap: 0, minPrice: null, rooms: [] };
+                types[r.tipo] = { count: 0, maxCap: 0, minPrice: Infinity, rooms: [] };
             }
-            const precio = r.precio_noche ?? r.precio ?? null;
             types[r.tipo].count++;
             types[r.tipo].maxCap = Math.max(types[r.tipo].maxCap, r.capacidad || 1);
-            types[r.tipo].minPrice = types[r.tipo].minPrice === null ? precio : Math.min(types[r.tipo].minPrice, precio || types[r.tipo].minPrice);
+
+            const precioDinamico = calcularPrecioDinamicoFrontend(r, rango?.from, rango?.to);
+            types[r.tipo].minPrice = Math.min(types[r.tipo].minPrice, precioDinamico);
             types[r.tipo].rooms.push(r);
         });
+
+        Object.values(types).forEach(t => {
+            if (t.minPrice === Infinity) t.minPrice = null;
+        });
+
         return types;
     };
 
@@ -286,11 +326,11 @@ export default function useFormularioMenuLateral() {
 
         router.post('/reservas', respuesta, {
             onSuccess: () => {
-                try { document.getElementById('drawer-toggle').checked = false; } catch (e) {}
+                try { document.getElementById('drawer-toggle').checked = false; } catch (e) { }
 
                 try {
                     if (typeof formulario.reset === 'function') formulario.reset();
-                } catch (e) {}
+                } catch (e) { }
 
                 setPaso(1);
                 setRango({ from: undefined, to: undefined });

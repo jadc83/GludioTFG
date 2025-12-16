@@ -7,11 +7,10 @@ export default function Servicios() {
       <div className="container mx-auto px-6 lg:px-12">
 
         <div className="max-w-3xl mb-8 md:mb-12">
-          <span className="inline-block text-sm tracking-widest uppercase text-base-content/60 mb-4">La experiencia</span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl text-base-content mb-6 font-bold leading-tight">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl text-black mb-6 font-bold leading-tight">
             Una experiencia casi del más allá
           </h2>
-          <p className="text-base-content/70 text-lg leading-relaxed">
+          <p className="text-black text-lg leading-relaxed">
             En Hotel Gludio, cada momento está cuidadosamente orquestado para crear recuerdos que perduran. Desde nuestro spa de clase mundial hasta experiencias gastronómicas excepcionales.
           </p>
         </div>
