@@ -1,10 +1,12 @@
 import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
-import { EyeIcon, InboxIcon, PencilIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { EyeIcon, InboxIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useState, useMemo } from 'react';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
     const [habitacionEditar, setHabitacionEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
+    const [paginaActual, setPaginaActual] = useState(1);
+    const itemsPorPagina = 10;
 
     const abrirEdicion = (habitacion) => {
         setHabitacionEditar(habitacion);
@@ -28,6 +30,27 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 return 'badge-info';
             default:
                 return 'badge-neutral';
+        }
+    };
+
+    // Calcular datos paginados
+    const { habitacionesPaginadas, totalPaginas, inicio, fin } = useMemo(() => {
+        const totalPaginas = Math.ceil(habitaciones.length / itemsPorPagina);
+        const inicio = (paginaActual - 1) * itemsPorPagina;
+        const fin = inicio + itemsPorPagina;
+        const habitacionesPaginadas = habitaciones.slice(inicio, fin);
+        return { habitacionesPaginadas, totalPaginas, inicio, fin };
+    }, [habitaciones, paginaActual]);
+
+    const irAProximaPagina = () => {
+        if (paginaActual < totalPaginas) {
+            setPaginaActual(paginaActual + 1);
+        }
+    };
+
+    const irAPaginaAnterior = () => {
+        if (paginaActual > 1) {
+            setPaginaActual(paginaActual - 1);
         }
     };
 
@@ -62,7 +85,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {habitaciones.map((habitacion) => (
+                                    {habitacionesPaginadas.map((habitacion) => (
                                         <tr
                                             key={habitacion.id}
                                             className="hover"
@@ -133,9 +156,53 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 )}
 
                 {habitaciones.length > 0 && (
-                    <div className="mt-4 flex justify-center text-sm text-gray-600">
-                        Mostrando {habitaciones.length} habitacion
-                        {habitaciones.length !== 1 ? 'es' : ''}
+                    <div className="flex flex-col items-center justify-between gap-6 border-t border-gray-200 bg-gris px-6 py-6 sm:flex-row">
+                        <div className="text-sm font-medium text-gray-700">
+                            <span className="font-semibold text-primary">{inicio + 1}</span>
+                            <span className="mx-1 text-gray-500">a</span>
+                            <span className="font-semibold text-primary">{Math.min(fin, habitaciones.length)}</span>
+                            <span className="mx-1 text-gray-500">de</span>
+                            <span className="font-semibold text-primary">{habitaciones.length}</span>
+                            <span className="ml-1 text-gray-600">habitacion{habitaciones.length !== 1 ? 'es' : ''}</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={irAPaginaAnterior}
+                                disabled={paginaActual === 1}
+                                className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
+                                title="Página anterior"
+                            >
+                                <ChevronLeftIcon className="h-4 w-4" />
+                                <span className="hidden sm:inline">Anterior</span>
+                            </button>
+
+                            <div className="flex items-center gap-1 rounded-lg bg-white p-2 shadow-sm">
+                                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
+                                    <button
+                                        key={pagina}
+                                        onClick={() => setPaginaActual(pagina)}
+                                        className={`btn btn-xs px-3 transition-all ${
+                                            paginaActual === pagina
+                                                ? 'border-0 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                                                : 'border-0 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {pagina}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={irAProximaPagina}
+                                disabled={paginaActual === totalPaginas}
+                                className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
+                                title="Próxima página"
+                            >
+                                <span className="hidden sm:inline">Siguiente</span>
+                                <ChevronRightIcon className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
