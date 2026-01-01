@@ -1,6 +1,5 @@
 import '@/../css/createReserva.css';
 import {
-    EyeIcon,
     FunnelIcon,
     InboxIcon,
     PencilIcon,
@@ -16,17 +15,14 @@ export default function IndexReserva({ reservas = [] }) {
         cliente: '',
         habitacion: '',
     });
-
     const actualizarFiltro = (campo, valor) => {
         setFiltros((prev) => ({ ...prev, [campo]: valor }));
     };
-
     const hayFiltrosActivos =
         filtros.status !== 'todos' ||
         filtros.localizador !== '' ||
         filtros.cliente !== '' ||
         filtros.habitacion !== '';
-
     const limpiarFiltros = () => {
         setFiltros({
             status: 'todos',
@@ -83,9 +79,7 @@ export default function IndexReserva({ reservas = [] }) {
 
     const eliminarReserva = (id) => {
         if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
-            router.delete(`/reservas/${id}`, {
-                preserveScroll: true,
-            });
+            router.delete(`/reservas/${id}`, { preserveScroll: true });
         }
     };
 
@@ -150,7 +144,11 @@ export default function IndexReserva({ reservas = [] }) {
                 </div>
 
                 <div className="self-end">
-                    <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline w-full hover:btn-info">
+                    <button
+                        type="button"
+                        onClick={limpiarFiltros}
+                        className="btn btn-info btn-outline w-full hover:btn-info"
+                    >
                         <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
                     </button>
                 </div>
@@ -208,27 +206,44 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             <td className="celda-fechas font-mono">
                                                 <div>
-                                                    {new Date( reserva.check_in ).toLocaleDateString('es-ES')}
+                                                    {new Date(
+                                                        reserva.check_in,
+                                                    ).toLocaleDateString(
+                                                        'es-ES',
+                                                    )}
                                                 </div>
                                                 <div className="fecha-checkout">
                                                     {' '}
                                                     →{' '}
-                                                    {new Date( reserva.check_out).toLocaleDateString('es-ES')}{' '}
+                                                    {new Date(
+                                                        reserva.check_out,
+                                                    ).toLocaleDateString(
+                                                        'es-ES',
+                                                    )}{' '}
                                                 </div>
                                             </td>
 
                                             <td className="celda-precio font-mono text-success">
-                                                 {parseFloat( reserva.precio_total || 0 ).toFixed(2)}€
+                                                {parseFloat(
+                                                    reserva.precio_total || 0,
+                                                ).toFixed(2)}
+                                                €
                                             </td>
 
                                             <td>
-                                                <span className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}>
-                                                    {reserva.status?.replace( '_', ' ').toUpperCase()}
+                                                <span
+                                                    className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}
+                                                >
+                                                    {reserva.status
+                                                        ?.replace('_', ' ')
+                                                        .toUpperCase()}
                                                 </span>
                                             </td>
 
                                             <td>
-                                                <span className={`badge ${obtenerColorPago(reserva.pago)}`}>
+                                                <span
+                                                    className={`badge ${obtenerColorPago(reserva.pago)}`}
+                                                >
                                                     {reserva.pago}
                                                 </span>
                                             </td>
@@ -236,7 +251,11 @@ export default function IndexReserva({ reservas = [] }) {
                                             <td className="celda-creado font-mono">
                                                 {reserva.created_at ? (
                                                     <div>
-                                                        {new Date( reserva.created_at ).toLocaleString( 'es-ES' )}
+                                                        {new Date(
+                                                            reserva.created_at,
+                                                        ).toLocaleString(
+                                                            'es-ES',
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <span className="text-gray-400">
@@ -247,12 +266,26 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button className="btn btn-primary btn-sm" title="Editar reserva"
-                                                        onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}>
+                                                    <button
+                                                        className="btn btn-primary btn-sm"
+                                                        title="Editar reserva"
+                                                        onClick={() =>
+                                                            router.visit(
+                                                                `/reservas/${reserva.id}/edit`,
+                                                            )
+                                                        }
+                                                    >
                                                         <PencilIcon className="h-4 w-4" />
                                                     </button>
-                                                    <button className="btn btn-error btn-sm btn-ghost hover:btn-error hover:text-white"
-                                                        title="Eliminar reserva" onClick={() => eliminarReserva(reserva.id)}>
+                                                    <button
+                                                        className="btn btn-error btn-ghost btn-sm hover:btn-error hover:text-white"
+                                                        title="Eliminar reserva"
+                                                        onClick={() =>
+                                                            eliminarReserva(
+                                                                reserva.id,
+                                                            )
+                                                        }
+                                                    >
                                                         <TrashIcon className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -267,7 +300,7 @@ export default function IndexReserva({ reservas = [] }) {
 
                 {hayFiltrosActivos && reservas.length > 0 && (
                     <div className="mt-4 flex justify-center text-sm text-gray-600">
-                        Mostrando {reservas.length} reserva
+                        Mostrando {reservas.length} reserva{' '}
                         {reservas.length !== 1 ? 's' : ''}
                     </div>
                 )}

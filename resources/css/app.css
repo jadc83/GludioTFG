@@ -22,4 +22,9 @@
     @apply font-semibold;
     letter-spacing: -0.02em;
   }
+
+  html {
+    /* Reservar espacio para el scrollbar en todos los navegadores */
+    scrollbar-gutter: stable;
+  }
 }

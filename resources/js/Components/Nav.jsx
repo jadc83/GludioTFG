@@ -20,37 +20,39 @@ export default function Navbar() {
 
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-gray-100 bg-gris">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1">
                         <Link href="/">
                             <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
                         </Link>
                         <p className="font-semibold text-black">HOTEL GLUDIO</p>
                     </div>
 
-                    <div className="hidden w-full items-center justify-center space-x-8 sm:flex">
-                        <NavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </NavLink>
-                        <NavLink
-                            href={route('home')}
-                            active={route().current('home')}
-                        >
-                            Home
-                        </NavLink>
-                        <NavLink
-                            href={route('panel')}
-                            active={route().current('panel')}
-                        >
-                            Panel de Control
-                        </NavLink>
+                    <div className="hidden sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:flex sm:items-center">
+                        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex justify-center sm:space-x-8">
+                            <NavLink
+                                href={route('dashboard')}
+                                active={route().current('dashboard')}
+                            >
+                                Dashboard
+                            </NavLink>
+                            <NavLink
+                                href={route('home')}
+                                active={route().current('home')}
+                            >
+                                Home
+                            </NavLink>
+                            <NavLink
+                                href={route('panel')}
+                                active={route().current('panel')}
+                            >
+                                Panel de Control
+                            </NavLink>
+                        </div>
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1 justify-end">
                         <label
                             htmlFor="drawer-toggle"
                             className={`inline-flex cursor-pointer items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:shadow-[2px_2px_0_0_rgba(239,68,68,1)] focus:ring-2 focus:ring-red-800 focus:ring-offset-2 active:bg-gray-900`}

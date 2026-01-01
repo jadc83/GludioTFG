@@ -54,9 +54,9 @@ export default function IndexCliente({
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Nombre, email, documento o teléfono..."
                         className="input-bordered input w-full pl-11"
                         value={filtros.busqueda}
+                        placeholder="Nombre, email, documento o teléfono..."
                         onChange={(e) => filtros.setBusqueda(e.target.value)}
                     />
                 </div>
@@ -75,8 +75,7 @@ export default function IndexCliente({
                     onClick={acciones.limpiarFiltros}
                     className="btn btn-info btn-outline hover:btn-info"
                 >
-                    <FunnelIcon className="mr-2 h-4 w-4" />
-                    Limpiar filtros
+                    <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
                 </button>
             </div>
 
@@ -171,7 +170,7 @@ export default function IndexCliente({
                                             <td className="text-center">
                                                 <span className="badge badge-outline badge-sm">
                                                     {cliente.nacionalidad ||
-                                                        '-'}
+                                                        '-'}{' '}
                                                 </span>
                                             </td>
                                             <td className="max-w-xs">
