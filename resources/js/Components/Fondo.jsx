@@ -3,7 +3,11 @@ import '../../css/fondoLanding.css';
 export default function Fondo() {
     return (
         <div className="componente-fondo-wrapper">
-            <section className="hero-section" role="img" aria-label="Un hall de hotel elegante con el texto 'Donde la elegancia encuentra el confort'.">
+            <section
+                className="hero-section"
+                role="img"
+                aria-label="Un hall de hotel elegante con el texto 'Donde la elegancia encuentra el confort'."
+            >
                 <div className="overlay" aria-hidden="true"></div>
                 <div className="contenido">
                     <h1>

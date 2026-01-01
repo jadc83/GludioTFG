@@ -78,4 +78,18 @@ public function servicios()
         if (!$precioMax) return $query;
         return $query->where('precio_noche', '<=', (float)$precioMax);
     }
+
+    public function scopeDisponiblesEntre($query, $entrada, $salida, $ignoreReservaId = null)
+{
+    return $query->whereDoesntHave('reservas', function ($q) use ($entrada, $salida, $ignoreReservaId) {
+        $q->where(function ($sub) use ($entrada, $salida) {
+            $sub->where('check_in', '<', $salida)
+                ->where('check_out', '>', $entrada);
+        });
+
+        if ($ignoreReservaId) {
+            $q->where('reserva_id', '!=', $ignoreReservaId);
+        }
+    });
+}
 }

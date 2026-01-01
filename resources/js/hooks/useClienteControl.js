@@ -1,62 +1,49 @@
-import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
+import useRetraso from './useRetraso';
+import { useSincronizarFiltros } from './useSincronizarFiltros';
 
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-
-    return debouncedValue;
-}
 export const useClienteControl = (clientes = []) => {
-    const [filtroDocumento, setFiltroDocumento] = useState('todos');
-    const [filtroBusqueda, setFiltroBusqueda] = useState('');
+    const initial = { tipo_documento: 'todos', busqueda: '' };
+    const { filtros, actualizarFiltro, limpiarFiltros } = useSincronizarFiltros(
+        initial,
+        'panel',
+        ['clientes', 'clientesFiltrados'],
+    );
 
-    const debouncedBusqueda = useDebounce(filtroBusqueda, 500);
+    const busquedaRetrasada = useRetraso(filtros.busqueda, 500);
 
     useEffect(() => {
-        router.get(route('panel'), {
-            tipo_documento: filtroDocumento !== 'todos' ? filtroDocumento : undefined,
-            busqueda: debouncedBusqueda || undefined
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['clientes', 'clientesFiltrados'],
-            replace: true
-        });
-    }, [filtroDocumento, debouncedBusqueda]);
-
-    const limpiarFiltros = () => {
-        setFiltroDocumento('todos');
-        setFiltroBusqueda('');
-
-        router.get(route('panel'), {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['clientes', 'clientesFiltrados']
-        });
-    };
+        router.get(
+            route('panel'),
+            {
+                tipo_documento:
+                    filtros.tipo_documento !== 'todos'
+                        ? filtros.tipo_documento
+                        : undefined,
+                busqueda: busquedaRetrasada || undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['clientes', 'clientesFiltrados'],
+                replace: true,
+            },
+        );
+    }, [filtros.tipo_documento, busquedaRetrasada]);
 
     return {
         filtros: {
-            documento: filtroDocumento,
-            setDocumento: setFiltroDocumento,
-            busqueda: filtroBusqueda,
-            setBusqueda: setFiltroBusqueda
+            documento: filtros.tipo_documento,
+            setDocumento: (v) => actualizarFiltro('tipo_documento', v),
+            busqueda: filtros.busqueda,
+            setBusqueda: (v) => actualizarFiltro('busqueda', v),
         },
         datos: {
-            clientesFiltrados: clientes
+            clientesFiltrados: clientes,
         },
         acciones: {
-            limpiarFiltros
-        }
+            limpiarFiltros,
+        },
     };
 };

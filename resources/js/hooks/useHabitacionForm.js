@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 const CAPACIDADES = { doble: 2, suite: 2, familiar: 4 };
 const MAX_FOTOS = 4;
@@ -7,14 +7,21 @@ const MAX_FOTOS = 4;
 export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
     const esEdicion = !!habitacionInicial?.id;
 
-    const { data, setData, post, processing, errors, reset: resetForm, clearErrors } = useForm({
+    const {
+        data,
+        setData,
+        processing,
+        errors,
+        reset: resetForm,
+        clearErrors,
+    } = useForm({
         numero: '',
         tipo: 'doble',
         precio_noche: '',
         capacidad: CAPACIDADES['doble'],
         estado: 'disponible',
         descripcion: '',
-        notas: ''
+        notas: '',
     });
 
     const [fotos, setFotos] = useState([]);
@@ -28,24 +35,34 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
                 numero: habitacionInicial.numero || '',
                 tipo: habitacionInicial.tipo || 'doble',
                 precio_noche: habitacionInicial.precio_noche || '',
-                capacidad: habitacionInicial.capacidad || CAPACIDADES[habitacionInicial.tipo],
+                capacidad:
+                    habitacionInicial.capacidad ||
+                    CAPACIDADES[habitacionInicial.tipo],
                 estado: habitacionInicial.estado || 'disponible',
                 descripcion: habitacionInicial.descripcion || '',
-                notas: habitacionInicial.notas || ''
+                notas: habitacionInicial.notas || '',
             });
 
-            const fotosExistentes = (habitacionInicial.fotos || []).map(f => ({
-                id: f.id,
-                url: f.url || `/storage/${f.ruta}`,
-                ruta: f.ruta
-            }));
+            const fotosExistentes = (habitacionInicial.fotos || []).map(
+                (f) => ({
+                    id: f.id,
+                    url: f.url || `/storage/${f.ruta}`,
+                    ruta: f.ruta,
+                }),
+            );
             setFotosGuardadas(fotosExistentes);
-            setPreviews(fotosExistentes.map(f => f.url));
+            setPreviews(fotosExistentes.map((f) => f.url));
             setFotos([]);
             setFotosEliminadas([]);
             clearErrors();
         }
-    }, [esEdicion, habitacionInicial?.id, setData, clearErrors]);
+    }, [
+        esEdicion,
+        habitacionInicial,
+        habitacionInicial?.id,
+        setData,
+        clearErrors,
+    ]);
 
     const cambiar = (e) => {
         const { name, value } = e.target;
@@ -56,17 +73,30 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         }));
     };
 
-    const agregarFotos = (e) => {
+    const agregarFotos = async (e) => {
         const totalActual = fotosGuardadas.length + fotos.length;
-        const archivos = Array.from(e.target.files).slice(0, MAX_FOTOS - totalActual);
+        const archivos = Array.from(e.target.files).slice(
+            0,
+            MAX_FOTOS - totalActual,
+        );
         if (!archivos.length) return;
 
         setFotos((prev) => [...prev, ...archivos]);
-        archivos.forEach((archivo) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => setPreviews((prev) => [...prev, ev.target.result]);
-            reader.readAsDataURL(archivo);
-        });
+
+        const readFile = (archivo) =>
+            new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target.result);
+                reader.readAsDataURL(archivo);
+            });
+
+        try {
+            const nuevosPreviews = await Promise.all(archivos.map(readFile));
+            setPreviews((prev) => [...prev, ...nuevosPreviews]);
+        } catch (err) {
+            // si falla la lectura, no rompemos el flujo
+        }
+
         e.target.value = '';
     };
 
@@ -88,11 +118,15 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         e.preventDefault();
 
         const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+        Object.entries(data).forEach(([key, value]) =>
+            formData.append(key, value),
+        );
         fotos.forEach((foto) => formData.append('fotos[]', foto));
 
         if (esEdicion) {
-            fotosEliminadas.forEach((id) => formData.append('fotos_eliminar[]', id));
+            fotosEliminadas.forEach((id) =>
+                formData.append('fotos_eliminar[]', id),
+            );
             formData.append('_method', 'PUT');
 
             router.post(`/habitaciones/${habitacionInicial.id}`, formData, {
@@ -104,15 +138,16 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
                     onSuccess?.();
                 },
                 onError: (errors) => {
+                    void errors;
                 },
             });
         } else {
             router.post('/habitaciones', formData, {
-                preserveState: true,
-                preserveScroll: true,
+                preserveState: false,
+                preserveScroll: false,
                 onSuccess: () => {
+                    reset();
                     onSuccess?.();
-                    router.reload({ only: ['habitaciones'] });
                 },
             });
         }
@@ -126,7 +161,25 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         setFotosEliminadas([]);
     };
 
-    const capacidadFija = Object.prototype.hasOwnProperty.call(CAPACIDADES, data.tipo);
+    const capacidadFija = Object.prototype.hasOwnProperty.call(
+        CAPACIDADES,
+        data.tipo,
+    );
 
-    return { form: data, fotos, previews, fotosGuardadas, errores: errors, guardando: processing, capacidadFija, MAX_FOTOS, esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset };
+    return {
+        form: data,
+        fotos,
+        previews,
+        fotosGuardadas,
+        errores: errors,
+        guardando: processing,
+        capacidadFija,
+        MAX_FOTOS,
+        esEdicion,
+        cambiar,
+        agregarFotos,
+        quitarFoto,
+        enviar,
+        reset,
+    };
 }

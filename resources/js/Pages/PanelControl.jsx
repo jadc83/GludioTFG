@@ -1,12 +1,15 @@
+import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
+import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
+import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import {
+    BriefcaseIcon,
+    HomeIcon,
+    UsersIcon,
+} from '@heroicons/react/24/outline';
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import CreateHabitacion from "@/Components/habitaciones/formulario/CreateHabitacion";
-import CreateCliente from "@/Components/clientes/formulario/CreateCliente";
-import TabHabitaciones from "@/Components/habitaciones/TabHabitaciones";
-import TabClientes from "../Components/clientes/TabClientes";
-import { HomeIcon, UsersIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
 import '../../css/estiloPanelControl.css';
+import TabClientes from '../Components/clientes/TabClientes';
 import TabReservas from '../Components/reservas/TabReservas';
 
 const TABS = [
@@ -18,24 +21,46 @@ const TABS = [
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
     return (
-        <button onClick={() => onClick(id)} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:text-[#920303] hover:bg-gray-200/50'}`}>
-            <Icon className="w-4 h-4" />
+        <button
+            onClick={() => onClick(id)}
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:bg-gray-200/50 hover:text-[#920303]'}`}
+        >
+            <Icon className="h-4 w-4" />
             {label}
         </button>
     );
 }
 
-function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
+function TabContenido({
+    tabActiva,
+    habitaciones,
+    clientes,
+    clientesFiltrados,
+    users,
+    reservas,
+}) {
     if (tabActiva === 'habitaciones') {
         return <TabHabitaciones habitaciones={habitaciones} />;
     }
 
     if (tabActiva === 'clientes') {
-        return <TabClientes clientes={clientes} users={users} clientesFiltrados={clientesFiltrados} />;
+        return (
+            <TabClientes
+                clientes={clientes}
+                users={users}
+                clientesFiltrados={clientesFiltrados}
+            />
+        );
     }
 
     if (tabActiva === 'reservas') {
-        return <TabReservas clientes={clientes} users={users} reservas={reservas} />;
+        return (
+            <TabReservas
+                clientes={clientes}
+                users={users}
+                reservas={reservas}
+            />
+        );
     }
 
     return (
@@ -46,8 +71,13 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
     );
 }
 
-export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = []}) {
-
+export default function PanelControl({
+    habitaciones = [],
+    clientes = [],
+    clientesFiltrados = [],
+    users = [],
+    reservas = [],
+}) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
 
     return (
@@ -58,7 +88,9 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
                         <div className="flexEncabezado">
                             <div className="flex items-center gap-3">
                                 <div>
-                                    <h1 className="tituloEncabezado">Panel de Control</h1>
+                                    <h1 className="tituloEncabezado">
+                                        Panel de Control
+                                    </h1>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <CreateCliente iconOnly />
@@ -71,17 +103,30 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
 
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
-                        <div className="bg-base-200 p-1 rounded-lg flex justify-center w-full mb-6">
+                        <div className="mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1">
                             <div className="inline-flex gap-2">
-                                {TABS.map(tab => (
-                                    <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva} />
+                                {TABS.map((tab) => (
+                                    <BotonTab
+                                        key={tab.id}
+                                        id={tab.id}
+                                        icon={tab.icon}
+                                        label={tab.label}
+                                        activa={tabActiva === tab.id}
+                                        onClick={setTabActiva}
+                                    />
                                 ))}
                             </div>
                         </div>
 
                         <div className="contenedorContenido bg-gris">
-                            <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados} users={users}
-                                reservas={reservas}/>
+                            <TabContenido
+                                tabActiva={tabActiva}
+                                habitaciones={habitaciones}
+                                clientes={clientes}
+                                clientesFiltrados={clientesFiltrados}
+                                users={users}
+                                reservas={reservas}
+                            />
                         </div>
                     </div>
                 </div>

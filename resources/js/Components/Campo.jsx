@@ -1,9 +1,19 @@
-import { Fragment } from 'react';
-
-const Campo = ({ id, label, as = 'input', error, classNameExtra = '', children, ...props }) => {
+const Campo = ({
+    id,
+    label,
+    as = 'input',
+    error,
+    classNameExtra = '',
+    children,
+    ...props
+}) => {
     const InputTag = as;
-    const baseClass = as === 'textarea' ? 'campo-textarea' : as === 'select'
-        ? 'campo-select' : 'campo-input';
+    const baseClass =
+        as === 'textarea'
+            ? 'campo-textarea'
+            : as === 'select'
+              ? 'campo-select'
+              : 'campo-input';
 
     return (
         <div className="campo">

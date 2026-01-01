@@ -62,50 +62,74 @@ export default function Register() {
                     </div>
                 </div>
 
-                <div className="flex gap-4 mt-4">
+                <div className="mt-4 flex gap-4">
                     <div className="flex-1">
-                        <InputLabel htmlFor="tipo_documento" value="Tipo de Documento" />
+                        <InputLabel
+                            htmlFor="tipo_documento"
+                            value="Tipo de Documento"
+                        />
                         <select
                             id="tipo_documento"
                             name="tipo_documento"
                             value={data.tipo_documento}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            onChange={(e) => setData('tipo_documento', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            onChange={(e) =>
+                                setData('tipo_documento', e.target.value)
+                            }
                             required
                         >
                             <option value="dni">DNI</option>
                             <option value="pasaporte">Pasaporte</option>
                             <option value="tie">TIE</option>
                         </select>
-                        <InputError message={errors.tipo_documento} className="mt-1" />
+                        <InputError
+                            message={errors.tipo_documento}
+                            className="mt-1"
+                        />
                     </div>
 
                     <div className="flex-1">
-                        <InputLabel htmlFor="numero_documento" value="Número de Documento" />
+                        <InputLabel
+                            htmlFor="numero_documento"
+                            value="Número de Documento"
+                        />
                         <TextInput
                             id="numero_documento"
                             name="numero_documento"
                             value={data.numero_documento}
                             className="mt-1 block w-full font-mono"
-                            onChange={(e) => setData('numero_documento', e.target.value)}
+                            onChange={(e) =>
+                                setData('numero_documento', e.target.value)
+                            }
                             required
                         />
-                        <InputError message={errors.numero_documento} className="mt-1" />
+                        <InputError
+                            message={errors.numero_documento}
+                            className="mt-1"
+                        />
                     </div>
                 </div>
 
-                <div className="flex gap-4 mt-4">
+                <div className="mt-4 flex gap-4">
                     <div className="flex-1">
-                        <InputLabel htmlFor="nacionalidad" value="Nacionalidad" />
+                        <InputLabel
+                            htmlFor="nacionalidad"
+                            value="Nacionalidad"
+                        />
                         <TextInput
                             id="nacionalidad"
                             name="nacionalidad"
                             value={data.nacionalidad}
                             className="mt-1 block w-full"
-                            onChange={(e) => setData('nacionalidad', e.target.value)}
+                            onChange={(e) =>
+                                setData('nacionalidad', e.target.value)
+                            }
                             required
                         />
-                        <InputError message={errors.nacionalidad} className="mt-1" />
+                        <InputError
+                            message={errors.nacionalidad}
+                            className="mt-1"
+                        />
                     </div>
 
                     <div className="flex-1">
@@ -116,10 +140,15 @@ export default function Register() {
                             name="telefono"
                             value={data.telefono}
                             className="mt-1 block w-full font-mono"
-                            onChange={(e) => setData('telefono', e.target.value)}
+                            onChange={(e) =>
+                                setData('telefono', e.target.value)
+                            }
                             required
                         />
-                        <InputError message={errors.telefono} className="mt-1" />
+                        <InputError
+                            message={errors.telefono}
+                            className="mt-1"
+                        />
                     </div>
                 </div>
 
@@ -129,7 +158,7 @@ export default function Register() {
                         id="direccion"
                         name="direccion"
                         value={data.direccion}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         onChange={(e) => setData('direccion', e.target.value)}
                         rows="2"
                         required
@@ -137,7 +166,7 @@ export default function Register() {
                     <InputError message={errors.direccion} className="mt-1" />
                 </div>
 
-                <div className="flex gap-4 mt-4">
+                <div className="mt-4 flex gap-4">
                     <div className="flex-1">
                         <InputLabel htmlFor="password" value="Password" />
                         <TextInput
@@ -147,14 +176,22 @@ export default function Register() {
                             value={data.password}
                             className="mt-1 block w-full"
                             autoComplete="new-password"
-                            onChange={(e) => setData('password', e.target.value)}
+                            onChange={(e) =>
+                                setData('password', e.target.value)
+                            }
                             required
                         />
-                        <InputError message={errors.password} className="mt-1" />
+                        <InputError
+                            message={errors.password}
+                            className="mt-1"
+                        />
                     </div>
 
                     <div className="flex-1">
-                        <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
+                        <InputLabel
+                            htmlFor="password_confirmation"
+                            value="Confirm Password"
+                        />
                         <TextInput
                             id="password_confirmation"
                             type="password"
@@ -162,19 +199,29 @@ export default function Register() {
                             value={data.password_confirmation}
                             className="mt-1 block w-full"
                             autoComplete="new-password"
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                            onChange={(e) =>
+                                setData('password_confirmation', e.target.value)
+                            }
                             required
                         />
-                        <InputError message={errors.password_confirmation} className="mt-1" />
+                        <InputError
+                            message={errors.password_confirmation}
+                            className="mt-1"
+                        />
                     </div>
                 </div>
 
                 <div className="mt-6 flex items-center justify-end gap-4">
-                    <Link href={route('login')} className="text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <Link
+                        href={route('login')}
+                        className="text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    >
                         Ya dispones de cuenta?
                     </Link>
 
-                    <PrimaryButton disabled={processing}>Registrate</PrimaryButton>
+                    <PrimaryButton disabled={processing}>
+                        Registrate
+                    </PrimaryButton>
                 </div>
             </form>
         </AuthLayout>

@@ -9,9 +9,7 @@ export default function GuestLayout({ children }) {
 
             <MenuLateral />
 
-            <main className="w-full pt-16">
-                {children}
-            </main>
+            <main className="w-full pt-16">{children}</main>
 
             <Footer />
         </div>

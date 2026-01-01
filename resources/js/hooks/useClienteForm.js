@@ -1,8 +1,16 @@
-import { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export function useClienteForm(cliente = null, onSuccess) {
-    const [form, setForm] = useState({
+    const {
+        data,
+        setData,
+        post,
+        put,
+        processing,
+        errors,
+        reset: resetForm,
+    } = useForm({
         name: '',
         email: '',
         telefono: '',
@@ -12,12 +20,9 @@ export function useClienteForm(cliente = null, onSuccess) {
         direccion: '',
     });
 
-    const [errores, setErrores] = useState({});
-    const [guardando, setGuardando] = useState(false);
-
     useEffect(() => {
         if (cliente) {
-            setForm({
+            setData({
                 name: cliente.name || '',
                 email: cliente.email || '',
                 telefono: cliente.telefono || '',
@@ -26,33 +31,22 @@ export function useClienteForm(cliente = null, onSuccess) {
                 nacionalidad: cliente.nacionalidad || '',
                 direccion: cliente.direccion || '',
             });
-            setErrores({});
         } else {
-            setForm({
-                name: '',
-                email: '',
-                telefono: '',
-                tipo_documento: 'dni',
-                numero_documento: '',
-                nacionalidad: '',
-                direccion: '',
-            });
+            resetForm();
         }
-    }, [cliente]);
+    }, [cliente, setData, resetForm]);
 
     const cambiar = (e) => {
         const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
-        if (errores[name]) {
-            setErrores({ ...errores, [name]: '' });
-        }
+        setData(name, value);
     };
 
     const enviar = (e) => {
         e.preventDefault();
-        setGuardando(true);
 
-        const esUser = cliente && cliente.hasOwnProperty('email_verified_at');
+        const esUser =
+            cliente &&
+            Object.prototype.hasOwnProperty.call(cliente, 'email_verified_at');
 
         let url, method;
 
@@ -64,25 +58,38 @@ export function useClienteForm(cliente = null, onSuccess) {
             method = cliente ? 'put' : 'post';
         }
 
-        router[method](url, form, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                setGuardando(false);
-                onSuccess?.();
-                router.reload({ only: ['clientes'] });
-            },
-            onError: (errors) => {
-                setErrores(errors);
-                setGuardando(false);
-            },
-        });
+        // useForm provides post/put methods
+        if (method === 'post') {
+            post(url, {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    onSuccess?.();
+                    router.reload({ only: ['clientes'] });
+                },
+            });
+        } else {
+            put(url, {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    onSuccess?.();
+                    router.reload({ only: ['clientes'] });
+                },
+            });
+        }
     };
 
     const reset = () => {
-        setForm({ name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '' });
-        setErrores({});
+        resetForm();
     };
 
-    return { form, cambiar, errores, guardando, enviar, reset };
+    return {
+        form: data,
+        cambiar,
+        errores: errors,
+        guardando: processing,
+        enviar,
+        reset,
+    };
 }

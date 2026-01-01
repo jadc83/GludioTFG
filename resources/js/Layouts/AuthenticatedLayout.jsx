@@ -12,9 +12,7 @@ export default function AuthenticatedLayout({ children }) {
 
             <MenuLateral />
 
-            <main className="flex flex-grow flex-col pt-16">
-                {children}
-            </main>
+            <main className="flex flex-grow flex-col pt-16">{children}</main>
 
             <Footer />
         </div>

@@ -1,22 +1,24 @@
 export default function LeyendaEstados() {
     return (
-        <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Estado de las Habitaciones</h3>
+        <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">
+                Estado de las Habitaciones
+            </h3>
             <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-success rounded-sm"></div>
+                    <div className="h-3 w-3 rounded-sm bg-success"></div>
                     <span>Disponible</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-error rounded-sm"></div>
+                    <div className="h-3 w-3 rounded-sm bg-error"></div>
                     <span>Ocupada</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-warning rounded-sm"></div>
+                    <div className="h-3 w-3 rounded-sm bg-warning"></div>
                     <span>Mantenimiento</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-info rounded-sm"></div>
+                    <div className="h-3 w-3 rounded-sm bg-info"></div>
                     <span>Limpieza</span>
                 </div>
             </div>

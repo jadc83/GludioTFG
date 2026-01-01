@@ -1,84 +1,56 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-
-    return debouncedValue;
-}
+import { useEffect } from 'react';
+import useRetraso from './useRetraso';
+import { useSincronizarFiltros } from './useSincronizarFiltros';
 
 export function useReservaFiltros(reservas = [], conteos = {}) {
-    const [filtros, setFiltros] = useState({
+    const initial = {
         status: 'todos',
         localizador: '',
         cliente: '',
         habitacion: '',
-        notas: ''
-    });
+        notas: '',
+    };
+    const {
+        filtros,
+        actualizarFiltro,
+        aplicarFiltros,
+        limpiarFiltros,
+        hayFiltrosActivos,
+    } = useSincronizarFiltros(initial, 'panel', [
+        'reservas',
+        'reservasConteos',
+    ]);
 
-    const actualizarFiltro = useCallback((campo, valor) => {
-        setFiltros(prev => ({ ...prev, [campo]: valor }));
-    }, []);
-
-    const debouncedLocalizador = useDebounce(filtros.localizador, 500);
-    const debouncedCliente = useDebounce(filtros.cliente, 500);
-    const debouncedHabitacion = useDebounce(filtros.habitacion, 500);
-    const debouncedNotas = useDebounce(filtros.notas, 500);
+    const localizadorRetrasado = useRetraso(filtros.localizador, 500);
+    const clienteRetrasado = useRetraso(filtros.cliente, 500);
+    const habitacionRetrasada = useRetraso(filtros.habitacion, 500);
+    const notasRetrasadas = useRetraso(filtros.notas, 500);
 
     useEffect(() => {
-        router.get(route('panel'), {
-            status: filtros.status !== 'todos' ? filtros.status : undefined,
-            localizador: debouncedLocalizador || undefined,
-            cliente: debouncedCliente || undefined,
-            habitacion: debouncedHabitacion || undefined,
-            notas: debouncedNotas || undefined
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['reservas', 'reservasConteos'],
-            replace: true
-        });
-    }, [filtros.status, debouncedLocalizador, debouncedCliente, debouncedHabitacion, debouncedNotas]);
-
-    const aplicarFiltros = () => {
-        router.get(route('panel'), {
-            status: filtros.status !== 'todos' ? filtros.status : undefined,
-            localizador: filtros.localizador || undefined,
-            cliente: filtros.cliente || undefined,
-            habitacion: filtros.habitacion || undefined,
-            notas: filtros.notas || undefined
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['reservas', 'reservasConteos']
-        });
-    };
-
-    const limpiarFiltros = useCallback(() => {
-        setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '', notas: '' });
-
-        router.get(route('panel'), {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['reservas', 'reservasConteos']
-        });
-    }, []);
-
-    const hayFiltrosActivos = useMemo(() => {
-        return Object.values(filtros).some(valor =>
-            valor !== 'todos' && valor !== ''
+        router.get(
+            route('panel'),
+            {
+                status: filtros.status !== 'todos' ? filtros.status : undefined,
+                localizador: localizadorRetrasado || undefined,
+                cliente: clienteRetrasado || undefined,
+                habitacion: habitacionRetrasada || undefined,
+                notas: notasRetrasadas || undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['reservas', 'reservasConteos'],
+                replace: true,
+            },
         );
-    }, [filtros]);
+    }, [
+        filtros.status,
+        localizadorRetrasado,
+        clienteRetrasado,
+        habitacionRetrasada,
+        notasRetrasadas,
+    ]);
 
     return {
         filtros,
@@ -89,6 +61,6 @@ export function useReservaFiltros(reservas = [], conteos = {}) {
         hayFiltrosActivos,
         totalFiltrados: reservas.length,
         totalOriginal: conteos.total || reservas.length,
-        conteos
+        conteos,
     };
 }

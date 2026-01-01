@@ -1,12 +1,24 @@
-import { useState, useCallback, useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const FORM_INICIAL = { name: '',  email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', check_in: '', check_out: '', notas: '' };
+const FORM_INICIAL = {
+    name: '',
+    email: '',
+    telefono: '',
+    tipo_documento: 'dni',
+    numero_documento: '',
+    nacionalidad: '',
+    direccion: '',
+    check_in: '',
+    check_out: '',
+    notas: '',
+};
 
 const validarPaso1 = (form) => {
     const errores = {};
     if (!form.name?.trim()) errores.name = 'Nombre requerido';
-    if (!form.numero_documento?.trim()) errores.numero_documento = 'Documento requerido';
+    if (!form.numero_documento?.trim())
+        errores.numero_documento = 'Documento requerido';
     if (!form.check_in || !form.check_out) errores.fechas = 'Fechas requeridas';
     return errores;
 };
@@ -20,11 +32,14 @@ const rellenarFormulario = (cliente) => {
         numero_documento: cliente.numero_documento || '',
         nacionalidad: cliente.nacionalidad || '',
         direccion: cliente.direccion || 'Sin dirección',
-        tipo_documento: cliente.tipo_documento || 'dni'
+        tipo_documento: cliente.tipo_documento || 'dni',
     };
 };
 
-export default function useReservaForm(habitacionesIniciales = [], onSuccess = null) {
+export default function useReservaForm(
+    habitacionesIniciales = [],
+    onSuccess = null,
+) {
     const [isOpen, setIsOpen] = useState(false);
     const [step, setStep] = useState(1);
     const [guardando, setGuardando] = useState(false);
@@ -35,11 +50,12 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
     const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
     const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
     const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(habitacionesIniciales);
+    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(
+        habitacionesIniciales,
+    );
     const [seleccionadas, setSeleccionadas] = useState([]);
 
     useEffect(() => {
-
         if (modoNuevoCliente || busqueda.length < 3) {
             setResultadosBusqueda([]);
             setCargandoBusqueda(false);
@@ -49,7 +65,9 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
         setCargandoBusqueda(true);
         const timer = setTimeout(async () => {
             try {
-                const response = await fetch(`/clientes/buscar?query=${encodeURIComponent(busqueda)}`);
+                const response = await fetch(
+                    `/clientes/buscar?query=${encodeURIComponent(busqueda)}`,
+                );
                 const data = await response.json();
                 setResultadosBusqueda(data || []);
             } catch (error) {
@@ -63,32 +81,36 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
 
     useEffect(() => {
         if (form.check_in && form.check_out) {
-            fetch(`/reservas/disponibles?check_in=${form.check_in}&check_out=${form.check_out}`)
-                .then(res => res.json())
-                .then(habitaciones => setHabitacionesDisponibles(habitaciones))
+            fetch(
+                `/reservas/disponibles?check_in=${form.check_in}&check_out=${form.check_out}`,
+            )
+                .then((res) => res.json())
+                .then((habitaciones) =>
+                    setHabitacionesDisponibles(habitaciones),
+                )
                 .catch(() => setHabitacionesDisponibles([]));
         }
     }, [form.check_in, form.check_out]);
 
     const toggleHabitacion = useCallback((habitacionId) => {
-        setSeleccionadas(prev =>
+        setSeleccionadas((prev) =>
             prev.includes(habitacionId)
-                ? prev.filter(id => id !== habitacionId)
-                : [...prev, habitacionId]
+                ? prev.filter((id) => id !== habitacionId)
+                : [...prev, habitacionId],
         );
     }, []);
 
-    const precioEstimado = habitacionesDisponibles
-        .filter(h => seleccionadas.includes(h.id))
-        .reduce((sum, h) => sum + parseFloat(h.precio_noche || 0), 0);
+    const precioEstimado = useMemo(() => {
+        return habitacionesDisponibles
+            .filter((h) => seleccionadas.includes(h.id))
+            .reduce((sum, h) => sum + parseFloat(h.precio_noche || 0), 0);
+    }, [habitacionesDisponibles, seleccionadas]);
 
     const cambiarCampo = useCallback((e) => {
         const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
-        if (errores[name]) {
-            setErrores(prev => ({ ...prev, [name]: '' }));
-        }
-    }, [errores]);
+        setForm((prev) => ({ ...prev, [name]: value }));
+        setErrores((prev) => (prev[name] ? { ...prev, [name]: '' } : prev));
+    }, []);
 
     const seleccionarCliente = useCallback((cliente) => {
         setClienteSeleccionado(cliente);
@@ -96,27 +118,30 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
         setResultadosBusqueda([]);
 
         if (cliente) {
-            setForm(prev => ({ ...prev, ...rellenarFormulario(cliente) }));
+            setForm((prev) => ({ ...prev, ...rellenarFormulario(cliente) }));
         } else {
-            setForm(prev => ({
+            setForm((prev) => ({
                 ...FORM_INICIAL,
                 check_in: prev.check_in,
                 check_out: prev.check_out,
-                notas: prev.notas
+                notas: prev.notas,
             }));
         }
     }, []);
 
-    const avanzarAPaso2 = useCallback((e) => {
-        e?.preventDefault();
-        const nuevosErrores = validarPaso1(form);
-        if (Object.keys(nuevosErrores).length > 0) {
-            setErrores(nuevosErrores);
-            return false;
-        }
-        setStep(2);
-        return true;
-    }, [form]);
+    const avanzarAPaso2 = useCallback(
+        (e) => {
+            e?.preventDefault();
+            const nuevosErrores = validarPaso1(form);
+            if (Object.keys(nuevosErrores).length > 0) {
+                setErrores(nuevosErrores);
+                return false;
+            }
+            setStep(2);
+            return true;
+        },
+        [form],
+    );
 
     const retrocederAPaso1 = useCallback(() => {
         setStep(1);
@@ -131,7 +156,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
             habitacion_ids: seleccionadas,
             reservable_id: clienteSeleccionado?.id || null,
             tipo_usuario: clienteSeleccionado?.tipo_usuario || null,
-            crear_cliente: modoNuevoCliente
+            crear_cliente: modoNuevoCliente,
         };
 
         router.post(route('reservas.store'), respuesta, {
@@ -140,7 +165,13 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
             onSuccess: () => {
                 setGuardando(false);
                 onSuccess?.();
-                router.reload({ only: ['reservas', 'habitaciones', 'habitacionesDisponibles'] });
+                router.reload({
+                    only: [
+                        'reservas',
+                        'habitaciones',
+                        'habitacionesDisponibles',
+                    ],
+                });
             },
             onError: (erroresServidor) => {
                 setErrores(erroresServidor);
@@ -148,7 +179,7 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
                 if (erroresServidor.name || erroresServidor.numero_documento) {
                     setStep(1);
                 }
-            }
+            },
         });
     }, [form, seleccionadas, clienteSeleccionado, modoNuevoCliente, onSuccess]);
 
@@ -170,9 +201,16 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
     }, [limpiar]);
 
     return {
-        isOpen, setIsOpen, step, guardando,
+        isOpen,
+        setIsOpen,
+        step,
+        guardando,
         paso1Props: {
-            form, errores, onChange: cambiarCampo, onNext: avanzarAPaso2, searchProps: {
+            form,
+            errores,
+            onChange: cambiarCampo,
+            onNext: avanzarAPaso2,
+            searchProps: {
                 modoNuevo: modoNuevoCliente,
                 setModoNuevo: setModoNuevoCliente,
                 query: busqueda,
@@ -180,8 +218,8 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
                 resultados: resultadosBusqueda,
                 cargando: cargandoBusqueda,
                 seleccionado: clienteSeleccionado,
-                onSeleccionar: seleccionarCliente
-            }
+                onSeleccionar: seleccionarCliente,
+            },
         },
         paso2Props: {
             habitaciones: habitacionesDisponibles,
@@ -190,12 +228,13 @@ export default function useReservaForm(habitacionesIniciales = [], onSuccess = n
                 toggleHabitacion,
                 precioEstimado,
                 esValido: seleccionadas.length > 0,
-                textoResumen: `${seleccionadas.length} habitación${seleccionadas.length !== 1 ? 'es' : ''} • €${precioEstimado.toFixed(2)}`
+                textoResumen: `${seleccionadas.length} habitación${seleccionadas.length !== 1 ? 'es' : ''} • €${precioEstimado.toFixed(2)}`,
             },
             guardando,
             onBack: retrocederAPaso1,
-            onSubmit: confirmarReserva },
-            resetear,
-            limpiar
+            onSubmit: confirmarReserva,
+        },
+        resetear,
+        limpiar,
     };
 }
