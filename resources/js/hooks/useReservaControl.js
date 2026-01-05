@@ -4,7 +4,7 @@ import useRetraso from './useRetraso';
 import { useSincronizarFiltros } from './useSincronizarFiltros';
 
 export function useReservaFiltros(reservas = [], conteos = {}) {
-    const initial = {
+    const inicial = {
         status: 'todos',
         localizador: '',
         cliente: '',
@@ -17,7 +17,7 @@ export function useReservaFiltros(reservas = [], conteos = {}) {
         aplicarFiltros,
         limpiarFiltros,
         hayFiltrosActivos,
-    } = useSincronizarFiltros(initial, 'panel', [
+    } = useSincronizarFiltros(inicial, 'panel', [
         'reservas',
         'reservasConteos',
     ]);

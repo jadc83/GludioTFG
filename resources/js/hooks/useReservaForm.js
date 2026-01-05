@@ -1,240 +1,156 @@
-import { router } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { reservaSchema } from '../utils/reservaSchema';
+import useBusquedaCliente from './useBusquedaCliente';
+import useHabitaciones from './useHabitaciones';
 
-const FORM_INICIAL = {
-    name: '',
-    email: '',
-    telefono: '',
-    tipo_documento: 'dni',
-    numero_documento: '',
-    nacionalidad: '',
-    direccion: '',
-    check_in: '',
-    check_out: '',
-    notas: '',
-};
+export default function useReservaForm() {
+    const page = usePage();
+    const currentUser = page?.props?.auth?.user ?? null;
+    const [paso, setPaso] = useState(1);
+    const [error, setError] = useState('');
+    const [reservableId, setReservableId] = useState(null);
+    const [reservableTipo, setReservableTipo] = useState(null);
+    const [rango, setRango] = useState({ from: undefined, to: undefined });
 
-const validarPaso1 = (form) => {
-    const errores = {};
-    if (!form.name?.trim()) errores.name = 'Nombre requerido';
-    if (!form.numero_documento?.trim())
-        errores.numero_documento = 'Documento requerido';
-    if (!form.check_in || !form.check_out) errores.fechas = 'Fechas requeridas';
-    return errores;
-};
+    // React Hook Form
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        watch,
+        setValue,
+        getValues,
+    } = useForm({
+        resolver: zodResolver(reservaSchema),
+        mode: 'onChange',
+        defaultValues: {
+            name: currentUser?.name || '',
+            email: currentUser?.email || '',
+            telefono: currentUser?.telefono || '',
+            tipo_documento: 'dni',
+            numero_documento: currentUser?.numero_documento || '',
+            nacionalidad: currentUser?.nacionalidad || '',
+            direccion: currentUser?.direccion || '',
+            habitaciones: [],
+        },
+    });
 
-const rellenarFormulario = (cliente) => {
-    if (!cliente) return {};
-    return {
-        name: cliente.nombre || cliente.name || '',
-        email: cliente.email || '',
-        telefono: cliente.telefono || '',
-        numero_documento: cliente.numero_documento || '',
-        nacionalidad: cliente.nacionalidad || '',
-        direccion: cliente.direccion || 'Sin dirección',
-        tipo_documento: cliente.tipo_documento || 'dni',
-    };
-};
+    // Búsqueda de cliente
+    const {
+        query,
+        setQuery,
+        resultados,
+        cargando,
+        seleccionado,
+        seleccionarCliente,
+    } = useBusquedaCliente({
+        formulario: { setData: (key, value) => setValue(key, value), data: getValues() },
+        setReservableId,
+        setReservableTipo,
+    });
 
-export default function useReservaForm(
-    habitacionesIniciales = [],
-    onSuccess = null,
-) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [step, setStep] = useState(1);
-    const [guardando, setGuardando] = useState(false);
-    const [form, setForm] = useState(FORM_INICIAL);
-    const [errores, setErrores] = useState({});
-    const [modoNuevoCliente, setModoNuevoCliente] = useState(true);
-    const [busqueda, setBusqueda] = useState('');
-    const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
-    const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
-    const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(
-        habitacionesIniciales,
-    );
-    const [seleccionadas, setSeleccionadas] = useState([]);
+    // Habitaciones
+    const {
+        availableRooms,
+        cargandoHabitaciones,
+        habitacionesSeleccionadas,
+        getTiposHabitacion,
+        getIcono,
+        getImagen,
+        getTotalHabitaciones,
+        actualizarSeleccionHabitacion,
+        limpiarRango,
+    } = useHabitaciones({ paso, rango, setRango });
 
-    useEffect(() => {
-        if (modoNuevoCliente || busqueda.length < 3) {
-            setResultadosBusqueda([]);
-            setCargandoBusqueda(false);
+    const continuar = () => {
+        if (paso === 1 && (!rango?.from || !rango?.to)) {
+            setError('Selecciona un rango de fechas.');
             return;
         }
 
-        setCargandoBusqueda(true);
-        const timer = setTimeout(async () => {
-            try {
-                const response = await fetch(
-                    `/clientes/buscar?query=${encodeURIComponent(busqueda)}`,
-                );
-                const data = await response.json();
-                setResultadosBusqueda(data || []);
-            } catch (error) {
-                setResultadosBusqueda([]);
-            } finally {
-                setCargandoBusqueda(false);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [busqueda, modoNuevoCliente]);
-
-    useEffect(() => {
-        if (form.check_in && form.check_out) {
-            fetch(
-                `/reservas/disponibles?check_in=${form.check_in}&check_out=${form.check_out}`,
-            )
-                .then((res) => res.json())
-                .then((habitaciones) =>
-                    setHabitacionesDisponibles(habitaciones),
-                )
-                .catch(() => setHabitacionesDisponibles([]));
+        // Si hay usuario logueado, usar sus datos y pasar a habitaciones
+        if (paso === 1 && currentUser) {
+            setReservableId(currentUser.id);
+            setReservableTipo('usuario');
+            setValue('check_in', rango.from);
+            setValue('check_out', rango.to);
+            setError('');
+            setPaso(2); // Ir a habitaciones
+            return;
         }
-    }, [form.check_in, form.check_out]);
 
-    const toggleHabitacion = useCallback((habitacionId) => {
-        setSeleccionadas((prev) =>
-            prev.includes(habitacionId)
-                ? prev.filter((id) => id !== habitacionId)
-                : [...prev, habitacionId],
-        );
-    }, []);
+        // Si hay usuario y estamos en habitaciones, saltar directamente a confirmación
+        if (paso === 2 && currentUser) {
+            setError('');
+            setPaso(4); // Ir a confirmación, saltando datos
+            return;
+        }
 
-    const precioEstimado = useMemo(() => {
-        return habitacionesDisponibles
-            .filter((h) => seleccionadas.includes(h.id))
-            .reduce((sum, h) => sum + parseFloat(h.precio_noche || 0), 0);
-    }, [habitacionesDisponibles, seleccionadas]);
+        // Flujo normal: Fechas (1) → Habitaciones (2) → Datos (3) → Confirmación (4)
+        setError('');
+        setPaso(paso + 1);
+    };
 
-    const cambiarCampo = useCallback((e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
-        setErrores((prev) => (prev[name] ? { ...prev, [name]: '' } : prev));
-    }, []);
+    const volverAtras = () => {
+        if (currentUser && paso === 4) {
+            setPaso(2);
+            return;
+        }
+        setPaso(paso - 1);
+    };
 
-    const seleccionarCliente = useCallback((cliente) => {
-        setClienteSeleccionado(cliente);
-        setBusqueda('');
-        setResultadosBusqueda([]);
-
-        if (cliente) {
-            setForm((prev) => ({ ...prev, ...rellenarFormulario(cliente) }));
-        } else {
-            setForm((prev) => ({
-                ...FORM_INICIAL,
-                check_in: prev.check_in,
-                check_out: prev.check_out,
-                notas: prev.notas,
+    const onConfirmar = async () => {
+        const values = getValues();
+        const habitaciones = Object.entries(habitacionesSeleccionadas)
+            .filter(([, r]) => r.cantidad > 0)
+            .map(([tipo, r]) => ({
+                tipo,
+                cantidad: r.cantidad,
+                personas_por_habitacion: Number(r.personas) > 0 ? Number(r.personas) : 1,
             }));
-        }
-    }, []);
 
-    const avanzarAPaso2 = useCallback(
-        (e) => {
-            e?.preventDefault();
-            const nuevosErrores = validarPaso1(form);
-            if (Object.keys(nuevosErrores).length > 0) {
-                setErrores(nuevosErrores);
-                return false;
-            }
-            setStep(2);
-            return true;
-        },
-        [form],
-    );
-
-    const retrocederAPaso1 = useCallback(() => {
-        setStep(1);
-    }, []);
-
-    const confirmarReserva = useCallback(() => {
-        if (seleccionadas.length === 0) return;
-
-        setGuardando(true);
         const respuesta = {
-            ...form,
-            habitacion_ids: seleccionadas,
-            reservable_id: clienteSeleccionado?.id || null,
-            tipo_usuario: clienteSeleccionado?.tipo_usuario || null,
-            crear_cliente: modoNuevoCliente,
+            ...values,
+            check_in: rango?.from,
+            check_out: rango?.to,
+            habitaciones,
+            reservable_id: reservableId,
+            tipo_usuario: reservableTipo,
         };
 
-        router.post(route('reservas.store'), respuesta, {
-            preserveState: true,
-            preserveScroll: true,
+        if (respuesta.tipo_usuario === 'cliente' && currentUser) {
+            respuesta.booked_by_user_id = currentUser.id;
+        }
+
+        router.post('/reservas', respuesta, {
             onSuccess: () => {
-                setGuardando(false);
-                onSuccess?.();
-                router.reload({
-                    only: [
-                        'reservas',
-                        'habitaciones',
-                        'habitacionesDisponibles',
-                    ],
-                });
-            },
-            onError: (erroresServidor) => {
-                setErrores(erroresServidor);
-                setGuardando(false);
-                if (erroresServidor.name || erroresServidor.numero_documento) {
-                    setStep(1);
+                try {
+                    document.getElementById('drawer-toggle').checked = false;
+                } catch (e) {
+                    void e;
                 }
+
+                setPaso(1);
+                setRango({ from: undefined, to: undefined });
+                setQuery('');
+            },
+            onError: (errors) => { setError(
+                    errors.message ||
+                        Object.values(errors)[0] ||
+                        'Error al crear la reserva',
+                );
             },
         });
-    }, [form, seleccionadas, clienteSeleccionado, modoNuevoCliente, onSuccess]);
-
-    const limpiar = useCallback(() => {
-        setStep(1);
-        setForm(FORM_INICIAL);
-        setErrores({});
-        setModoNuevoCliente(true);
-        setBusqueda('');
-        setClienteSeleccionado(null);
-        setSeleccionadas([]);
-    }, []);
-
-    const resetear = useCallback(() => {
-        setIsOpen(false);
-        setTimeout(() => {
-            limpiar();
-        }, 200);
-    }, [limpiar]);
+    };
 
     return {
-        isOpen,
-        setIsOpen,
-        step,
-        guardando,
-        paso1Props: {
-            form,
-            errores,
-            onChange: cambiarCampo,
-            onNext: avanzarAPaso2,
-            searchProps: {
-                modoNuevo: modoNuevoCliente,
-                setModoNuevo: setModoNuevoCliente,
-                query: busqueda,
-                setQuery: setBusqueda,
-                resultados: resultadosBusqueda,
-                cargando: cargandoBusqueda,
-                seleccionado: clienteSeleccionado,
-                onSeleccionar: seleccionarCliente,
-            },
-        },
-        paso2Props: {
-            habitaciones: habitacionesDisponibles,
-            formHabitaciones: {
-                seleccionadas,
-                toggleHabitacion,
-                precioEstimado,
-                esValido: seleccionadas.length > 0,
-                textoResumen: `${seleccionadas.length} habitación${seleccionadas.length !== 1 ? 'es' : ''} • €${precioEstimado.toFixed(2)}`,
-            },
-            guardando,
-            onBack: retrocederAPaso1,
-            onSubmit: confirmarReserva,
-        },
-        resetear,
-        limpiar,
+        register, handleSubmit, errors, watch, setValue, getValues,
+        paso, setPaso, continuar, volverAtras, onConfirmar, rango, setRango, limpiarRango,
+        query, setQuery, resultados, cargando, seleccionado, seleccionarCliente,
+        availableRooms, cargandoHabitaciones, habitacionesSeleccionadas, getTiposHabitacion, getIcono, getImagen, getTotalHabitaciones, actualizarSeleccionHabitacion,
+        error, setError, currentUser
     };
 }

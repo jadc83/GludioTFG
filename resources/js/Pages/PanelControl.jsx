@@ -1,14 +1,10 @@
+import { useState } from 'react';
+import '../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import {
-    BriefcaseIcon,
-    HomeIcon,
-    UsersIcon,
-} from '@heroicons/react/24/outline';
-import { useState } from 'react';
-import '../../css/estiloPanelControl.css';
+import {BriefcaseIcon, HomeIcon, UsersIcon} from '@heroicons/react/24/outline';
 import TabClientes from '../Components/clientes/TabClientes';
 import TabReservas from '../Components/reservas/TabReservas';
 
@@ -21,65 +17,35 @@ const TABS = [
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
     return (
-        <button
-            onClick={() => onClick(id)}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:bg-gray-200/50 hover:text-[#920303]'}`}
-        >
-            <Icon className="h-4 w-4" />
-            {label}
+        <button onClick={() => onClick(id)} className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:bg-gray-200/50 hover:text-[#920303]'}`}>
+            <Icon className="h-4 w-4" /> {label}
         </button>
     );
 }
 
-function TabContenido({
-    tabActiva,
-    habitaciones,
-    clientes,
-    clientesFiltrados,
-    users,
-    reservas,
-}) {
-    if (tabActiva === 'habitaciones') {
-        return <TabHabitaciones habitaciones={habitaciones} />;
-    }
-
-    if (tabActiva === 'clientes') {
-        return (
-            <TabClientes
-                clientes={clientes}
-                users={users}
-                clientesFiltrados={clientesFiltrados}
-            />
-        );
-    }
-
-    if (tabActiva === 'reservas') {
-        return (
-            <TabReservas
-                clientes={clientes}
-                users={users}
-                reservas={reservas}
-            />
-        );
-    }
-
-    return (
+function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
+  switch (tabActiva) {
+    case 'habitaciones':
+      return <TabHabitaciones habitaciones={habitaciones} />;
+    case 'clientes':
+      return (
+         <TabClientes clientes={clientes} users={users} clientesFiltrados={clientesFiltrados}/>
+      );
+    case 'reservas':
+      return (
+        <TabReservas clientes={clientes} users={users} reservas={reservas}/>
+      );
+    default:
+      return (
         <div className="marcadorLugar">
-            <BriefcaseIcon className="iconoMarcadorLugar" />
-            <p className="textoMarcadorLugar">En desarrollo</p>
+          <BriefcaseIcon className="iconoMarcadorLugar" />
+          <p className="textoMarcadorLugar">En desarrollo</p>
         </div>
-    );
+      );
+  }
 }
-
-export default function PanelControl({
-    habitaciones = [],
-    clientes = [],
-    clientesFiltrados = [],
-    users = [],
-    reservas = [],
-}) {
+export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = []}) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
-
     return (
         <AuthenticatedLayout>
             <div className="contenedorPrincipal">
@@ -106,27 +72,14 @@ export default function PanelControl({
                         <div className="mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1">
                             <div className="inline-flex gap-2">
                                 {TABS.map((tab) => (
-                                    <BotonTab
-                                        key={tab.id}
-                                        id={tab.id}
-                                        icon={tab.icon}
-                                        label={tab.label}
-                                        activa={tabActiva === tab.id}
-                                        onClick={setTabActiva}
-                                    />
+                                    <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva}/>
                                 ))}
                             </div>
                         </div>
 
                         <div className="contenedorContenido bg-gris">
-                            <TabContenido
-                                tabActiva={tabActiva}
-                                habitaciones={habitaciones}
-                                clientes={clientes}
-                                clientesFiltrados={clientesFiltrados}
-                                users={users}
-                                reservas={reservas}
-                            />
+                            <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados}
+                                users={users} reservas={reservas}/>
                         </div>
                     </div>
                 </div>

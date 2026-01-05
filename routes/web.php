@@ -40,12 +40,12 @@ Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])
     ->middleware('auth');
 
 Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])
-    ->name('reservas.disponibles')
-    ->middleware('auth');
+    ->name('reservas.disponibles');
 
+Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
-Route::resource('reservas', ReservaController::class)->middleware('auth');
+Route::resource('reservas', ReservaController::class)->except('store')->middleware('auth');
 
 require __DIR__ . '/auth.php';

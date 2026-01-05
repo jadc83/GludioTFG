@@ -4,7 +4,7 @@ import useRetraso from './useRetraso';
 import { useSincronizarFiltros } from './useSincronizarFiltros';
 
 export function useHabitacionControl(habitaciones = []) {
-    const initial = {
+    const inicial = {
         estado: 'todos',
         tipo: 'todos',
         capacidad: 'todos',
@@ -13,7 +13,7 @@ export function useHabitacionControl(habitaciones = []) {
         busqueda: '',
     };
     const { filtros, actualizarFiltro, limpiarFiltros, hayFiltrosActivos } =
-        useSincronizarFiltros(initial, 'panel', ['habitaciones']);
+        useSincronizarFiltros(inicial, 'panel', ['habitaciones']);
 
     const busquedaRetrasada = useRetraso(filtros.busqueda, 500);
 
