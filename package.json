@@ -36,6 +36,8 @@
         "@hookform/resolvers": "^5.2.2",
         "@splidejs/react-splide": "^0.7.12",
         "@splidejs/splide": "^4.1.4",
+        "@stripe/react-stripe-js": "^5.4.1",
+        "@stripe/stripe-js": "^8.6.0",
         "@tanstack/react-query": "^5.90.12",
         "daisyui": "^5.5.5",
         "date-fns": "^4.1.0",

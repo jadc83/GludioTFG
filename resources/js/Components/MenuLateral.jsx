@@ -37,7 +37,15 @@ export default function MenuLateral() {
                         {hook.paso === 1 && <Paso1Fechas {...hook} />}
                         {hook.paso === 2 && <Paso2Habitaciones {...hook} />}
                         {hook.paso === 3 && <Paso3Datos {...hook} />}
-                        {hook.paso === 4 && <Paso4Confirmacion {...hook} />}
+                        {hook.paso === 4 && (
+                            <Paso4Confirmacion
+                                {...hook}
+                                currentUser={hook.currentUser}
+                                getValues={hook.getValues}
+                                reservableId={hook.reservableId}
+                                tipo_usuario={hook.tipo_usuario}
+                            />
+                        )}
                     </div>
                 </div>
             </aside>

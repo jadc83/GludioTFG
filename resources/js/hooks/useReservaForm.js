@@ -1,19 +1,34 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { reservaSchema } from '../utils/reservaSchema';
 import useBusquedaCliente from './useBusquedaCliente';
 import useHabitaciones from './useHabitaciones';
+import { calcularPrecioDinamico } from '../utils/precios';
 
 export default function useReservaForm() {
     const page = usePage();
     const currentUser = page?.props?.auth?.user ?? null;
+    const flashReservaId = page?.props?.flash?.reserva_id ?? null;
+    const flashLocalizador = page?.props?.flash?.localizador ?? null;
     const [paso, setPaso] = useState(1);
     const [error, setError] = useState('');
     const [reservableId, setReservableId] = useState(null);
     const [reservableTipo, setReservableTipo] = useState(null);
     const [rango, setRango] = useState({ from: undefined, to: undefined });
+    const [reservaId, setReservaId] = useState(flashReservaId);
+    const [localizador, setLocalizador] = useState(flashLocalizador);
+
+    // Actualizar reservaId y localizador cuando cambien las flash props
+    useEffect(() => {
+        if (flashReservaId) {
+            setReservaId(flashReservaId);
+        }
+        if (flashLocalizador) {
+            setLocalizador(flashLocalizador);
+        }
+    }, [flashReservaId, flashLocalizador]);
 
     // React Hook Form
     const {
@@ -102,6 +117,27 @@ export default function useReservaForm() {
         setPaso(paso - 1);
     };
 
+    // Calcular monto total según habitaciones seleccionadas
+    const calcularMontoTotal = () => {
+        if (!rango?.from || !rango?.to) return 0;
+
+        let total = 0;
+        Object.entries(habitacionesSeleccionadas).forEach(([tipo, datos]) => {
+            if (datos.cantidad > 0) {
+                // Buscar el tipo de habitación en availableRooms para obtener info de precio
+                const habitacion = availableRooms.find(h => h.tipo === tipo);
+                if (habitacion) {
+                    const precioDiario = calcularPrecioDinamico(habitacion, rango.from, rango.to);
+                    // Calcular número de noches
+                    const msPerDay = 24 * 60 * 60 * 1000;
+                    const noches = Math.ceil((rango.to - rango.from) / msPerDay);
+                    total += precioDiario * datos.cantidad * noches;
+                }
+            }
+        });
+        return total;
+    };
+
     const onConfirmar = async () => {
         const values = getValues();
         const habitaciones = Object.entries(habitacionesSeleccionadas)
@@ -128,6 +164,7 @@ export default function useReservaForm() {
         router.post('/reservas', respuesta, {
             onSuccess: () => {
                 try {
+                    // La reserva_id llegará en las flash props
                     document.getElementById('drawer-toggle').checked = false;
                 } catch (e) {
                     void e;
@@ -151,6 +188,6 @@ export default function useReservaForm() {
         paso, setPaso, continuar, volverAtras, onConfirmar, rango, setRango, limpiarRango,
         query, setQuery, resultados, cargando, seleccionado, seleccionarCliente,
         availableRooms, cargandoHabitaciones, habitacionesSeleccionadas, getTiposHabitacion, getIcono, getImagen, getTotalHabitaciones, actualizarSeleccionHabitacion,
-        error, setError, currentUser
+        error, setError, currentUser, calcularMontoTotal, reservaId, localizador, reservableId, tipo_usuario: reservableTipo
     };
 }
