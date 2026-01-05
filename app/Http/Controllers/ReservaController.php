@@ -425,6 +425,18 @@ class ReservaController extends Controller
 
     private function nuevoCliente($request)
     {
+        // Verificar si ya existe un cliente con este DNI (documento único)
+        if ($request->numero_documento) {
+            $clienteExistente = Cliente::where('numero_documento', $request->numero_documento)->first();
+            if ($clienteExistente) {
+                // Validar que el nombre coincida para evitar suplantaciones
+                if ($clienteExistente->name !== $request->name) {
+                    throw new \Exception("Los datos proporcionados no coinciden con nuestros registros. Por favor, verifica tu información.");
+                }
+                return [$clienteExistente->id, Cliente::class];
+            }
+        }
+
         $cliente = Cliente::create([
             'name' => $request->name,
             'email' => $request->email ?? null,

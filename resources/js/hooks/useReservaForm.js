@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { reservaSchema } from '../utils/reservaSchema';
-import useBusquedaCliente from './useBusquedaCliente';
 import useHabitaciones from './useHabitaciones';
 import { calcularPrecioDinamico } from '../utils/precios';
 
@@ -63,22 +62,7 @@ export default function useReservaForm() {
         },
     });
 
-    // Hook para búsqueda de clientes
-    const {
-        consulta,
-        setConsulta,
-        resultados,
-        estaBuscando,
-        clienteSeleccionado,
-        seleccionarCliente,
-    } = useBusquedaCliente({
-        formulario: {
-            setData: (key, value) => setValue(key, value),
-            data: getValues(),
-        },
-        setReservableId: setIdClienteSeleccionado,
-        setReservableTipo: setTipoClienteSeleccionado,
-    });
+
 
     // Hook para selección de habitaciones
     const {
@@ -270,14 +254,6 @@ export default function useReservaForm() {
         rango,
         setRango,
         limpiarRango,
-
-        // Búsqueda de clientes
-        consulta,
-        setConsulta,
-        resultados,
-        estaBuscando,
-        clienteSeleccionado,
-        seleccionarCliente,
 
         // Habitaciones disponibles
         habitacionesDisponibles,
