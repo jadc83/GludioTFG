@@ -16,7 +16,11 @@ export default function Paso4Confirmacion({
     getValues,
     reservableId,
     tipo_usuario,
-    localizador
+    localizador,
+    setPaso,
+    limpiarRango,
+    setValue,
+    actualizarSeleccionHabitacion,
 }) {
     const formData = watch();
     const [mostrarFormularioPago, setMostrarFormularioPago] = useState(false);
@@ -59,38 +63,106 @@ export default function Paso4Confirmacion({
     };
 
     const handleCerrarDrawer = () => {
-        try {
-            document.getElementById('drawer-toggle').checked = false;
-        } catch (e) {
-            void e;
+        const checkbox = document.getElementById('drawer-toggle');
+        if (checkbox) {
+            checkbox.checked = false;
         }
     };
+
+    const handleResetearReserva = () => {
+        console.log('🔄 Reseteando reserva...');
+        // Cerrar el modal
+        setMostrarModalConfirmacion(false);
+        setDatosReservaConfirmada(null);
+
+        // Resetear formulario
+        setValue('name', '');
+        setValue('email', '');
+        setValue('telefono', '');
+        setValue('tipo_documento', 'dni');
+        setValue('numero_documento', '');
+        setValue('nacionalidad', '');
+        setValue('direccion', '');
+
+        // Resetear fechas
+        limpiarRango();
+
+        // Resetear selección de habitaciones (iterar y limpiar)
+        Object.keys(habitacionesSeleccionadas).forEach(tipo => {
+            if (actualizarSeleccionHabitacion) {
+                actualizarSeleccionHabitacion(tipo, 0, 0);
+            }
+        });
+
+        // Resetear formulario de pago
+        setMostrarFormularioPago(false);
+        setErrorPago(null);
+
+        // Volver al paso 1
+        setPaso(1);
+
+        // Cerrar el drawer
+        console.log('🔄 Cerrando drawer...');
+        handleCerrarDrawer();
+        console.log('🔄 Reserva reseteada correctamente');
+
+        // Recargar la tabla de reservas
+        console.log('🔄 Recargando página para actualizar tabla de reservas...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
     const Migitas = () => (
-        <nav aria-label="Progreso de reserva" className="mx-auto mb-4 flex max-w-md justify-center space-x-2 rounded bg-gris p-2 text-sm">
+        <nav aria-label="Progreso de reserva" className="mx-auto mb-6 flex max-w-md justify-center space-x-2 text-xs">
             {['Fechas', 'Habitación', 'Datos', 'Confirmar'].map((etiqueta, i) => (
-                <span key={i} className={`rounded-md px-3 py-1 ${i === 3 ? 'bg-black text-white' : 'bg-gris text-black'}`}>{etiqueta}</span>
+                <div key={i} className="flex items-center">
+                    <span className={`font-semibold uppercase tracking-wider ${i === 3 ? 'text-red-600' : 'text-gray-400'}`}>{etiqueta}</span>
+                    {i < 3 && <span className="ml-2 text-gray-300">→</span>}
+                </div>
             ))}
         </nav>
     );
 
     const renderRow = (label, value) => (
-        <tr className="border-b">
-            <th className="w-2/5 py-3 pr-4 text-left font-semibold text-gray-700">{label}</th>
-            <td className="py-3 text-left">{value}</td>
+        <tr className="border-b border-gray-200">
+            <th className="w-2/5 py-2 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</th>
+            <td className="py-2 text-left text-sm font-medium text-gray-900">{value}</td>
         </tr>
     );
 
     return (
-        <main className="flex h-full flex-col bg-gris p-4">
-            <header className="mb-4">
-                <h3 className="titulo-rojo mb-4 text-center text-2xl font-bold">Confirmación de reserva</h3>
+        <main className="flex h-full flex-col bg-white p-6">
+            <header className="mb-6 border-b border-gray-200 pb-6">
+                <h3 className="mb-4 text-center text-2xl font-bold text-gray-900">Confirmación de Reserva</h3>
                 <Migitas />
             </header>
 
-            <section className="flex-1 overflow-y-auto bg-gris">
-                {mostrarFormularioPago && (
-                    <div className="card bg-white p-6 shadow-md mb-4">
-                        <h4 className="titulo-rojo mb-4 text-center font-bold">Datos de pago</h4>
+            <section className="flex-1 overflow-y-auto">
+                <div className="space-y-6">
+                    {/* Resumen */}
+                    <div className="border-l-4 border-red-600 bg-gray-50 p-6 rounded-r">
+                        <table className="w-full">
+                            <tbody>
+                                {localizador && renderRow('Número de Reserva:', <span className="font-mono font-bold text-red-600">{localizador}</span>)}
+                                {renderRow('Huésped:', formData.name)}
+                                {renderRow('Fechas:', `${rango?.from?.toLocaleDateString('es-ES')} - ${rango?.to?.toLocaleDateString('es-ES')}`)}
+                                <tr className="border-b border-gray-200">
+                                    <th className="w-2/5 py-2 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Habitaciones:</th>
+                                    <td className="py-2 text-left text-sm font-medium text-gray-900">
+                                        {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
+                                            <div key={tipo} className="mb-1">
+                                                {r.cantidad}x {tipo} ({r.personas || 1} {(r.personas || 1) === 1 ? 'huésped' : 'huéspedes'})
+                                            </div>
+                                        ))}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Formulario de Pago */}
+                    <div className="border-t border-gray-200 pt-6 mt-6">
+                        <h4 className="mb-6 text-center text-lg font-bold text-gray-900">Formulario de Pago</h4>
                         <FormularioPago
                             reservaData={prepararDatosReserva()}
                             monto={monto}
@@ -115,7 +187,6 @@ export default function Paso4Confirmacion({
                                     precio_total: monto,
                                 });
                                 setMostrarModalConfirmacion(true);
-                                setMostrarFormularioPago(false);
                                 // NO cerrar el drawer - el usuario debe ver el modal y cerrarlo manualmente
                             }}
                             onError={(mensaje) => {
@@ -123,47 +194,17 @@ export default function Paso4Confirmacion({
                             }}
                         />
                     </div>
-                )}
-
-                <div className="card bg-white p-6 shadow-md">
-                    <table className="w-full text-sm">
-                        <tbody>
-                            {localizador && renderRow('Identificador de Reserva:', <span className="font-mono font-bold text-blue-600">{localizador}</span>)}
-                            {renderRow('Nombre del Huésped:', formData.name)}
-                            {renderRow('Fechas:', `${rango?.from?.toLocaleDateString('es-ES')} - ${rango?.to?.toLocaleDateString('es-ES')}`)}
-                            <tr>
-                                <th className="py-3 pr-4 text-left align-top font-semibold text-gray-700">Habitaciones:</th>
-                                <td className="py-3 text-left">
-                                    {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
-                                        <div key={tipo} className="mb-1.5">
-                                            {getIcono(tipo)} <strong>{r.cantidad}x {tipo}</strong> ({r.personas || 1} {(r.personas || 1) === 1 ? 'huésped' : 'huéspedes'})
-                                        </div>
-                                    ))}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="mt-6 rounded-lg border-2 border-green-300 bg-green-50 p-5">
-                    <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-green-800">Monto a pagar:</span>
-                        <span className="text-2xl font-bold text-green-600">{monto.toFixed(2)} €</span>
-                    </div>
                 </div>
             </section>
 
-            <footer className="border-t border-gray-300 bg-gris py-3">
+            <footer className="border-t border-gray-200 mt-6 pt-4">
                 <div className="flex items-center justify-between gap-3">
-                    <PrimaryButton onClick={volverAtras} disabled={mostrarFormularioPago}>Atrás</PrimaryButton>
-                    {!mostrarFormularioPago && (
-                        <PrimaryButton onClick={() => setMostrarFormularioPago(true)}>
-                            Confirmar y Pagar
-                        </PrimaryButton>
-                    )}
+                    <button onClick={volverAtras} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition">
+                        Atrás
+                    </button>
                 </div>
                 {errorPago && (
-                    <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                    <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                         {errorPago}
                     </div>
                 )}
@@ -173,10 +214,7 @@ export default function Paso4Confirmacion({
             <ModalConfirmacionReserva
                 reserva={datosReservaConfirmada}
                 isOpen={mostrarModalConfirmacion}
-                onClose={() => {
-                    setMostrarModalConfirmacion(false);
-                    handleCerrarDrawer();
-                }}
+                onClose={handleResetearReserva}
             />
         </main>
     );

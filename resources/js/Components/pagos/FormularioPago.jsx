@@ -19,6 +19,17 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
     const [mensaje, setMensaje] = useState('');
     const [iniciado, setIniciado] = useState(false);
 
+    // Obtener datos del usuario logueado
+    const user = page?.props?.auth?.user;
+
+    // Estado para dirección de facturación - pre-rellenado con datos del usuario si existe
+    const [direccion, setDireccion] = useState({
+        calle: user?.direccion || '',
+        ciudad: user?.ciudad || '',
+        codigo_postal: user?.codigo_postal || '',
+        pais: user?.pais || 'ES',
+    });
+
     // Auto-iniciar al montar el componente
     React.useEffect(() => {
         if (!iniciado && !clientSecret) {
@@ -54,9 +65,21 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
             });
 
             if (!resReserva.ok) {
-                const error = await resReserva.json();
-                const mensaje = error.message || error.error || `HTTP ${resReserva.status}: Error al crear la reserva`;
-                throw new Error(mensaje);
+                let errorMessage = `HTTP ${resReserva.status}: Error al crear la reserva`;
+                try {
+                    const contentType = resReserva.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await resReserva.json();
+                        errorMessage = error.message || error.error || errorMessage;
+                    } else {
+                        const text = await resReserva.text();
+                        console.error('Response no-JSON de /reservas:', text.substring(0, 500));
+                        errorMessage = `Error del servidor al crear reserva (HTTP ${resReserva.status})`;
+                    }
+                } catch (e) {
+                    console.error('Error al parsear respuesta de reserva:', e);
+                }
+                throw new Error(errorMessage);
             }
 
             const dataReserva = await resReserva.json();
@@ -84,8 +107,21 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || `HTTP ${res.status}: Error al crear PaymentIntent`);
+                let errorMessage = `HTTP ${res.status}: Error al crear PaymentIntent`;
+                try {
+                    const contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await res.json();
+                        errorMessage = errorData.error || errorData.message || errorMessage;
+                    } else {
+                        const text = await res.text();
+                        console.error('Response no-JSON:', text.substring(0, 500));
+                        errorMessage = `Error del servidor (HTTP ${res.status}). Verifica la consola del servidor.`;
+                    }
+                } catch (e) {
+                    console.error('Error al parsear respuesta de error:', e);
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await res.json();
@@ -122,7 +158,13 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                 payment_method: {
                     card: elements.getElement(CardElement),
                     billing_details: {
-                        name: 'Huésped Hotel',
+                        name: reservaData.name || 'Huésped Hotel',
+                        address: {
+                            line1: direccion.calle,
+                            city: direccion.ciudad,
+                            postal_code: direccion.codigo_postal,
+                            country: direccion.pais,
+                        },
                     },
                 },
             });
@@ -186,8 +228,58 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                         <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Monto a pagar:</span>
-                            <span className="text-lg font-bold text-blue-600">{monto.toFixed(2)} €</span>
+                            <span className="text-lg font-bold text-gray-900">{monto.toFixed(2)} €</span>
                         </div>
+                    </div>
+
+                    {/* Dirección de Facturación */}
+                    <div className="border border-gray-300 rounded-lg p-3 bg-white">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-3">
+                            Dirección de Facturación
+                        </label>
+
+                        <div className="mb-3">
+                            <input
+                                type="text"
+                                placeholder="Calle y número"
+                                value={direccion.calle}
+                                onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <input
+                                type="text"
+                                placeholder="Ciudad"
+                                value={direccion.ciudad}
+                                onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                                className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
+                                required
+                            />
+                            <input
+                                type="text"
+                                placeholder="Código Postal"
+                                value={direccion.codigo_postal}
+                                onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
+                                className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
+                                required
+                            />
+                        </div>
+
+                        <select
+                            value={direccion.pais}
+                            onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
+                        >
+                            <option value="ES">España</option>
+                            <option value="FR">Francia</option>
+                            <option value="PT">Portugal</option>
+                            <option value="IT">Italia</option>
+                            <option value="DE">Alemania</option>
+                            <option value="GB">Reino Unido</option>
+                        </select>
                     </div>
 
                     <div className="border border-gray-300 rounded-lg p-3 bg-white">
@@ -196,6 +288,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                         </label>
                         <CardElement
                             options={{
+                                hidePostalCode: true,
                                 style: {
                                     base: {
                                         fontSize: '14px',
@@ -229,7 +322,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                         className={`w-full py-2 px-3 rounded font-medium text-sm transition ${
                             procesando || !stripe
                                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+                                : 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800'
                         }`}
                     >
                         {procesando ? 'Procesando pago...' : 'Confirmar pago'}
