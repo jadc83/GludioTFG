@@ -14,7 +14,6 @@ export default function useWizard({
     setReservableTipo,
     setError,
     setQuery,
-    setModoNuevo,
     formulario,
 }) {
     const [paso, setPaso] = useState(1);
@@ -149,7 +148,6 @@ export default function useWizard({
                 resetSeleccion();
                 setReservableId(null);
                 setReservableTipo(null);
-                setModoNuevo(true);
                 setQuery('');
             },
             onError: (errors) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function useBusquedaCliente({ modoNuevo, reservaNoEsParaMi, formulario, setReservableId, setReservableTipo }) {
+export default function useBusquedaCliente({ formulario, setReservableId, setReservableTipo }) {
     const [query, setQuery] = useState('');
     const [resultados, setResultados] = useState([]);
     const [cargando, setCargando] = useState(false);
@@ -8,7 +8,6 @@ export default function useBusquedaCliente({ modoNuevo, reservaNoEsParaMi, formu
 
     useEffect(() => {
         if (!query || query.length < 3) { setResultados([]); return; }
-        if (modoNuevo && !reservaNoEsParaMi) { setResultados([]); return; }
 
         let activo = true;
         setCargando(true);
@@ -30,7 +29,7 @@ export default function useBusquedaCliente({ modoNuevo, reservaNoEsParaMi, formu
         }, 300);
 
         return () => { activo = false; clearTimeout(id); };
-    }, [query, modoNuevo, reservaNoEsParaMi]);
+    }, [query]);
 
     const setData = (key, value) => {
         try { formulario.setData(key, value); } catch (e) { void e; }
@@ -51,20 +50,16 @@ export default function useBusquedaCliente({ modoNuevo, reservaNoEsParaMi, formu
             return;
         }
 
-        if (reservaNoEsParaMi) {
-            setData('name', p.nombre || p.name || '');
-            setData('email', p.email || '');
-            setData('telefono', p.telefono || '');
-            setData('tipo_documento', p.tipo_documento || 'dni');
-            setData('numero_documento', p.numero_documento || '');
-            setData('nacionalidad', p.nacionalidad || '');
-            setData('direccion', p.direccion || '');
-            setReservableId(p.id);
-            setReservableTipo(p.tipo_usuario || null);
-            setQuery('');
-        } else {
-            limpiarDatos();
-        }
+        setData('nombre', p.nombre || p.name || '');
+        setData('email', p.email || '');
+        setData('telefono', p.telefono || '');
+        setData('tipo_documento', p.tipo_documento || 'dni');
+        setData('numero_documento', p.numero_documento || '');
+        setData('nacionalidad', p.nacionalidad || '');
+        setData('direccion', p.direccion || '');
+        setReservableId(p.id);
+        setReservableTipo(p.tipo_usuario || null);
+        setQuery('');
     };
 
     return { query, setQuery, resultados, cargando, seleccionado, seleccionarCliente };

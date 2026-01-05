@@ -10,10 +10,6 @@ export default function useMenuLateralForm() {
 
     // Estados simples
     const [error, setError] = useState('');
-    const [modoNuevo, setModoNuevo] = useState(true);
-    const [reservaNoEsParaMi, setReservaNoEsParaMi] = useState(
-        currentUser ? false : true,
-    );
     const [reservableId, setReservableId] = useState(null);
     const [reservableTipo, setReservableTipo] = useState(null);
 
@@ -32,8 +28,6 @@ export default function useMenuLateralForm() {
 
     const { query, setQuery, resultados, cargando, seleccionado, seleccionarCliente } =
         useBusquedaCliente({
-            modoNuevo,
-            reservaNoEsParaMi,
             formulario,
             setReservableId,
             setReservableTipo,
@@ -65,7 +59,6 @@ export default function useMenuLateralForm() {
                     setReservableTipo,
                     setError,
                     setQuery,
-                    setModoNuevo,
                     formulario });
 
     // Auto-limpieza de errores
@@ -84,7 +77,6 @@ export default function useMenuLateralForm() {
         paso, setPaso,
         rango, setRango,
         form: formulario, formData: formulario.data,
-        modoNuevo, setModoNuevo,
         query, setQuery,
         resultados, cargando,
         seleccionado, seleccionarCliente,
@@ -97,8 +89,6 @@ export default function useMenuLateralForm() {
         getTiposHabitacion,
         getImagen,
         getIcono,
-        reservaNoEsParaMi,
-        setReservaNoEsParaMi,
         currentUser,
     };
 }
