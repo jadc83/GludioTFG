@@ -8,9 +8,7 @@ export default function Navbar() {
     const { user } = usePage().props.auth;
     const [AbrirDesplegable, setAbrir] = useState(false);
     const [openUserMenu, setOpenUserMenu] = useState(false);
-    const initials = user
-        ? (user.name || '')
-              .split(' ')
+    const inicial = user ? (user.name || '').split(' ')
               .map((n) => n[0])
               .slice(0, 2)
               .join('')
@@ -69,7 +67,7 @@ export default function Navbar() {
                                     className="inline-flex items-center gap-3 rounded-md border border-gray-200 bg-gris px-3 py-1 text-sm font-medium hover:shadow-sm"
                                 >
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-semibold text-gray-900">
-                                        {initials}
+                                        {inicial}
                                     </div>
                                     <span className="max-w-[10rem] truncate text-gray-900">
                                         {firstName}

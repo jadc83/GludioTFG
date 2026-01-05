@@ -50,7 +50,7 @@ class ClienteController extends Controller
         $cliente = Cliente::create($validado);
         $cliente->save();
 
-        return redirect()->route('panel')->with('success', 'Cliente creado.');
+        return redirect()->route('panel');
 
     }
 
@@ -78,7 +78,7 @@ class ClienteController extends Controller
         $validado = $request->validated();
         $cliente->update($validado);
 
-        return redirect()->route('panel')->with('success', 'Cliente actualizado.');
+        return redirect()->route('panel');
 
     }
 
@@ -111,9 +111,9 @@ class ClienteController extends Controller
             })->select($campos)->limit(5)->get();
         };
 
-        $usuarios = $buscarEn(User::class)->map(fn($u) => array_merge(
-            $u->toArray(),
-            ['tipo_usuario' => 'usuario', 'nombre_completo' => $u->name . ' ⭐']
+        $usuarios = $buscarEn(User::class)->map(fn($usuario) => array_merge(
+            $usuario->toArray(),
+            ['tipo_usuario' => 'usuario', 'nombre_completo' => $usuario->name . ' ⭐']
         ));
 
         $clientes = $buscarEn(Cliente::class)->map(fn($c) => array_merge(

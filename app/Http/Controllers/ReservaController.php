@@ -111,25 +111,23 @@ class ReservaController extends Controller
     }
 
     private function obtenerModificadorPrecio($fecha): float
-    {
-        $modificador = 1.0;
-        $mes = $fecha->month;
-        $dia = $fecha->day;
+{
+    $mes = $fecha->month;
+    $dia = $fecha->day;
 
-        if (($mes == 7 || $mes == 8) || ($mes == 12 && $dia >= 20)) {
-            $modificador *= 1.5;
-        } elseif (($mes == 3 || $mes == 4) && $dia >= 15 && $dia <= 31) {
-            $modificador *= 1.2;
-        }
+    $base = match (true) {
+        ($mes === 7 || $mes === 8) || ($mes === 12 && $dia >= 18) => 1.5,
+        ($mes === 3 || $mes === 4) && $dia >= 15 && $dia <= 31 => 1.2,
+        default => 1.0,
+    };
 
-        if ($fecha->isWeekend()) $modificador *= 1.25;
+    $finSemana = $fecha->isWeekend() ? 1.25 : 1.0;
 
-        $festivos = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-25'];
+    $festivos = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-25'];
+    $festivo = in_array($fecha->format('m-d'), $festivos, true) ? 1.5 : 1.0;
 
-        if (in_array($fecha->format('m-d'), $festivos)) $modificador *= 1.5;
-
-        return $modificador;
-    }
+    return $base * $finSemana * $festivo;
+}
 
     private function calcularPrecioEntreFechas($habitacion, $checkIn, $checkOut): float
     {
@@ -239,7 +237,7 @@ class ReservaController extends Controller
     public function show(Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'bookedBy']);
-        
+
         if (request()->wantsJson()) {
             return response()->json($reserva);
         }

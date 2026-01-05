@@ -8,167 +8,15 @@ export default function CreateReservaPaso1({
     errores,
     onChange,
     onNext,
-    searchProps,
     hideDates = false,
     hideNextButton = false,
 }) {
-    const {
-        modoNuevo,
-        setModoNuevo,
-        query,
-        setQuery,
-        resultados,
-        cargando,
-        seleccionado,
-        onSeleccionar,
-    } = searchProps;
 
     return (
         <form onSubmit={onNext} className="space-y-5 p-6">
-            <div className="mb-4 flex justify-center">
-                <div className="inline-flex w-full rounded-lg bg-base-200 p-1 sm:w-auto">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setModoNuevo(true);
-                            onSeleccionar(null);
-                        }}
-                        className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 sm:flex-none ${modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}`}
-                        style={modoNuevo ? { color: '#920303' } : {}}
-                    >
-                        Nuevo Cliente
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setModoNuevo(false)}
-                        className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 sm:flex-none ${!modoNuevo ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}`}
-                        style={!modoNuevo ? { color: '#920303' } : {}}
-                    >
-                        Buscar Existente
-                    </button>
-                </div>
+            <div className="divider text-xs uppercase opacity-50">
+                Datos de la Reserva
             </div>
-
-            {!modoNuevo && (
-                <div className="relative z-20">
-                    <div className="w-full join">
-                        <input
-                            type="text"
-                            className="input-bordered input w-full join-item"
-                            placeholder="Buscar por nombre, DNI o email..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-
-                    {query.length >= 3 && (
-                        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl">
-                            {cargando && (
-                                <div className="flex items-center justify-center gap-2 p-3 text-center text-sm text-gray-500">
-                                    <span className="loading loading-spinner loading-sm"></span>
-                                    Buscando...
-                                </div>
-                            )}
-
-                            {!cargando && resultados.length === 0 && (
-                                <div className="p-3 text-center text-sm text-gray-500">
-                                    No se encontraron clientes o usuarios
-                                </div>
-                            )}
-
-                            {!cargando &&
-                                resultados.length > 0 &&
-                                resultados
-                                    .filter(
-                                        (p) =>
-                                            !(
-                                                seleccionado &&
-                                                p.id === seleccionado.id &&
-                                                p.tipo_usuario ===
-                                                    seleccionado.tipo_usuario
-                                            ),
-                                    )
-                                    .map((p) => (
-                                        <div
-                                            key={`${p.tipo_usuario}-${p.id}`}
-                                            onClick={() => onSeleccionar(p)}
-                                            className="hover:bg-primary/10 cursor-pointer border-b border-gray-100 p-3 transition-colors last:border-0"
-                                        >
-                                            <div className="flex items-center gap-2 font-semibold text-gray-800">
-                                                {p.tipo_usuario ===
-                                                    'usuario' && (
-                                                    <span className="badge badge-warning badge-sm">
-                                                        Usuario
-                                                    </span>
-                                                )}
-                                                {p.tipo_usuario ===
-                                                    'cliente' && (
-                                                    <span className="badge badge-ghost badge-sm">
-                                                        Cliente
-                                                    </span>
-                                                )}
-                                                {p.nombre || p.name}
-                                            </div>
-                                            <div className="mt-1 flex gap-2 text-xs text-gray-500">
-                                                <span>
-                                                    {p.numero_documento}
-                                                </span>
-                                                {p.email && (
-                                                    <span>{p.email}</span>
-                                                )}
-                                                {p.telefono && (
-                                                    <span>{p.telefono}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                        </div>
-                    )}
-
-                    {seleccionado && (
-                        <div className="mt-3">
-                            <div className="card bg-base-100 p-3 shadow-sm">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="font-semibold">
-                                            {seleccionado.nombre ||
-                                                seleccionado.name}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            {seleccionado.numero_documento}{' '}
-                                            {seleccionado.email
-                                                ? `• ${seleccionado.email}`
-                                                : ''}
-                                        </div>
-                                        <div className="mt-1 text-xs text-gray-500">
-                                            {seleccionado.tipo_usuario ===
-                                            'usuario'
-                                                ? 'Usuario'
-                                                : 'Cliente'}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm"
-                                            onClick={() => onSeleccionar(null)}
-                                        >
-                                            Limpiar selección
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {(modoNuevo || !seleccionado) && (
-                <>
-                    <div className="divider text-xs uppercase opacity-50">
-                        Datos de la Reserva
-                    </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Campo
@@ -296,8 +144,6 @@ export default function CreateReservaPaso1({
                             </PrimaryButton>
                         </div>
                     )}
-                </>
-            )}
         </form>
     );
 }

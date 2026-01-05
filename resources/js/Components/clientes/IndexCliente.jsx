@@ -141,11 +141,7 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                             <tr key={`${cliente.tipo_usuario}-${cliente.id}`} className="hover">
                                 <td className="font-semibold">
                                     <div className="flex items-center gap-2">
-                                        {cliente.tipo_usuario
-                                        ===
-                                                        'usuario' && (
-                                        <StarIcon className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                                        )}
+                                        {cliente.tipo_usuario === 'usuario' && ( <StarIcon className="h-4 w-4 fill-yellow-500 text-yellow-500" />)}
                                         <span>{cliente.name}</span>
                                     </div>
                                 </td>
@@ -160,9 +156,7 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                                                 {cliente.tipo_documento?.toUpperCase()}
                                             </span>
                                             <span className="font-mono text-sm">
-                                                {
-                                                cliente.numero_documento
-                                                }
+                                                { cliente.numero_documento }
                                             </span>
                                         </>
                                         ) : (
@@ -175,31 +169,21 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                                 <td>{cliente.telefono || '-'}</td>
                                 <td className="text-center">
                                     <span className="badge badge-outline badge-sm">
-                                        {cliente.nacionalidad ||
-                                        '-'}{' '}
+                                        {cliente.nacionalidad || 'Sin nacionalidad'}
                                     </span>
                                 </td>
                                 <td className="max-w-xs">
-                                    {cliente.direccion
-                                    ? cliente.direccion
-                                    : 'Sin dirección'}
+                                    {cliente.direccion ? cliente.direccion : 'Sin dirección' }
                                 </td>
                                 <td className="text-sm text-gray-500">
-                                    {new Date(
-                                    cliente.created_at,
-                                    ).toLocaleDateString('es-ES')}
+                                    {new Date(cliente.created_at).toLocaleDateString('es-ES')}
                                 </td>
                                 <td>
                                     <div className="flex gap-1">
                                         <button className="btn btn-ghost btn-outline btn-sm">
                                             <EyeIcon className="h-4 w-4" />
                                         </button>
-                                        <button className="btn btn-primary btn-sm" onClick={()=>
-                                            abrirEdicion(
-                                            cliente,
-                                            )
-                                            }
-                                            >
+                                        <button className="btn btn-primary btn-sm" onClick={()=> abrirEdicion( cliente ) }>
                                             <PencilIcon className="h-4 w-4" />
                                         </button>
                                     </div>
