@@ -1,66 +1,108 @@
 import { useEffect, useState } from 'react';
-
-export default function useBusquedaCliente({ formulario, setReservableId, setReservableTipo }) {
-    const [query, setQuery] = useState('');
+export default function useBusquedaCliente({ formulario, setReservableId: setIdReservable, setReservableTipo: setTipoReservable }) {
+    const [consulta, setConsulta] = useState('');
     const [resultados, setResultados] = useState([]);
-    const [cargando, setCargando] = useState(false);
-    const [seleccionado, setSeleccionado] = useState(null);
+    const [estaBuscando, setEstaBuscando] = useState(false);
+    const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
 
+    // Debounced search effect
     useEffect(() => {
-        if (!query || query.length < 3) { setResultados([]); return; }
-
-        let activo = true;
-        setCargando(true);
-        const id = setTimeout(async () => {
-            try {
-                const res = await fetch(`/clientes/buscar?query=${encodeURIComponent(query)}`, {
-                    headers: { Accept: 'application/json' }
-                });
-                if (!activo) return;
-                if (res.ok) {
-                    const json = await res.json();
-                    setResultados(Array.isArray(json) ? json : []);
-                } else setResultados([]);
-            } catch (err) {
-                setResultados([]);
-            } finally {
-                if (activo) setCargando(false);
-            }
-        }, 300);
-
-        return () => { activo = false; clearTimeout(id); };
-    }, [query]);
-
-    const setData = (key, value) => {
-        try { formulario.setData(key, value); } catch (e) { void e; }
-    };
-
-    const limpiarDatos = () => {
-        ['name', 'email', 'telefono', 'numero_documento', 'nacionalidad', 'direccion'].forEach(k => setData(k, ''));
-        setData('tipo_documento', 'dni');
-    };
-
-    const seleccionarCliente = (p) => {
-        setSeleccionado(p);
-
-        if (!p) {
-            limpiarDatos();
-            setReservableId(null);
-            setReservableTipo(null);
+        // Requisitos mínimos para buscar
+        if (!consulta || consulta.length < 3) {
+            setResultados([]);
             return;
         }
 
-        setData('nombre', p.nombre || p.name || '');
-        setData('email', p.email || '');
-        setData('telefono', p.telefono || '');
-        setData('tipo_documento', p.tipo_documento || 'dni');
-        setData('numero_documento', p.numero_documento || '');
-        setData('nacionalidad', p.nacionalidad || '');
-        setData('direccion', p.direccion || '');
-        setReservableId(p.id);
-        setReservableTipo(p.tipo_usuario || null);
-        setQuery('');
+        let estaActiva = true;
+        setEstaBuscando(true);
+
+        // Debounce timer
+        const timerRetraso = setTimeout(async () => {
+            try {
+                const respuesta = await fetch(
+                    `/clientes/buscar?query=${encodeURIComponent(consulta)}`,
+                    { headers: { Accept: 'application/json' } }
+                );
+
+                if (!estaActiva) return;
+
+                if (respuesta.ok) {
+                    const datos = await respuesta.json();
+                    setResultados(Array.isArray(datos) ? datos : []);
+                } else {
+                    setResultados([]);
+                }
+            } catch (error) {
+                console.error('Error buscando clientes:', error);
+                setResultados([]);
+            } finally {
+                if (estaActiva) setEstaBuscando(false);
+            }
+        }, 300); // 300ms debounce
+
+        return () => {
+            estaActiva = false;
+            clearTimeout(timerRetraso);
+        };
+    }, [consulta]);
+
+    /**
+     * Actualiza un campo del formulario de forma segura
+     */
+    const cambiar = (nombreCampo, valorCampo) => {
+        try {
+            formulario.setData(nombreCampo, valorCampo);
+        } catch (error) {
+            console.error(`Error actualizando campo ${nombreCampo}:`, error);
+        }
     };
 
-    return { query, setQuery, resultados, cargando, seleccionado, seleccionarCliente };
+    /**
+     * Limpia todos los datos personales del formulario
+     */
+    const limpiarFormulario = () => {
+        const camposALimpiar = ['name', 'email', 'telefono', 'numero_documento', 'nacionalidad', 'direccion'];
+        camposALimpiar.forEach(campo => cambiar(campo, ''));
+        cambiar('tipo_documento', 'dni');
+    };
+
+    /**
+     * Selecciona un cliente y rellena el formulario con sus datos
+     */
+    const seleccionarCliente = (datosCliente) => {
+        setClienteSeleccionado(datosCliente);
+
+        // Si no hay cliente seleccionado, limpiar todo
+        if (!datosCliente) {
+            limpiarFormulario();
+            setIdReservable(null);
+            setTipoReservable(null);
+            return;
+        }
+
+        // Rellenar formulario con datos del cliente
+        cambiar('name', datosCliente.nombre || datosCliente.name || '');
+        cambiar('email', datosCliente.email || '');
+        cambiar('telefono', datosCliente.telefono || '');
+        cambiar('tipo_documento', datosCliente.tipo_documento || 'dni');
+        cambiar('numero_documento', datosCliente.numero_documento || '');
+        cambiar('nacionalidad', datosCliente.nacionalidad || '');
+        cambiar('direccion', datosCliente.direccion || '');
+
+        // Registrar al cliente como reservable
+        setIdReservable(datosCliente.id);
+        setTipoReservable(datosCliente.tipo_usuario || null);
+
+        // Limpiar búsqueda
+        setConsulta('');
+    };
+
+    return {
+        consulta,
+        setConsulta,
+        resultados,
+        estaBuscando,
+        clienteSeleccionado,
+        seleccionarCliente,
+    };
 }

@@ -33,17 +33,17 @@ export default function MenuLateral() {
                 <label htmlFor="drawer-toggle" className="drawer-overlay" tabIndex={-1} aria-hidden="true"></label>
                 <div className="h-full w-[600px] bg-gris" aria-labelledby="titulo-reserva" role="region">
                     <div className="relative flex h-full flex-col bg-gris">
-                        {hook.error && <ErrorToast message={hook.error} />}
-                        {hook.paso === 1 && <Paso1Fechas {...hook} />}
-                        {hook.paso === 2 && <Paso2Habitaciones {...hook} />}
-                        {hook.paso === 3 && <Paso3Datos {...hook} />}
-                        {hook.paso === 4 && (
+                        {hook.mensajeError && <ErrorToast message={hook.mensajeError} />}
+                        {hook.pasoActual === 1 && <Paso1Fechas {...hook} />}
+                        {hook.pasoActual === 2 && <Paso2Habitaciones {...hook} />}
+                        {hook.pasoActual === 3 && <Paso3Datos {...hook} />}
+                        {hook.pasoActual === 4 && (
                             <Paso4Confirmacion
                                 {...hook}
-                                currentUser={hook.currentUser}
+                                usuarioActual={hook.usuarioActual}
                                 getValues={hook.getValues}
-                                reservableId={hook.reservableId}
-                                tipo_usuario={hook.tipo_usuario}
+                                idClienteSeleccionado={hook.idClienteSeleccionado}
+                                tipoClienteSeleccionado={hook.tipoClienteSeleccionado}
                             />
                         )}
                     </div>

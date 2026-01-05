@@ -9,32 +9,42 @@ import { calcularPrecioDinamico } from '../utils/precios';
 
 export default function useReservaForm() {
     const page = usePage();
-    const currentUser = page?.props?.auth?.user ?? null;
-    const flashReservaId = page?.props?.flash?.reserva_id ?? null;
+    const usuarioActual = page?.props?.auth?.user ?? null;
+    const flashIdReserva = page?.props?.flash?.reserva_id ?? null;
     const flashLocalizador = page?.props?.flash?.localizador ?? null;
-    const [paso, setPaso] = useState(1);
-    const [error, setError] = useState('');
-    const [reservableId, setReservableId] = useState(null);
-    const [reservableTipo, setReservableTipo] = useState(null);
+
+    // Estado del asistente
+    const [pasoActual, setPasoActual] = useState(1);
+    const [mensajeError, setMensajeError] = useState('');
+
+    // Estado de cliente/huésped
+    const [idClienteSeleccionado, setIdClienteSeleccionado] = useState(null);
+    const [tipoClienteSeleccionado, setTipoClienteSeleccionado] = useState(null);
+
+    // Estado de fechas
     const [rango, setRango] = useState({ from: undefined, to: undefined });
-    const [reservaId, setReservaId] = useState(flashReservaId);
+
+    // Estado de reserva (desde flash props)
+    const [idReserva, setIdReserva] = useState(flashIdReserva);
     const [localizador, setLocalizador] = useState(flashLocalizador);
 
-    // Actualizar reservaId y localizador cuando cambien las flash props
+    /**
+     * Sincronizar IDs de flash props cuando se actualizan
+     */
     useEffect(() => {
-        if (flashReservaId) {
-            setReservaId(flashReservaId);
+        if (flashIdReserva) {
+            setIdReserva(flashIdReserva);
         }
         if (flashLocalizador) {
             setLocalizador(flashLocalizador);
         }
-    }, [flashReservaId, flashLocalizador]);
+    }, [flashIdReserva, flashLocalizador]);
 
-    // React Hook Form
+    // React Hook Form - Gestión de formulario con validación Zod
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors: erroresFormulario },
         watch,
         setValue,
         getValues,
@@ -42,152 +52,258 @@ export default function useReservaForm() {
         resolver: zodResolver(reservaSchema),
         mode: 'onChange',
         defaultValues: {
-            name: currentUser?.name || '',
-            email: currentUser?.email || '',
-            telefono: currentUser?.telefono || '',
+            name: usuarioActual?.name || '',
+            email: usuarioActual?.email || '',
+            telefono: usuarioActual?.telefono || '',
             tipo_documento: 'dni',
-            numero_documento: currentUser?.numero_documento || '',
-            nacionalidad: currentUser?.nacionalidad || '',
-            direccion: currentUser?.direccion || '',
+            numero_documento: usuarioActual?.numero_documento || '',
+            nacionalidad: usuarioActual?.nacionalidad || '',
+            direccion: usuarioActual?.direccion || '',
             habitaciones: [],
         },
     });
 
-    // Búsqueda de cliente
+    // Hook para búsqueda de clientes
     const {
-        query,
-        setQuery,
+        consulta,
+        setConsulta,
         resultados,
-        cargando,
-        seleccionado,
+        estaBuscando,
+        clienteSeleccionado,
         seleccionarCliente,
     } = useBusquedaCliente({
-        formulario: { setData: (key, value) => setValue(key, value), data: getValues() },
-        setReservableId,
-        setReservableTipo,
+        formulario: {
+            setData: (key, value) => setValue(key, value),
+            data: getValues(),
+        },
+        setReservableId: setIdClienteSeleccionado,
+        setReservableTipo: setTipoClienteSeleccionado,
     });
 
-    // Habitaciones
+    // Hook para selección de habitaciones
     const {
-        availableRooms,
-        cargandoHabitaciones,
+        habitacionesDisponibles,
+        estaCargandoHabitaciones,
         habitacionesSeleccionadas,
-        getTiposHabitacion,
+        agruparHabitacionesPorTipo,
         getIcono,
         getImagen,
         getTotalHabitaciones,
         actualizarSeleccionHabitacion,
         limpiarRango,
-    } = useHabitaciones({ paso, rango, setRango });
+    } = useHabitaciones({
+        paso: pasoActual,
+        rango: rango,
+        setRango: setRango,
+    });
 
-    const continuar = () => {
-        if (paso === 1 && (!rango?.from || !rango?.to)) {
-            setError('Selecciona un rango de fechas.');
+    /**
+     * Avanza al siguiente paso con validaciones específicas
+     */
+    const avanzarPaso = () => {
+        if (pasoActual === 1 && (!rango?.from || !rango?.to)) {
+            setMensajeError('Selecciona un rango de fechas.');
             return;
         }
 
-        // Si hay usuario logueado, usar sus datos y pasar a habitaciones
-        if (paso === 1 && currentUser) {
-            setReservableId(currentUser.id);
-            setReservableTipo('usuario');
-            setValue('check_in', rango.from);
-            setValue('check_out', rango.to);
-            setError('');
-            setPaso(2); // Ir a habitaciones
+        // Si hay usuario logueado y está en paso 1, saltar a paso 2 (habitaciones)
+        if (pasoActual === 1 && usuarioActual) {
+            setIdClienteSeleccionado(usuarioActual.id);
+            setTipoClienteSeleccionado('usuario');
+            setMensajeError('');
+            setPasoActual(2);
             return;
         }
 
-        // Si hay usuario y estamos en habitaciones, saltar directamente a confirmación
-        if (paso === 2 && currentUser) {
-            setError('');
-            setPaso(4); // Ir a confirmación, saltando datos
+        // Si hay usuario y está en habitaciones, saltar a confirmación (paso 4)
+        if (pasoActual === 2 && usuarioActual) {
+            setMensajeError('');
+            setPasoActual(4);
             return;
         }
 
         // Flujo normal: Fechas (1) → Habitaciones (2) → Datos (3) → Confirmación (4)
-        setError('');
-        setPaso(paso + 1);
+        setMensajeError('');
+        setPasoActual(pasoActual + 1);
     };
 
-    const volverAtras = () => {
-        if (currentUser && paso === 4) {
-            setPaso(2);
+    /**
+     * Retrocede al paso anterior
+     */
+    const retrocederPaso = () => {
+        if (usuarioActual && pasoActual === 4) {
+            setPasoActual(2);
             return;
         }
-        setPaso(paso - 1);
+        setPasoActual(pasoActual - 1);
     };
 
-    // Calcular monto total según habitaciones seleccionadas
+    /**
+     * Calcula el monto total a pagar basado en las habitaciones seleccionadas
+     * @returns {number} Monto total en moneda
+     */
     const calcularMontoTotal = () => {
         if (!rango?.from || !rango?.to) return 0;
 
-        let total = 0;
-        Object.entries(habitacionesSeleccionadas).forEach(([tipo, datos]) => {
-            if (datos.cantidad > 0) {
-                // Buscar el tipo de habitación en availableRooms para obtener info de precio
-                const habitacion = availableRooms.find(h => h.tipo === tipo);
+        let montoTotal = 0;
+
+        Object.entries(habitacionesSeleccionadas).forEach(([tipoHabitacion, seleccion]) => {
+            if (seleccion.cantidad > 0) {
+                // Buscar la habitación en disponibles para obtener precio
+                const habitacion = habitacionesDisponibles.find((r) => r.tipo === tipoHabitacion);
+
                 if (habitacion) {
-                    const precioDiario = calcularPrecioDinamico(habitacion, rango.from, rango.to);
+                    const precioDiario = calcularPrecioDinamico(
+                        habitacion,
+                        rango.from,
+                        rango.to,
+                    );
+
                     // Calcular número de noches
-                    const msPerDay = 24 * 60 * 60 * 1000;
-                    const noches = Math.ceil((rango.to - rango.from) / msPerDay);
-                    total += precioDiario * datos.cantidad * noches;
+                    const milisegundosPorDia = 24 * 60 * 60 * 1000;
+                    const numeroNoches = Math.ceil(
+                        (rango.to - rango.from) / milisegundosPorDia,
+                    );
+
+                    montoTotal +=
+                        precioDiario * seleccion.cantidad * numeroNoches;
                 }
             }
         });
-        return total;
+
+        return montoTotal;
     };
 
-    const onConfirmar = async () => {
-        const values = getValues();
-        const habitaciones = Object.entries(habitacionesSeleccionadas)
-            .filter(([, r]) => r.cantidad > 0)
-            .map(([tipo, r]) => ({
-                tipo,
-                cantidad: r.cantidad,
-                personas_por_habitacion: Number(r.personas) > 0 ? Number(r.personas) : 1,
+    /**
+     * Envía la reserva al servidor
+     */
+    const confirmarReserva = async () => {
+        const valoresFormulario = getValues();
+
+        // Transformar habitaciones seleccionadas al formato esperado
+        const datosHabitacionesSeleccionadas = Object.entries(habitacionesSeleccionadas)
+            .filter(([, seleccion]) => seleccion.cantidad > 0)
+            .map(([tipoHabitacion, seleccion]) => ({
+                tipo: tipoHabitacion,
+                cantidad: seleccion.cantidad,
+                personas_por_habitacion:
+                    Number(seleccion.personas) > 0 ? Number(seleccion.personas) : 1,
             }));
 
-        const respuesta = {
-            ...values,
+        // Construir objeto de reserva
+        const datosReserva = {
+            ...valoresFormulario,
             check_in: rango?.from,
             check_out: rango?.to,
-            habitaciones,
-            reservable_id: reservableId,
-            tipo_usuario: reservableTipo,
+            habitaciones: datosHabitacionesSeleccionadas,
+            reservable_id: idClienteSeleccionado,
+            tipo_usuario: tipoClienteSeleccionado,
         };
 
-        if (respuesta.tipo_usuario === 'cliente' && currentUser) {
-            respuesta.booked_by_user_id = currentUser.id;
+        // Si un usuario está reservando para cliente, incluir user_id
+        if (
+            datosReserva.tipo_usuario === 'cliente' &&
+            usuarioActual
+        ) {
+            datosReserva.booked_by_user_id = usuarioActual.id;
         }
 
-        router.post('/reservas', respuesta, {
+        // Enviar al servidor
+        router.post('/reservas', datosReserva, {
             onSuccess: () => {
-                try {
-                    // La reserva_id llegará en las flash props
-                    document.getElementById('drawer-toggle').checked = false;
-                } catch (e) {
-                    void e;
-                }
-
-                setPaso(1);
-                setRango({ from: undefined, to: undefined });
-                setQuery('');
+                manejarExitoReserva();
             },
-            onError: (errors) => { setError(
-                    errors.message ||
-                        Object.values(errors)[0] ||
-                        'Error al crear la reserva',
-                );
+            onError: (errors) => {
+                manejarErrorReserva(errors);
             },
         });
     };
 
+    /**
+     * Maneja el éxito de la creación de reserva
+     */
+    const manejarExitoReserva = () => {
+        try {
+            const drawerCheckbox = document.getElementById('drawer-toggle');
+            if (drawerCheckbox) {
+                drawerCheckbox.checked = false;
+            }
+        } catch (error) {
+            console.error('⚠️ Error closing drawer:', error);
+        }
+
+        // Resetear estado
+        setPasoActual(1);
+        setRango({ from: undefined, to: undefined });
+        setConsulta('');
+    };
+
+    /**
+     * Maneja los errores de creación de reserva
+     */
+    const manejarErrorReserva = (errors) => {
+        const msError =
+            errors.message ||
+            Object.values(errors)[0] ||
+            'Error al crear la reserva';
+        setMensajeError(msError);
+    };
+
     return {
-        register, handleSubmit, errors, watch, setValue, getValues,
-        paso, setPaso, continuar, volverAtras, onConfirmar, rango, setRango, limpiarRango,
-        query, setQuery, resultados, cargando, seleccionado, seleccionarCliente,
-        availableRooms, cargandoHabitaciones, habitacionesSeleccionadas, getTiposHabitacion, getIcono, getImagen, getTotalHabitaciones, actualizarSeleccionHabitacion,
-        error, setError, currentUser, calcularMontoTotal, reservaId, localizador, reservableId, tipo_usuario: reservableTipo
+        // React Hook Form
+        register,
+        handleSubmit,
+        errors: erroresFormulario,
+        watch,
+        setValue,
+        getValues,
+
+        // Estado del asistente
+        pasoActual,
+        setPasoActual,
+        avanzarPaso,
+        retrocederPaso,
+        mensajeError,
+        setMensajeError,
+
+        // Rango de fechas
+        rango,
+        setRango,
+        limpiarRango,
+
+        // Búsqueda de clientes
+        consulta,
+        setConsulta,
+        resultados,
+        estaBuscando,
+        clienteSeleccionado,
+        seleccionarCliente,
+
+        // Habitaciones disponibles
+        habitacionesDisponibles,
+        estaCargandoHabitaciones,
+
+        // Habitaciones seleccionadas
+        habitacionesSeleccionadas,
+        getTotalHabitaciones,
+        actualizarSeleccionHabitacion,
+
+        // Métodos de UI
+        agruparHabitacionesPorTipo,
+        getIcono,
+        getImagen,
+
+        // Cálculos
+        calcularMontoTotal,
+
+        // Envío de reserva
+        confirmarReserva,
+
+        // Info de usuario y reserva
+        usuarioActual,
+        idReserva,
+        localizador,
+        idClienteSeleccionado,
+        tipoClienteSeleccionado,
     };
 }

@@ -4,7 +4,8 @@ import useRetraso from './useRetraso';
 import { useSincronizarFiltros } from './useSincronizarFiltros';
 
 export function useHabitacionControl(habitaciones = []) {
-    const inicial = {
+    // Configuración inicial de filtros
+    const filtrosIniciales = {
         estado: 'todos',
         tipo: 'todos',
         capacidad: 'todos',
@@ -12,12 +13,23 @@ export function useHabitacionControl(habitaciones = []) {
         precio_max: '',
         busqueda: '',
     };
-    const { filtros, actualizarFiltro, limpiarFiltros, hayFiltrosActivos } =
-        useSincronizarFiltros(inicial, 'panel', ['habitaciones']);
 
+    // Utilizar hook para sincronizar filtros con URL
+    const {
+        filtros,
+        actualizarFiltro,
+        limpiarFiltros,
+        hayFiltrosActivos,
+    } = useSincronizarFiltros(filtrosIniciales, 'panel', ['habitaciones']);
+
+    // Aplicar retraso de 500ms a las búsquedas
     const busquedaRetrasada = useRetraso(filtros.busqueda, 500);
 
+    /**
+     * Actualizar resultados cuando cambian los filtros
+     */
     useEffect(() => {
+        // Construir objeto de filtros activos (excluyendo valores "todos")
         const filtrosActivos = {
             estado: filtros.estado !== 'todos' ? filtros.estado : undefined,
             tipo: filtros.tipo !== 'todos' ? filtros.tipo : undefined,
@@ -43,27 +55,30 @@ export function useHabitacionControl(habitaciones = []) {
         busquedaRetrasada,
     ]);
 
-    // mantener una API similar para limpiarFiltros (ya provisto por useFiltersSync)
-
     return {
+        // Estado de filtros
         filtros: {
             estado: filtros.estado,
-            setEstado: (v) => actualizarFiltro('estado', v),
+            setEstado: (valor) => actualizarFiltro('estado', valor),
             tipo: filtros.tipo,
-            setTipo: (v) => actualizarFiltro('tipo', v),
+            setTipo: (valor) => actualizarFiltro('tipo', valor),
             capacidad: filtros.capacidad,
-            setCapacidad: (v) => actualizarFiltro('capacidad', v),
+            setCapacidad: (valor) => actualizarFiltro('capacidad', valor),
             precioMin: filtros.precio_min,
-            setPrecioMin: (v) => actualizarFiltro('precio_min', v),
+            setPrecioMin: (valor) => actualizarFiltro('precio_min', valor),
             precioMax: filtros.precio_max,
-            setPrecioMax: (v) => actualizarFiltro('precio_max', v),
+            setPrecioMax: (valor) => actualizarFiltro('precio_max', valor),
             busqueda: filtros.busqueda,
-            setBusqueda: (v) => actualizarFiltro('busqueda', v),
+            setBusqueda: (valor) => actualizarFiltro('busqueda', valor),
         },
+
+        // Datos filtrados
         datos: {
             habitacionesFiltradas: habitaciones,
             capacidadesDisponibles: [2, 3, 4, 5, 6],
         },
+
+        // Acciones disponibles
         acciones: {
             limpiarFiltros,
             hayFiltrosActivos,

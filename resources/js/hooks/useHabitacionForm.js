@@ -1,17 +1,18 @@
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
+// Capacidades predefinidas por tipo de habitación
 const CAPACIDADES = { doble: 2, suite: 2, familiar: 4 };
 const MAX_FOTOS = 4;
 
-export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
+export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
     const esEdicion = !!habitacionInicial?.id;
 
     const {
-        data,
+        data: formulario,
         setData,
-        processing,
-        errors,
+        processing: estaCargando,
+        errors: errores,
         reset: resetForm,
         clearErrors,
     } = useForm({
@@ -24,11 +25,15 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         notas: '',
     });
 
+    // Estados para manejo de fotos
     const [fotos, setFotos] = useState([]);
-    const [previews, setPreviews] = useState([]);
+    const [previsualizaciones, setPresualizaciones] = useState([]);
     const [fotosGuardadas, setFotosGuardadas] = useState([]);
-    const [fotosEliminadas, setFotosEliminadas] = useState([]);
+    const [fotosAEliminar, setFotosAEliminar] = useState([]);
 
+    /**
+     * Carga datos de la habitación inicial cuando entra en modo edición
+     */
     useEffect(() => {
         if (esEdicion && habitacionInicial) {
             setData({
@@ -43,17 +48,15 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
                 notas: habitacionInicial.notas || '',
             });
 
-            const fotosExistentes = (habitacionInicial.fotos || []).map(
-                (f) => ({
-                    id: f.id,
-                    url: f.url || `/storage/${f.ruta}`,
-                    ruta: f.ruta,
-                }),
-            );
+            const fotosExistentes = (habitacionInicial.fotos || []).map((foto) => ({
+                id: foto.id,
+                url: foto.url || `/storage/${foto.ruta}`,
+                ruta: foto.ruta,
+            }));
             setFotosGuardadas(fotosExistentes);
-            setPreviews(fotosExistentes.map((f) => f.url));
+            setPresualizaciones(fotosExistentes.map((p) => p.url));
             setFotos([]);
-            setFotosEliminadas([]);
+            setFotosAEliminar([]);
             clearErrors();
         }
     }, [
@@ -64,115 +67,151 @@ export function useHabitacionForm(habitacionInicial = null, onSuccess = null) {
         clearErrors,
     ]);
 
-    const cambiar = (e) => {
-        const { name, value } = e.target;
-        setData((prev) => ({
-            ...prev,
+    /**
+     * Actualiza un campo del formulario
+     * Si se cambia el tipo, actualiza la capacidad automáticamente
+     */
+    const cambiar = (event) => {
+        const { name, value } = event.target;
+        setData((datosActuales) => ({
+            ...datosActuales,
             [name]: value,
+            // Si cambia el tipo, actualizar capacidad a la predefinida
             ...(name === 'tipo' && { capacidad: CAPACIDADES[value] || '' }),
         }));
     };
 
-    const agregarFotos = async (e) => {
+    /**
+     * Agrega fotos al formulario y genera previsualizaciones
+     * Límite: 4 fotos totales (nuevas + guardadas)
+     */
+    const agregarFotos = async (event) => {
         const totalActual = fotosGuardadas.length + fotos.length;
-        const archivos = Array.from(e.target.files).slice(
+        const archivos = Array.from(event.target.files).slice(
             0,
             MAX_FOTOS - totalActual,
         );
+
         if (!archivos.length) return;
 
         setFotos((prev) => [...prev, ...archivos]);
 
-        const readFile = (archivo) =>
+        // Leer archivos como Data URLs para previsualización
+        const leerArchivoComoDataUrl = (archivo) =>
             new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => resolve(ev.target.result);
-                reader.readAsDataURL(archivo);
+                const lector = new FileReader();
+                lector.onload = (ev) => resolve(ev.target.result);
+                lector.readAsDataURL(archivo);
             });
 
         try {
-            const nuevosPreviews = await Promise.all(archivos.map(readFile));
-            setPreviews((prev) => [...prev, ...nuevosPreviews]);
-        } catch (err) {
-            // si falla la lectura, no rompemos el flujo
+            const nuevasPrevisualizaciones = await Promise.all(archivos.map(leerArchivoComoDataUrl));
+            setPresualizaciones((prev) => [...prev, ...nuevasPrevisualizaciones]);
+        } catch (error) {
+            console.error('⚠️ Error leyendo archivos de foto:', error);
+            // Continuar sin fallar si hay error en lectura
         }
 
-        e.target.value = '';
+        // Limpiar input para permitir seleccionar el mismo archivo de nuevo
+        event.target.value = '';
     };
 
-    const quitarFoto = (index) => {
-        if (index < fotosGuardadas.length) {
-            const fotoAEliminar = fotosGuardadas[index];
+    /**
+     * Elimina una foto por índice
+     * Diferencia entre fotos guardadas y nuevas
+     */
+    const quitarFoto = (indice) => {
+        if (indice < fotosGuardadas.length) {
+            // Es una foto guardada - marcar para eliminar del servidor
+            const fotoAEliminar = fotosGuardadas[indice];
             if (fotoAEliminar?.id) {
-                setFotosEliminadas((prev) => [...prev, fotoAEliminar.id]);
+                setFotosAEliminar((prev) => [...prev, fotoAEliminar.id]);
             }
-            setFotosGuardadas((prev) => prev.filter((_, i) => i !== index));
+            setFotosGuardadas((prev) => prev.filter((_, i) => i !== indice));
         } else {
-            const newIndex = index - fotosGuardadas.length;
-            setFotos((prev) => prev.filter((_, i) => i !== newIndex));
+            // Es una foto nueva - eliminar del array
+            const nuevoIndice = indice - fotosGuardadas.length;
+            setFotos((prev) => prev.filter((_, i) => i !== nuevoIndice));
         }
-        setPreviews((prev) => prev.filter((_, i) => i !== index));
+        setPresualizaciones((prev) => prev.filter((_, i) => i !== indice));
     };
 
-    const enviar = (e) => {
-        e.preventDefault();
+    /**
+     * Envía el formulario al servidor (crear o actualizar habitación)
+     */
+    const enviar = (event) => {
+        event.preventDefault();
 
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) =>
-            formData.append(key, value),
-        );
-        fotos.forEach((foto) => formData.append('fotos[]', foto));
+        const datosFormulario = new FormData();
+
+        // Agregar campos de formulario
+        Object.entries(formulario).forEach(([clave, valor]) => {
+            datosFormulario.append(clave, valor);
+        });
+
+        // Agregar fotos nuevas
+        fotos.forEach((foto) => {
+            datosFormulario.append('fotos[]', foto);
+        });
 
         if (esEdicion) {
-            fotosEliminadas.forEach((id) =>
-                formData.append('fotos_eliminar[]', id),
-            );
-            formData.append('_method', 'PUT');
+            // Agregar IDs de fotos a eliminar
+            fotosAEliminar.forEach((id) => {
+                datosFormulario.append('fotos_eliminar[]', id);
+            });
 
-            router.post(`/habitaciones/${habitacionInicial.id}`, formData, {
+            // Usar método PUT via _method
+            datosFormulario.append('_method', 'PUT');
+
+            router.post(`/habitaciones/${habitacionInicial.id}`, datosFormulario, {
                 preserveState: false,
                 preserveScroll: false,
                 onSuccess: () => {
                     router.reload({ only: ['habitaciones'] });
                     reset();
-                    onSuccess?.();
+                    alGuardar?.();
                 },
-                onError: (errors) => {
-                    void errors;
+                onError: (errores) => {
+                    console.error('❌ Error guardando habitación:', errores);
                 },
             });
         } else {
-            router.post('/habitaciones', formData, {
+            // Crear nueva habitación
+            router.post('/habitaciones', datosFormulario, {
                 preserveState: false,
                 preserveScroll: false,
                 onSuccess: () => {
                     reset();
-                    onSuccess?.();
+                    alGuardar?.();
                 },
             });
         }
     };
 
+    /**
+     * Resetea todos los campos y estados del formulario
+     */
     const reset = () => {
         resetForm();
         setFotos([]);
-        setPreviews([]);
+        setPresualizaciones([]);
         setFotosGuardadas([]);
-        setFotosEliminadas([]);
+        setFotosAEliminar([]);
     };
 
+    // Verificar si la capacidad es fija para este tipo
     const capacidadFija = Object.prototype.hasOwnProperty.call(
         CAPACIDADES,
-        data.tipo,
+        formulario.tipo,
     );
 
     return {
-        form: data,
+        formulario,
         fotos,
-        previews,
+        previsualizaciones,
         fotosGuardadas,
-        errores: errors,
-        guardando: processing,
+        errores,
+        estaCargando,
         capacidadFija,
         MAX_FOTOS,
         esEdicion,

@@ -6,8 +6,8 @@ export default function Paso3Datos({
     watch,
     setValue,
     errors,
-    continuar,
-    volverAtras,
+    avanzarPaso,
+    retrocederPaso,
 }) {
     const formData = watch();
 
@@ -43,7 +43,7 @@ export default function Paso3Datos({
 
                     onNext={(e) => {
                         e.preventDefault();
-                        continuar();
+                        avanzarPaso();
                     }}
                     hideDates={true}
                     hideNextButton={true}
@@ -52,10 +52,10 @@ export default function Paso3Datos({
 
             <footer className="border-t border-gray-300 bg-gris py-3">
                 <div className="flex items-center justify-between gap-3">
-                    <PrimaryButton type="button" onClick={volverAtras}>
+                    <PrimaryButton type="button" onClick={retrocederPaso}>
                         Atrás
                     </PrimaryButton>
-                    <PrimaryButton onClick={continuar}>
+                    <PrimaryButton onClick={avanzarPaso}>
                         Siguiente
                     </PrimaryButton>
                 </div>

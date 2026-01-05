@@ -10,13 +10,13 @@ import {
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
     const {
-        form,
+        formulario,
         cambiar,
         errores,
-        guardando,
+        estaCargando,
         capacidadFija,
         fotos,
-        previews,
+        previsualizaciones,
         fotosGuardadas,
         agregarFotos,
         quitarFoto,
@@ -50,7 +50,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     id="numero"
                                     name="numero"
                                     type="text"
-                                    value={form.numero}
+                                    value={formulario.numero}
                                     onChange={cambiar}
                                     placeholder="Ej: 101"
                                     className={`campo-input font-mono ${errores.numero ? 'error' : ''}`}
@@ -72,7 +72,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 <select
                                     id="tipo"
                                     name="tipo"
-                                    value={form.tipo}
+                                    value={formulario.tipo}
                                     onChange={cambiar}
                                     className={`campo-select ${errores.tipo ? 'error' : ''}`}
                                 >
@@ -101,7 +101,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     name="precio_noche"
                                     type="number"
                                     step="0.01"
-                                    value={form.precio_noche}
+                                    value={formulario.precio_noche}
                                     onChange={cambiar}
                                     className={`campo-input font-mono ${errores.precio_noche ? 'error' : ''}`}
                                     required
@@ -127,7 +127,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     name="capacidad"
                                     type="number"
                                     min="1"
-                                    value={form.capacidad}
+                                    value={formulario.capacidad}
                                     onChange={cambiar}
                                     className={`campo-input font-mono ${errores.capacidad ? 'error' : ''} ${capacidadFija ? 'readonly' : ''}`}
                                     readOnly={capacidadFija}
@@ -158,7 +158,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                         })
                                     }
                                     className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${
-                                        form.estado === 'disponible'
+                                        formulario.estado === 'disponible'
                                             ? 'bg-success/10 border-success text-success'
                                             : 'hover:border-success/50 border-gray-200'
                                     }`}
@@ -180,7 +180,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                         })
                                     }
                                     className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${
-                                        form.estado === 'ocupada'
+                                        formulario.estado === 'ocupada'
                                             ? 'bg-error/10 border-error text-error'
                                             : 'hover:border-error/50 border-gray-200'
                                     }`}
@@ -202,7 +202,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                         })
                                     }
                                     className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${
-                                        form.estado === 'mantenimiento'
+                                        formulario.estado === 'mantenimiento'
                                             ? 'bg-warning/10 border-warning text-warning'
                                             : 'hover:border-warning/50 border-gray-200'
                                     }`}
@@ -224,7 +224,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                         })
                                     }
                                     className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${
-                                        form.estado === 'limpieza'
+                                        formulario.estado === 'limpieza'
                                             ? 'bg-info/10 border-info text-info'
                                             : 'hover:border-info/50 border-gray-200'
                                     }`}
@@ -245,7 +245,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
 
                         <InputFotos
                             fotos={fotos}
-                            previews={previews}
+                            previews={previsualizaciones}
                             fotosGuardadas={fotosGuardadas}
                             onAgregar={agregarFotos}
                             onQuitar={quitarFoto}
@@ -265,7 +265,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             <textarea
                                 id="descripcion"
                                 name="descripcion"
-                                value={form.descripcion}
+                                value={formulario.descripcion}
                                 onChange={cambiar}
                                 placeholder="Detalles públicos..."
                                 className={`campo-textarea ${errores.descripcion ? 'error' : ''}`}
@@ -287,7 +287,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 id="notas"
                                 name="notas"
                                 rows={3}
-                                value={form.notas}
+                                value={formulario.notas}
                                 onChange={cambiar}
                                 placeholder="Solo uso interno..."
                                 className={`campo-textarea ${errores.notas ? 'error' : ''}`}
@@ -300,7 +300,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                         </div>
 
                         <PrimaryButton type="submit" className="w-full">
-                            {guardando
+                            {estaCargando
                                 ? 'Guardando...'
                                 : 'Actualizar Habitación'}
                         </PrimaryButton>

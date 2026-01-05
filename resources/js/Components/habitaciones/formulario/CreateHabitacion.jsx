@@ -8,13 +8,13 @@ export default function CreateHabitacion({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
 
     const {
-        form,
+        formulario,
         cambiar,
         errores,
-        guardando,
+        estaCargando,
         capacidadFija,
         fotos,
-        previews,
+        previsualizaciones,
         agregarFotos,
         quitarFoto,
         enviar,
@@ -58,7 +58,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 id="numero"
                                 label="Número"
                                 type="text"
-                                value={form.numero}
+                                value={formulario.numero}
                                 onChange={cambiar}
                                 error={errores.numero}
                                 required
@@ -70,7 +70,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 id="tipo"
                                 label="Tipo"
                                 as="select"
-                                value={form.tipo}
+                                value={formulario.tipo}
                                 onChange={cambiar}
                                 error={errores.tipo}
                             >
@@ -84,7 +84,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 label="Precio €"
                                 type="number"
                                 step="0.01"
-                                value={form.precio_noche}
+                                value={formulario.precio_noche}
                                 onChange={cambiar}
                                 error={errores.precio_noche}
                                 required
@@ -96,7 +96,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 label="Capacidad"
                                 type="number"
                                 min="1"
-                                value={form.capacidad}
+                                value={formulario.capacidad}
                                 onChange={cambiar}
                                 error={errores.capacidad}
                                 readOnly={capacidadFija}
@@ -112,7 +112,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                             id="estado"
                             label="Estado"
                             as="select"
-                            value={form.estado}
+                            value={formulario.estado}
                             onChange={cambiar}
                             error={errores.estado}
                         >
@@ -124,7 +124,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
 
                         <InputFotos
                             fotos={fotos}
-                            previews={previews}
+                            previews={previsualizaciones}
                             onAgregar={agregarFotos}
                             onQuitar={quitarFoto}
                             error={errores.fotos}
@@ -135,7 +135,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                             id="descripcion"
                             label="Descripción"
                             as="textarea"
-                            value={form.descripcion}
+                            value={formulario.descripcion}
                             onChange={cambiar}
                             error={errores.descripcion}
                             placeholder="Detalles públicos..."
@@ -146,14 +146,14 @@ export default function CreateHabitacion({ iconOnly = false }) {
                             label="Notas Privadas"
                             as="textarea"
                             rows={3}
-                            value={form.notas}
+                            value={formulario.notas}
                             onChange={cambiar}
                             error={errores.notas}
                             placeholder="Solo uso interno..."
                         />
 
                         <PrimaryButton type="submit" className="mt-4 w-full">
-                            {guardando ? 'Guardando...' : 'Crear Habitación'}
+                            {estaCargando ? 'Guardando...' : 'Crear Habitación'}
                         </PrimaryButton>
                     </form>
                 </div>

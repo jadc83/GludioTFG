@@ -4,7 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import { useClienteForm } from '@/hooks/useClienteForm';
 
 export default function EditCliente({ cliente, abierto, onCerrar }) {
-    const { form, cambiar, errores, guardando, enviar } = useClienteForm(
+    const { formulario, cambiar, errores, estaCargando, enviar } = useClienteForm(
         cliente,
         onCerrar,
     );
@@ -29,7 +29,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             <Campo
                                 id="name"
                                 label="Nombre Completo"
-                                value={form.name || ''}
+                                value={formulario.name || ''}
                                 onChange={cambiar}
                                 error={errores.name}
                                 required
@@ -38,7 +38,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                                 id="email"
                                 label="Email"
                                 type="email"
-                                value={form.email || ''}
+                                value={formulario.email || ''}
                                 onChange={cambiar}
                                 error={errores.email}
                                 required
@@ -49,7 +49,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             id="telefono"
                             label="Teléfono"
                             type="tel"
-                            value={form.telefono || ''}
+                            value={formulario.telefono || ''}
                             onChange={cambiar}
                             error={errores.telefono}
                             classNameExtra="font-mono"
@@ -60,7 +60,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                                 id="tipo_documento"
                                 label="Tipo Documento"
                                 as="select"
-                                value={form.tipo_documento || ''}
+                                value={formulario.tipo_documento || ''}
                                 onChange={cambiar}
                                 error={errores.tipo_documento}
                                 required
@@ -73,7 +73,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             <Campo
                                 id="numero_documento"
                                 label="Número Documento"
-                                value={form.numero_documento || ''}
+                                value={formulario.numero_documento || ''}
                                 onChange={cambiar}
                                 error={errores.numero_documento}
                                 required
@@ -84,7 +84,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                         <Campo
                             id="nacionalidad"
                             label="Nacionalidad"
-                            value={form.nacionalidad || ''}
+                            value={formulario.nacionalidad || ''}
                             onChange={cambiar}
                             error={errores.nacionalidad}
                         />
@@ -94,13 +94,13 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             label="Dirección"
                             as="textarea"
                             rows={3}
-                            value={form.direccion || ''}
+                            value={formulario.direccion || ''}
                             onChange={cambiar}
                             error={errores.direccion}
                         />
 
                         <PrimaryButton type="submit" className="mt-4 w-full">
-                            {guardando
+                            {estaCargando
                                 ? 'Actualizando...'
                                 : 'Actualizar Cliente'}
                         </PrimaryButton>

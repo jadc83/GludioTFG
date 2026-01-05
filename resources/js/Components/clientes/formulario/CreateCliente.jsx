@@ -8,17 +8,17 @@ import { useState } from 'react';
 export default function CreateCliente({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
 
-    const { form, cambiar, errores, enviar, reset } = useClienteForm(
+    const { formulario, cambiar, errores, enviar, limpiar } = useClienteForm(
         null,
         () => {
             setAbierto(false);
-            reset();
+            limpiar();
         },
     );
 
     const handleCerrar = () => {
         setAbierto(false);
-        reset();
+        limpiar();
     };
 
     return (
@@ -48,7 +48,7 @@ export default function CreateCliente({ iconOnly = false }) {
                             <Campo
                                 id="name"
                                 label="Nombre Completo"
-                                value={form.name}
+                                value={formulario.name}
                                 onChange={cambiar}
                                 error={errores.name}
                                 required
@@ -57,7 +57,7 @@ export default function CreateCliente({ iconOnly = false }) {
                                 id="email"
                                 label="Email"
                                 type="email"
-                                value={form.email}
+                                value={formulario.email}
                                 onChange={cambiar}
                                 error={errores.email}
                                 required
@@ -68,7 +68,7 @@ export default function CreateCliente({ iconOnly = false }) {
                             id="telefono"
                             label="Teléfono"
                             type="tel"
-                            value={form.telefono}
+                            value={formulario.telefono}
                             onChange={cambiar}
                             error={errores.telefono}
                             classNameExtra="font-mono"
@@ -79,7 +79,7 @@ export default function CreateCliente({ iconOnly = false }) {
                                 id="tipo_documento"
                                 label="Tipo Documento"
                                 as="select"
-                                value={form.tipo_documento}
+                                value={formulario.tipo_documento}
                                 onChange={cambiar}
                                 error={errores.tipo_documento}
                                 required
@@ -91,7 +91,7 @@ export default function CreateCliente({ iconOnly = false }) {
                             <Campo
                                 id="numero_documento"
                                 label="Número Documento"
-                                value={form.numero_documento}
+                                value={formulario.numero_documento}
                                 onChange={cambiar}
                                 error={errores.numero_documento}
                                 required
@@ -102,7 +102,7 @@ export default function CreateCliente({ iconOnly = false }) {
                         <Campo
                             id="nacionalidad"
                             label="Nacionalidad"
-                            value={form.nacionalidad}
+                            value={formulario.nacionalidad}
                             onChange={cambiar}
                             error={errores.nacionalidad}
                         />
@@ -111,7 +111,7 @@ export default function CreateCliente({ iconOnly = false }) {
                             label="Dirección"
                             as="textarea"
                             rows={2}
-                            value={form.direccion}
+                            value={formulario.direccion}
                             onChange={cambiar}
                             error={errores.direccion}
                         />

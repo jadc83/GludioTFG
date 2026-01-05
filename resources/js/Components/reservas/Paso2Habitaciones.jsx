@@ -1,8 +1,8 @@
 import PrimaryButton from '../PrimaryButton';
 
 export default function Paso2Habitaciones({
-    cargandoHabitaciones, habitacionesSeleccionadas, getTiposHabitacion, getImagen,
-    actualizarSeleccionHabitacion, getTotalHabitaciones, continuar, volverAtras
+    estaCargandoHabitaciones, habitacionesSeleccionadas, agruparHabitacionesPorTipo, getImagen,
+    actualizarSeleccionHabitacion, getTotalHabitaciones, avanzarPaso, retrocederPaso
 }) {
     const Migitas = () => (
         <nav aria-label="Progreso de reserva" className="mx-auto mb-4 flex max-w-md justify-center space-x-2 rounded bg-gris p-2 text-sm">
@@ -20,7 +20,7 @@ export default function Paso2Habitaciones({
             </header>
 
             <main className="flex-1 overflow-y-auto bg-gris px-3 py-2">
-                {cargandoHabitaciones ? (
+                {estaCargandoHabitaciones ? (
                     <div className="flex h-full flex-col items-center justify-center gap-6 py-12">
                         <div className="flex flex-col items-center gap-4">
                             <span className="spinner-rojo loading loading-spinner loading-lg"></span>
@@ -31,14 +31,14 @@ export default function Paso2Habitaciones({
                             <p className="text-xs text-gray-400">Por favor espera...</p>
                         </div>
                     </div>
-                ) : Object.keys(getTiposHabitacion()).length === 0 ? (
+                ) : Object.keys(agruparHabitacionesPorTipo()).length === 0 ? (
                     <div className="rounded-2xl bg-white p-12 text-center shadow-lg">
                         <p className="text-lg text-gray-600">No hay habitaciones disponibles</p>
                         <p className="mt-2 text-sm text-gray-400">Intenta con otras fechas</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {Object.entries(getTiposHabitacion()).map(([tipo, info]) => {
+                        {Object.entries(agruparHabitacionesPorTipo()).map(([tipo, info]) => {
                             const isSelected = habitacionesSeleccionadas[tipo]?.cantidad > 0;
                             return (
                                 <div key={tipo} className={`group relative overflow-hidden rounded-lg bg-white transition-all duration-200 ${isSelected ? 'tarjeta-seleccionada shadow-lg ring-2 ring-opacity-50' : 'shadow hover:shadow-md'}`}>
@@ -52,13 +52,13 @@ export default function Paso2Habitaciones({
                                                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                                 </svg>
-                                                <span>{info.maxCap} {info.maxCap === 1 ? 'persona' : 'personas'}</span>
+                                                <span>{info.capacidadMaxima} {info.capacidadMaxima === 1 ? 'persona' : 'personas'}</span>
                                             </div>
                                         </div>
-                                        {info.minPrice && (
+                                        {info.precioMinimo && (
                                             <div className="absolute right-1.5 top-1.5 rounded bg-white px-1.5 py-0.5 shadow">
                                                 <div className="flex items-baseline gap-0.5">
-                                                    <span className="precio-min text-sm font-black">{info.minPrice}</span>
+                                                    <span className="precio-min text-sm font-black">{info.precioMinimo}</span>
                                                     <span className="text-[10px] font-bold text-gray-400">€</span>
                                                 </div>
                                             </div>
@@ -72,7 +72,7 @@ export default function Paso2Habitaciones({
                                                     <div className="join">
                                                         <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.max(0, (habitacionesSeleccionadas[tipo]?.cantidad || 0) - 1))} disabled={(habitacionesSeleccionadas[tipo]?.cantidad || 0) === 0} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${(habitacionesSeleccionadas[tipo]?.cantidad || 0) === 0 ? 'boton-deshabilitado' : 'boton-activo'}`}>−</button>
                                                         <span className="numero-unidad flex items-center justify-center border-y border-gray-300 bg-white px-4 text-lg font-black join-item">{habitacionesSeleccionadas[tipo]?.cantidad || 0}</span>
-                                                        <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.min(Math.min(info.count, 5), (habitacionesSeleccionadas[tipo]?.cantidad || 0) + 1))} disabled={(habitacionesSeleccionadas[tipo]?.cantidad || 0) >= Math.min(info.count, 5)} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${(habitacionesSeleccionadas[tipo]?.cantidad || 0) >= Math.min(info.count, 5) ? 'boton-deshabilitado' : 'boton-activo'}`}>+</button>
+                                                        <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', Math.min(Math.min(info.cantidad, 5), (habitacionesSeleccionadas[tipo]?.cantidad || 0) + 1))} disabled={(habitacionesSeleccionadas[tipo]?.cantidad || 0) >= Math.min(info.cantidad, 5)} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${(habitacionesSeleccionadas[tipo]?.cantidad || 0) >= Math.min(info.cantidad, 5) ? 'boton-deshabilitado' : 'boton-activo'}`}>+</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-center">
@@ -80,7 +80,7 @@ export default function Paso2Habitaciones({
                                                     <div className="join">
                                                         <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.max(1, (habitacionesSeleccionadas[tipo]?.personas || 1) - 1))} disabled={!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) === 1} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) === 1 ? 'boton-deshabilitado' : 'boton-activo'}`}>−</button>
                                                         <span className="numero-unidad flex items-center justify-center border-y border-gray-300 bg-white px-4 text-lg font-black join-item">{habitacionesSeleccionadas[tipo]?.personas || 1}</span>
-                                                        <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.min(info.maxCap, (habitacionesSeleccionadas[tipo]?.personas || 1) + 1))} disabled={!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) >= info.maxCap} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) >= info.maxCap ? 'boton-deshabilitado' : 'boton-activo'}`}>+</button>
+                                                        <button type="button" onClick={() => actualizarSeleccionHabitacion(tipo, 'personas', Math.min(info.capacidadMaxima, (habitacionesSeleccionadas[tipo]?.personas || 1) + 1))} disabled={!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) >= info.capacidadMaxima} className={`btn btn-sm min-w-[3rem] text-lg font-bold join-item ${!isSelected || (habitacionesSeleccionadas[tipo]?.personas || 1) >= info.capacidadMaxima ? 'boton-deshabilitado' : 'boton-activo'}`}>+</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -95,8 +95,8 @@ export default function Paso2Habitaciones({
 
             <footer className="border-t border-gray-300 bg-gris px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                    <PrimaryButton onClick={volverAtras} className="px-6">← Atrás</PrimaryButton>
-                    <PrimaryButton onClick={continuar} disabled={getTotalHabitaciones() === 0} className="px-8">Continuar →</PrimaryButton>
+                    <PrimaryButton onClick={retrocederPaso} className="px-6">← Atrás</PrimaryButton>
+                    <PrimaryButton onClick={avanzarPaso} disabled={getTotalHabitaciones() === 0} className="px-8">Continuar →</PrimaryButton>
                 </div>
             </footer>
         </div>

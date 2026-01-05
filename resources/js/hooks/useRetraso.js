@@ -4,11 +4,13 @@ export default function useRetraso(valor, retraso = 500) {
     const [valorRetrasado, setValorRetrasado] = useState(valor);
 
     useEffect(() => {
-        const handler = setTimeout(() => {
+        // Crear timer que actualiza el valor después del retraso
+        const timerRetraso = setTimeout(() => {
             setValorRetrasado(valor);
         }, retraso);
 
-        return () => clearTimeout(handler);
+        // Limpiar timer anterior si el valor cambia antes de que se cumpla el retraso
+        return () => clearTimeout(timerRetraso);
     }, [valor, retraso]);
 
     return valorRetrasado;

@@ -4,37 +4,44 @@ import useRetraso from './useRetraso';
 import { useSincronizarFiltros } from './useSincronizarFiltros';
 
 export function useReservaFiltros(reservas = [], conteos = {}) {
-    const inicial = {
+    // Configuración inicial de filtros
+    const filtrosIniciales = {
         status: 'todos',
         localizador: '',
         cliente: '',
         habitacion: '',
         notas: '',
     };
+
+    // Sincronizar filtros con URL
     const {
         filtros,
         actualizarFiltro,
         aplicarFiltros,
         limpiarFiltros,
         hayFiltrosActivos,
-    } = useSincronizarFiltros(inicial, 'panel', [
+    } = useSincronizarFiltros(filtrosIniciales, 'panel', [
         'reservas',
         'reservasConteos',
     ]);
 
+    // Aplicar retrasos a búsquedas de texto (500ms)
     const localizadorRetrasado = useRetraso(filtros.localizador, 500);
-    const clienteRetrasado = useRetraso(filtros.cliente, 500);
-    const habitacionRetrasada = useRetraso(filtros.habitacion, 500);
+    const nombreClienteRetrasado = useRetraso(filtros.cliente, 500);
+    const tipoHabitacionRetrasado = useRetraso(filtros.habitacion, 500);
     const notasRetrasadas = useRetraso(filtros.notas, 500);
 
+    /**
+     * Actualizar resultados cuando cambian los filtros
+     */
     useEffect(() => {
         router.get(
             route('panel'),
             {
                 status: filtros.status !== 'todos' ? filtros.status : undefined,
                 localizador: localizadorRetrasado || undefined,
-                cliente: clienteRetrasado || undefined,
-                habitacion: habitacionRetrasada || undefined,
+                cliente: nombreClienteRetrasado || undefined,
+                habitacion: tipoHabitacionRetrasado || undefined,
                 notas: notasRetrasadas || undefined,
             },
             {
@@ -47,20 +54,39 @@ export function useReservaFiltros(reservas = [], conteos = {}) {
     }, [
         filtros.status,
         localizadorRetrasado,
-        clienteRetrasado,
-        habitacionRetrasada,
+        nombreClienteRetrasado,
+        tipoHabitacionRetrasado,
         notasRetrasadas,
     ]);
 
     return {
-        filtros,
-        actualizarFiltro,
-        registrosFiltrados: reservas,
-        limpiarFiltros,
-        aplicarFiltros,
-        hayFiltrosActivos,
-        totalFiltrados: reservas.length,
-        totalOriginal: conteos.total || reservas.length,
-        conteos,
+        // Estado de filtros
+        filtros: {
+            estado: filtros.status,
+            setEstado: (valor) => actualizarFiltro('status', valor),
+            localizador: filtros.localizador,
+            setLocalizador: (valor) => actualizarFiltro('localizador', valor),
+            nombreCliente: filtros.cliente,
+            setNombreCliente: (valor) => actualizarFiltro('cliente', valor),
+            tipoHabitacion: filtros.habitacion,
+            setTipoHabitacion: (valor) => actualizarFiltro('habitacion', valor),
+            notas: filtros.notas,
+            setNotas: (valor) => actualizarFiltro('notas', valor),
+        },
+
+        // Datos filtrados
+        datos: {
+            reservasFiltradas: reservas,
+            totalFiltrados: reservas.length,
+            totalOriginal: conteos.total || reservas.length,
+            conteos,
+        },
+
+        // Acciones disponibles
+        acciones: {
+            aplicarFiltros,
+            limpiarFiltros,
+            hayFiltrosActivos,
+        },
     };
 }

@@ -1,15 +1,15 @@
 import { router, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-export function useClienteForm(cliente = null, onSuccess) {
+export function useClienteForm(cliente = null, alGuardar) {
     const {
-        data,
+        data: formulario,
         setData,
         post,
         put,
-        processing,
-        errors,
-        reset: resetForm,
+        processing: estaCargando,
+        errors: errores,
+        reset: reset,
     } = useForm({
         name: '',
         email: '',
@@ -20,6 +20,9 @@ export function useClienteForm(cliente = null, onSuccess) {
         direccion: '',
     });
 
+    /**
+     * Pre-rellena el formulario cuando cambia el cliente seleccionado
+     */
     useEffect(() => {
         if (cliente) {
             setData({
@@ -32,64 +35,86 @@ export function useClienteForm(cliente = null, onSuccess) {
                 direccion: cliente.direccion || '',
             });
         } else {
-            resetForm();
+            reset();
         }
-    }, [cliente, setData, resetForm]);
+    }, [cliente, setData, reset]);
 
-    const cambiar = (e) => {
-        const { name, value } = e.target;
+    /**
+     * Actualiza un campo del formulario
+     * @param {Event} evento - Evento del input
+     */
+    const cambiar = (evento) => {
+        const { name, value } = evento.target;
         setData(name, value);
     };
 
-    const enviar = (e) => {
-        e.preventDefault();
+    /**
+     * Determina si el cliente es un usuario basándose en la presencia de email_verified_at
+     * @returns {boolean} True si es usuario, false si es cliente
+     */
+    const esUsuario = () => {
+        return cliente && Object.prototype.hasOwnProperty.call(cliente, 'email_verified_at');
+    };
 
-        const esUser =
-            cliente &&
-            Object.prototype.hasOwnProperty.call(cliente, 'email_verified_at');
-
-        let url, method;
-
-        if (esUser) {
-            url = cliente ? `/users/${cliente.id}` : '/users';
-            method = cliente ? 'put' : 'post';
+    /**
+     * Construye la URL y método HTTP para la solicitud
+     * @returns {Object} {url, metodoHttp}
+     */
+    const obtenerInfoPunto = () => {
+        if (esUsuario()) {
+            return {
+                url: cliente ? `/users/${cliente.id}` : '/users',
+                metodoHttp: cliente ? 'put' : 'post',
+            };
         } else {
-            url = cliente ? `/clientes/${cliente.id}` : '/clientes';
-            method = cliente ? 'put' : 'post';
-        }
-
-        // useForm provides post/put methods
-        if (method === 'post') {
-            post(url, {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    onSuccess?.();
-                    router.reload({ only: ['clientes'] });
-                },
-            });
-        } else {
-            put(url, {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    onSuccess?.();
-                    router.reload({ only: ['clientes'] });
-                },
-            });
+            return {
+                url: cliente ? `/clientes/${cliente.id}` : '/clientes',
+                metodoHttp: cliente ? 'put' : 'post',
+            };
         }
     };
 
-    const reset = () => {
-        resetForm();
+    /**
+     * Envía el formulario al servidor (crear o actualizar)
+     * @param {Event} evento - Evento del formulario
+     */
+    const enviar = (evento) => {
+        evento.preventDefault();
+
+        const { url, metodoHttp } = obtenerInfoPunto();
+
+        const configEnvio = {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                alGuardar?.();
+                router.reload({ only: ['clientes'] });
+            },
+        };
+
+        if (metodoHttp === 'post') {
+            post(url, configEnvio);
+        } else {
+            put(url, configEnvio);
+        }
+    };
+
+    /**
+     * Resetea el formulario a su estado inicial
+     */
+    const limpiar = () => {
+        reset();
     };
 
     return {
-        form: data,
+        // Estado del formulario
+        formulario,
+        errores,
+        estaCargando,
+
+        // Métodos del formulario
         cambiar,
-        errores: errors,
-        guardando: processing,
         enviar,
-        reset,
+        limpiar,
     };
 }

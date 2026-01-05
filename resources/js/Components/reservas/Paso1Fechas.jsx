@@ -3,7 +3,7 @@ import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import PrimaryButton from '../PrimaryButton';
 
-export default function Paso1Fechas({ rango, setRango, continuar, limpiarRango}) {
+export default function Paso1Fechas({ rango, setRango, avanzarPaso, limpiarRango}) {
 
     const Migitas = () => (
         <nav aria-label="Progreso de reserva" className="mx-auto mb-4 flex max-w-md justify-center space-x-2 rounded bg-gris p-2 text-sm">
@@ -48,7 +48,7 @@ export default function Paso1Fechas({ rango, setRango, continuar, limpiarRango})
                     <PrimaryButton onClick={limpiarRango}>
                         Limpiar
                     </PrimaryButton>
-                    <PrimaryButton onClick={continuar}>
+                    <PrimaryButton onClick={avanzarPaso}>
                         Continuar
                     </PrimaryButton>
                 </div>

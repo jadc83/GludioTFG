@@ -9,15 +9,15 @@ export default function Paso4Confirmacion({
     habitacionesSeleccionadas,
     getIcono,
     getTotalHabitaciones,
-    volverAtras,
-    onConfirmar,
+    retrocederPaso,
+    confirmarReserva,
     calcularMontoTotal,
-    currentUser,
+    usuarioActual,
     getValues,
-    reservableId,
-    tipo_usuario,
+    idClienteSeleccionado,
+    tipoClienteSeleccionado,
     localizador,
-    setPaso,
+    setPasoActual,
     limpiarRango,
     setValue,
     actualizarSeleccionHabitacion,
@@ -56,9 +56,9 @@ export default function Paso4Confirmacion({
             check_in: rango?.from,
             check_out: rango?.to,
             habitaciones,
-            reservable_id: reservableId,
-            tipo_usuario: tipo_usuario || 'cliente',
-            booked_by_user_id: currentUser?.id || null,
+            reservable_id: idClienteSeleccionado,
+            tipo_usuario: tipoClienteSeleccionado || 'cliente',
+            booked_by_user_id: usuarioActual?.id || null,
         };
     };
 
@@ -99,7 +99,7 @@ export default function Paso4Confirmacion({
         setErrorPago(null);
 
         // Volver al paso 1
-        setPaso(1);
+        setPasoActual(1);
 
         // Cerrar el drawer
         console.log('🔄 Cerrando drawer...');
@@ -199,7 +199,7 @@ export default function Paso4Confirmacion({
 
             <footer className="border-t border-gray-200 mt-6 pt-4">
                 <div className="flex items-center justify-between gap-3">
-                    <button onClick={volverAtras} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition">
+                    <button onClick={retrocederPaso} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition">
                         Atrás
                     </button>
                 </div>
