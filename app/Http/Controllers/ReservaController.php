@@ -103,7 +103,10 @@ class ReservaController extends Controller
                     return response()->json($respuesta);
                 }
 
-                return redirect()->back()->with($respuesta);
+                return redirect()->back()
+                    ->with('success', $respuesta['message'])
+                    ->with('reserva_id', $reserva->id)
+                    ->with('localizador', $localizador);
             });
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
