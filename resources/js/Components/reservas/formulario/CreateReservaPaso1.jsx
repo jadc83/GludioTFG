@@ -3,73 +3,26 @@ import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
-export default function CreateReservaPaso1({
-    form,
-    errores,
-    onChange,
-    onNext,
-    hideDates = false,
-    hideNextButton = false,
-}) {
+export default function CreateReservaPaso1({ form, errores, onChange, onNext, hideDates = false, hideNextButton = false}) {
 
     return (
-        <form onSubmit={onNext} className="space-y-5 p-6">
+        <form onSubmit={onNext} className="space-y-4 p-4">
             <div className="divider text-xs uppercase opacity-50">
                 Datos de la Reserva
             </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Campo
-                            id="name"
-                            label="Nombre Completo"
-                            value={form.name}
-                            onChange={onChange}
-                            error={errores.name}
-                            required
-                        />
-                        <Campo
-                            id="email"
-                            label="Email"
-                            type="email"
-                            value={form.email}
-                            onChange={onChange}
-                            error={errores.email}
-                        />
-
-                        <Campo
-                            id="tipo_documento"
-                            label="Tipo Doc"
-                            as="select"
-                            value={form.tipo_documento}
-                            onChange={onChange}
-                        >
-                            <option value="dni">DNI</option>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <Campo id="name" label="Nombre Completo" value={form.name} onChange={onChange} error={errores.name} required />
+                        <Campo id="email" label="Email" type="email" value={form.email} onChange={onChange} error={errores.email} required/>
+                        <Campo id="tipo_documento" label="Tipo Doc" as="select" value={form.tipo_documento} onChange={onChange}>
+                             <option value="dni">DNI</option>
                             <option value="pasaporte">Pasaporte</option>
                             <option value="tie">TIE</option>
                         </Campo>
-                        <Campo
-                            id="numero_documento"
-                            label="Num. Documento"
-                            value={form.numero_documento}
-                            onChange={onChange}
-                            error={errores.numero_documento}
-                            required
-                        />
-
-                        <Campo
-                            id="telefono"
-                            label="Teléfono"
-                            type="tel"
-                            value={form.telefono}
-                            onChange={onChange}
-                            error={errores.telefono}
-                        />
-                        <Campo
-                            id="nacionalidad"
-                            label="Nacionalidad"
-                            value={form.nacionalidad}
-                            onChange={onChange}
-                        />
+                        <Campo id="numero_documento" label="Num. Documento" value={form.numero_documento} onChange={onChange} error={errores.numero_documento}
+                            required/>
+                        <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono} onChange={onChange} error={errores.telefono}/>
+                        <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad} onChange={onChange} />
                     </div>
 
                     <Campo
@@ -80,7 +33,6 @@ export default function CreateReservaPaso1({
                     />
 
                     <div className="mt-6 flex items-start gap-3 text-sm text-gray-700">
-                        <ApplicationLogo className="h-6 w-6 flex-shrink-0 text-gray-500" />
                         <div>
                             <span>
                                 Por ley, este establecimiento está obligado a
@@ -101,24 +53,9 @@ export default function CreateReservaPaso1({
 
                     {!hideDates && (
                         <div className="grid grid-cols-2 gap-4">
-                            <Campo
-                                id="check_in"
-                                label="Entrada"
-                                type="date"
-                                value={form.check_in}
-                                onChange={onChange}
-                                error={errores.check_in}
-                                required
-                            />
-                            <Campo
-                                id="check_out"
-                                label="Salida"
-                                type="date"
-                                value={form.check_out}
-                                onChange={onChange}
-                                error={errores.check_out}
-                                required
-                            />
+                            <Campo id="check_in" label="Entrada" type="date" value={form.check_in} onChange={onChange} error={errores.check_in}
+                                required/>
+                            <Campo id="check_out" label="Salida" type="date" value={form.check_out} onChange={onChange} error={errores.check_out}/>
                         </div>
                     )}
 
@@ -130,15 +67,7 @@ export default function CreateReservaPaso1({
 
                     {!hideNextButton && (
                         <div className="flex justify-end pt-4">
-                            <PrimaryButton
-                                type="submit"
-                                disabled={
-                                    !form.name ||
-                                    !form.numero_documento ||
-                                    (!hideDates &&
-                                        (!form.check_in || !form.check_out))
-                                }
-                            >
+                            <PrimaryButton disabled={ !form.name || !form.numero_documento ||  (!hideDates && (!form.check_in || !form.check_out))}>
                                 Siguiente Paso{' '}
                                 <ArrowRightIcon className="ml-2 h-4 w-4" />
                             </PrimaryButton>

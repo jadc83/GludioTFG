@@ -1,5 +1,10 @@
-export function calcularPrecioDinamico(habitacion, checkIn, checkOut) {
-    if (!checkIn || !checkOut) return habitacion.precio_noche || 0;
+export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
+    // Soportar tanto objetos habitación como valores numéricos
+    const precioBase = typeof habitacionOPrecio === 'object'
+        ? (habitacionOPrecio.precio_noche || 0)
+        : habitacionOPrecio;
+
+    if (!checkIn || !checkOut) return precioBase;
 
     let total = 0;
     let fecha = new Date(checkIn);
@@ -34,9 +39,23 @@ export function calcularPrecioDinamico(habitacion, checkIn, checkOut) {
             modificador *= 1.5;
         }
 
-        total += (habitacion.precio_noche || 0) * modificador;
+        total += precioBase * modificador;
         fecha.setDate(fecha.getDate() + 1);
     }
 
     return Math.round(total);
+}
+
+/**
+ * Obtiene el precio base de un tipo de habitación
+ * @param {Array} habitacionesDisponibles - Lista de habitaciones disponibles
+ * @param {String} tipo - Tipo de habitación (ej: 'doble', 'suite')
+ * @returns {number} Precio base del tipo
+ */
+export function obtenerPrecioBase(habitacionesDisponibles, tipo) {
+    if (!habitacionesDisponibles || !tipo) return 0;
+
+    const habitacionDelTipo = habitacionesDisponibles.find((h) => h.tipo === tipo);
+    const precio = habitacionDelTipo?.precio_noche || 0;
+    return Number(precio);
 }
