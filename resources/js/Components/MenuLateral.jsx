@@ -241,9 +241,7 @@ export default function MenuLateral() {
                         <div className="hidden sm:block px-4 py-1">
                             <div className="text-xs">
                                 <TypingAnimation words={[
-                                        'Descuento 15% en próximas reservas',
-                                        'Cancelación gratis hasta 48h',
-                                        'Garantía de mejor precio',
+                                        'Cancelación gratuita hasta 48h antes de la llegada',
                                         '+5000 clientes satisfechos']}
                                     typeSpeed={60} deleteSpeed={40} pauseDelay={2500} loop={true}/>
                             </div>

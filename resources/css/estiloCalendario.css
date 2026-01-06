@@ -1,7 +1,7 @@
 
 :root {
   --rdp-accent-color: black;
-  --rdp-range-border-color: rgb(255, 0, 0);
+  --rdp-range-border-color: #7a0202;
   --rdp-accent-background-color: #f0f0ff;
 
   --rdp-day-height: 9vh;

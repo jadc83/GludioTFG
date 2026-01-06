@@ -43,17 +43,12 @@ export default function Paso4Confirmacion({
         const precioBase = obtenerPrecioBase(habitacionesDisponibles, tipoHabitacion);
         if (!precioBase) return 0;
 
-        const precioDiario = calcularPrecioDinamico(precioBase, rango?.from, rango?.to);
-        const milisegundosPorDia = 24 * 60 * 60 * 1000;
-        const numeroNoches = Math.ceil((rango?.to - rango?.from) / milisegundosPorDia) || 0;
 
-        return precioDiario * cantidad * numeroNoches;
+        const precioTotalEstancia = calcularPrecioDinamico(precioBase, rango?.from, rango?.to);
+
+
+        return precioTotalEstancia * cantidad;
     };
-
-    // Debug: log del localizador cuando cambia
-    useEffect(() => {
-        console.log('🔍 Paso4Confirmacion - localizador recibido:', localizador);
-    }, [localizador]);
 
     // Crear reserva para pago al llegar (opción En recepción)
     const crearReservaAlLlegar = async () => {
@@ -261,8 +256,11 @@ export default function Paso4Confirmacion({
                                             if (primeraHabitacion && calcularPrecioDinamico && rango?.from && rango?.to) {
                                                 const precioBase = obtenerPrecioBase(habitacionesDisponibles, primeraHabitacion);
                                                 if (typeof precioBase === 'number' && precioBase > 0) {
-                                                    const precioDinamico = calcularPrecioDinamico(precioBase, rango.from, rango.to);
-                                                    return `$${precioDinamico.toFixed(2)}`;
+                                                    const precioTotalEstancia = calcularPrecioDinamico(precioBase, rango.from, rango.to);
+                                                    const milisegundosPorDia = 24 * 60 * 60 * 1000;
+                                                    const numeroNoches = Math.ceil((rango.to - rango.from) / milisegundosPorDia) || 1;
+                                                    const precioPorNoche = Math.round(precioTotalEstancia / numeroNoches);
+                                                    return `€${precioPorNoche.toFixed(2)}`;
                                                 }
                                             }
                                             return '—';
@@ -330,14 +328,14 @@ export default function Paso4Confirmacion({
 
                                         {/* Total Final */}
                                         <div className="flex items-center justify-between pt-3 font-bold text-xs">
-                                            <span className="text-gray-900">Total a Pagar</span>
-                                            <span className="text-base text-[#7a0202]">${monto.toFixed(2)}</span>
+                                            <span className="text-gray-900">Total</span>
+                                            <span className="text-base text-[#7a0202]">€{monto.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between pt-3">
                                         <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Monto a Pagar</p>
-                                        <p className="text-base font-bold text-[#7a0202]">${monto.toFixed(2)}</p>
+                                        <p className="text-base font-bold text-[#7a0202]">€{monto.toFixed(2)}</p>
                                     </div>
                                 )}
                             </div>

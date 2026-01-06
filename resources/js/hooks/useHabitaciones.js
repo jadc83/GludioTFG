@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatearFecha } from '../utils/fecha';
-import { calcularPrecioDinamico } from '../utils/precios';
+import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '../utils/precios';
 
 export default function useHabitaciones({ paso, rango, setRango }) {
     // Estado de habitaciones disponibles
@@ -90,8 +90,8 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 habitacion.capacidad || 1,
             );
 
-            // Extraer el precio base correctamente del objeto habitación
-            const precioBase = Number(habitacion.precio_noche) || 0;
+            // Usar precio base fijo por tipo, NO el de la BD
+            const precioBase = obtenerPrecioBasePorTipo(habitacion.tipo);
             const totalPrecioDinamico = calcularPrecioDinamico(precioBase, rango?.from, rango?.to);
 
             // Calcular precio dinámico por noche (promedio)

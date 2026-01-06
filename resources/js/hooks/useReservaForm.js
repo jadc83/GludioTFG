@@ -4,7 +4,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { reservaSchema } from '../utils/reservaSchema';
 import useHabitaciones from './useHabitaciones';
-import { calcularPrecioDinamico } from '../utils/precios';
+import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '../utils/precios';
 
 export default function useReservaForm() {
     const page = usePage();
@@ -133,24 +133,19 @@ export default function useReservaForm() {
 
         Object.entries(habitacionesSeleccionadas).forEach(([tipoHabitacion, seleccion]) => {
             if (seleccion.cantidad > 0) {
-                // Buscar la habitación en disponibles para obtener precio
-                const habitacion = habitacionesDisponibles.find((r) => r.tipo === tipoHabitacion);
+                // Usar precio base fijo por tipo, NO el de la BD
+                const precioBase = obtenerPrecioBasePorTipo(tipoHabitacion);
 
-                if (habitacion) {
-                    const precioDiario = calcularPrecioDinamico(
-                        habitacion,
+                if (precioBase > 0) {
+                    // calcularPrecioDinamico ya devuelve el TOTAL de toda la estancia
+                    const precioTotalEstancia = calcularPrecioDinamico(
+                        precioBase,
                         rango.from,
                         rango.to,
                     );
 
-                    // Calcular número de noches
-                    const milisegundosPorDia = 24 * 60 * 60 * 1000;
-                    const numeroNoches = Math.ceil(
-                        (rango.to - rango.from) / milisegundosPorDia,
-                    );
-
-                    montoTotal +=
-                        precioDiario * seleccion.cantidad * numeroNoches;
+                    // Solo multiplicar por cantidad de habitaciones
+                    montoTotal += precioTotalEstancia * seleccion.cantidad;
                 }
             }
         });

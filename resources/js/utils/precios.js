@@ -1,8 +1,35 @@
+/**
+ * Obtiene el precio base fijo por tipo de habitación
+ * @param {String} tipo - Tipo de habitación (Doble, Familiar, Suite)
+ * @returns {number} Precio base del tipo
+ */
+export function obtenerPrecioBasePorTipo(tipo) {
+    const precios = {
+        'doble': 75,
+        'familiar': 125,
+        'suite': 200
+    };
+    return precios[tipo?.toLowerCase()] || 0;
+}
+
 export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
     // Soportar tanto objetos habitación como valores numéricos
-    const precioBase = typeof habitacionOPrecio === 'object'
-        ? (habitacionOPrecio.precio_noche || 0)
-        : habitacionOPrecio;
+    let precioBase;
+
+    if (typeof habitacionOPrecio === 'object') {
+        // Si es un objeto, intentar obtener precio_noche
+        precioBase = habitacionOPrecio.precio_noche || 0;
+        // Si no tiene precio_noche, intentar por tipo
+        if (!precioBase && habitacionOPrecio.tipo) {
+            precioBase = obtenerPrecioBasePorTipo(habitacionOPrecio.tipo);
+        }
+    } else if (typeof habitacionOPrecio === 'string') {
+        // Si es un string (tipo de habitación), obtener precio por tipo
+        precioBase = obtenerPrecioBasePorTipo(habitacionOPrecio);
+    } else {
+        // Si es número, usarlo directamente
+        precioBase = habitacionOPrecio;
+    }
 
     if (!checkIn || !checkOut) return precioBase;
 
@@ -49,13 +76,10 @@ export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
 /**
  * Obtiene el precio base de un tipo de habitación
  * @param {Array} habitacionesDisponibles - Lista de habitaciones disponibles
- * @param {String} tipo - Tipo de habitación (ej: 'doble', 'suite')
+ * @param {String} tipo - Tipo de habitación (Doble, Familiar, Suite)
  * @returns {number} Precio base del tipo
  */
 export function obtenerPrecioBase(habitacionesDisponibles, tipo) {
-    if (!habitacionesDisponibles || !tipo) return 0;
-
-    const habitacionDelTipo = habitacionesDisponibles.find((h) => h.tipo === tipo);
-    const precio = habitacionDelTipo?.precio_noche || 0;
-    return Number(precio);
+    // Usar precios fijos por tipo, NO los de la BD
+    return obtenerPrecioBasePorTipo(tipo);
 }
