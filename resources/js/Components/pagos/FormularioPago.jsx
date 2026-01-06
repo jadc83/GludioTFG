@@ -1,10 +1,8 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PrimaryButton from '../PrimaryButton';
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
     const page = usePage();
@@ -12,12 +10,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
     const stripe = useStripe();
     const elements = useElements();
     const [procesando, setProcesando] = useState(false);
-    const [clientSecret, setClientSecret] = useState(null);
-    const [pagoId, setPagoId] = useState(null);
-    const [reservaId, setReservaId] = useState(null);
-    const [localizador, setLocalizador] = useState(null);
     const [mensaje, setMensaje] = useState('');
-    const [iniciado, setIniciado] = useState(false);
 
     // Obtener datos del usuario logueado
     const user = page?.props?.auth?.user;
@@ -30,122 +23,11 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
         pais: user?.pais || 'ES',
     });
 
-    // Auto-iniciar al montar el componente
-    React.useEffect(() => {
-        if (!iniciado && !clientSecret) {
-            crearReservaYPaymentIntent();
-            setIniciado(true);
-        }
-
-        // Suprimir errores de telemetría de Stripe bloqueados
-        const handleUnhandledRejection = (event) => {
-            if (event.reason?.message?.includes('Failed to fetch') && event.reason?.message?.includes('r.stripe.com')) {
-                event.preventDefault();
-            }
-        };
-
-        window.addEventListener('unhandledrejection', handleUnhandledRejection);
-        return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    }, []);
-
-    // Crear reserva y PaymentIntent
-    const crearReservaYPaymentIntent = async () => {
-        try {
-            setProcesando(true);
-
-            // Primero crear la reserva
-            const resReserva = await fetch('/reservas', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify(reservaData),
-            });
-
-            if (!resReserva.ok) {
-                let errorMessage = `HTTP ${resReserva.status}: Error al crear la reserva`;
-                try {
-                    const contentType = resReserva.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const error = await resReserva.json();
-                        errorMessage = error.message || error.error || errorMessage;
-                    } else {
-                        const text = await resReserva.text();
-                        console.error('Response no-JSON de /reservas:', text.substring(0, 500));
-                        errorMessage = `Error del servidor al crear reserva (HTTP ${resReserva.status})`;
-                    }
-                } catch (e) {
-                    console.error('Error al parsear respuesta de reserva:', e);
-                }
-                throw new Error(errorMessage);
-            }
-
-            const dataReserva = await resReserva.json();
-
-            if (!dataReserva.success && !dataReserva.reserva_id) {
-                throw new Error(dataReserva.message || 'No se recibió el ID de la reserva');
-            }
-
-            console.log('✅ Reserva creada:', { reserva_id: dataReserva.reserva_id, localizador: dataReserva.localizador });
-            setReservaId(dataReserva.reserva_id);
-            setLocalizador(dataReserva.localizador);
-
-            // Luego crear el payment intent
-            const res = await fetch('/pagos/crear-payment-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({
-                    reserva_id: dataReserva.reserva_id,
-                    monto: monto,
-                }),
-            });
-
-            if (!res.ok) {
-                let errorMessage = `HTTP ${res.status}: Error al crear PaymentIntent`;
-                try {
-                    const contentType = res.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await res.json();
-                        errorMessage = errorData.error || errorData.message || errorMessage;
-                    } else {
-                        const text = await res.text();
-                        console.error('Response no-JSON:', text.substring(0, 500));
-                        errorMessage = `Error del servidor (HTTP ${res.status}). Verifica la consola del servidor.`;
-                    }
-                } catch (e) {
-                    console.error('Error al parsear respuesta de error:', e);
-                }
-                throw new Error(errorMessage);
-            }
-
-            const data = await res.json();
-
-            if (!data.success) {
-                throw new Error(data.error || 'Error al crear PaymentIntent');
-            }
-
-            setClientSecret(data.clientSecret);
-            setPagoId(data.pago_id);
-            setProcesando(false);
-        } catch (err) {
-            console.error('Stripe PaymentIntent Error:', err);
-            setMensaje(`Error: ${err.message}`);
-            onError(err.message);
-            setProcesando(false);
-        }
-    };
-
-    // Procesar pago
+    // Procesar pago completo en un submit
     const procesarPago = async (e) => {
         e.preventDefault();
-
-        if (!stripe || !elements || !clientSecret) {
+        if (!stripe || !elements) {
+            console.error('Stripe o elements no cargados');
             setMensaje('El formulario no está completamente cargado');
             return;
         }
@@ -153,8 +35,73 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
         setProcesando(true);
 
         try {
-            // Confirmar pago
-            const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+            // PASO 1: Crear reserva
+            const datosReservaConDireccion = { ...reservaData, direccion: direccion};
+
+            const resReserva = await fetch('/reservas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(datosReservaConDireccion),
+            });
+
+            if (!resReserva.ok) {
+                const contentType = resReserva.headers.get('content-type');
+                let errorMessage = `HTTP ${resReserva.status}`;
+                if (contentType?.includes('application/json')) {
+                    const error = await resReserva.json();
+                    errorMessage = error.message || error.error || errorMessage;
+                } else {
+                    const text = await resReserva.text();
+                    errorMessage = `Error ${resReserva.status}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            const dataReserva = await resReserva.json();
+            const resId = dataReserva.reserva_id;
+            if (!resId) throw new Error('No se obtuvo ID de reserva');
+
+            // PASO 2: Crear PaymentIntent
+            const resPI = await fetch('/pagos/crear-payment-intent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    reserva_id: resId,
+                    monto: monto,
+                }),
+            });
+
+            if (!resPI.ok) {
+                const contentType = resPI.headers.get('content-type');
+                let errorMessage = `HTTP ${resPI.status}`;
+                if (contentType?.includes('application/json')) {
+                    const error = await resPI.json();
+                    errorMessage = error.message || error.error || errorMessage;
+                } else {
+                    const text = await resPI.text();
+                    console.error('Response error:', text.substring(0, 500));
+                }
+                throw new Error(errorMessage);
+            }
+
+            const dataPI = await resPI.json();
+            if (!dataPI.success) throw new Error(dataPI.error || 'Error al crear PaymentIntent');
+
+            const newClientSecret = dataPI.clientSecret;
+            const newPagoId = dataPI.pago_id;
+            console.log('✅ PaymentIntent creado:', newClientSecret);
+
+            // PASO 3: Procesar pago con Stripe
+            console.log('🔄 Procesando pago con Stripe...');
+            const { paymentIntent, error } = await stripe.confirmCardPayment(newClientSecret, {
                 payment_method: {
                     card: elements.getElement(CardElement),
                     billing_details: {
@@ -170,14 +117,13 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
             });
 
             if (error) {
-                setMensaje(`Error en el pago: ${error.message}`);
+                setMensaje(`Error: ${error.message}`);
                 onError(error.message);
                 setProcesando(false);
                 return;
             }
 
             if (paymentIntent.status === 'succeeded') {
-                // Confirmar pago en backend
                 const res = await fetch('/pagos/confirmar', {
                     method: 'POST',
                     headers: {
@@ -187,91 +133,88 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                     },
                     body: JSON.stringify({
                         payment_intent_id: paymentIntent.id,
-                        pago_id: pagoId,
+                        pago_id: newPagoId,
                     }),
                 });
 
-                if (!res.ok) throw new Error('Error al confirmar pago');
+                if (!res.ok) throw new Error('Error al confirmar');
 
                 const data = await res.json();
-                console.log('💳 Pago confirmado en backend:', data);
-                setMensaje('¡Pago completado exitosamente!');
-                // Pasar localizador junto con otros datos al callback
-                onPagoExitoso({ ...data, localizador });
+                setMensaje('¡Pago completado!');
+                onPagoExitoso(data);
             } else {
-                setMensaje('El pago no se pudo procesar');
-                onError('El pago no se pudo procesar');
+                setMensaje('Pago no completado');
+                onError('Pago no completado');
             }
         } catch (err) {
             setMensaje(`Error: ${err.message}`);
             onError(err.message);
+        } finally {
+            setProcesando(false);
         }
-
-        setProcesando(false);
     };
 
     return (
         <div className="w-full">
-            {!clientSecret ? (
-                <div className="space-y-2 text-center py-2">
-                    <div className="text-sm text-gray-600">
-                        <p>Preparando pago...</p>
-                        <div className="mt-2 flex justify-center">
-                            <div className="inline-block animate-spin">
-                                <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full"></div>
+            <form onSubmit={procesarPago} className="space-y-3">
+                {procesando && (
+                    <div className="space-y-2 text-center py-2">
+                        <div className="text-sm text-gray-600">
+                            <p>Procesando pago...</p>
+                            <div className="mt-2 flex justify-center">
+                                <div className="inline-block animate-spin">
+                                    <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                )}
+
+                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-700">Monto a pagar:</span>
+                        <span className="text-base font-bold text-gray-900">{monto.toFixed(2)} €</span>
+                    </div>
                 </div>
-            ) : (
-                <form onSubmit={procesarPago} className="space-y-3">
-                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">Monto a pagar:</span>
-                            <span className="text-lg font-bold text-gray-900">{monto.toFixed(2)} €</span>
-                        </div>
+
+                {/* Dirección de Facturación */}
+                <div className="rounded-lg p-2 bg-gris">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                        Dirección de Facturación
+                    </label>
+
+                    <div className="mb-2">
+                        <input
+                            type="text"
+                            placeholder="Calle y número"
+                            value={direccion.calle}
+                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
+                            required
+                        />
                     </div>
 
-                    {/* Dirección de Facturación */}
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-3">
-                            Dirección de Facturación
-                        </label>
-
-                        <div className="mb-3">
-                            <input
-                                type="text"
-                                placeholder="Calle y número"
-                                value={direccion.calle}
-                                onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
-                                required
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            <input
-                                type="text"
-                                placeholder="Ciudad"
-                                value={direccion.ciudad}
-                                onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
-                                className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Código Postal"
-                                value={direccion.codigo_postal}
-                                onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
-                                className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
-                                required
-                            />
-                        </div>
-
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                        <input
+                            type="text"
+                            placeholder="Ciudad"
+                            value={direccion.ciudad}
+                            onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
+                            required
+                        />
+                        <input
+                            type="text"
+                            placeholder="Código Postal"
+                            value={direccion.codigo_postal}
+                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
+                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
+                            required
+                        />
                         <select
                             value={direccion.pais}
                             onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-600"
+                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
                         >
                             <option value="ES">España</option>
                             <option value="FR">Francia</option>
@@ -281,59 +224,62 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                             <option value="GB">Reino Unido</option>
                         </select>
                     </div>
+                </div>
 
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white">
-                        <label className="block text-xs font-medium text-gray-700 mb-2">
-                            Datos de la tarjeta
-                        </label>
-                        <CardElement
-                            options={{
-                                hidePostalCode: true,
-                                style: {
-                                    base: {
-                                        fontSize: '14px',
-                                        color: '#424770',
-                                        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                                        '::placeholder': {
-                                            color: '#aab7c4',
-                                        },
-                                    },
-                                    invalid: {
-                                        color: '#fa755a',
+                <div className="rounded-lg p-3 bg-white">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Datos de la tarjeta
+                    </label>
+                    <CardElement
+                        options={{
+                            hidePostalCode: true,
+                            style: {
+                                base: {
+                                    fontSize: '14px',
+                                    color: '#424770',
+                                    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                                    '::placeholder': {
+                                        color: '#aab7c4',
                                     },
                                 },
-                            }}
-                        />
+                                invalid: {
+                                    color: '#fa755a',
+                                },
+                            },
+                        }}
+                    />
+                </div>
+
+                {mensaje && (
+                    <div className={`p-2 rounded text-xs ${
+                        mensaje.includes('Error')
+                            ? 'bg-red-50 border border-red-200 text-red-700'
+                            : 'bg-green-50 border border-green-200 text-green-700'
+                    }`}>
+                        {mensaje}
                     </div>
+                )}
 
-                    {mensaje && (
-                        <div className={`p-2 rounded text-xs ${
-                            mensaje.includes('Error')
-                                ? 'bg-red-50 border border-red-200 text-red-700'
-                                : 'bg-green-50 border border-green-200 text-green-700'
-                        }`}>
-                            {mensaje}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={procesando || !stripe}
-                        className={`w-full py-2 px-3 rounded font-medium text-sm transition ${
-                            procesando || !stripe
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800'
-                        }`}
-                    >
-                        {procesando ? 'Procesando pago...' : 'Confirmar pago'}
-                    </button>
-                </form>
-            )}
+                <button
+                    type="submit"
+                    disabled={procesando || !stripe}
+                    className={`w-full py-2 px-3 rounded font-medium text-sm transition ${
+                        procesando || !stripe
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                            : 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800'
+                    }`}
+                >
+                    {procesando ? 'Procesando pago...' : 'Confirmar pago'}
+                </button>
+            </form>
         </div>
     );
 }
 
 export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError }) {
+    // Cachear la Promise de Stripe para que no cambie en cada render
+    const stripePromise = useMemo(() => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY), []);
+
     return (
         <Elements stripe={stripePromise}>
             <FormularioPagoInterno

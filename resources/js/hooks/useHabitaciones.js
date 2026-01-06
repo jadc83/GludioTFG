@@ -11,8 +11,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
     // Estado de habitaciones seleccionadas
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState({});
 
-    /**
-     * Carga habitaciones disponibles cuando cambia el paso o rango de fechas
+    /* Carga habitaciones disponibles cuando cambia el paso o rango de fechas
      */
     useEffect(() => {
         if (paso !== 2) {
@@ -37,8 +36,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
             try {
                 const fechaEntrada = formatearFecha(rango.from);
                 const fechaSalida = formatearFecha(rango.to);
-                const respuesta = await fetch(
-                    `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
+                const respuesta = await fetch( `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
                     {
                         headers: { Accept: 'application/json' },
                         credentials: 'include'
@@ -56,12 +54,10 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                         setEstaCargandoHabitaciones(false);
                     }, delayRestante);
                 } else {
-                    console.error('❌ Error al obtener habitaciones disponibles:', respuesta.status);
                     setHabitacionesDisponibles([]);
                     setEstaCargandoHabitaciones(false);
                 }
             } catch (error) {
-                console.error('❌ Error al cargar habitaciones disponibles:', error);
                 setHabitacionesDisponibles([]);
                 setEstaCargandoHabitaciones(false);
             }
@@ -70,9 +66,8 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         obtenerHabitacionesDisponibles();
     }, [paso, rango]);
 
-    /**
+    /*
      * Agrupa habitaciones disponibles por tipo
-     * @returns {Object} Objeto con tipos de habitación como keys
      */
     const agruparHabitacionesPorTipo = () => {
         const habitacionesPorTipo = {};
@@ -95,15 +90,19 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 habitacion.capacidad || 1,
             );
 
-            const precioDinamico = calcularPrecioDinamico(
-                habitacion,
-                rango?.from,
-                rango?.to,
-            );
+            // Extraer el precio base correctamente del objeto habitación
+            const precioBase = Number(habitacion.precio_noche) || 0;
+            const totalPrecioDinamico = calcularPrecioDinamico(precioBase, rango?.from, rango?.to);
+
+            // Calcular precio dinámico por noche (promedio)
+            const numeroNoches = rango?.from && rango?.to
+                ? Math.ceil((rango.to - rango.from) / (1000 * 60 * 60 * 24))
+                : 1;
+            const precioDinamicoPorNoche = numeroNoches > 0 ? Math.round(totalPrecioDinamico / numeroNoches) : totalPrecioDinamico;
 
             habitacionesPorTipo[tipo].precioMinimo = Math.min(
                 habitacionesPorTipo[tipo].precioMinimo,
-                precioDinamico,
+                precioDinamicoPorNoche,
             );
             habitacionesPorTipo[tipo].habitaciones.push(habitacion);
         });

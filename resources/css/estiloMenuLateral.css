@@ -9,6 +9,36 @@
 .boton-deshabilitado { background-color: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; opacity: 1 !important; }
 .numero-unidad { color: var(--panel-rojo); min-width: 3rem; display:flex; align-items:center; justify-content:center; }
 .tarjeta-titulo { color: var(--panel-rojo); }
+
+/* Calendario minimal para la barra sticky - alineación simple */
+.rdp-minimal {
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
+  --rdp-day_button-height: 2rem;
+  --rdp-day_button-width: 2rem;
+  --rdp-weekday-padding: 0 !important;
+  --rdp-months-gap: 0.5rem;
+  --rdp-nav-height: 2rem;
+  --rdp-cell-size: 2rem;
+}
+
+/* Alinear verticalmente en tabla */
+.rdp-minimal .rdp-cell {
+  padding: 0 !important;
+  vertical-align: middle;
+}
+
+.rdp-minimal .rdp-head_cell {
+  padding: 0 0 0 0.5rem !important;
+  vertical-align: middle;
+  line-height: 2rem;
+  text-align: left !important;
+}
+
+.rdp-minimal .rdp-day_button {
+  line-height: 2rem;
+}
+
 /* Ajustes menores */
 .join-item { vertical-align: middle; }
 .tarjeta-seleccionada {
