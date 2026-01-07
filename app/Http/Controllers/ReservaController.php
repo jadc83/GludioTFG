@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReservaController extends Controller
 {
@@ -351,14 +352,26 @@ class ReservaController extends Controller
 
     public function show(Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion', 'bookedBy']);
+        $reserva->load(['reservable', 'habitaciones.habitacion']);
 
-        if (request()->wantsJson()) {
-            return response()->json($reserva);
-        }
-
-        return inertia('ShowReserva', [
-            'reserva' => $reserva
+        return inertia('DetalleReserva', [
+            'reserva' => [
+                'id' => $reserva->id,
+                'localizador' => $reserva->localizador,
+                'cliente' => $this->formatearCliente($reserva),
+                'check_in' => $reserva->check_in,
+                'check_out' => $reserva->check_out,
+                'precio_total' => $reserva->precio_total,
+                'status' => $reserva->status,
+                'pago' => $reserva->pago,
+                'habitaciones' => $reserva->habitaciones->map(function ($hr) {
+                    return [
+                        'numero' => $hr->habitacion->numero,
+                        'tipo' => $hr->habitacion->tipo,
+                        'precio' => $hr->precio,
+                    ];
+                }),
+            ]
         ]);
     }
 
@@ -633,5 +646,102 @@ class ReservaController extends Controller
             ], 500);
         }
     }
-}
 
+    /**
+     * Busca una reserva por localizador
+     */
+    public function buscarPorLocalizador($localizador)
+    {
+        try {
+            $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
+                ->where('localizador', $localizador)
+                ->first();
+
+            if (!$reserva) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No se encontró reserva con ese localizador',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'reserva' => [
+                    'id' => $reserva->id,
+                    'localizador' => $reserva->localizador,
+                    'cliente' => $this->formatearCliente($reserva),
+                    'check_in' => $reserva->check_in,
+                    'check_out' => $reserva->check_out,
+                    'precio_total' => $reserva->precio_total,
+                    'status' => $reserva->status,
+                    'pago' => $reserva->pago,
+                    'habitaciones' => $reserva->habitaciones->map(function ($hr) {
+                        return [
+                            'numero' => $hr->habitacion->numero,
+                            'tipo' => $hr->habitacion->tipo,
+                            'precio' => $hr->precio,
+                        ];
+                    }),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al buscar reserva: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Formatea el cliente de una reserva
+     */
+    private function formatearCliente($reserva)
+    {
+        if ($reserva->reservable_type === 'App\\Models\\User') {
+            return [
+                'tipo' => 'usuario',
+                'nombre' => $reserva->reservable?->name ?? 'Usuario no disponible',
+            ];
+        }
+        return [
+            'tipo' => 'cliente',
+            'nombre' => $reserva->reservable?->name ?? 'Cliente no disponible',
+        ];
+    }
+
+    /**
+     * Descarga un comprobante de reserva en PDF
+     */
+    public function descargarComprobante($localizador)
+    {
+        try {
+            $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
+                ->where('localizador', $localizador)
+                ->firstOrFail();
+
+            // Calcular noches
+            $checkIn = Carbon::parse($reserva->check_in);
+            $checkOut = Carbon::parse($reserva->check_out);
+            $noches = max(1, abs($checkOut->diffInDays($checkIn)));
+
+            // Preparar datos para el PDF
+            $data = [
+                'reserva' => $reserva,
+                'cliente' => $this->formatearCliente($reserva),
+                'noches' => $noches,
+                'fecha_generacion' => now()->format('d/m/Y H:i'),
+            ];
+
+            // Generar PDF
+            $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
+
+            // Descargar PDF
+            return $pdf->download("Comprobante_{$localizador}.pdf");
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No se encontró la reserva o error al generar PDF: ' . $e->getMessage(),
+            ], 404);
+        }
+    }
+}

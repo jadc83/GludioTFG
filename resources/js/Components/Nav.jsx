@@ -38,6 +38,9 @@ export default function Navbar() {
                         </div>
                     </div>
 
+                    <div className="flex items-center gap-4 flex-1 justify-center">
+                    </div>
+
                     <div className="flex items-center space-x-4 flex-1 justify-end">
                         {user ? (
                             <div className="relative hidden sm:block">

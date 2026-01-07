@@ -20,14 +20,13 @@ class HabitacionService
     public function obtenerDisponibles(Carbon $checkIn, Carbon $checkOut): array
     {
         // Buscar habitaciones que NO tienen reservas que se solapan con el rango
-        // Y que no estén en estado 'ocupada' o 'mantenimiento'
-        $habitacionesDisponibles = Habitacion::whereIn('estado', ['disponible', 'limpieza'])
-            ->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                // Una reserva se solapa si:
-                // check_in < checkout solicitado Y check_out > checkin solicitado
-                $query->where('check_in', '<', $checkOut)
-                      ->where('check_out', '>', $checkIn);
-            })->get();
+        // Una reserva se solapa si: check_in < checkout solicitado Y check_out > checkin solicitado
+        $habitacionesDisponibles = Habitacion::whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
+            $query->where('check_in', '<', $checkOut)
+                  ->where('check_out', '>', $checkIn);
+        })
+        ->where('estado', '!=', 'mantenimiento')
+        ->get();
 
         return $this->agruparYEnriquecer($habitacionesDisponibles, $checkIn, $checkOut);
     }
