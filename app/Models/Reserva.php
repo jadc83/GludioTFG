@@ -53,6 +53,11 @@ class Reserva extends Model
         return $this->hasMany(HabitacionReserva::class, 'reserva_id');
     }
 
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class, 'reserva_id');
+    }
+
     public function scopeStatus($query, $status)
     {
         if (!$status || $status === 'todos') return $query;

@@ -15,6 +15,9 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
+Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])
+    ->name('reserva.show');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -42,6 +45,12 @@ Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])
 
 Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])
     ->name('reservas.disponibles');
+
+Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])
+    ->name('reservas.buscar-localizador');
+
+Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])
+    ->name('reservas.descargar-comprobante');
 
 Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])
     ->name('reservas.calcular-precio');

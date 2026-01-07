@@ -5,6 +5,7 @@ import Paso3Datos from './reservas/Paso3Datos';
 import Paso4Confirmacion from './reservas/Paso4Confirmacion';
 import PrimaryButton from './PrimaryButton';
 import TypingAnimation from './TypingAnimation';
+import BuscadorNavbar from './BuscadorNavbar';
 import { formatearFecha, calcularNoches, obtenerDiaDelaSemana } from '../utils/formatters';
 import '../../css/createHabitacion.css';
 import '../../css/estiloCalendario.css';
@@ -207,9 +208,9 @@ export default function MenuLateral() {
                             )}
                         </div>
 
-                        {/* TYPING ANIMATION - CTA/PUBLICIDAD */}
-                        <div className="hidden lg:block px-2 py-1 absolute right-4">
-                            <div className="text-xs">
+                        {/* TYPING ANIMATION - CTA/PUBLICIDAD Y BUSCADOR */}
+                        <div className="hidden lg:flex items-center gap-4 px-2 py-1 absolute right-4">
+                            <div className="text-xs flex-1">
                                 <TypingAnimation words={[
                                         'Pago seguro con Stripe',
                                         '🔒 Tus datos protegidos',
@@ -217,6 +218,9 @@ export default function MenuLateral() {
                                         'Cancelación gratuita hasta 48h antes de la llegada',
                                         '+5000 clientes satisfechos']}
                                     typeSpeed={60} deleteSpeed={40} pauseDelay={2500} loop={true}/>
+                            </div>
+                            <div className="flex-shrink-0 w-80">
+                                <BuscadorNavbar />
                             </div>
                         </div>
                     </div>
