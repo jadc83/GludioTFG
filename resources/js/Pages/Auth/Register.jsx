@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, DocumentIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -27,203 +28,265 @@ export default function Register() {
 
     return (
         <AuthLayout>
-            <Head title="Register" />
+            <Head title="Registrarse" />
 
-            <form onSubmit={submit}>
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <InputLabel htmlFor="name" value="Name" />
-                        <TextInput
-                            id="name"
-                            name="name"
-                            value={data.name}
-                            className="mt-1 block w-full"
-                            autoComplete="name"
-                            isFocused={true}
-                            onChange={(e) => setData('name', e.target.value)}
-                            required
-                        />
-                        <InputError message={errors.name} className="mt-1" />
-                    </div>
+            <div className="px-5 py-8">
+                {/* Header */}
+                <div className="mb-4">
+                    <h2 className="text-2xl font-bold text-[#7a0202]">
+                        Únete ahora
+                    </h2>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                        Crea tu cuenta en 2 minutos
+                    </p>
+                </div>
 
-                    <div className="flex-1">
-                        <InputLabel htmlFor="email" value="Email" />
-                        <TextInput
-                            id="email"
-                            type="email"
-                            name="email"
-                            value={data.email}
-                            className="mt-1 block w-full"
-                            autoComplete="username"
-                            onChange={(e) => setData('email', e.target.value)}
-                            required
-                        />
-                        <InputError message={errors.email} className="mt-1" />
+                {/* Benefits Preview */}
+                <div className="mb-4 rounded-lg bg-gradient-to-r from-[#7a0202]/5 to-[#920303]/5 p-2.5 border border-[#E2E0DC]">
+                    <div className="grid grid-cols-2 gap-1.5 text-xs">
+                        <div className="flex items-center gap-1">
+                            <span className="text-[#7a0202]">✓</span>
+                            <span>Reservas instantáneas</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-[#7a0202]">✓</span>
+                            <span>100% Gratuito</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-[#7a0202]">✓</span>
+                            <span>Historial completo</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-[#7a0202]">✓</span>
+                            <span>Sin compromisos</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="mt-4 flex gap-4">
-                    <div className="flex-1">
-                        <InputLabel
-                            htmlFor="tipo_documento"
-                            value="Tipo de Documento"
-                        />
-                        <select
-                            id="tipo_documento"
-                            name="tipo_documento"
-                            value={data.tipo_documento}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            onChange={(e) =>
-                                setData('tipo_documento', e.target.value)
-                            }
-                            required
-                        >
-                            <option value="dni">DNI</option>
-                            <option value="pasaporte">Pasaporte</option>
-                            <option value="tie">TIE</option>
-                        </select>
-                        <InputError
-                            message={errors.tipo_documento}
-                            className="mt-1"
-                        />
+                <form onSubmit={submit} className="space-y-3">
+                    {/* Name & Email */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <InputLabel htmlFor="name" value="Nombre" />
+                            <div className="relative mt-0.5">
+                                <UserIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="name"
+                                    name="name"
+                                    value={data.name}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    autoComplete="name"
+                                    isFocused={true}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    placeholder="Juan"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.name} className="mt-0.5 text-xs" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="email" value="Email" />
+                            <div className="relative mt-0.5">
+                                <EnvelopeIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    autoComplete="username"
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="tu@email.com"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.email} className="mt-0.5 text-xs" />
+                        </div>
                     </div>
 
-                    <div className="flex-1">
-                        <InputLabel
-                            htmlFor="numero_documento"
-                            value="Número de Documento"
-                        />
-                        <TextInput
-                            id="numero_documento"
-                            name="numero_documento"
-                            value={data.numero_documento}
-                            className="mt-1 block w-full font-mono"
-                            onChange={(e) =>
-                                setData('numero_documento', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.numero_documento}
-                            className="mt-1"
-                        />
-                    </div>
-                </div>
+                    {/* Document Type & Number */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <InputLabel htmlFor="tipo_documento" value="Doc" />
+                            <select
+                                id="tipo_documento"
+                                name="tipo_documento"
+                                value={data.tipo_documento}
+                                className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                onChange={(e) =>
+                                    setData('tipo_documento', e.target.value)
+                                }
+                                required
+                            >
+                                <option value="dni">DNI</option>
+                                <option value="pasaporte">Pasaporte</option>
+                                <option value="tie">TIE</option>
+                            </select>
+                            <InputError message={errors.tipo_documento} className="mt-0.5 text-xs" />
+                        </div>
 
-                <div className="mt-4 flex gap-4">
-                    <div className="flex-1">
-                        <InputLabel
-                            htmlFor="nacionalidad"
-                            value="Nacionalidad"
-                        />
-                        <TextInput
-                            id="nacionalidad"
-                            name="nacionalidad"
-                            value={data.nacionalidad}
-                            className="mt-1 block w-full"
-                            onChange={(e) =>
-                                setData('nacionalidad', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.nacionalidad}
-                            className="mt-1"
-                        />
+                        <div>
+                            <InputLabel htmlFor="numero_documento" value="Nº" />
+                            <TextInput
+                                id="numero_documento"
+                                name="numero_documento"
+                                value={data.numero_documento}
+                                className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                onChange={(e) =>
+                                    setData('numero_documento', e.target.value)
+                                }
+                                placeholder="123456"
+                                required
+                            />
+                            <InputError message={errors.numero_documento} className="mt-0.5 text-xs" />
+                        </div>
                     </div>
 
-                    <div className="flex-1">
-                        <InputLabel htmlFor="telefono" value="Teléfono" />
-                        <TextInput
-                            id="telefono"
-                            type="tel"
-                            name="telefono"
-                            value={data.telefono}
-                            className="mt-1 block w-full font-mono"
-                            onChange={(e) =>
-                                setData('telefono', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.telefono}
-                            className="mt-1"
-                        />
-                    </div>
-                </div>
+                    {/* Nationality & Phone */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <InputLabel htmlFor="nacionalidad" value="País" />
+                            <div className="relative mt-0.5">
+                                <GlobeAltIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="nacionalidad"
+                                    name="nacionalidad"
+                                    value={data.nacionalidad}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    onChange={(e) =>
+                                        setData('nacionalidad', e.target.value)
+                                    }
+                                    placeholder="España"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.nacionalidad} className="mt-0.5 text-xs" />
+                        </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="direccion" value="Dirección" />
-                    <textarea
-                        id="direccion"
-                        name="direccion"
-                        value={data.direccion}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        onChange={(e) => setData('direccion', e.target.value)}
-                        rows="2"
-                        required
-                    />
-                    <InputError message={errors.direccion} className="mt-1" />
-                </div>
-
-                <div className="mt-4 flex gap-4">
-                    <div className="flex-1">
-                        <InputLabel htmlFor="password" value="Password" />
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            className="mt-1 block w-full"
-                            autoComplete="new-password"
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.password}
-                            className="mt-1"
-                        />
+                        <div>
+                            <InputLabel htmlFor="telefono" value="Tlf" />
+                            <div className="relative mt-0.5">
+                                <PhoneIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="telefono"
+                                    type="tel"
+                                    name="telefono"
+                                    value={data.telefono}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    onChange={(e) =>
+                                        setData('telefono', e.target.value)
+                                    }
+                                    placeholder="+34600000"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.telefono} className="mt-0.5 text-xs" />
+                        </div>
                     </div>
 
-                    <div className="flex-1">
-                        <InputLabel
-                            htmlFor="password_confirmation"
-                            value="Confirm Password"
-                        />
-                        <TextInput
-                            id="password_confirmation"
-                            type="password"
-                            name="password_confirmation"
-                            value={data.password_confirmation}
-                            className="mt-1 block w-full"
-                            autoComplete="new-password"
-                            onChange={(e) =>
-                                setData('password_confirmation', e.target.value)
-                            }
+                    {/* Address */}
+                    <div>
+                        <InputLabel htmlFor="direccion" value="Dirección" />
+                        <textarea
+                            id="direccion"
+                            name="direccion"
+                            value={data.direccion}
+                            className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                            onChange={(e) => setData('direccion', e.target.value)}
+                            placeholder="Calle Principal, 123"
+                            rows="2"
                             required
                         />
-                        <InputError
-                            message={errors.password_confirmation}
-                            className="mt-1"
-                        />
+                        <InputError message={errors.direccion} className="mt-0.5 text-xs" />
                     </div>
-                </div>
 
-                <div className="mt-6 flex items-center justify-end gap-4">
+                    {/* Password & Confirmation */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <InputLabel htmlFor="password" value="Contraseña" />
+                            <div className="relative mt-0.5">
+                                <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    autoComplete="new-password"
+                                    onChange={(e) =>
+                                        setData('password', e.target.value)
+                                    }
+                                    placeholder="••••••"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.password} className="mt-0.5 text-xs" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="password_confirmation" value="Confirmar" />
+                            <div className="relative mt-0.5">
+                                <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+                                <TextInput
+                                    id="password_confirmation"
+                                    type="password"
+                                    name="password_confirmation"
+                                    value={data.password_confirmation}
+                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    autoComplete="new-password"
+                                    onChange={(e) =>
+                                        setData('password_confirmation', e.target.value)
+                                    }
+                                    placeholder="••••••"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.password_confirmation} className="mt-0.5 text-xs" />
+                        </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        className="w-full mt-3 rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] px-3 py-2 font-semibold text-sm text-white transition duration-200 hover:shadow-lg hover:shadow-[#7a0202]/20 focus:outline-none focus:ring-2 focus:ring-[#920303] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {processing ? (
+                            <span className="flex items-center justify-center">
+                                <svg className="animate-spin h-3.5 w-3.5 mr-1" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Creando...
+                            </span>
+                        ) : (
+                            'Registrarse'
+                        )}
+                    </button>
+                </form>
+
+                {/* Login CTA */}
+                <div className="mt-3 pt-2.5 border-t border-[#E2E0DC]">
+                    <p className="text-center text-gray-700 text-xs mb-1.5">
+                        ¿Tienes cuenta?
+                    </p>
                     <Link
                         href={route('login')}
-                        className="text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="block text-center text-[#7a0202] font-semibold text-xs hover:text-[#920303] transition"
                     >
-                        Ya dispones de cuenta?
+                        Inicia sesión
                     </Link>
-
-                    <PrimaryButton disabled={processing}>
-                        Registrate
-                    </PrimaryButton>
                 </div>
-            </form>
+
+                {/* Terms */}
+                <p className="text-center text-xs text-gray-600 mt-3">
+                    Al registrarte aceptas nuestros{' '}
+                    <a href="#" className="text-[#7a0202] hover:underline">
+                        términos
+                    </a>
+                </p>
+            </div>
         </AuthLayout>
     );
 }

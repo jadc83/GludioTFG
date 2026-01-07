@@ -18,18 +18,11 @@ export function useFiltrosPanel(filtrosIniciales = {}, ruta = 'panel', propsActu
             // Sincronizar inmediatamente con servidor
             const filtrosLimpios = Object.entries(nuevosFiltros).reduce((acc, [clave, val]) => {
                 // Excluir filtros vacíos o 'todos'
-                if (val !== '' && val !== 'todos' && val !== null) {
-                    acc[clave] = val;
-                }
+                if (val !== '' && val !== 'todos' && val !== null) { acc[clave] = val;}
                 return acc;
             }, {});
 
-            router.get(ruta, filtrosLimpios, {
-                preserveState: true,
-                preserveScroll: true,
-                only: propsActualizar,
-                replace: true,
-            });
+            router.get(ruta, filtrosLimpios, { preserveState: true, preserveScroll: true, only: propsActualizar, replace: true });
 
             return nuevosFiltros;
         });
