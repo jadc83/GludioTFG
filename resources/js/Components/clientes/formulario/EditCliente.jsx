@@ -2,6 +2,7 @@ import '@/../css/createCliente.css';
 import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { useClienteForm } from '@/hooks/useClienteForm';
+import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 
 export default function EditCliente({ cliente, abierto, onCerrar }) {
     const { formulario, cambiar, errores, estaCargando, enviar } = useClienteForm(
@@ -66,9 +67,11 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                                 required
                             >
                                 <option value="">Selecciona tipo</option>
-                                <option value="dni">DNI</option>
-                                <option value="pasaporte">Pasaporte</option>
-                                <option value="tie">TIE</option>
+                                {Object.entries(TIPOS_DOCUMENTO).map(([clave, valor]) => (
+                                    <option key={clave} value={valor}>
+                                        {valor.charAt(0).toUpperCase() + valor.slice(1)}
+                                    </option>
+                                ))}
                             </Campo>
                             <Campo
                                 id="numero_documento"

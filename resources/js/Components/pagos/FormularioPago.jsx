@@ -1,6 +1,7 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
+import { formatearMoneda } from '@/utils/formatters';
 import React, { useState, useMemo } from 'react';
 import PrimaryButton from '../PrimaryButton';
 
@@ -38,6 +39,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
             // PASO 1: Crear reserva
             const datosReservaConDireccion = { ...reservaData, direccion: direccion};
 
+            console.log('📤 Enviando datos de reserva:', datosReservaConDireccion);
+
             const resReserva = await fetch('/reservas', {
                 method: 'POST',
                 headers: {
@@ -53,9 +56,11 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                 let errorMessage = `HTTP ${resReserva.status}`;
                 if (contentType?.includes('application/json')) {
                     const error = await resReserva.json();
+                    console.error('Error de servidor:', error);
                     errorMessage = error.message || error.error || errorMessage;
                 } else {
                     const text = await resReserva.text();
+                    console.error('Error de texto:', text);
                     errorMessage = `Error ${resReserva.status}`;
                 }
                 throw new Error(errorMessage);
@@ -173,7 +178,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                 <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
                     <div className="flex justify-between items-center">
                         <span className="text-xs font-medium text-gray-700">Monto a pagar:</span>
-                        <span className="text-base font-bold text-gray-900">{monto.toFixed(2)} €</span>
+                        <span className="text-base font-bold text-gray-900">{formatearMoneda(monto)}</span>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
+
+
 /**
  * Obtiene el precio base fijo por tipo de habitación
- * @param {String} tipo - Tipo de habitación (Doble, Familiar, Suite)
- * @returns {number} Precio base del tipo
  */
 export function obtenerPrecioBasePorTipo(tipo) {
     const precios = {
@@ -12,6 +12,9 @@ export function obtenerPrecioBasePorTipo(tipo) {
     return precios[tipo?.toLowerCase()] || 0;
 }
 
+/**
+ * Calcula el precio dinámico basado en modificadores de temporada
+ */
 export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
     // Soportar tanto objetos habitación como valores numéricos
     let precioBase;
@@ -75,11 +78,10 @@ export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
 
 /**
  * Obtiene el precio base de un tipo de habitación
- * @param {Array} habitacionesDisponibles - Lista de habitaciones disponibles
- * @param {String} tipo - Tipo de habitación (Doble, Familiar, Suite)
- * @returns {number} Precio base del tipo
+
  */
 export function obtenerPrecioBase(habitacionesDisponibles, tipo) {
     // Usar precios fijos por tipo, NO los de la BD
     return obtenerPrecioBasePorTipo(tipo);
 }
+

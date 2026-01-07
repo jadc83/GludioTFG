@@ -1,5 +1,7 @@
 import EditCliente from '@/Components/clientes/formulario/EditCliente';
-import { useClienteControl } from '@/hooks/useClienteControl';
+import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
+import { obtenerColorDocumento, obtenerNombreDocumento } from '@/utils/formatters';
+import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import {
 EyeIcon,
 FunnelIcon,
@@ -10,7 +12,7 @@ StarIcon,
 ChevronLeftIcon,
 ChevronRightIcon,
 } from '@heroicons/react/24/outline';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 export default function IndexCliente({
 clientes = [],
@@ -22,9 +24,20 @@ const [drawerAbierto, setDrawerAbierto] = useState(false);
 const [paginaActual, setPaginaActual] = useState(1);
 const itemsPorPagina = 10;
 
-const { filtros, acciones } = useClienteControl(clientesFiltrados);
+const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
+    { tipo_documento: 'todos', busqueda: '' },
+    'panel',
+    ['clientes', 'clientesFiltrados']
+);
 
 const todosLosRegistros = clientesFiltrados;
+
+/**
+ * Resetea la paginación cuando cambian los filtros o datos
+ */
+useEffect(() => {
+    setPaginaActual(1);
+}, [todosLosRegistros.length, filtros.tipo_documento, filtros.busqueda]);
 
 const abrirEdicion = (cliente) => {
 setClienteEditar(cliente);
@@ -34,19 +47,6 @@ setDrawerAbierto(true);
 const cerrarEdicion = () => {
 setDrawerAbierto(false);
 setTimeout(() => setClienteEditar(null), 300);
-};
-
-const obtenerColorDocumento = (tipo_documento) => {
-switch (tipo_documento) {
-case 'dni':
-return 'badge-success';
-case 'pasaporte':
-return 'badge-warning';
-case 'tie':
-return 'badge-info';
-default:
-return 'badge-neutral';
-}
 };
 
 // Paginacion
@@ -73,21 +73,29 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
             <div className="relative flex-1">
                 <MagnifyingGlassIcon
                     className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
-                <input type="text" className="input-bordered input w-full pl-11" value={filtros.busqueda}
-                    placeholder="Nombre, email, documento o teléfono..." onChange={(e)=>
-                filtros.setBusqueda(e.target.value)}
+                <input
+                    type="text"
+                    className="input-bordered input w-full pl-11"
+                    value={filtros.busqueda}
+                    placeholder="Nombre, email, documento o teléfono..."
+                    onChange={(e) => actualizarFiltro('busqueda', e.target.value)}
                 />
             </div>
-            <select className="select-bordered select w-full max-w-xs lg:w-auto" value={filtros.documento}
-                onChange={(e)=> filtros.setDocumento(e.target.value)}
-                >
+            <select
+                className="select-bordered select w-full max-w-xs lg:w-auto"
+                value={filtros.tipo_documento}
+                onChange={(e) => actualizarFiltro('tipo_documento', e.target.value)}
+            >
                 <option value="todos">Todos los documentos</option>
                 <option value="dni">DNI</option>
                 <option value="pasaporte">Pasaporte</option>
                 <option value="tie">TIE</option>
             </select>
-            <button type="button" onClick={acciones.limpiarFiltros}
-                className="btn btn-info btn-outline hover:btn-info">
+            <button
+                type="button"
+                onClick={limpiarFiltros}
+                className="btn btn-info btn-outline hover:btn-info"
+            >
                 <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
             </button>
         </div>
@@ -115,7 +123,10 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                     <p className="text-gray-400">
                         Intenta cambiar los filtros de búsqueda
                     </p>
-                    <button onClick={acciones.limpiarFiltros} className="btn btn-primary btn-sm mt-4">
+                    <button
+                        onClick={limpiarFiltros}
+                        className="btn btn-primary btn-sm mt-4"
+                    >
                         Limpiar filtros
                     </button>
                 </div>
@@ -215,20 +226,6 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                         <ChevronLeftIcon className="h-4 w-4" />
                         <span className="hidden sm:inline">Anterior</span>
                     </button>
-
-                    <div className="flex items-center gap-1 rounded-lg bg-white p-2 shadow-sm">
-                        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
-                        <button key={pagina} onClick={()=> setPaginaActual(pagina)}
-                            className={`btn btn-xs px-3 transition-all ${
-                            paginaActual === pagina
-                            ? 'border-0 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
-                            : 'border-0 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                            >
-                            {pagina}
-                        </button>
-                        ))}
-                    </div>
 
                     <button onClick={irAProximaPagina} disabled={paginaActual===totalPaginas}
                         className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"

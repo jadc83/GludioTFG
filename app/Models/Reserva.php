@@ -40,6 +40,14 @@ class Reserva extends Model
         return $this->belongsTo(User::class, 'booked_by_user_id');
     }
 
+    /**
+     * Scope para eager load de reservable (Cliente o User)
+     */
+    public function scopeWithReservable($query)
+    {
+        return $query->with(['reservable']);
+    }
+
     public function habitaciones()
     {
         return $this->hasMany(HabitacionReserva::class, 'reserva_id');
@@ -72,6 +80,18 @@ class Reserva extends Model
 
         return $query->whereHas('habitaciones.habitacion', function ($q) use ($habitacionNumero) {
             $q->where('numero', 'ILIKE', "%{$habitacionNumero}%");
+        });
+    }
+
+    /**
+     * Marca todas las habitaciones de la reserva como ocupadas
+     */
+    public function marcarHabitacionesComoOcupadas()
+    {
+        $this->habitaciones()->each(function ($habitacionReserva) {
+            if ($habitacionReserva->habitacion) {
+                $habitacionReserva->habitacion->update(['estado' => 'ocupada']);
+            }
         });
     }
 }

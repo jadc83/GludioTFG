@@ -108,7 +108,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
             const nuevasPrevisualizaciones = await Promise.all(archivos.map(leerArchivoComoDataUrl));
             setPresualizaciones((prev) => [...prev, ...nuevasPrevisualizaciones]);
         } catch (error) {
-            console.error('⚠️ Error leyendo archivos de foto:', error);
+            console.error('Error leyendo archivos de foto:', error);
             // Continuar sin fallar si hay error en lectura
         }
 
@@ -167,12 +167,12 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
                 preserveState: false,
                 preserveScroll: false,
                 onSuccess: () => {
-                    router.reload({ only: ['habitaciones'] });
+                    router.reload();
                     reset();
                     alGuardar?.();
                 },
                 onError: (errores) => {
-                    console.error('❌ Error guardando habitación:', errores);
+                    console.error('Error guardando habitación:', errores);
                 },
             });
         } else {

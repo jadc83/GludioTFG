@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
 import { formatearFecha } from '../utils/fecha';
-import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '../utils/precios';
 
+/**
+ * Hook para gestionar habitaciones disponibles y seleccionadas
+ */
 export default function useHabitaciones({ paso, rango, setRango }) {
     // Estado de habitaciones disponibles
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState([]);
     const [estaCargandoHabitaciones, setEstaCargandoHabitaciones] = useState(false);
-    const [tiempoInicioCarga, setTiempoInicioCarga] = useState(null);
 
     // Estado de habitaciones seleccionadas
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState({});
 
-    /* Carga habitaciones disponibles cuando cambia el paso o rango de fechas
+    /**
+     * Carga habitaciones disponibles desde el servidor
+     * El servidor ya devuelve agrupadas por tipo y con precios calculados
      */
     useEffect(() => {
         if (paso !== 2) {
             setEstaCargandoHabitaciones(false);
-            setTiempoInicioCarga(null);
             return;
         }
 
@@ -24,41 +26,35 @@ export default function useHabitaciones({ paso, rango, setRango }) {
             if (!rango?.from || !rango?.to) {
                 setHabitacionesDisponibles([]);
                 setEstaCargandoHabitaciones(false);
-                setTiempoInicioCarga(null);
                 return;
             }
 
             // Resetear selecciones cuando cambia el rango
             setHabitacionesSeleccionadas({});
             setEstaCargandoHabitaciones(true);
-            setTiempoInicioCarga(Date.now());
 
             try {
                 const fechaEntrada = formatearFecha(rango.from);
                 const fechaSalida = formatearFecha(rango.to);
-                const respuesta = await fetch( `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
+
+                const respuesta = await fetch(
+                    `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
                     {
                         headers: { Accept: 'application/json' },
                         credentials: 'include'
-                    },
+                    }
                 );
 
                 if (respuesta.ok) {
                     const datos = await respuesta.json();
-                    // Asegurar que se muestra el estado de carga por al menos 2000ms
-                    const tiempoTranscurrido = Date.now() - tiempoInicioCarga;
-                    const delayRestante = Math.max(0, 2000 - tiempoTranscurrido);
-
-                    setTimeout(() => {
-                        setHabitacionesDisponibles(Array.isArray(datos) ? datos : []);
-                        setEstaCargandoHabitaciones(false);
-                    }, delayRestante);
+                    setHabitacionesDisponibles(Array.isArray(datos) ? datos : []);
                 } else {
                     setHabitacionesDisponibles([]);
-                    setEstaCargandoHabitaciones(false);
                 }
             } catch (error) {
+                console.error('Error al cargar habitaciones:', error);
                 setHabitacionesDisponibles([]);
+            } finally {
                 setEstaCargandoHabitaciones(false);
             }
         };
@@ -66,52 +62,22 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         obtenerHabitacionesDisponibles();
     }, [paso, rango]);
 
-    /*
+    /**
      * Agrupa habitaciones disponibles por tipo
      */
     const agruparHabitacionesPorTipo = () => {
         const habitacionesPorTipo = {};
 
-        habitacionesDisponibles.forEach((habitacion) => {
-            const tipo = habitacion.tipo;
-
-            if (!habitacionesPorTipo[tipo]) {
-                habitacionesPorTipo[tipo] = {
-                    cantidad: 0,
-                    capacidadMaxima: 0,
-                    precioMinimo: Infinity,
-                    habitaciones: [],
-                };
-            }
-
-            habitacionesPorTipo[tipo].cantidad++;
-            habitacionesPorTipo[tipo].capacidadMaxima = Math.max(
-                habitacionesPorTipo[tipo].capacidadMaxima,
-                habitacion.capacidad || 1,
-            );
-
-            // Usar precio base fijo por tipo, NO el de la BD
-            const precioBase = obtenerPrecioBasePorTipo(habitacion.tipo);
-            const totalPrecioDinamico = calcularPrecioDinamico(precioBase, rango?.from, rango?.to);
-
-            // Calcular precio dinámico por noche (promedio)
-            const numeroNoches = rango?.from && rango?.to
-                ? Math.ceil((rango.to - rango.from) / (1000 * 60 * 60 * 24))
-                : 1;
-            const precioDinamicoPorNoche = numeroNoches > 0 ? Math.round(totalPrecioDinamico / numeroNoches) : totalPrecioDinamico;
-
-            habitacionesPorTipo[tipo].precioMinimo = Math.min(
-                habitacionesPorTipo[tipo].precioMinimo,
-                precioDinamicoPorNoche,
-            );
-            habitacionesPorTipo[tipo].habitaciones.push(habitacion);
-        });
-
-        // Normalizar precios infinitos
-        Object.values(habitacionesPorTipo).forEach((datosHabitacion) => {
-            if (datosHabitacion.precioMinimo === Infinity) {
-                datosHabitacion.precioMinimo = null;
-            }
+        habitacionesDisponibles.forEach((grupo) => {
+            const tipo = grupo.tipo;
+            habitacionesPorTipo[tipo] = {
+                cantidad: grupo.cantidad,
+                capacidadMaxima: grupo.capacidadMaxima,
+                precioMinimo: grupo.precioMinimo,
+                precioNoche: grupo.precioNoche,
+                precioTotal: grupo.precioTotal,
+                habitaciones: grupo.habitaciones,
+            };
         });
 
         return habitacionesPorTipo;
@@ -119,42 +85,33 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 
     /**
      * Obtiene el icono Unicode para un tipo de habitación
-     * @param {string} tipo - Tipo de habitación (Individual, Doble, Familiar, Suite)
-     * @returns {string} Icono Unicode
      */
     const getIcono = (tipo) => {
         const iconos = {
-            Individual: '🛏️',
-            Doble: '🛏️🛏️',
-            Familiar: '👨‍👩‍👧‍👦',
-            Suite: '👑',
+            individual: '🛏️',
+            doble: '🛏️🛏️',
+            familiar: '👨‍👩‍👧‍👦',
+            suite: '👑',
         };
-        return iconos[tipo] || '🏨';
+        return iconos[tipo?.toLowerCase()] || '🏨';
     };
 
     /**
      * Obtiene la URL de imagen para un tipo de habitación
-     * @param {string} tipo - Tipo de habitación
-     * @returns {string} URL de imagen Unsplash
      */
     const getImagen = (tipo) => {
         const imagenes = {
-            Individual:
-                'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop',
-            Doble: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop',
-            Familiar:
-                'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop',
-            Suite: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop',
+            individual: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop',
+            doble: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop',
+            familiar: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop',
+            suite: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop',
         };
-        return (
-            imagenes[tipo] ||
-            'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop'
-        );
+        return imagenes[tipo?.toLowerCase()] ||
+            'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop';
     };
 
     /**
      * Calcula el total de habitaciones seleccionadas
-     * @returns {number} Total de habitaciones
      */
     const getTotalHabitaciones = () => {
         return Object.values(habitacionesSeleccionadas).reduce(
@@ -164,10 +121,14 @@ export default function useHabitaciones({ paso, rango, setRango }) {
     };
 
     /**
+     * Obtiene el total de habitaciones disponibles en el rango seleccionado
+     */
+    const getTotalDisponibles = () => {
+        return habitacionesDisponibles.reduce((total, grupo) => total + grupo.cantidad, 0);
+    };
+
+    /**
      * Actualiza un campo de la selección de habitación de un tipo
-     * @param {string} tipo - Tipo de habitación
-     * @param {string} campo - Campo a actualizar (cantidad, personas)
-     * @param {any} valor - Nuevo valor
      */
     const actualizarSeleccionHabitacion = (tipo, campo, valor) => {
         setHabitacionesSeleccionadas((seleccionesActuales) => {
@@ -197,7 +158,6 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 
     /**
      * Elimina la selección de un tipo de habitación
-     * @param {string} tipo - Tipo de habitación a eliminar
      */
     const eliminarTipoHabitacion = (tipo) => {
         setHabitacionesSeleccionadas((seleccionesActuales) => {
@@ -234,6 +194,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         // Métodos de consulta
         agruparHabitacionesPorTipo,
         getTotalHabitaciones,
+        getTotalDisponibles,
 
         // Métodos de UI
         getIcono,
@@ -245,3 +206,4 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         resetSeleccion,
     };
 }
+

@@ -43,6 +43,9 @@ Route::get('/clientes/buscar', [ClienteController::class, 'buscar'])
 Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])
     ->name('reservas.disponibles');
 
+Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])
+    ->name('reservas.calcular-precio');
+
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 
 // Rutas de pagos
