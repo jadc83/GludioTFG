@@ -1,9 +1,37 @@
-import { useHabitacionControl } from '@/hooks/useHabitacionControl';
+import { useState, useEffect } from 'react';
+import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import IndexHabitacion from './IndexHabitacion';
 
 export default function TabHabitaciones({ habitaciones = [] }) {
-    const { filtros, datos, acciones } = useHabitacionControl(habitaciones);
+    const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
+        {
+            estado: 'todos',
+            tipo: 'todos',
+            capacidad: 'todos',
+            precio_min: '',
+            precio_max: '',
+            busqueda: '',
+        },
+        'panel',
+        ['habitaciones']
+    );
+
+    const [hayFiltrosActivos, setHayFiltrosActivos] = useState(false);
+
+    /**
+     * Verifica si hay filtros activos (distintos del valor inicial)
+     */
+    useEffect(() => {
+        const activos =
+            filtros.estado !== 'todos' ||
+            filtros.tipo !== 'todos' ||
+            filtros.capacidad !== 'todos' ||
+            filtros.precio_min !== '' ||
+            filtros.precio_max !== '' ||
+            filtros.busqueda !== '';
+        setHayFiltrosActivos(activos);
+    }, [filtros]);
 
     return (
         <div className="p-6">
@@ -21,7 +49,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                             className="input-bordered input w-full"
                             value={filtros.busqueda || ''}
                             onChange={(e) =>
-                                filtros.setBusqueda(e.target.value)
+                                actualizarFiltro('busqueda', e.target.value)
                             }
                         />
                     </div>
@@ -30,7 +58,9 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         <select
                             className="select-bordered select w-full"
                             value={filtros.estado}
-                            onChange={(e) => filtros.setEstado(e.target.value)}
+                            onChange={(e) =>
+                                actualizarFiltro('estado', e.target.value)
+                            }
                         >
                             <option value="todos">Todos</option>
                             <option value="disponible">Disponibles</option>
@@ -47,7 +77,9 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         <select
                             className="select-bordered select w-full"
                             value={filtros.tipo}
-                            onChange={(e) => filtros.setTipo(e.target.value)}
+                            onChange={(e) =>
+                                actualizarFiltro('tipo', e.target.value)
+                            }
                         >
                             <option value="todos">Todos</option>
                             <option value="doble">Doble</option>
@@ -63,18 +95,18 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                                 type="number"
                                 placeholder="Mín"
                                 className="input-bordered input w-full"
-                                value={filtros.precioMin || ''}
+                                value={filtros.precio_min || ''}
                                 onChange={(e) =>
-                                    filtros.setPrecioMin(e.target.value)
+                                    actualizarFiltro('precio_min', e.target.value)
                                 }
                             />
                             <input
                                 type="number"
                                 placeholder="Máx"
                                 className="input-bordered input w-full"
-                                value={filtros.precioMax || ''}
+                                value={filtros.precio_max || ''}
                                 onChange={(e) =>
-                                    filtros.setPrecioMax(e.target.value)
+                                    actualizarFiltro('precio_max', e.target.value)
                                 }
                             />
                         </div>
@@ -83,7 +115,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                     <div className="self-end">
                         <button
                             type="button"
-                            onClick={acciones.limpiarFiltros}
+                            onClick={limpiarFiltros}
                             className="btn btn-info btn-outline w-full hover:btn-info"
                         >
                             <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar
@@ -93,13 +125,30 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                 </div>
             </div>
 
-            {acciones.hayFiltrosActivos && (
+            {hayFiltrosActivos && (
                 <div className="mb-4 flex justify-end">
-                    {datos.habitacionesFiltradas.length} resultados encontrados
+                    {habitaciones.length} resultados encontrados
                 </div>
             )}
 
-            <IndexHabitacion habitaciones={datos.habitacionesFiltradas} />
+            {habitaciones.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-4 rounded-lg bg-gray-50 py-12">
+                    <p className="text-gray-600">No hay habitaciones que coincidan con los filtros aplicados</p>
+                    <button
+                        onClick={limpiarFiltros}
+                        className="btn btn-primary btn-sm"
+                    >
+                        Limpiar filtros
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <IndexHabitacion
+                        key={`${filtros.estado}-${filtros.tipo}-${filtros.capacidad}-${filtros.precio_min}-${filtros.precio_max}-${filtros.busqueda}`}
+                        habitaciones={habitaciones}
+                    />
+                </>
+            )}
         </div>
     );
 }

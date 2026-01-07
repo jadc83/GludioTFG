@@ -1,12 +1,20 @@
 import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
 import { EyeIcon, InboxIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
     const [habitacionEditar, setHabitacionEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 10;
+
+    /**
+     * Resetea la paginación cuando cambian las habitaciones
+     * (por ejemplo, cuando se filtran)
+     */
+    useEffect(() => {
+        setPaginaActual(1);
+    }, [habitaciones.length]);
 
     const abrirEdicion = (habitacion) => {
         setHabitacionEditar(habitacion);

@@ -2,6 +2,7 @@ import '@/../css/createCliente.css';
 import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { useClienteForm } from '@/hooks/useClienteForm';
+import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { UserIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
@@ -84,9 +85,11 @@ export default function CreateCliente({ iconOnly = false }) {
                                 error={errores.tipo_documento}
                                 required
                             >
-                                <option value="dni">DNI</option>
-                                <option value="pasaporte">Pasaporte</option>
-                                <option value="tie">TIE</option>
+                                {Object.entries(TIPOS_DOCUMENTO).map(([clave, valor]) => (
+                                    <option key={clave} value={valor}>
+                                        {valor.charAt(0).toUpperCase() + valor.slice(1)}
+                                    </option>
+                                ))}
                             </Campo>
                             <Campo
                                 id="numero_documento"

@@ -1,14 +1,13 @@
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { reservaSchema } from '../utils/reservaSchema';
+import { CONFIG_RESERVAS } from '@/utils/constantes';
 import useHabitaciones from './useHabitaciones';
-import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '../utils/precios';
 
 export default function useReservaForm() {
     const page = usePage();
     const usuarioActual = page?.props?.auth?.user ?? null;
+    const csrfToken = page?.props?.csrf_token ?? '';
     const flashIdReserva = page?.props?.flash?.reserva_id ?? null;
     const flashLocalizador = page?.props?.flash?.localizador ?? null;
 
@@ -48,8 +47,7 @@ export default function useReservaForm() {
         setValue,
         getValues,
     } = useForm({
-        resolver: zodResolver(reservaSchema),
-        mode: 'onChange',
+        mode: 'onSubmit',
         defaultValues: {
             name: usuarioActual?.name || '',
             email: usuarioActual?.email || '',
@@ -73,6 +71,7 @@ export default function useReservaForm() {
         getIcono,
         getImagen,
         getTotalHabitaciones,
+        getTotalDisponibles,
         actualizarSeleccionHabitacion,
         limpiarRango,
     } = useHabitaciones({
@@ -88,6 +87,22 @@ export default function useReservaForm() {
         if (pasoActual === 1 && (!rango?.from || !rango?.to)) {
             setMensajeError('Selecciona un rango de fechas.');
             return;
+        }
+
+        // Validar límite máximo de habitaciones en paso 2
+        if (pasoActual === 2) {
+            const totalHabitaciones = getTotalHabitaciones();
+            const totalDisponibles = habitacionesDisponibles.length;
+
+            if (totalHabitaciones > CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA) {
+                setMensajeError(`No puedes reservar más de ${CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA} habitaciones por reserva.`);
+                return;
+            }
+
+            if (totalHabitaciones > totalDisponibles) {
+                setMensajeError(`No puedes reservar más de ${totalDisponibles} habitaciones disponibles.`);
+                return;
+            }
         }
 
         // Si hay usuario logueado y está en paso 1, saltar a paso 2 (habitaciones)
@@ -124,108 +139,112 @@ export default function useReservaForm() {
 
     /**
      * Calcula el monto total a pagar basado en las habitaciones seleccionadas
-     * @returns {number} Monto total en moneda
      */
-    const calcularMontoTotal = () => {
+    const calcularMontoTotal = async () => {
         if (!rango?.from || !rango?.to) return 0;
 
-        let montoTotal = 0;
-
-        Object.entries(habitacionesSeleccionadas).forEach(([tipoHabitacion, seleccion]) => {
-            if (seleccion.cantidad > 0) {
-                // Usar precio base fijo por tipo, NO el de la BD
-                const precioBase = obtenerPrecioBasePorTipo(tipoHabitacion);
-
-                if (precioBase > 0) {
-                    // calcularPrecioDinamico ya devuelve el TOTAL de toda la estancia
-                    const precioTotalEstancia = calcularPrecioDinamico(
-                        precioBase,
-                        rango.from,
-                        rango.to,
-                    );
-
-                    // Solo multiplicar por cantidad de habitaciones
-                    montoTotal += precioTotalEstancia * seleccion.cantidad;
-                }
-            }
-        });
-
-        return montoTotal;
-    };
-
-    /**
-     * Envía la reserva al servidor
-     */
-    const confirmarReserva = async () => {
-        const valoresFormulario = getValues();
-
-        // Transformar habitaciones seleccionadas al formato esperado
-        const datosHabitacionesSeleccionadas = Object.entries(habitacionesSeleccionadas)
-            .filter(([, seleccion]) => seleccion.cantidad > 0)
-            .map(([tipoHabitacion, seleccion]) => ({
-                tipo: tipoHabitacion,
+        // Preparar datos para enviar al servidor
+        const habitacionesArray = Object.entries(habitacionesSeleccionadas)
+            .filter(([_, seleccion]) => seleccion.cantidad > 0)
+            .map(([tipo, seleccion]) => ({
+                tipo: tipo,
                 cantidad: seleccion.cantidad,
-                personas_por_habitacion:
-                    Number(seleccion.personas) > 0 ? Number(seleccion.personas) : 1,
             }));
 
-        // Construir objeto de reserva
-        const datosReserva = {
-            ...valoresFormulario,
-            check_in: rango?.from,
-            check_out: rango?.to,
-            habitaciones: datosHabitacionesSeleccionadas,
-            reservable_id: idClienteSeleccionado,
-            tipo_usuario: tipoClienteSeleccionado,
-        };
+        if (habitacionesArray.length === 0) return 0;
 
-        // Si un usuario está reservando para cliente, incluir user_id
-        if (
-            datosReserva.tipo_usuario === 'cliente' &&
-            usuarioActual
-        ) {
-            datosReserva.booked_by_user_id = usuarioActual.id;
-        }
-
-        // Enviar al servidor
-        router.post('/reservas', datosReserva, {
-            onSuccess: () => {
-                manejarExitoReserva();
-            },
-            onError: (errors) => {
-                manejarErrorReserva(errors);
-            },
-        });
-    };
-
-    /**
-     * Maneja el éxito de la creación de reserva
-     */
-    const manejarExitoReserva = () => {
         try {
-            const drawerCheckbox = document.getElementById('drawer-toggle');
-            if (drawerCheckbox) {
-                drawerCheckbox.checked = false;
+            const payload = {
+                check_in: rango.from.toISOString().split('T')[0],
+                check_out: rango.to.toISOString().split('T')[0],
+                habitaciones: habitacionesArray,
+            };
+
+            const response = await fetch('/reservas/calcular-precio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                console.error('Error HTTP al calcular precio:', response.statusText);
+                return 0;
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.data?.total) {
+                return data.data.total;
+            } else {
+                console.error('Error en respuesta de precio:', data.error);
+                return 0;
             }
         } catch (error) {
-            console.error('⚠️ Error closing drawer:', error);
+            console.error('Error en calcularMontoTotal:', error);
+            return 0;
         }
-
-        // Resetear estado
-        setPasoActual(1);
-        setRango({ from: undefined, to: undefined });
-        setConsulta('');
     };
 
     /**
-     * Maneja los errores de creación de reserva
+     * ✅ AHORA EN BACKEND: La creación de reserva está en ReservaService
+     * El frontend solo prepara datos básicos y deja la transformación al servidor
+     * Esta función se mantiene para referencia de flujo UI
      */
-    const manejarErrorReserva = (errors) => {
-        const msError =
-            errors.message ||
-            Object.values(errors)[0] ||
-            'Error al crear la reserva';
-        setMensajeError(msError);
+    const confirmarReserva = async () => {
+        // El servidor ahora maneja toda la validación y transformación
+        // Solo recibimos el estado final de la reserva
+        const valoresFormulario = getValues();
+
+        const datosReserva = {
+            name: valoresFormulario.name,
+            email: valoresFormulario.email,
+            telefono: valoresFormulario.telefono,
+            tipo_documento: valoresFormulario.tipo_documento,
+            numero_documento: valoresFormulario.numero_documento,
+            nacionalidad: valoresFormulario.nacionalidad,
+            direccion: valoresFormulario.direccion,
+            check_in: rango?.from,
+            check_out: rango?.to,
+            habitaciones: Object.entries(habitacionesSeleccionadas)
+                .filter(([, seleccion]) => seleccion.cantidad > 0)
+                .map(([tipoHabitacion, seleccion]) => ({
+                    tipo: tipoHabitacion,
+                    cantidad: seleccion.cantidad,
+                    personas_por_habitacion: Number(seleccion.personas) > 0 ? Number(seleccion.personas) : 1,
+                })),
+            reservable_id: idClienteSeleccionado,
+            tipo_usuario: tipoClienteSeleccionado,
+            booked_by_user_id: usuarioActual?.id || null,
+        };
+
+        router.post('/reservas', datosReserva, {
+            onSuccess: () => {
+                // Resetear estado
+                setPasoActual(1);
+                setRango({ from: undefined, to: undefined });
+                setMensajeError('');
+
+                // Cerrar drawer si existe
+                try {
+                    const drawerCheckbox = document.getElementById('drawer-toggle');
+                    if (drawerCheckbox) {
+                        drawerCheckbox.checked = false;
+                    }
+                } catch (error) {
+                    console.error('⚠️ Error closing drawer:', error);
+                }
+
+                // Recargar la página para refrescar los datos (especialmente habitaciones en panel)
+                router.reload();
+            },
+            onError: (errors) => {
+                const msError = errors.message || Object.values(errors)[0] || 'Error al crear la reserva';
+                setMensajeError(msError);
+            },
+        });
     };
 
     return {
@@ -257,6 +276,7 @@ export default function useReservaForm() {
         // Habitaciones seleccionadas
         habitacionesSeleccionadas,
         getTotalHabitaciones,
+        getTotalDisponibles,
         actualizarSeleccionHabitacion,
 
         // Métodos de UI

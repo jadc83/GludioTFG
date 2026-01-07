@@ -7,6 +7,7 @@ use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use Illuminate\Support\Facades\Log;
 
 class PagoController extends Controller
 {
@@ -62,17 +63,25 @@ class PagoController extends Controller
                 'reserva_id' => $reserva->id,
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
-            \Log::error('Stripe API Error: ' . $e->getMessage());
+            Log::error('Stripe API Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error' => 'Error de Stripe: ' . $e->getMessage(),
+                'error' => 'Error al procesar el pago. Por favor, intenta con una tarjeta diferente.',
             ], 400);
         } catch (\Exception $e) {
-            \Log::error('Payment Intent Error: ' . $e->getMessage());
+            Log::error('Payment Intent Error: ' . $e->getMessage());
+
+            if (str_contains($e->getMessage(), 'llave duplicada') || str_contains($e->getMessage(), 'UNIQUE')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Los datos ya están registrados en el sistema.',
+                ], 400);
+            }
+
             return response()->json([
                 'success' => false,
-                'error' => 'Error al crear PaymentIntent: ' . $e->getMessage(),
-            ], 500);
+                'error' => 'No se pudo crear la reserva. Por favor, intenta nuevamente.',
+            ], 400);
         }
     }
 
@@ -99,6 +108,9 @@ class PagoController extends Controller
                 // Actualizar estado de reserva
                 $pago->reserva->update(['pago' => 'pagado']);
 
+                // Marcar habitaciones como ocupadas
+                $pago->reserva->marcarHabitacionesComoOcupadas();
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Pago completado exitosamente',
@@ -114,9 +126,11 @@ class PagoController extends Controller
             }
         } catch (\Exception $e) {
             $pago->marcarComoFallido();
+            Log::error('Confirmar Pago Error: ' . $e->getMessage());
 
             return response()->json([
-                'error' => $e->getMessage(),
+                'success' => false,
+                'error' => 'No se pudo confirmar el pago. Por favor, intenta nuevamente.',
             ], 400);
         }
     }
@@ -145,6 +159,8 @@ class PagoController extends Controller
                 if ($pago) {
                     $pago->marcarComoPagado();
                     $pago->reserva->update(['pago' => 'pagado']);
+                    // Marcar habitaciones como ocupadas
+                    $pago->reserva->marcarHabitacionesComoOcupadas();
                 }
             } elseif ($event->type === 'payment_intent.payment_failed') {
                 $paymentIntent = $event->data->object;

@@ -1,6 +1,7 @@
 import '@/../css/createHabitacion.css';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
+import { TIPOS_HABITACION } from '@/utils/constantes';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
@@ -74,9 +75,11 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 onChange={cambiar}
                                 error={errores.tipo}
                             >
-                                <option value="doble">Doble</option>
-                                <option value="suite">Suite</option>
-                                <option value="familiar">Familiar</option>
+                                {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
+                                    <option key={clave} value={valor}>
+                                        {valor.charAt(0).toUpperCase() + valor.slice(1)}
+                                    </option>
+                                ))}
                             </Campo>
 
                             <Campo

@@ -2,6 +2,7 @@ import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { calcularNoches, formatearMoneda } from '@/utils/formatters';
 import {
     ArrowLeftIcon,
     CalendarIcon,
@@ -396,18 +397,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                     Noches:
                                                 </span>
                                                 <span className="font-mono text-lg font-bold">
-                                                    {Math.ceil(
-                                                        (new Date(
-                                                            form.check_out,
-                                                        ) -
-                                                            new Date(
-                                                                form.check_in,
-                                                            )) /
-                                                            (1000 *
-                                                                60 *
-                                                                60 *
-                                                                24),
-                                                    )}
+                                                    {calcularNoches(new Date(form.check_in), new Date(form.check_out))}
                                                 </span>
                                             </div>
                                             <div className="divider my-2"></div>

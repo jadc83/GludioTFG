@@ -5,7 +5,7 @@ import Paso3Datos from './reservas/Paso3Datos';
 import Paso4Confirmacion from './reservas/Paso4Confirmacion';
 import PrimaryButton from './PrimaryButton';
 import TypingAnimation from './TypingAnimation';
-import { calcularPrecioDinamico, obtenerPrecioBase } from '../utils/precios';
+import { formatearFecha, calcularNoches, obtenerDiaDelaSemana } from '../utils/formatters';
 import '../../css/createHabitacion.css';
 import '../../css/estiloCalendario.css';
 import '../../css/estiloMenuLateral.css';
@@ -62,38 +62,13 @@ export default function MenuLateral() {
     );
 
     // Calcular noches
-    const noches = hook.rango?.from && hook.rango?.to
-        ? Math.ceil((new Date(hook.rango.to) - new Date(hook.rango.from)) / (1000 * 60 * 60 * 24))
-        : 0;
-
-    // Formatear fecha corta (DD/MM/YYYY)
-    const formatearFechaCorta = (fecha) => {
-        if (!fecha) return '—';
-        return new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    };
-
-    // Formatear fecha legible
-    const formatearFechaLegible = (fecha) => {
-        if (!fecha) return '';
-        return new Date(fecha).toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
+    const noches = hook.rango?.from && hook.rango?.to ? calcularNoches(hook.rango.from, hook.rango.to) : 0;
 
     // Manejar selección de rango
-    const handleSeleccionRango = (nuevoRango) => {
-        hook.setRango(nuevoRango);
-        // No cerrar el calendario automáticamente para que pueda ajustar
+    const handleSeleccionRango = (nuevoRango) => { hook.setRango(nuevoRango);
     };
 
     const montoTotal = hook.calcularMontoTotal ? hook.calcularMontoTotal() : 0;
-
-    // Formatear día con nombre completo
-    const formatearNombreDia = (date) => {
-        return date.toLocaleDateString('es-ES', { weekday: 'short' });
-    };
 
     return (
         <>
@@ -126,8 +101,6 @@ export default function MenuLateral() {
                             idClienteSeleccionado={hook.idClienteSeleccionado}
                             tipoClienteSeleccionado={hook.tipoClienteSeleccionado}
                             habitacionesDisponibles={hook.habitacionesDisponibles}
-                            calcularPrecioDinamico={calcularPrecioDinamico}
-                            obtenerPrecioBase={obtenerPrecioBase}
                         />
                     </div>
                 </div>
@@ -135,14 +108,14 @@ export default function MenuLateral() {
 
             {/* RESTO DEL CONTENIDO */}
 
-            {/* BARRA STICKY COMPACTA */}
+            {/* BARRA STICKY */}
             {!esPanelControl && (
             <div className="sticky top-16 z-40 bg-gradient-to-r from-gris via-white to-gris border-b border-gray-200 shadow-md">
-                <div className="px-4 py-3">
-                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                <div className="px-4 py-3 relative">
+                    <div className="flex items-center gap-3">
 
                         {/* ICONO + INPUTS DE FECHA */}
-                        <div className="flex items-center gap-4">
+                        <div className="flex-1 flex items-center justify-center gap-3">
                             <div className="hidden sm:flex items-center gap-1 text-[#7a0202]">
                                 <CalendarIcon className="w-5 h-5" />
                             </div>
@@ -153,9 +126,9 @@ export default function MenuLateral() {
                                 </label>
                                 <button
                                     onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
-                                    className="px-4 py-2 min-w-32 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner"
+                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner"
                                 >
-                                    {hook.rango?.from ? formatearFechaCorta(hook.rango.from) : '—'}
+                                    {hook.rango?.from ? formatearFecha(hook.rango.from, 'corta') : '—'}
                                 </button>
 
                                 {/* Calendario Range */}
@@ -166,7 +139,7 @@ export default function MenuLateral() {
                                             <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
                                                 <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
                                                     locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
-                                                    formatters={{ formatWeekdayName: (date) => formatearNombreDia(date)}} />
+                                                    formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
                                             </div>
                                             <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
                                                 <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
@@ -192,9 +165,9 @@ export default function MenuLateral() {
                                 </label>
                                 <button
                                     onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')}
-                                    className="px-4 py-2 min-w-32 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!hook.rango?.from}>
-                                    {hook.rango?.to ? formatearFechaCorta(hook.rango.to) : '—'}
+                                    {hook.rango?.to ? formatearFecha(hook.rango.to, 'corta') : '—'}
                                 </button>
 
                                 {/* Calendario Range Salida */}
@@ -205,7 +178,7 @@ export default function MenuLateral() {
                                             <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
                                                 <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
                                                     locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
-                                                    formatters={{ formatWeekdayName: (date) => formatearNombreDia(date)}} />
+                                                    formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
                                             </div>
                                             <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
                                                 <button
@@ -227,20 +200,20 @@ export default function MenuLateral() {
                                 )}
                             </div>
                             {noches > 0 && (
-                                <div className="flex flex-row items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
                                     <span className="text-xs font-semibold text-gray-600">Noches:</span>
-                                    <span className="text-sm font-bold text-[#7a0202] bg-red-50 px-2 py-0.5 rounded">{noches}</span>
+                                    <span className="text-xs font-bold text-[#7a0202]">{noches}</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* ESPACIADOR */}
-                        <div className="flex-grow"></div>
-
                         {/* TYPING ANIMATION - CTA/PUBLICIDAD */}
-                        <div className="hidden sm:block px-4 py-1">
+                        <div className="hidden lg:block px-2 py-1 absolute right-4">
                             <div className="text-xs">
                                 <TypingAnimation words={[
+                                        'Pago seguro con Stripe',
+                                        '🔒 Tus datos protegidos',
+                                        'Gestiona tu reserva desde cualquier lugar',
                                         'Cancelación gratuita hasta 48h antes de la llegada',
                                         '+5000 clientes satisfechos']}
                                     typeSpeed={60} deleteSpeed={40} pauseDelay={2500} loop={true}/>

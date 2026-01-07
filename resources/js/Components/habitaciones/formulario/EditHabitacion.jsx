@@ -1,6 +1,7 @@
 import '@/../css/createHabitacion.css';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
+import { TIPOS_HABITACION } from '@/utils/constantes';
 import {
     CheckCircleIcon,
     CogIcon,
@@ -76,9 +77,11 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     onChange={cambiar}
                                     className={`campo-select ${errores.tipo ? 'error' : ''}`}
                                 >
-                                    <option value="doble">Doble</option>
-                                    <option value="suite">Suite</option>
-                                    <option value="familiar">Familiar</option>
+                                    {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
+                                        <option key={clave} value={valor}>
+                                            {valor.charAt(0).toUpperCase() + valor.slice(1)}
+                                        </option>
+                                    ))}
                                 </select>
                                 {errores.tipo && (
                                     <span className="campo-error">

@@ -9,17 +9,21 @@ use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
 use App\Models\Reserva;
 use App\Models\User;
+use App\Services\ReservaService;
+use App\Services\HabitacionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ReservaController extends Controller
 {
     public function index(Request $request)
     {
-        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion', 'bookedBy'])
+        $reservas = Reserva::withReservable()
+            ->with(['habitaciones.habitacion', 'bookedBy'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
@@ -39,6 +43,12 @@ class ReservaController extends Controller
     public static function formatear($reservas)
     {
         return $reservas->map(function ($reserva) {
+            // Obtener el nombre del cliente/usuario
+            $nombreCliente = 'Sin cliente';
+            if ($reserva->reservable) {
+                $nombreCliente = $reserva->reservable->name ?? 'Sin cliente';
+            }
+
             return [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -49,7 +59,7 @@ class ReservaController extends Controller
                 'pago' => $reserva->pago,
                 'notas' => $reserva->notas,
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
-                'cliente_name' => $reserva->reservable->name ?? 'Sin cliente',
+                'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
                 'habitacion_numero' => $reserva->habitaciones->count() ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ') : 'Sin asignar',
             ];
@@ -63,38 +73,60 @@ class ReservaController extends Controller
 
     public function store(StoreReservaRequest $request)
     {
-        [$persona_id, $tipo_persona] = $this->porPersona($request);
+        $reservaService = new ReservaService();
 
-        if (!$persona_id) {
-            return back()->withErrors(['error' => 'Persona requerida']);
-        }
+        Log::info('Crear Reserva - Datos recibidos:', $request->all());
 
         try {
-            return DB::transaction(function () use ($request, $persona_id, $tipo_persona) {
+            // Preparar y validar datos
+            $datosValidados = $reservaService->prepararDatosReserva($request->all());
 
-                do {
-                    $localizador = 'G' . strtoupper(Str::random(6));
-                } while (Reserva::where('localizador', $localizador)->exists());
+            // Verificar disponibilidad
+            $reservaService->verificarDisponibilidad(
+                $datosValidados['habitaciones'],
+                $datosValidados['check_in'],
+                $datosValidados['check_out']
+            );
 
+            // Obtener o crear cliente (si no hay usuario logeado)
+            if ($datosValidados['tipo_usuario'] === 'usuario') {
+                // Usar el usuario logeado
+                $datosValidados['reservable_id'] = Auth::id();
+            } else {
+                // Obtener o crear cliente
+                $clienteId = $reservaService->obtenerOCrearCliente($datosValidados);
+                $datosValidados['reservable_id'] = $clienteId;
+                $datosValidados['tipo_usuario'] = 'cliente';
+            }
+
+            return DB::transaction(function () use ($reservaService, $datosValidados, $request) {
+                // Generar localizador único
+                $localizador = $reservaService->generarLocalizador();
+
+                // Crear reserva
+                $reservableType = $datosValidados['tipo_usuario'] === 'usuario' ? User::class : Cliente::class;
                 $reserva = Reserva::create([
                     'localizador' => $localizador,
-                    'reservable_id' => $persona_id,
-                    'reservable_type' => $tipo_persona,
+                    'reservable_id' => $datosValidados['reservable_id'],
+                    'reservable_type' => $reservableType,
                     'booked_by_user_id' => Auth::user()->id ?? null,
-                    'check_in' => $request->check_in,
-                    'check_out' => $request->check_out,
-                    'precio_total' => 0,
+                    'check_in' => $datosValidados['check_in'],
+                    'check_out' => $datosValidados['check_out'],
+                    'precio_total' => $datosValidados['precio_total'],
                     'status' => $request->status ?? 'pendiente',
                     'pago' => $request->pago ?? 'pendiente',
-                    'notas' => $request->notas ?? "Reserva creada in-situ"
+                    'notas' => $request->notas ?? "Reserva creada",
                 ]);
 
-                $precioTotalReal = $this->asignarHabitacionesAutomaticamente($reserva, $request);
-                $reserva->update(['precio_total' => $precioTotalReal]);
+                // Asignar habitaciones
+                $this->asignarHabitaciones($reserva, $datosValidados['habitaciones']);
+
+                // Marcar habitaciones como ocupadas cuando se crea la reserva
+                $reserva->marcarHabitacionesComoOcupadas();
 
                 $respuesta = [
                     'success' => true,
-                    'message' => "Reserva {$localizador} creada (Total: €{$precioTotalReal})",
+                    'message' => "Reserva {$localizador} creada (Total: €{$datosValidados['precio_total']})",
                     'localizador' => $localizador,
                     'reserva_id' => $reserva->id
                 ];
@@ -109,8 +141,101 @@ class ReservaController extends Controller
                     ->with('localizador', $localizador);
             });
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
+            Log::error('Error en ReservaController::store', [
+                'mensaje' => $e->getMessage(),
+                'archivo' => $e->getFile(),
+                'linea' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Intentar parsear si es JSON (para cliente_existe_sin_confirmacion)
+            $decodificado = json_decode($e->getMessage(), true);
+            if (is_array($decodificado) && isset($decodificado['codigo'])) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'cliente_existe_sin_confirmacion',
+                        'cliente_existente' => $decodificado['cliente_existente'],
+                    ], 409);
+                }
+            }
+
+            $mensajeAmigable = $this->obtenerMensajeErrorAmigable($e);
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => $mensajeAmigable], 400);
+            }
+
+            return back()->withErrors(['error' => $mensajeAmigable]);
         }
+    }
+
+    /**
+     * Asigna habitaciones a una reserva
+     */
+    private function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
+    {
+        $precioService = new \App\Services\PrecioService();
+
+        foreach ($habitacionesRequeridas as $req) {
+            $tipo = $req['tipo'];
+            $cantidad = $req['cantidad'];
+
+            $habitaciones = Habitacion::where('tipo', $tipo)
+                ->limit($cantidad)
+                ->get();
+
+            // Calcular precio dinámico para este tipo de habitación
+            $precioCalculo = $precioService->calcularPrecioDinamico(
+                $tipo,
+                $reserva->check_in,
+                $reserva->check_out
+            );
+
+            $precioDinamico = $precioCalculo['total'] ?? 0;
+            $precioPorNoche = $precioCalculo['precioPromedioPorNoche'] ?? 0;
+
+            foreach ($habitaciones as $habitacion) {
+                HabitacionReserva::create([
+                    'reserva_id' => $reserva->id,
+                    'habitacion_id' => $habitacion->id,
+                    'precio' => $precioDinamico,
+                    'precio_unitario' => $precioPorNoche,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Convierte errores técnicos en mensajes amigables para el usuario
+     */
+    private function obtenerMensajeErrorAmigable(\Exception $e): string
+    {
+        $mensaje = $e->getMessage();
+
+        // Validar errores de unicidad
+        if (str_contains($mensaje, 'llave duplicada') || str_contains($mensaje, 'UNIQUE')) {
+            if (str_contains($mensaje, 'email')) {
+                return 'El correo electrónico ya está registrado en el sistema.';
+            }
+            if (str_contains($mensaje, 'numero_documento')) {
+                return 'El número de documento ya está registrado en el sistema.';
+            }
+            return 'Los datos ingresados ya existen en el sistema.';
+        }
+
+        // Errores de validación personalizados
+        if (str_contains($mensaje, 'no coinciden')) {
+            return 'Los datos proporcionados no coinciden con nuestros registros.';
+        }
+
+        // Errores de base de datos
+        if (str_contains($mensaje, 'violates foreign key')) {
+            return 'Hay un problema con los datos relacionados. Por favor, intenta de nuevo.';
+        }
+
+        // Error genérico
+        return 'Ocurrió un error al procesar tu reserva. Por favor, intenta nuevamente.';
     }
 
     private function obtenerModificadorPrecio($fecha): float
@@ -199,42 +324,29 @@ class ReservaController extends Controller
 
     public function habitacionesDisponibles(Request $request)
     {
-        $entrada = $request->check_in;
-        $salida = $request->check_out;
+        $habitacionService = new HabitacionService();
 
-        $consulta = Habitacion::with('fotos')->where('estado', 'disponible');
+        try {
+            $entrada = Carbon::parse($request->check_in);
+            $salida = Carbon::parse($request->check_out);
 
-        if ($entrada && $salida) {
-            $consulta->whereDoesntHave('reservas', function ($query) use ($entrada, $salida) {
-                $query->where('check_in', '<', $salida)
-                    ->where('check_out', '>', $entrada);
-            });
+            if (!$entrada || !$salida) {
+                return response()->json(['error' => 'Fechas inválidas'], 400);
+            }
+
+            // Obtener disponibles del servicio (agrupados por tipo y con precios)
+            $disponibles = $habitacionService->obtenerDisponibles($entrada, $salida);
+
+            // Si no hay disponibles, devolver array vacío
+            if (empty($disponibles)) {
+                return response()->json([]);
+            }
+
+            return response()->json($disponibles);
+        } catch (\Exception $e) {
+            Log::error('Error en habitacionesDisponibles: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al cargar habitaciones'], 400);
         }
-
-        $habitaciones = $consulta->orderBy('numero')->get();
-
-        $habitacionesFormateadas = $habitaciones->map(function ($habitacion) {
-            return [
-                'id' => $habitacion->id,
-                'numero' => $habitacion->numero,
-                'tipo' => $habitacion->tipo,
-                'precio_noche' => $habitacion->precio_noche,
-                'capacidad' => $habitacion->capacidad,
-                'estado' => $habitacion->estado,
-                'descripcion' => $habitacion->descripcion,
-                'notas' => $habitacion->notas,
-                'fotos' => $habitacion->fotos->map(function ($foto) {
-                    return [
-                        'id' => $foto->id,
-                        'ruta' => $foto->ruta,
-                        'orden' => $foto->orden,
-                        'url' => asset('storage/' . $foto->ruta)
-                    ];
-                })->values()
-            ];
-        })->values();
-
-        return response()->json($habitacionesFormateadas);
     }
 
     public function show(Reserva $reserva)
@@ -370,6 +482,11 @@ class ReservaController extends Controller
 
                 $reserva->update(['precio_total' => $precioTotal]);
 
+                // Si la reserva está confirmada o pagada, marcar habitaciones como ocupadas
+                if ($validated['status'] === 'confirmada' || $validated['pago'] === 'pagado') {
+                    $reserva->marcarHabitacionesComoOcupadas();
+                }
+
                 return redirect()->route('panel')->with('success', "✅ Reserva {$reserva->localizador} actualizada correctamente.");
             });
         } catch (\Exception $e) {
@@ -425,7 +542,7 @@ class ReservaController extends Controller
 
     private function nuevoCliente($request)
     {
-        // Verificar si ya existe un cliente con este DNI (documento único)
+        // Buscar cliente existente por DNI
         if ($request->numero_documento) {
             $clienteExistente = Cliente::where('numero_documento', $request->numero_documento)->first();
             if ($clienteExistente) {
@@ -437,6 +554,27 @@ class ReservaController extends Controller
             }
         }
 
+        // Buscar cliente existente por email
+        if ($request->email) {
+            $clienteExistente = Cliente::where('email', $request->email)->first();
+            if ($clienteExistente) {
+                return [$clienteExistente->id, Cliente::class];
+            }
+        }
+
+        // Procesar la dirección - puede venir como array o string
+        $direccion = $request->direccion ?? 'Sin dirección';
+        if (is_array($direccion)) {
+            // Si es un array, combinar los componentes en una cadena
+            $partes = array_filter([
+                $direccion['calle'] ?? null,
+                $direccion['codigo_postal'] ?? null,
+                $direccion['ciudad'] ?? null,
+                $direccion['pais'] ?? null,
+            ]);
+            $direccion = !empty($partes) ? implode(', ', $partes) : 'Sin dirección';
+        }
+
         $cliente = Cliente::create([
             'name' => $request->name,
             'email' => $request->email ?? null,
@@ -444,9 +582,56 @@ class ReservaController extends Controller
             'tipo_documento' => $request->tipo_documento ?? 'dni',
             'numero_documento' => $request->numero_documento,
             'nacionalidad' => $request->nacionalidad ?? '',
-            'direccion' => $request->direccion ?? 'Sin dirección',
+            'direccion' => $direccion,
         ]);
 
         return [$cliente->id, Cliente::class];
     }
+
+    /**
+     * Calcula el precio dinámico para una reserva
+     * POST /reservas/calcular-precio
+     */
+    public function calcularPrecio(Request $request)
+    {
+        $validated = $request->validate([
+            'check_in' => 'required|date_format:Y-m-d',
+            'check_out' => 'required|date_format:Y-m-d|after:check_in',
+            'habitaciones' => 'required|array|min:1',
+            'habitaciones.*.tipo' => 'required|string|in:doble,familiar,suite',
+            'habitaciones.*.cantidad' => 'required|integer|min:1',
+        ]);
+
+        try {
+            $precioService = new \App\Services\PrecioService();
+            $checkIn = Carbon::createFromFormat('Y-m-d', $validated['check_in']);
+            $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
+
+            $resultado = $precioService->calcularMontoTotal( $validated['habitaciones'], $checkIn, $checkOut);
+
+            if (isset($resultado['error'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $resultado['error'],
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $resultado,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en calcularPrecio', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al calcular precio: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
+
