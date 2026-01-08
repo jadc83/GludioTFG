@@ -173,25 +173,32 @@ class ReservaController extends Controller
      */
     private function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
     {
-        $precioService = new \App\Services\PrecioService();
-
         foreach ($habitacionesRequeridas as $req) {
             $tipo = $req['tipo'];
             $cantidad = $req['cantidad'];
 
+            // Obtener habitaciones disponibles del tipo solicitado
             $habitaciones = Habitacion::where('tipo', $tipo)
+                ->where('estado', 'disponible')
+                ->whereDoesntHave('reservas', function ($query) use ($reserva) {
+                    // Excluir conflictos con otras reservas en el mismo período
+                    $query->where('reserva_id', '!=', $reserva->id)
+                          ->where('check_in', '<', $reserva->check_out)
+                          ->where('check_out', '>', $reserva->check_in);
+                })
                 ->limit($cantidad)
                 ->get();
 
-            // Calcular precio dinámico para este tipo de habitación
-            $precioCalculo = $precioService->calcularPrecioDinamico(
+            if ($habitaciones->count() < $cantidad) {
+                throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
+            }
+
+            // Calcular precio usando precios base fijos (nunca precio_noche de BD)
+            $precioPorHabitacion = $this->calcularPrecioConPreciosBase(
                 $tipo,
                 $reserva->check_in,
                 $reserva->check_out
             );
-
-            $precioDinamico = $precioCalculo['total'] ?? 0;
-            $precioPorNoche = $precioCalculo['precioPromedioPorNoche'] ?? 0;
 
             foreach ($habitaciones as $habitacion) {
                 HabitacionReserva::create([
@@ -199,11 +206,63 @@ class ReservaController extends Controller
                     'habitacion_id' => $habitacion->id,
                     'check_in' => $reserva->check_in,
                     'check_out' => $reserva->check_out,
-                    'precio' => $precioDinamico,
-                    'precio_unitario' => $precioPorNoche,
+                    'precio' => $precioPorHabitacion,
                 ]);
             }
         }
+    }
+
+    /**
+     * Calcula el precio de una habitación usando precios base fijos (como el frontend)
+     */
+    private function calcularPrecioConPreciosBase($tipo, $checkIn, $checkOut): float
+    {
+        $preciosBase = [ 'doble' => 75, 'familiar' => 125, 'suite' => 200 ];
+
+        $tipo = strtolower(trim($tipo));
+        $precioBase = $preciosBase[$tipo] ?? 0;
+
+        if ($precioBase <= 0) {
+            return 0;
+        }
+
+        $total = 0;
+        $fecha = Carbon::parse($checkIn)->copy();
+        $fechaFin = Carbon::parse($checkOut);
+
+        while ($fecha->lt($fechaFin)) {
+            $multiplicador = 1.0;
+
+            $mes = $fecha->month;
+            $dia = $fecha->day;
+
+            // Temporada alta: Julio, Agosto, Diciembre 20+
+            if ($mes === 7 || $mes === 8 || ($mes === 12 && $dia >= 20)) {
+                $multiplicador *= 1.5;
+            }
+
+            // Temporada media: Marzo 15+, Abril
+            if (($mes === 3 && $dia >= 15) || $mes === 4) {
+                $multiplicador *= 1.2;
+            }
+
+            // Fin de semana: Sábado o Domingo
+            if ($fecha->isWeekend()) {
+                $multiplicador *= 1.25;
+            }
+
+            // Festivos españoles
+            $fechaFormato = $fecha->format('m-d');
+            $festivos = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-25'];
+            if (in_array($fechaFormato, $festivos)) {
+                $multiplicador *= 1.5;
+            }
+
+            $total += round($precioBase * $multiplicador, 2);
+            $fecha->addDay();
+        }
+
+        return round($total, 2);
     }
 
     /**
@@ -389,15 +448,15 @@ class ReservaController extends Controller
             ->orderBy('numero')
             ->get()
             ->map(function ($hab) use ($habitacionesActualesIds, $checkIn, $checkOut) {
-                $precioService = new \App\Services\PrecioService();
-                $precioDinamico = $precioService->calcularPrecioDinamico($hab->tipo, $checkIn, $checkOut);
+                // Usar precios base fijos, nunca precio_noche de BD
+                $precioDinamico = $this->calcularPrecioConPreciosBase($hab->tipo, $checkIn, $checkOut);
 
                 return [
                     'id' => $hab->id,
                     'numero' => $hab->numero,
                     'tipo' => $hab->tipo,
                     'precio_noche' => $hab->precio_noche,
-                    'precio_total' => $precioDinamico['total'],
+                    'precio_total' => $precioDinamico,
                     'capacidad' => $hab->capacidad,
                     'estado' => $hab->estado,
                     'es_actual' => in_array($hab->id, $habitacionesActualesIds)
@@ -447,7 +506,12 @@ class ReservaController extends Controller
 
                 foreach ($habitacionIds as $habitacionId) {
                     $habitacion = Habitacion::findOrFail($habitacionId);
-                    $precioHabitacion = $this->calcularPrecioEntreFechas($habitacion, $checkIn, $checkOut);
+                    // Usar precios base fijos, nunca precio_noche de BD
+                    $precioHabitacion = $this->calcularPrecioConPreciosBase(
+                        $habitacion->tipo,
+                        $checkIn,
+                        $checkOut
+                    );
 
                     HabitacionReserva::create([
                         'reserva_id' => $reserva->id,
@@ -647,7 +711,7 @@ class ReservaController extends Controller
                 if ($reserva->status === 'cancelada') {
                     $razon = 'No se pueden extender reservas canceladas';
                 } else {
-                    $razon = "Solo puedes extender 24 horas antes del checkout. Tienes $horasHastaCheckout horas disponibles";
+                    $razon = 'Solo puedes extender 24 horas antes del checkout';
                 }
             }
 
@@ -758,13 +822,17 @@ class ReservaController extends Controller
                 ], 422);
             }
 
-            // Calcular precio de la extensión
+            // Calcular precio de la extensión usando precios base fijos
             $precioExtenso = 0;
 
             foreach ($reserva->habitaciones as $habitacionReserva) {
                 $habitacion = $habitacionReserva->habitacion;
-                // Calcular precio para los nuevos días
-                $precioExtenso += $this->calcularPrecioEntreFechas($habitacion, $checkOut, $nuevoCheckOut);
+                // Calcular precio para los nuevos días usando precios base, nunca precio_noche de BD
+                $precioExtenso += $this->calcularPrecioConPreciosBase(
+                    $habitacion->tipo,
+                    $checkOut,
+                    $nuevoCheckOut
+                );
             }
 
             // Verificar si necesita pago (solo si la reserva ya está PAGADA)
@@ -825,6 +893,54 @@ class ReservaController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Error al extender la reserva: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Recalcula los precios de todas las reservas basándose en sus habitaciones
+     * Esta es una operación de mantenimiento para arreglar precios históricos incorrectos
+     */
+    public function recalcularPreciosReservas()
+    {
+        try {
+            $reservas = Reserva::with(['habitaciones.habitacion'])->get();
+            $actualizadas = 0;
+
+            foreach ($reservas as $reserva) {
+                $precioTotal = 0;
+
+                foreach ($reserva->habitaciones as $habitacionReserva) {
+                    // Usar el método calcularPrecioEntreFechas para recalcular consistentemente
+                    if ($habitacionReserva->habitacion) {
+                        $precioDia = $this->calcularPrecioEntreFechas(
+                            $habitacionReserva->habitacion,
+                            $habitacionReserva->check_in ?? $reserva->check_in,
+                            $habitacionReserva->check_out ?? $reserva->check_out
+                        );
+                        $precioTotal += $precioDia;
+
+                        // Actualizar el precio en la tabla habitacion_reserva
+                        $habitacionReserva->update(['precio' => $precioDia]);
+                    }
+                }
+
+                // Actualizar el precio_total en la tabla reserva
+                if ($precioTotal > 0) {
+                    $reserva->update(['precio_total' => $precioTotal]);
+                    $actualizadas++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Se recalcularon los precios de {$actualizadas} reservas.",
+                'actualizadas' => $actualizadas,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al recalcular precios: ' . $e->getMessage(),
             ], 500);
         }
     }
