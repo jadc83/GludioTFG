@@ -15,6 +15,10 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
+Route::get('/terminos', function () {
+    return Inertia::render('TerminosCondiciones');
+})->name('terminos');
+
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])
     ->name('reserva.show');
 

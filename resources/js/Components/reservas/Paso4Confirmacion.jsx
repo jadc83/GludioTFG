@@ -188,12 +188,18 @@ export default function Paso4Confirmacion({
                                 </div>
                             )}
 
-                            {/* Huésped, fechas y habitaciones */}
+                            {/* Información de la reserva */}
                             <div className="grid grid-cols-5 gap-0.5 w-full">
                                 {/* Huésped */}
                                 <div className="px-1 text-center">
                                     <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
                                     <p className="text-[11px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
+                                </div>
+
+                                {/* Fechas */}
+                                <div className="px-1 text-center">
+                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
+                                    <p className="text-[11px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
                                 </div>
 
                                 {/* Estancia */}
@@ -205,12 +211,6 @@ export default function Paso4Confirmacion({
                                             return `${numeroNoches} noche${numeroNoches !== 1 ? 's' : ''}`;
                                         })()}
                                     </p>
-                                </div>
-
-                                {/* Fechas */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
-                                    <p className="text-[11px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
                                 </div>
 
                                 {/* Precio por Noche */}

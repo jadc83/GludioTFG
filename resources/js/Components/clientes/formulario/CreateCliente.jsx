@@ -11,32 +11,20 @@ export default function CreateCliente({ iconOnly = false }) {
 
     const { formulario, cambiar, errores, enviar, limpiar } = useClienteForm(
         null,
-        () => {
-            setAbierto(false);
-            limpiar();
-        },
+        () => { setAbierto(false); limpiar();
+        }
     );
 
-    const handleCerrar = () => {
-        setAbierto(false);
-        limpiar();
-    };
+    const handleCerrar = () => { setAbierto(false); limpiar();};
 
     return (
         <>
-            <PrimaryButton
-                onClick={() => setAbierto(true)}
-                title="Nuevo Cliente"
-                aria-label="Nuevo Cliente"
-            >
-                <UserIcon className="h-5 w-5" />
-                {!iconOnly && ' Nuevo Cliente'}
+            <PrimaryButton onClick={() => setAbierto(true)} title="Nuevo Cliente" aria-label="Nuevo Cliente">
+                <UserIcon className="h-5 w-5" /> {!iconOnly && ' Nuevo Cliente'}
             </PrimaryButton>
 
             <dialog className={`drawer-modal ${abierto ? 'modal-open' : ''}`}>
-                <div
-                    className={`drawer-panel ${abierto ? 'abierto' : 'cerrado'}`}
-                >
+                <div className={`drawer-panel ${abierto ? 'abierto' : 'cerrado'}`}>
                     <header className="drawer-header">
                         <h3 className="drawer-titulo">Alta de Cliente</h3>
                         <button onClick={handleCerrar} className="btn-cerrar">
@@ -46,78 +34,32 @@ export default function CreateCliente({ iconOnly = false }) {
 
                     <form onSubmit={enviar} className="form-cliente">
                         <div className="form-grid">
-                            <Campo
-                                id="name"
-                                label="Nombre Completo"
-                                value={formulario.name}
-                                onChange={cambiar}
-                                error={errores.name}
-                                required
-                            />
-                            <Campo
-                                id="email"
-                                label="Email"
-                                type="email"
-                                value={formulario.email}
-                                onChange={cambiar}
-                                error={errores.email}
-                                required
-                            />
+                            <Campo id="name" label="Nombre Completo" value={formulario.name} onChange={cambiar}
+                                error={errores.name} required />
+                            <Campo id="email" label="Email" type="email" value={formulario.email} onChange={cambiar}
+                                error={errores.email} required/>
                         </div>
 
-                        <Campo
-                            id="telefono"
-                            label="Teléfono"
-                            type="tel"
-                            value={formulario.telefono}
-                            onChange={cambiar}
-                            error={errores.telefono}
-                            classNameExtra="font-mono"
-                        />
+                        <Campo id="telefono" label="Teléfono" type="tel" value={formulario.telefono} onChange={cambiar}
+                            error={errores.telefono} classNameExtra="font-mono"/>
 
                         <div className="form-grid">
-                            <Campo
-                                id="tipo_documento"
-                                label="Tipo Documento"
-                                as="select"
-                                value={formulario.tipo_documento}
-                                onChange={cambiar}
-                                error={errores.tipo_documento}
-                                required
-                            >
+                            <Campo id="tipo_documento" label="Tipo Documento" as="select" value={formulario.tipo_documento}
+                                onChange={cambiar} error={errores.tipo_documento} required>
                                 {Object.entries(TIPOS_DOCUMENTO).map(([clave, valor]) => (
                                     <option key={clave} value={valor}>
                                         {valor.charAt(0).toUpperCase() + valor.slice(1)}
                                     </option>
                                 ))}
                             </Campo>
-                            <Campo
-                                id="numero_documento"
-                                label="Número Documento"
-                                value={formulario.numero_documento}
-                                onChange={cambiar}
-                                error={errores.numero_documento}
-                                required
-                                classNameExtra="font-mono"
-                            />
+                            <Campo id="numero_documento" label="Número Documento" value={formulario.numero_documento}
+                                onChange={cambiar} required classNameExtra="font-mono" error={errores.numero_documento}/>
                         </div>
 
-                        <Campo
-                            id="nacionalidad"
-                            label="Nacionalidad"
-                            value={formulario.nacionalidad}
-                            onChange={cambiar}
-                            error={errores.nacionalidad}
-                        />
-                        <Campo
-                            id="direccion"
-                            label="Dirección"
-                            as="textarea"
-                            rows={2}
-                            value={formulario.direccion}
-                            onChange={cambiar}
-                            error={errores.direccion}
-                        />
+                        <Campo id="nacionalidad" label="Nacionalidad" value={formulario.nacionalidad}
+                            onChange={cambiar} error={errores.nacionalidad} />
+                        <Campo id="direccion" label="Dirección" as="textarea" rows={2} value={formulario.direccion}
+                            onChange={cambiar} error={errores.direccion} />
 
                         <PrimaryButton type="submit" className="mt-4 w-full">
                             Guardar Cliente

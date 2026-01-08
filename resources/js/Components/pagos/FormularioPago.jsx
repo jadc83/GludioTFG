@@ -161,66 +161,40 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
     return (
         <div className="w-full">
-            <form onSubmit={procesarPago} className="space-y-3">
+            <form onSubmit={procesarPago} className="space-y-2">
                 {procesando && (
-                    <div className="space-y-2 text-center py-2">
-                        <div className="text-sm text-gray-600">
-                            <p>Procesando pago...</p>
-                            <div className="mt-2 flex justify-center">
-                                <div className="inline-block animate-spin">
-                                    <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full"></div>
-                                </div>
+                    <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 text-center">
+                        <div className="flex justify-center mb-2">
+                            <div className="inline-block animate-spin">
+                                <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full"></div>
                             </div>
                         </div>
+                        <p className="text-xs font-medium text-blue-900">Procesando pago...</p>
+                        <p className="text-xs text-blue-700 mt-0.5">No cierres esta ventana</p>
                     </div>
                 )}
 
-                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-700">Monto a pagar:</span>
-                        <span className="text-base font-bold text-gray-900">{formatearMoneda(monto)}</span>
-                    </div>
-                </div>
-
                 {/* Dirección de Facturación */}
-                <div className="rounded-lg p-2 bg-gris">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
                         Dirección de Facturación
                     </label>
 
                     <div className="mb-2">
-                        <input
-                            type="text"
-                            placeholder="Calle y número"
-                            value={direccion.calle}
-                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
-                            required
-                        />
+                        <input type="text" placeholder="Calle y número" value={direccion.calle} onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            required/>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                        <input
-                            type="text"
-                            placeholder="Ciudad"
-                            value={direccion.ciudad}
-                            onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
-                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Código Postal"
-                            value={direccion.codigo_postal}
-                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
-                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
-                            required
-                        />
-                        <select
-                            value={direccion.pais}
-                            onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
-                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-600"
-                        >
+                    <div className="grid grid-cols-3 gap-2">
+                        <input type="text" placeholder="Ciudad" value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            required/>
+                        <input type="text" placeholder="Código Postal" value={direccion.codigo_postal} onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            required/>
+                        <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
                             <option value="ES">España</option>
                             <option value="FR">Francia</option>
                             <option value="PT">Portugal</option>
@@ -231,51 +205,56 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                     </div>
                 </div>
 
-                <div className="rounded-lg p-3 bg-white">
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Datos de la tarjeta
+                {/* Datos de la tarjeta */}
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                        Datos de la Tarjeta
                     </label>
-                    <CardElement
-                        options={{
-                            hidePostalCode: true,
-                            style: {
-                                base: {
-                                    fontSize: '14px',
-                                    color: '#424770',
-                                    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                                    '::placeholder': {
-                                        color: '#aab7c4',
+                    <div className="border border-gray-300 rounded-lg p-3 bg-white">
+                        <CardElement
+                            options={{
+                                hidePostalCode: true,
+                                style: {
+                                    base: {
+                                        fontSize: '14px',
+                                        color: '#1f2937',
+                                        fontFamily: '"Inter", sans-serif',
+                                        '::placeholder': {
+                                            color: '#9ca3af',
+                                        },
+                                    },
+                                    invalid: {
+                                        color: '#dc2626',
                                     },
                                 },
-                                invalid: {
-                                    color: '#fa755a',
-                                },
-                            },
-                        }}
-                    />
+                            }}
+                        />
+                    </div>
                 </div>
 
+                {/* Mensaje de estado */}
                 {mensaje && (
-                    <div className={`p-2 rounded text-xs ${
-                        mensaje.includes('Error')
-                            ? 'bg-red-50 border border-red-200 text-red-700'
-                            : 'bg-green-50 border border-green-200 text-green-700'
-                    }`}>
-                        {mensaje}
+                    <div className={`rounded-lg p-3 text-xs border ${
+                        mensaje.includes('Error') ? 'bg-red-100 border-red-300 text-red-800' : 'bg-green-100 border-green-300 text-green-800'  }`}>
+                        <p className="font-medium mb-0.5">
+                            {mensaje.includes('Error') ? 'Error' : 'Éxito'}
+                        </p>
+                        <p className="opacity-90">{mensaje}</p>
                     </div>
                 )}
 
-                <button
-                    type="submit"
-                    disabled={procesando || !stripe}
-                    className={`w-full py-2 px-3 rounded font-medium text-sm transition ${
-                        procesando || !stripe
-                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                            : 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800'
-                    }`}
-                >
-                    {procesando ? 'Procesando pago...' : 'Confirmar pago'}
+                {/* Botón de confirmación */}
+                <button type="submit" disabled={procesando || !stripe}
+                    className={`w-full py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
+                        procesando || !stripe ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
+                    }`}>
+                    {procesando ? 'Procesando pago...' : 'Confirmar Pago'}
                 </button>
+
+                {/* Nota de seguridad */}
+                <p className="text-xs text-center text-gray-500">
+                    Pago seguro por <strong>Stripe</strong>
+                </p>
             </form>
         </div>
     );
@@ -287,12 +266,7 @@ export default function FormularioPago({ reservaData, monto, onPagoExitoso, onEr
 
     return (
         <Elements stripe={stripePromise}>
-            <FormularioPagoInterno
-                reservaData={reservaData}
-                monto={monto}
-                onPagoExitoso={onPagoExitoso}
-                onError={onError}
-            />
+            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} />
         </Elements>
     );
 }

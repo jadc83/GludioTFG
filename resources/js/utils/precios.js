@@ -81,7 +81,6 @@ export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
 
  */
 export function obtenerPrecioBase(habitacionesDisponibles, tipo) {
-    // Usar precios fijos por tipo, NO los de la BD
     return obtenerPrecioBasePorTipo(tipo);
 }
 

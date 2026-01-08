@@ -40,12 +40,12 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                                                 {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
                                             </p>
                                             <p className="text-[10px] text-gray-500 mt-0.5">
-                                                {r.cantidad} hab × {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
+                                                {r.cantidad} Hab × {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
                                             </p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[10px] text-gray-600 mb-0.5">
-                                                {formatearMoneda(precioPorNoche)}/n
+                                                {formatearMoneda(precioPorNoche)}/noche
                                             </p>
                                             <p className="text-[11px] font-bold text-[#7a0202]">
                                                 {formatearMoneda(subtotal)}
@@ -75,7 +75,7 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                             <div>
                                 <p className="text-[10px] text-gray-600 mb-0.5">Total a pagar</p>
                                 <p className="text-[10px] font-semibold text-gray-700">
-                                    {getTotalHabitaciones()} hab · {numeroNoches}n
+                                    {getTotalHabitaciones()} habitación{getTotalHabitaciones() !== 1 ? 'es' : ''} · {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -92,7 +92,7 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                         <div>
                             <p className="text-[10px] text-gray-600 mb-0.5">Total a pagar</p>
                             <p className="text-[10px] font-semibold text-gray-700">
-                                1 hab · {numeroNoches}n
+                                1 habitación · {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
                             </p>
                         </div>
                         <div className="text-right">

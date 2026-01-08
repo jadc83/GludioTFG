@@ -1,5 +1,6 @@
 import PrimaryButton from '../PrimaryButton';
 import FormularioPago from '../pagos/FormularioPago';
+import { useState } from 'react';
 
 export default function OpcionesPago({
     pagarAlLlegar,
@@ -19,43 +20,40 @@ export default function OpcionesPago({
     setErrorPago,
     errorPago,
 }) {
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
     return (
-        <div className="space-y-1">
-            {/* Opción de pago - PRIMERO elegir, LUEGO mostrar formulario */}
-            <div className="pt-1 space-y-1">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Forma de Pago</h4>
-                <div className="flex gap-1">
-                    <label className="flex-1 flex items-center gap-1 p-2 rounded border-2 cursor-pointer transition text-xs"
-                        style={{ borderColor: !pagarAlLlegar ? '#dc2626' : '#d1d5db', backgroundColor: !pagarAlLlegar ? '#fef2f2' : '#f3f4f6'}}>
+        <div className="bg-gris rounded-lg p-3 space-y-2">
+            {/* Opción de pago */}
+            <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">Forma de Pago</h4>
+                <div className="flex justify-center gap-4">
+                    <label className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs">
                         <input type="radio" name="metodoPago" checked={!pagarAlLlegar} onChange={() => {
                                 setPagarAlLlegar(false);
                                 setOpcionPagoSeleccionada(true);
                             }} className="h-3 w-3 cursor-pointer" />
-                        <span className="font-medium text-gray-900 text-[11px]">Tarjeta</span>
+                        <span className="text-sm">💳</span>
+                        <span className="font-medium text-gray-900 text-xs">Tarjeta</span>
                     </label>
 
-                    <label className="flex-1 flex items-center gap-1 p-2 rounded border-2 cursor-pointer transition text-xs"
-                        style={{ borderColor: pagarAlLlegar ? '#7a0202' : '#d1d5db', backgroundColor: pagarAlLlegar ? '#fef2f2' : '#f3f4f6'}}>
+                    <label className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs">
                         <input type="radio" name="metodoPago" checked={pagarAlLlegar} onChange={() => {
                                 setPagarAlLlegar(true);
                                 setOpcionPagoSeleccionada(true);}}
                             className="h-3 w-3 cursor-pointer"/>
-                        <span className="font-medium text-gray-900 text-[11px]">En recepción</span>
+                        <span className="text-sm">🏨</span>
+                        <span className="font-medium text-gray-900 text-xs">En recepción</span>
                     </label>
                 </div>
             </div>
-
-            {/* Formulario de Pago o Confirmación */}
-            <div className="border-t border-gray-200 pt-0.5 mt-0.5">
                 {!opcionPagoSeleccionada && (
-                    <div className="text-center py-0.5 text-[11px] text-gray-500">
+                    <div className="text-center py-2 text-xs text-gray-500">
                         <p>Selecciona una forma de pago</p>
                     </div>
                 )}
 
                 {opcionPagoSeleccionada && !pagarAlLlegar && (
                     <>
-                        <h4 className="mb-0.5 text-center text-xs font-bold text-gray-900">Formulario de Pago</h4>
                         <FormularioPago reservaData={prepararDatosReserva()} monto={monto} pagarAlLlegar={false}
                                         onPagoExitoso={(data) => { const localizadorDelPago = data?.localizador || localizador;
                                             setDatosReservaConfirmada({ localizador: localizadorDelPago,
@@ -69,18 +67,34 @@ export default function OpcionesPago({
                 )}
 
                 {opcionPagoSeleccionada && pagarAlLlegar && (
-                    <div className="text-center py-0.5">
-                        <p className="text-gray-600 mb-0.5 text-[11px]">Pago en recepción.</p>
-                        <button onClick={crearReservaAlLlegar} disabled={procesando}
-                            className="inline-flex items-center justify-center rounded bg-[#7a0202] px-2.5 py-1 font-semibold text-white text-xs hover:bg-[#6b0101] transition disabled:bg-gray-400 disabled:cursor-not-allowed">
-                            {procesando ? 'Creando...' : 'Confirmar'}
+                    <div className="text-center py-2">
+                        <p className="text-gray-600 mb-2 text-xs">Pago en recepción</p>
+                        <button onClick={crearReservaAlLlegar} disabled={procesando || !aceptaTerminos}
+                            className="w-full bg-black text-white py-2 rounded-lg font-semibold text-xs uppercase tracking-wider hover:bg-[#7a0202] transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            {procesando ? 'Creando...' : 'Confirmar Reserva'}
                         </button>
                     </div>
                 )}
-            </div>
+
+            {/* Términos y condiciones */}
+            {opcionPagoSeleccionada && (
+                <div className="border-t border-gray-300 pt-2 mt-2">
+                    <label className="flex items-center justify-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={aceptaTerminos}
+                            onChange={(e) => setAceptaTerminos(e.target.checked)}
+                            className="h-3 w-3 cursor-pointer accent-black"
+                        />
+                        <span className="text-xs text-gray-700 text-center leading-tight">
+                            Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.
+                        </span>
+                    </label>
+                </div>
+            )}
 
             {errorPago && (
-                <div className="rounded border border-red-200 bg-red-50 p-0.5 text-[11px] text-red-700">
+                <div className="rounded border border-red-200 bg-red-100 p-2 text-xs text-red-800">
                     {errorPago}
                 </div>
             )}
