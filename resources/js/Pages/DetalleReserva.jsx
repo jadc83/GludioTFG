@@ -2,8 +2,11 @@ import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, Envel
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { useState } from 'react';
+import ExtenderReserva from '@/Components/reservas/ExtenderReserva';
 
 export default function DetalleReserva({ reserva }) {
+    const [mostrarExtender, setMostrarExtender] = useState(false);
 
     const getStatusBadge = (status) => {
         const colors = {
@@ -164,6 +167,27 @@ export default function DetalleReserva({ reserva }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Botón de extensión de estadía */}
+                        {mostrarExtender && (
+                            <ExtenderReserva
+                                reserva={reserva}
+                                onClose={() => {
+                                    setMostrarExtender(false);
+                                    // Opcionalmente recargar los datos de la reserva
+                                    window.location.reload();
+                                }}
+                            />
+                        )}
+
+                        {!mostrarExtender && (
+                            <button
+                                onClick={() => setMostrarExtender(true)}
+                                className="w-full bg-gradient-to-r from-[#7a0202] to-[#920303] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
+                            >
+                                🏨 Extender tu estadía
+                            </button>
+                        )}
 
                         {/* Botón Volver */}
                         <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm">

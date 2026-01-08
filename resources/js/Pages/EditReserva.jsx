@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import ExtenderReserva from '@/Components/reservas/ExtenderReserva';
 
 export default function EditReserva({ reserva, habitaciones }) {
     const [form, setForm] = useState({
@@ -26,6 +27,7 @@ export default function EditReserva({ reserva, habitaciones }) {
     const [errores, setErrores] = useState({});
     const [guardando, setGuardando] = useState(false);
     const [recalculando, setRecalculando] = useState(false);
+    const [mostrarExtender, setMostrarExtender] = useState(false);
 
     const cambiar = (e) => {
         const { name, value } = e.target;
@@ -412,6 +414,27 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         </div>
                                     </div>
                                 </div>
+
+                                {mostrarExtender && (
+                                    <ExtenderReserva
+                                        reserva={reserva}
+                                        onClose={() => {
+                                            setMostrarExtender(false);
+                                            window.location.reload();
+                                        }}
+                                    />
+                                )}
+
+                                {!mostrarExtender && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setMostrarExtender(true)}
+                                        className="btn btn-outline btn-block"
+                                        style={{ borderColor: '#920303', color: '#920303' }}
+                                    >
+                                        🏨 Extender estadía
+                                    </button>
+                                )}
 
                                 <div className="card bg-base-100 shadow">
                                     <div className="card-body p-6">
