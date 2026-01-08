@@ -3,16 +3,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
-import {
-    ArrowLeftIcon,
-    CalendarIcon,
-    CurrencyEuroIcon,
-    HomeIcon,
-    UserIcon,
-} from '@heroicons/react/24/outline';
+import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '@/utils/precios';
+import { ArrowLeftIcon, CalendarIcon, CurrencyEuroIcon, HomeIcon, UserIcon} from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ExtenderReserva from '@/Components/reservas/ExtenderReserva';
+import FormularioPago from '@/Components/pagos/FormularioPago';
 
 export default function EditReserva({ reserva, habitaciones }) {
     const [form, setForm] = useState({
@@ -28,6 +24,9 @@ export default function EditReserva({ reserva, habitaciones }) {
     const [guardando, setGuardando] = useState(false);
     const [recalculando, setRecalculando] = useState(false);
     const [mostrarExtender, setMostrarExtender] = useState(false);
+    const [mostrarPago, setMostrarPago] = useState(false);
+    const [montoAdicional, setMontoAdicional] = useState(0);
+    const [pendienteGuardar, setPendienteGuardar] = useState(null);
 
     const manejarExtensionExitosa = (nuevoCheckOut) => {
         console.log('Nuevo checkout recibido:', nuevoCheckOut);
@@ -82,17 +81,19 @@ export default function EditReserva({ reserva, habitaciones }) {
         )
             return 0;
 
-        const dias = Math.ceil(
-            (new Date(form.check_out) - new Date(form.check_in)) /
-                (1000 * 60 * 60 * 24),
-        );
-
         const total = form.habitacion_ids.reduce((sum, habId) => {
             const habitacion = habitaciones.find((h) => h.id === habId);
             if (!habitacion) {
                 return sum;
             }
-            return sum + parseFloat(habitacion.precio_noche) * dias;
+            // Usar calcularPrecioDinamico del frontend para garantizar consistencia
+            // Evita depender de datos del backend que pueden estar incorrectos
+            const precioDinamico = calcularPrecioDinamico(
+                habitacion,
+                form.check_in,
+                form.check_out
+            );
+            return sum + precioDinamico;
         }, 0);
 
         return total.toFixed(2);
@@ -100,9 +101,26 @@ export default function EditReserva({ reserva, habitaciones }) {
 
     const enviar = (e) => {
         e.preventDefault();
+
+        const nuevoTotal = parseFloat(calcularPrecioTotal());
+        const diferencia = nuevoTotal - parseFloat(reserva.precio_total);
+
+        // Si la reserva está pagada y hay incremento de precio, mostrar pago primero
+        if (reserva.pago === 'pagado' && diferencia > 0) {
+            setMontoAdicional(diferencia);
+            setPendienteGuardar(form);
+            setMostrarPago(true);
+            return;
+        }
+
+        // Si no hay pago requerido, guardar directamente
+        guardarReserva(form);
+    };
+
+    const guardarReserva = (formData) => {
         setGuardando(true);
 
-        router.put(`/reservas/${reserva.id}`, form, {
+        router.put(`/reservas/${reserva.id}`, formData, {
             preserveScroll: true,
             onSuccess: () => {
                 router.visit('/panel');
@@ -110,9 +128,22 @@ export default function EditReserva({ reserva, habitaciones }) {
             onError: (errors) => {
                 setErrores(errors);
                 setGuardando(false);
+                setMostrarPago(false);
             },
             onFinish: () => setGuardando(false),
         });
+    };
+
+    const handlePagoExitoso = () => {
+        setMostrarPago(false);
+        if (pendienteGuardar) {
+            guardarReserva(pendienteGuardar);
+        }
+    };
+
+    const handlePagoError = (err) => {
+        setErrores({ pago: err });
+        setMostrarPago(false);
     };
 
     const cancelar = () => {
@@ -121,44 +152,26 @@ export default function EditReserva({ reserva, habitaciones }) {
 
     return (
         <AuthenticatedLayout>
-            <div className="min-h-screen bg-base-200 py-4">
+            <div className="min-h-screen bg-gris py-4">
                 <div className="mx-auto max-w-7xl px-4">
                     {Object.keys(errores).length > 0 && (
-                        <div className="toast toast-end toast-top z-50">
-                            <div className="alert alert-error shadow-lg">
-                                <div>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-6 w-6 flex-shrink-0 stroke-current"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                    </svg>
-                                    <div>
-                                        <h3 className="font-bold">
-                                            Error de validación
-                                        </h3>
-                                        <div className="text-xs">
-                                            {Object.values(errores).map(
-                                                (error, idx) => (
-                                                    <div key={idx}>
-                                                        {Array.isArray(error)
-                                                            ? error[0]
-                                                            : error}
-                                                    </div>
-                                                ),
-                                            )}
+                        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                            <h3 className="font-bold text-red-700 mb-2">Error de validación</h3>
+                            <div className="text-red-600 text-sm space-y-1">
+                                {Object.values(errores).map(
+                                    (error, idx) => (
+                                        <div key={idx}>
+                                            {Array.isArray(error)
+                                                ? error[0]
+                                                : error}
                                         </div>
-                                    </div>
-                                </div>
-                                <button onClick={() => setErrores({})} className="btn btn-ghost btn-sm">✕</button>
+                                    ),
+                                )}
                             </div>
+                            <button onClick={() => setErrores({})}
+                                className="text-red-500 hover:text-red-700 text-xs mt-2 underline" >
+                                Descartar
+                            </button>
                         </div>
                     )}
 
@@ -197,12 +210,12 @@ export default function EditReserva({ reserva, habitaciones }) {
                     <form onSubmit={enviar} className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                             <div className="space-y-4 xl:col-span-2">
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
                                             <UserIcon
                                                 className="h-5 w-5"
-                                                style={{ color: '#920303' }}
+                                                style={{ color: '#7a0202' }}
                                             />
                                             <h3 className="font-bold">
                                                 Cliente
@@ -226,13 +239,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                                     </div>
                                 </div>
 
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <CalendarIcon
-                                                className="h-5 w-5"
-                                                style={{ color: '#920303' }}
-                                            />
+                                            <CalendarIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
                                             <h3 className="font-bold">
                                                 Fechas de Reserva
                                             </h3>
@@ -246,10 +256,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                                     </div>
                                 </div>
 
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <HomeIcon className="h-5 w-5" style={{ color: '#920303' }}/>
+                                            <HomeIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
                                             <h3 className="font-bold">
                                                 Habitaciones
                                             </h3>
@@ -277,20 +287,14 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                     <div key={habitacion.id} onClick={() => toggleHabitacion( habitacion.id)
                                                         }
                                                         className={`card cursor-pointer border-2 transition-all ${
-                                                            isSelected ? 'border-[#920303] bg-red-50' : 'border-transparent bg-base-200 hover:border-base-300'
+                                                            isSelected ? 'border-[#7a0202] bg-red-50' : 'border-transparent bg-gris hover:border-gray-300'
                                                         }`}>
                                                         <div className="card-body p-3">
                                                             <div className="mb-2 flex items-center justify-between">
                                                                 <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm"
-                                                                    style={{
-                                                                        accentColor:
-                                                                            '#920303',
-                                                                    }}
-                                                                />
+                                                                    style={{ accentColor: '#7a0202'}}/>
                                                                 <span className="font-mono font-bold">
-                                                                    {
-                                                                        habitacion.numero
-                                                                    }
+                                                                    { habitacion.numero }
                                                                 </span>
                                                                 {esActual && (
                                                                     <span className="badge badge-info badge-xs">
@@ -303,9 +307,14 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                 <div className="text-xs"> Capacidad:{' '}
                                                                     <span className="font-mono font-semibold">{ habitacion.capacidad}</span>
                                                                 </div>
-                                                                <div className="font-mono text-sm font-bold" style={{ color: '#920303' }}>
-                                                                    { habitacion.precio_total ? habitacion.precio_total.toFixed(2) : habitacion.precio_noche } €
+                                                                <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
+                                                                    { obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche
                                                                 </div>
+                                                                {form.check_in && form.check_out && (
+                                                                    <div className="text-xs text-gray-500">
+                                                                        Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -323,13 +332,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                             </div>
 
                             <div className="space-y-4 xl:col-span-1">
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <CurrencyEuroIcon
-                                                className="h-5 w-5"
-                                                style={{ color: '#920303' }}
-                                            />
+                                            <CurrencyEuroIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
                                             <h3 className="font-bold">
                                                 Resumen
                                             </h3>
@@ -361,11 +367,22 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                     €{calcularPrecioTotal()}
                                                 </span>
                                             </div>
+                                            <button type="button" onClick={() => setMostrarExtender(true)}
+                                                className="w-full py-3 px-4 rounded-lg font-semibold mt-4"
+                                                style={{ backgroundColor: '#7a0202', color: 'white' }}>
+                                                Ampliar reserva
+                                            </button>
+
+                                            {mostrarExtender && (
+                                                <div className="mt-4">
+                                                     <ExtenderReserva reserva={reserva} onClose={manejarExtensionExitosa}/>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="space-y-4">
                                             <div>
@@ -374,13 +391,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         Estado Reserva
                                                     </span>
                                                 </label>
-                                                <select
-                                                    id="status"
-                                                    name="status"
-                                                    value={form.status}
-                                                    onChange={cambiar}
-                                                    className="select-bordered select w-full"
-                                                >
+                                                <select id="status" name="status" value={form.status} onChange={cambiar}
+                                                    className="select-bordered select w-full border-gray-300 focus:border-burgundy">
                                                     <option value="pendiente">
                                                         Pendiente
                                                     </option>
@@ -415,13 +427,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         Estado Pago
                                                     </span>
                                                 </label>
-                                                <select
-                                                    id="pago"
-                                                    name="pago"
-                                                    value={form.pago}
-                                                    onChange={cambiar}
-                                                    className="select-bordered select w-full"
-                                                >
+                                                <select id="pago" name="pago" value={form.pago} onChange={cambiar}
+                                                    className="select-bordered select w-full border-gray-300 focus:border-burgundy">
                                                     <option value="pendiente">
                                                         Pendiente
                                                     </option>
@@ -450,15 +457,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         Notas
                                                     </span>
                                                 </label>
-                                                <textarea
-                                                    id="notas"
-                                                    name="notas"
-                                                    value={form.notas || ''}
-                                                    onChange={cambiar}
-                                                    placeholder="Observaciones..."
-                                                    rows={3}
-                                                    className="textarea-bordered textarea w-full"
-                                                />
+                                                <textarea id="notas" name="notas" value={form.notas || ''} onChange={cambiar}
+                                                    placeholder="Observaciones..." rows={3} className="textarea-bordered textarea w-full border-gray-300 focus:border-burgundy"/>
                                                 {errores.notas && (
                                                     <label className="label">
                                                         <span className="label-text-alt text-error">
@@ -471,25 +471,13 @@ export default function EditReserva({ reserva, habitaciones }) {
                                     </div>
                                 </div>
 
-                                <div className="card bg-base-100 shadow">
+                                <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="flex flex-col gap-3">
-                                            <PrimaryButton
-                                                type="submit"
-                                                disabled={
-                                                    guardando ||
-                                                    form.habitacion_ids
-                                                        .length === 0
-                                                }
-                                            >
-                                                {guardando
-                                                    ? 'Guardando...'
-                                                    : 'Guardar Cambios'}
+                                            <PrimaryButton type="submit" disabled={ guardando || form.habitacion_ids.length === 0 } >
+                                                {guardando ? 'Guardando...' : 'Guardar Cambios'}
                                             </PrimaryButton>
-                                            <SecondaryButton
-                                                type="button"
-                                                onClick={cancelar}
-                                            >
+                                            <SecondaryButton type="button" onClick={cancelar}>
                                                 Cancelar
                                             </SecondaryButton>
                                         </div>
@@ -499,23 +487,25 @@ export default function EditReserva({ reserva, habitaciones }) {
                         </div>
                     </form>
 
-                    {mostrarExtender && (
-                        <ExtenderReserva
-                            reserva={reserva}
-                            onClose={manejarExtensionExitosa}
-                        />
-                    )}
-
-                    {!mostrarExtender && (
-                        <div className="mt-4">
-                            <button
-                                type="button"
-                                onClick={() => setMostrarExtender(true)}
-                                className="btn btn-outline btn-block"
-                                style={{ borderColor: '#920303', color: '#920303' }}
-                            >
-                                🏨 Extender estadía
-                            </button>
+                    {mostrarPago && montoAdicional > 0 && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                                <h2 className="text-2xl font-bold mb-4">Pago Adicional Requerido</h2>
+                                <p className="text-gray-600 mb-4">
+                                    Los cambios en la reserva requieren un pago adicional de:
+                                </p>
+                                <div className="bg-gris p-4 rounded-lg mb-4">
+                                    <div className="text-3xl font-bold text-burgundy text-center">
+                                        €{montoAdicional.toFixed(2)}
+                                    </div>
+                                </div>
+                                <FormularioPago monto={montoAdicional} onPagoExitoso={handlePagoExitoso} onError={handlePagoError}
+                                    reservaData={{ reserva_id: reserva.id, es_edicion_pago: true}} />
+                                <button type="button" onClick={() => { setMostrarPago(false); setPendienteGuardar(null);}}
+                                    className="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

@@ -244,18 +244,15 @@ class ReservaService
     {
         return Habitacion::where('tipo', $tipo)
             ->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('check_in', [$checkIn, $checkOut->copy()->subDay()])
-                      ->orWhereBetween('check_out', [$checkIn->copy()->addDay(), $checkOut]);
+                // Hay conflicto si: check_in_nueva < check_out_existente AND check_out_nueva > check_in_existente
+                $query->where('check_in', '<', $checkOut)
+                      ->where('check_out', '>', $checkIn);
             })
             ->count();
     }
 
     /**
      * Calcula la cantidad de noches de una reserva
-     * Se duplica en 4+ lugares del frontend
-     * @param Carbon|string $checkIn
-     * @param Carbon|string $checkOut
-     * @return int
      */
     public function calcularNoches($checkIn, $checkOut): int
     {
@@ -265,10 +262,6 @@ class ReservaService
     /**
      * Calcula el precio promedio por noche
      * Se usa para mostrar en desglose de factura
-     * @param float $precioTotal Precio total de la reserva
-     * @param int $noches Cantidad de noches
-     * @param int $habitaciones Cantidad de habitaciones
-     * @return float
      */
     public function calcularPrecioPromedioPorNoche($precioTotal, $noches, $habitaciones): float
     {
@@ -282,8 +275,6 @@ class ReservaService
     /**
      * Obtiene el resumen de una reserva para mostrar en pantalla
      * Unifica datos de múltiples tablas en un solo objeto
-     * @param Reserva $reserva
-     * @return array
      */
     public function obtenerResumenReserva(Reserva $reserva): array
     {

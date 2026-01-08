@@ -14,27 +14,23 @@ export function obtenerPrecioBasePorTipo(tipo) {
 
 /**
  * Calcula el precio dinámico basado en modificadores de temporada
+ * SIEMPRE usa el precio base según el tipo, nunca precio_noche de la habitación
  */
 export function calcularPrecioDinamico(habitacionOPrecio, checkIn, checkOut) {
-    // Soportar tanto objetos habitación como valores numéricos
     let precioBase;
+    let tipo = null;
 
-    if (typeof habitacionOPrecio === 'object') {
-        // Si es un objeto, intentar obtener precio_noche
-        precioBase = habitacionOPrecio.precio_noche || 0;
-        // Si no tiene precio_noche, intentar por tipo
-        if (!precioBase && habitacionOPrecio.tipo) {
-            precioBase = obtenerPrecioBasePorTipo(habitacionOPrecio.tipo);
-        }
-    } else if (typeof habitacionOPrecio === 'string') {
-        // Si es un string (tipo de habitación), obtener precio por tipo
-        precioBase = obtenerPrecioBasePorTipo(habitacionOPrecio);
-    } else {
-        // Si es número, usarlo directamente
-        precioBase = habitacionOPrecio;
+    // Obtener el tipo de habitación
+    if (typeof habitacionOPrecio === 'object' && habitacionOPrecio.tipo) {
+        tipo = habitacionOPrecio.tipo;
     }
 
-    if (!checkIn || !checkOut) return precioBase;
+    // SIEMPRE usar precio base según tipo, nunca precio_noche de la base de datos
+    precioBase = obtenerPrecioBasePorTipo(tipo);
+
+    if (!precioBase || !checkIn || !checkOut) {
+        return precioBase || 0;
+    }
 
     let total = 0;
     let fecha = new Date(checkIn);
