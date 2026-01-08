@@ -122,9 +122,6 @@ class ReservaController extends Controller
                 // Asignar habitaciones
                 $this->asignarHabitaciones($reserva, $datosValidados['habitaciones']);
 
-                // Marcar habitaciones como ocupadas cuando se crea la reserva
-                $reserva->marcarHabitacionesComoOcupadas();
-
                 $respuesta = [
                     'success' => true,
                     'message' => "Reserva {$localizador} creada (Total: €{$datosValidados['precio_total']})",
@@ -200,6 +197,8 @@ class ReservaController extends Controller
                 HabitacionReserva::create([
                     'reserva_id' => $reserva->id,
                     'habitacion_id' => $habitacion->id,
+                    'check_in' => $reserva->check_in,
+                    'check_out' => $reserva->check_out,
                     'precio' => $precioDinamico,
                     'precio_unitario' => $precioPorNoche,
                 ]);
@@ -273,43 +272,6 @@ class ReservaController extends Controller
         return $total;
     }
 
-    private function asignarHabitacionesAutomaticamente(Reserva $reserva, $request): float
-    {
-        $precioTotalReal = 0;
-
-        foreach ($request->habitaciones as $solicitud) {
-            $tipo = $solicitud['tipo'];
-            $cantidad = $solicitud['cantidad'];
-            $personas = $solicitud['personas_por_habitacion'] ?? 1;
-
-            $disponibles = Habitacion::where('tipo', $tipo)
-                ->where('capacidad', '>=', $personas)
-                ->disponiblesEntre($request->check_in, $request->check_out, $reserva->id ?? null)
-                ->orderBy('numero')
-                ->take($cantidad)
-                ->get();
-
-            if ($disponibles->count() < $cantidad) {
-                throw new \Exception("No hay suficientes habitaciones de tipo {$tipo} disponibles para las fechas seleccionadas");
-            }
-
-            foreach ($disponibles as $habitacion) {
-                $precioDinamico = $this->calcularPrecioEntreFechas($habitacion, $request->check_in, $request->check_out);
-
-                HabitacionReserva::create([
-                    'reserva_id' => $reserva->id,
-                    'habitacion_id' => $habitacion->id,
-                    'precio' => $precioDinamico,
-                    'check_in' => $request->check_in,
-                    'check_out' => $request->check_out,
-                ]);
-                $precioTotalReal += $precioDinamico;
-            }
-        }
-
-        return $precioTotalReal;
-    }
-
     public function buscar(Request $request)
     {
         $query = $request->query('query');
@@ -379,8 +341,8 @@ class ReservaController extends Controller
     {
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
 
-        $checkIn = $request->check_in ?? $reserva->check_in;
-        $checkOut = $request->check_out ?? $reserva->check_out;
+        $checkIn = Carbon::parse($request->check_in ?? $reserva->check_in);
+        $checkOut = Carbon::parse($request->check_out ?? $reserva->check_out);
 
         $reservaData = [
             'id' => $reserva->id,
@@ -426,12 +388,16 @@ class ReservaController extends Controller
             })
             ->orderBy('numero')
             ->get()
-            ->map(function ($hab) use ($habitacionesActualesIds) {
+            ->map(function ($hab) use ($habitacionesActualesIds, $checkIn, $checkOut) {
+                $precioService = new \App\Services\PrecioService();
+                $precioDinamico = $precioService->calcularPrecioDinamico($hab->tipo, $checkIn, $checkOut);
+
                 return [
                     'id' => $hab->id,
                     'numero' => $hab->numero,
                     'tipo' => $hab->tipo,
                     'precio_noche' => $hab->precio_noche,
+                    'precio_total' => $precioDinamico['total'],
                     'capacidad' => $hab->capacidad,
                     'estado' => $hab->estado,
                     'es_actual' => in_array($hab->id, $habitacionesActualesIds)
@@ -495,11 +461,6 @@ class ReservaController extends Controller
 
                 $reserva->update(['precio_total' => $precioTotal]);
 
-                // Si la reserva está confirmada o pagada, marcar habitaciones como ocupadas
-                if ($validated['status'] === 'confirmada' || $validated['pago'] === 'pagado') {
-                    $reserva->marcarHabitacionesComoOcupadas();
-                }
-
                 return redirect()->route('panel')->with('success', "✅ Reserva {$reserva->localizador} actualizada correctamente.");
             });
         } catch (\Exception $e) {
@@ -519,86 +480,6 @@ class ReservaController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'No se pudo eliminar la reserva: ' . $e->getMessage()]);
         }
-    }
-
-    private function porPersona($request): array
-    {
-        if ($persona = $this->porTipo($request)) {
-            return [$persona->id, get_class($persona)];
-        }
-
-        if ($persona = $this->porId($request->reservable_id)) {
-            return [$persona->id, get_class($persona)];
-        }
-
-        if ($request->filled('name')) {
-            return $this->nuevoCliente($request);
-        }
-
-        return [null, null];
-    }
-
-    private function porTipo($request)
-    {
-        if (!$request->reservable_id || !$request->tipo_usuario) {
-            return null;
-        }
-
-        return $request->tipo_usuario === 'usuario' ? User::find($request->reservable_id) : Cliente::find($request->reservable_id);
-    }
-
-    private function porId($id)
-    {
-        if (!$id) return null;
-        return Cliente::find($id) ?? User::find($id);
-    }
-
-    private function nuevoCliente($request)
-    {
-        // Buscar cliente existente por DNI
-        if ($request->numero_documento) {
-            $clienteExistente = Cliente::where('numero_documento', $request->numero_documento)->first();
-            if ($clienteExistente) {
-                // Validar que el nombre coincida para evitar suplantaciones
-                if ($clienteExistente->name !== $request->name) {
-                    throw new \Exception("Los datos proporcionados no coinciden con nuestros registros. Por favor, verifica tu información.");
-                }
-                return [$clienteExistente->id, Cliente::class];
-            }
-        }
-
-        // Buscar cliente existente por email
-        if ($request->email) {
-            $clienteExistente = Cliente::where('email', $request->email)->first();
-            if ($clienteExistente) {
-                return [$clienteExistente->id, Cliente::class];
-            }
-        }
-
-        // Procesar la dirección - puede venir como array o string
-        $direccion = $request->direccion ?? 'Sin dirección';
-        if (is_array($direccion)) {
-            // Si es un array, combinar los componentes en una cadena
-            $partes = array_filter([
-                $direccion['calle'] ?? null,
-                $direccion['codigo_postal'] ?? null,
-                $direccion['ciudad'] ?? null,
-                $direccion['pais'] ?? null,
-            ]);
-            $direccion = !empty($partes) ? implode(', ', $partes) : 'Sin dirección';
-        }
-
-        $cliente = Cliente::create([
-            'name' => $request->name,
-            'email' => $request->email ?? null,
-            'telefono' => $request->telefono ?? null,
-            'tipo_documento' => $request->tipo_documento ?? 'dni',
-            'numero_documento' => $request->numero_documento,
-            'nacionalidad' => $request->nacionalidad ?? '',
-            'direccion' => $direccion,
-        ]);
-
-        return [$cliente->id, Cliente::class];
     }
 
     /**
@@ -710,118 +591,6 @@ class ReservaController extends Controller
     }
 
     /**
-     * Extiende una reserva con nuevos días adicionales
-     */
-    public function extenderReserva(Request $request, $localizador)
-    {
-        try {
-            $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])
-                ->where('localizador', $localizador)
-                ->firstOrFail();
-
-            // Verificar que la reserva se puede extender (menos de 24 horas antes del checkout)
-            $checkOut = Carbon::parse($reserva->check_out);
-            $horasHastaCheckout = now()->diffInHours($checkOut);
-
-            if ($horasHastaCheckout >= 24) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'La extensión solo está disponible 24 horas antes del checkout',
-                ], 422);
-            }
-
-            if ($reserva->status === 'cancelada') {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'No se puede extender una reserva cancelada',
-                ], 422);
-            }
-
-            // Obtener datos de la extensión del request
-            $nuevoCheckOut = Carbon::parse($request->input('nuevo_check_out'));
-
-            // Validar que la nueva fecha es posterior a la actual
-            if ($nuevoCheckOut->lte($checkOut)) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'La nueva fecha debe ser posterior a la actual',
-                ], 422);
-            }
-
-            // Verificar disponibilidad de habitaciones para las nuevas fechas
-            $noches_extension = $checkOut->diffInDays($nuevoCheckOut);
-            $habitacionesNoDisponibles = [];
-
-            foreach ($reserva->habitaciones as $habitacionReserva) {
-                $habitacion = $habitacionReserva->habitacion;
-
-                // Contar reservas conflictivas en las nuevas fechas (excluyendo esta reserva)
-                $reservasConflictivas = HabitacionReserva::where('habitacion_id', $habitacion->id)
-                    ->where('reserva_id', '!=', $reserva->id)
-                    ->where('status', '!=', 'cancelada')
-                    ->where(function ($query) use ($checkOut, $nuevoCheckOut) {
-                        $query->whereBetween('check_in', [$checkOut, $nuevoCheckOut])
-                              ->orWhereBetween('check_out', [$checkOut, $nuevoCheckOut])
-                              ->orWhere(function ($q) use ($checkOut, $nuevoCheckOut) {
-                                  $q->where('check_in', '<=', $checkOut)
-                                    ->where('check_out', '>=', $nuevoCheckOut);
-                              });
-                    })
-                    ->exists();
-
-                if ($reservasConflictivas) {
-                    $habitacionesNoDisponibles[] = $habitacion->nombre;
-                }
-            }
-
-            if (!empty($habitacionesNoDisponibles)) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Las siguientes habitaciones no están disponibles para las nuevas fechas: ' . implode(', ', $habitacionesNoDisponibles),
-                ], 422);
-            }
-
-            // Calcular precio de la extensión
-            $precioService = new PrecioService();
-            $precioExtenso = 0;
-
-            foreach ($reserva->habitaciones as $habitacionReserva) {
-                $habitacion = $habitacionReserva->habitacion;
-                $precioNoche = $precioService->calcularPrecio(
-                    $habitacion,
-                    $checkOut,
-                    $nuevoCheckOut
-                );
-                $precioExtenso += $precioNoche;
-            }
-
-            // Actualizar check_out de la reserva
-            $reserva->check_out = $nuevoCheckOut;
-            $reserva->save();
-
-            // Actualizar las fechas en las relaciones HabitacionReserva
-            foreach ($reserva->habitaciones as $habitacionReserva) {
-                $habitacionReserva->check_out = $nuevoCheckOut;
-                $habitacionReserva->save();
-            }
-
-            // Retornar reserva actualizada con información de la extensión
-            return response()->json([
-                'success' => true,
-                'message' => 'Reserva extendida correctamente',
-                'reserva' => self::formatear(collect([$reserva]))->first(),
-                'precio_extension' => $precioExtenso,
-                'noches_extension' => $noches_extension,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al extender la reserva: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
      * Descarga un comprobante de reserva en PDF
      */
     public function descargarComprobante($localizador)
@@ -854,6 +623,209 @@ class ReservaController extends Controller
                 'success' => false,
                 'error' => 'No se encontró la reserva o error al generar PDF: ' . $e->getMessage(),
             ], 404);
+        }
+    }
+
+    /**
+     * Obtiene información sobre si una reserva puede extenderse
+     * GET /reservas/{localizador}/info-extension
+     */
+    public function infoExtension($localizador)
+    {
+        try {
+            $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
+
+            // Calcular horas hasta checkout
+            $checkOut = Carbon::parse($reserva->check_out);
+            $horasHastaCheckout = now()->diffInHours($checkOut, false);
+
+            // Verificar si se puede extender
+            $puedeExtender = $horasHastaCheckout < 24 && $reserva->status !== 'cancelada';
+
+            $razon = null;
+            if (!$puedeExtender) {
+                if ($reserva->status === 'cancelada') {
+                    $razon = 'No se pueden extender reservas canceladas';
+                } else {
+                    $razon = "Solo puedes extender 24 horas antes del checkout. Tienes $horasHastaCheckout horas disponibles";
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'puede_extender' => $puedeExtender,
+                'horas_hasta_checkout' => max(0, (int)$horasHastaCheckout),
+                'max_dias' => 3,
+                'razon' => $razon,
+                'check_out_actual' => $checkOut->format('Y-m-d'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
+     * Extiende una reserva con nuevos días adicionales
+     * POST /reservas/{localizador}/extender
+     */
+    public function extenderReserva(Request $request, $localizador)
+    {
+        try {
+            $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])
+                ->where('localizador', $localizador)
+                ->firstOrFail();
+
+            // Verificar que la reserva se puede extender (menos de 24 horas antes del checkout)
+            $checkOut = Carbon::parse($reserva->check_out);
+            $horasHastaCheckout = now()->diffInHours($checkOut);
+
+            if ($horasHastaCheckout >= 24) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'La extensión solo está disponible 24 horas antes del checkout',
+                ], 422);
+            }
+
+            if ($reserva->status === 'cancelada') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No se puede extender una reserva cancelada',
+                ], 422);
+            }
+
+            // Obtener número de días a extender
+            $numeroDias = (int) $request->input('numero_dias');
+
+            if ($numeroDias < 1 || $numeroDias > 3) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Debes seleccionar entre 1 y 3 días de extensión',
+                ], 422);
+            }
+
+            // Calcular nuevo checkout sumando días con Carbon
+            $nuevoCheckOut = $checkOut->copy()->addDays($numeroDias);
+
+            // Convertir a formato de fecha para comparación
+            $checkOutDate = $checkOut->format('Y-m-d');
+            $nuevoCheckOutDate = $nuevoCheckOut->format('Y-m-d');
+
+            // Verificar disponibilidad de habitaciones para las nuevas fechas (solo el período de extensión)
+            $habitacionesNoDisponibles = [];
+
+            foreach ($reserva->habitaciones as $habitacionReserva) {
+                $habitacion = $habitacionReserva->habitacion;
+
+                // Contar reservas conflictivas en el período de extensión (excluyendo esta reserva)
+                // La extensión es desde checkOut actual hasta el nuevo checkOut
+                $query = HabitacionReserva::where('habitacion_id', $habitacion->id)
+                    ->where('reserva_id', '!=', $reserva->id);
+
+                $conflictivas = $query
+                    ->whereRaw("check_in < ? AND check_out > ?", [$nuevoCheckOutDate, $checkOutDate])
+                    ->get();
+
+                // Debug: mostrar todas las reservas de esta habitación
+                $todasReservas = HabitacionReserva::where('habitacion_id', $habitacion->id)
+                    ->where('reserva_id', '!=', $reserva->id)
+                    ->get();
+
+                \Log::info('Validación extensión', [
+                    'habitacion_id' => $habitacion->id,
+                    'numero' => $habitacion->numero,
+                    'checkOut' => $checkOutDate,
+                    'nuevoCheckOut' => $nuevoCheckOutDate,
+                    'conflictivas_count' => $conflictivas->count(),
+                    'todas_reservas' => $todasReservas->map(fn($r) => [
+                        'reserva_id' => $r->reserva_id,
+                        'check_in' => $r->check_in?->format('Y-m-d'),
+                        'check_out' => $r->check_out?->format('Y-m-d'),
+                    ])->toArray(),
+                ]);
+
+                if ($conflictivas->count() > 0) {
+                    $habitacionesNoDisponibles[] = $habitacion->numero;
+                }
+            }
+
+            if (!empty($habitacionesNoDisponibles)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Las habitaciones no están disponibles para la extensión seleccionada',
+                ], 422);
+            }
+
+            // Calcular precio de la extensión
+            $precioExtenso = 0;
+
+            foreach ($reserva->habitaciones as $habitacionReserva) {
+                $habitacion = $habitacionReserva->habitacion;
+                // Calcular precio para los nuevos días
+                $precioExtenso += $this->calcularPrecioEntreFechas($habitacion, $checkOut, $nuevoCheckOut);
+            }
+
+            // Verificar si necesita pago (solo si la reserva ya está PAGADA)
+            // Si no está pagada, solo se suma al total pendiente
+            $necesitaPago = $reserva->pago === 'pagado';
+
+            // Si es confirmación sin pago requerido, actualizar directamente
+            if ($request->input('confirmar') && !$necesitaPago) {
+                $reserva->check_out = $nuevoCheckOut;
+                $reserva->precio_total += $precioExtenso;
+                $reserva->save();
+
+                // Actualizar las fechas en las relaciones HabitacionReserva
+                foreach ($reserva->habitaciones as $habitacionReserva) {
+                    $habitacionReserva->check_out = $nuevoCheckOut;
+                    $habitacionReserva->save();
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Reserva extendida correctamente',
+                    'nuevo_check_out' => $nuevoCheckOut->toDateString(),
+                    'precio_extension' => $precioExtenso,
+                    'necesita_pago' => false,
+                ]);
+            }
+
+            // Si es confirmación con pago, actualizar después de que se haya pagado
+            if ($request->input('confirmar') && $necesitaPago) {
+                $reserva->check_out = $nuevoCheckOut;
+                $reserva->precio_total += $precioExtenso;
+                $reserva->save();
+
+                // Actualizar las fechas en las relaciones HabitacionReserva
+                foreach ($reserva->habitaciones as $habitacionReserva) {
+                    $habitacionReserva->check_out = $nuevoCheckOut;
+                    $habitacionReserva->save();
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Reserva extendida correctamente',
+                    'nuevo_check_out' => $nuevoCheckOut->toDateString(),
+                    'precio_extension' => $precioExtenso,
+                    'necesita_pago' => true,
+                ]);
+            }
+
+            // Retornar información de extensión (sin aplicar aún)
+            return response()->json([
+                'success' => true,
+                'message' => 'Extensión calculada',
+                'nuevo_check_out' => $nuevoCheckOut->toDateString(),
+                'precio_extension' => $precioExtenso,
+                'necesita_pago' => $necesitaPago,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al extender la reserva: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

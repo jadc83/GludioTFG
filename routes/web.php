@@ -59,6 +59,9 @@ Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarC
 Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])
     ->name('reservas.calcular-precio');
 
+Route::get('/reservas/{localizador}/info-extension', [ReservaController::class, 'infoExtension'])
+    ->name('reservas.info-extension');
+
 Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])
     ->name('reservas.extender');
 

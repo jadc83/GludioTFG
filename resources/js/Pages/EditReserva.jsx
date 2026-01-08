@@ -29,6 +29,17 @@ export default function EditReserva({ reserva, habitaciones }) {
     const [recalculando, setRecalculando] = useState(false);
     const [mostrarExtender, setMostrarExtender] = useState(false);
 
+    const manejarExtensionExitosa = (nuevoCheckOut) => {
+        console.log('Nuevo checkout recibido:', nuevoCheckOut);
+        if (nuevoCheckOut) {
+            setForm((prev) => ({
+                ...prev,
+                check_out: nuevoCheckOut,
+            }));
+        }
+        setMostrarExtender(false);
+    };
+
     const cambiar = (e) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
@@ -146,22 +157,14 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setErrores({})}
-                                    className="btn btn-ghost btn-sm"
-                                >
-                                    ✕
-                                </button>
+                                <button onClick={() => setErrores({})} className="btn btn-ghost btn-sm">✕</button>
                             </div>
                         </div>
                     )}
 
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={cancelar}
-                                className="btn btn-ghost btn-sm btn-circle"
-                            >
+                            <button onClick={cancelar} className="btn btn-ghost btn-sm btn-circle">
                                 <ArrowLeftIcon className="h-5 w-5" />
                             </button>
                             <div>
@@ -235,26 +238,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             </h3>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <Campo
-                                                id="check_in"
-                                                label="Check-in"
-                                                type="date"
-                                                value={form.check_in}
-                                                onChange={cambiar}
-                                                error={errores.check_in}
-                                                classNameExtra="font-mono"
-                                                required
-                                            />
-                                            <Campo
-                                                id="check_out"
-                                                label="Check-out"
-                                                type="date"
-                                                value={form.check_out}
-                                                onChange={cambiar}
-                                                error={errores.check_out}
-                                                classNameExtra="font-mono"
-                                                required
-                                            />
+                                            <Campo id="check_in" label="Check-in" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
+                                                classNameExtra="font-mono" required/>
+                                            <Campo id="check_out" label="Check-out" type="date" value={form.check_out} onChange={cambiar} error={errores.check_out}
+                                                classNameExtra="font-mono" required/>
                                         </div>
                                     </div>
                                 </div>
@@ -262,10 +249,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-base-100 shadow">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <HomeIcon
-                                                className="h-5 w-5"
-                                                style={{ color: '#920303' }}
-                                            />
+                                            <HomeIcon className="h-5 w-5" style={{ color: '#920303' }}/>
                                             <h3 className="font-bold">
                                                 Habitaciones
                                             </h3>
@@ -290,28 +274,14 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                 const esActual =
                                                     habitacion.es_actual;
                                                 return (
-                                                    <div
-                                                        key={habitacion.id}
-                                                        onClick={() =>
-                                                            toggleHabitacion(
-                                                                habitacion.id,
-                                                            )
+                                                    <div key={habitacion.id} onClick={() => toggleHabitacion( habitacion.id)
                                                         }
                                                         className={`card cursor-pointer border-2 transition-all ${
-                                                            isSelected
-                                                                ? 'border-[#920303] bg-red-50'
-                                                                : 'border-transparent bg-base-200 hover:border-base-300'
-                                                        }`}
-                                                    >
+                                                            isSelected ? 'border-[#920303] bg-red-50' : 'border-transparent bg-base-200 hover:border-base-300'
+                                                        }`}>
                                                         <div className="card-body p-3">
                                                             <div className="mb-2 flex items-center justify-between">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={
-                                                                        isSelected
-                                                                    }
-                                                                    onChange={() => {}}
-                                                                    className="checkbox checkbox-sm"
+                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm"
                                                                     style={{
                                                                         accentColor:
                                                                             '#920303',
@@ -329,29 +299,12 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                 )}
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <p className="text-xs font-semibold capitalize">
-                                                                    {
-                                                                        habitacion.tipo
-                                                                    }
-                                                                </p>
-                                                                <div className="text-xs">
-                                                                    Cap:{' '}
-                                                                    <span className="font-mono font-semibold">
-                                                                        {
-                                                                            habitacion.capacidad
-                                                                        }
-                                                                    </span>
+                                                                <p className="text-xs font-semibold capitalize"> { habitacion.tipo } </p>
+                                                                <div className="text-xs"> Capacidad:{' '}
+                                                                    <span className="font-mono font-semibold">{ habitacion.capacidad}</span>
                                                                 </div>
-                                                                <div
-                                                                    className="font-mono text-sm font-bold"
-                                                                    style={{
-                                                                        color: '#920303',
-                                                                    }}
-                                                                >
-                                                                    €
-                                                                    {
-                                                                        habitacion.precio_noche
-                                                                    }
+                                                                <div className="font-mono text-sm font-bold" style={{ color: '#920303' }}>
+                                                                    { habitacion.precio_total ? habitacion.precio_total.toFixed(2) : habitacion.precio_noche } €
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -362,10 +315,7 @@ export default function EditReserva({ reserva, habitaciones }) {
 
                                         {form.habitacion_ids.length === 0 && (
                                             <div className="alert alert-warning mt-3">
-                                                <span>
-                                                    Selecciona al menos una
-                                                    habitación
-                                                </span>
+                                                <span> Selecciona al menos una habitación </span>
                                             </div>
                                         )}
                                     </div>
@@ -414,27 +364,6 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         </div>
                                     </div>
                                 </div>
-
-                                {mostrarExtender && (
-                                    <ExtenderReserva
-                                        reserva={reserva}
-                                        onClose={() => {
-                                            setMostrarExtender(false);
-                                            window.location.reload();
-                                        }}
-                                    />
-                                )}
-
-                                {!mostrarExtender && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setMostrarExtender(true)}
-                                        className="btn btn-outline btn-block"
-                                        style={{ borderColor: '#920303', color: '#920303' }}
-                                    >
-                                        🏨 Extender estadía
-                                    </button>
-                                )}
 
                                 <div className="card bg-base-100 shadow">
                                     <div className="card-body p-6">
@@ -569,6 +498,26 @@ export default function EditReserva({ reserva, habitaciones }) {
                             </div>
                         </div>
                     </form>
+
+                    {mostrarExtender && (
+                        <ExtenderReserva
+                            reserva={reserva}
+                            onClose={manejarExtensionExitosa}
+                        />
+                    )}
+
+                    {!mostrarExtender && (
+                        <div className="mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setMostrarExtender(true)}
+                                className="btn btn-outline btn-block"
+                                style={{ borderColor: '#920303', color: '#920303' }}
+                            >
+                                🏨 Extender estadía
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

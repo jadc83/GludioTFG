@@ -36,38 +36,46 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
         setProcesando(true);
 
         try {
-            // PASO 1: Crear reserva
-            const datosReservaConDireccion = { ...reservaData, direccion: direccion};
+            // Verificar si es una extensión de reserva
+            const esExtension = reservaData?.es_extension;
+            let resId = reservaData?.reserva_id;
 
-            console.log('📤 Enviando datos de reserva:', datosReservaConDireccion);
+            // PASO 1: Crear reserva (solo si no es extensión)
+            if (!esExtension) {
+                const datosReservaConDireccion = { ...reservaData, direccion: direccion};
 
-            const resReserva = await fetch('/reservas', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify(datosReservaConDireccion),
-            });
+                console.log('📤 Enviando datos de reserva:', datosReservaConDireccion);
 
-            if (!resReserva.ok) {
-                const contentType = resReserva.headers.get('content-type');
-                let errorMessage = `HTTP ${resReserva.status}`;
-                if (contentType?.includes('application/json')) {
-                    const error = await resReserva.json();
-                    console.error('Error de servidor:', error);
-                    errorMessage = error.message || error.error || errorMessage;
-                } else {
-                    const text = await resReserva.text();
-                    console.error('Error de texto:', text);
-                    errorMessage = `Error ${resReserva.status}`;
+                const resReserva = await fetch('/reservas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(datosReservaConDireccion),
+                });
+
+                if (!resReserva.ok) {
+                    const contentType = resReserva.headers.get('content-type');
+                    let errorMessage = `HTTP ${resReserva.status}`;
+                    if (contentType?.includes('application/json')) {
+                        const error = await resReserva.json();
+                        console.error('Error de servidor:', error);
+                        errorMessage = error.message || error.error || errorMessage;
+                    } else {
+                        const text = await resReserva.text();
+                        console.error('Error de texto:', text);
+                        errorMessage = `Error ${resReserva.status}`;
+                    }
+                    throw new Error(errorMessage);
                 }
-                throw new Error(errorMessage);
+
+                const dataReserva = await resReserva.json();
+                resId = dataReserva.reserva_id;
+                if (!resId) throw new Error('No se obtuvo ID de reserva');
             }
 
-            const dataReserva = await resReserva.json();
-            const resId = dataReserva.reserva_id;
             if (!resId) throw new Error('No se obtuvo ID de reserva');
 
             // PASO 2: Crear PaymentIntent
