@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -16,9 +17,25 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            tipo_documento: user.tipo_documento || '',
+            numero_documento: user.numero_documento || '',
+            nacionalidad: user.nacionalidad || '',
+            direccion: user.direccion || '',
+            telefono: user.telefono || '',
         });
 
-    const submit = (e) => {
+    useEffect(() => {
+        // Asegurar que los valores se precarguen correctamente
+        setData({
+            name: user.name || '',
+            email: user.email || '',
+            tipo_documento: user.tipo_documento || '',
+            numero_documento: user.numero_documento || '',
+            nacionalidad: user.nacionalidad || '',
+            direccion: user.direccion || '',
+            telefono: user.telefono || '',
+        });
+    }, []);    const submit = (e) => {
         e.preventDefault();
 
         patch(route('profile.update'));
@@ -28,72 +45,156 @@ export default function UpdateProfileInformation({
         <section className={className}>
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
+                    Información del Perfil
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
+                    Actualiza tus datos personales y de contacto.
                 </p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                {/* Fila 1: Nombre y Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <InputLabel htmlFor="name" value="Nombre Completo" />
 
-                    <TextInput
-                        id="name"
-                        className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                        isFocused
-                        autoComplete="name"
-                    />
+                        <TextInput
+                            id="name"
+                            className="mt-1 block w-full"
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            required
+                            isFocused
+                            autoComplete="name"
+                        />
 
-                    <InputError className="mt-2" message={errors.name} />
+                        <InputError className="mt-2" message={errors.name} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="email" value="Correo Electrónico" />
+
+                        <TextInput
+                            id="email"
+                            type="email"
+                            className="mt-1 block w-full"
+                            value={data.email}
+                            onChange={(e) => setData('email', e.target.value)}
+                            required
+                            autoComplete="username"
+                        />
+
+                        <InputError className="mt-2" message={errors.email} />
+                    </div>
                 </div>
 
+                {/* Fila 2: Tipo y Número de Documento */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <InputLabel htmlFor="tipo_documento" value="Tipo de Documento" />
+
+                        <select
+                            id="tipo_documento"
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
+                            value={data.tipo_documento || ''}
+                            onChange={(e) => setData('tipo_documento', e.target.value)}
+                        >
+                            <option value="">Seleccionar...</option>
+                            <option value="dni">DNI</option>
+                            <option value="pasaporte">Pasaporte</option>
+                            <option value="tie">TIE</option>
+                        </select>
+
+                        <InputError className="mt-2" message={errors.tipo_documento} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="numero_documento" value="Número de Documento" />
+
+                        <TextInput
+                            id="numero_documento"
+                            className="mt-1 block w-full"
+                            value={data.numero_documento}
+                            onChange={(e) => setData('numero_documento', e.target.value)}
+                            autoComplete="off"
+                        />
+
+                        <InputError className="mt-2" message={errors.numero_documento} />
+                    </div>
+                </div>
+
+                {/* Fila 3: Nacionalidad y Teléfono */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <InputLabel htmlFor="nacionalidad" value="Nacionalidad" />
+
+                        <TextInput
+                            id="nacionalidad"
+                            className="mt-1 block w-full"
+                            value={data.nacionalidad}
+                            onChange={(e) => setData('nacionalidad', e.target.value)}
+                            autoComplete="country-name"
+                        />
+
+                        <InputError className="mt-2" message={errors.nacionalidad} />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="telefono" value="Teléfono" />
+
+                        <TextInput
+                            id="telefono"
+                            type="tel"
+                            className="mt-1 block w-full"
+                            value={data.telefono}
+                            onChange={(e) => setData('telefono', e.target.value)}
+                            autoComplete="tel"
+                        />
+
+                        <InputError className="mt-2" message={errors.telefono} />
+                    </div>
+                </div>
+
+                {/* Fila 4: Dirección */}
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="direccion" value="Dirección" />
 
                     <TextInput
-                        id="email"
-                        type="email"
+                        id="direccion"
                         className="mt-1 block w-full"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
-                        autoComplete="username"
+                        value={data.direccion}
+                        onChange={(e) => setData('direccion', e.target.value)}
+                        autoComplete="street-address"
                     />
 
-                    <InputError className="mt-2" message={errors.email} />
+                    <InputError className="mt-2" message={errors.direccion} />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
+                            Tu correo electrónico no ha sido verificado.
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
                                 className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                             >
-                                Click here to re-send the verification email.
+                                Haz clic aquí para reenviar el correo de verificación.
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
                             <div className="mt-2 text-sm font-medium text-green-600">
-                                A new verification link has been sent to your
-                                email address.
+                                Se ha enviado un nuevo enlace de verificación a tu correo electrónico.
                             </div>
                         )}
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>Guardar Cambios</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -102,7 +203,7 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">Saved.</p>
+                        <p className="text-sm text-green-600 font-medium">Guardado exitosamente.</p>
                     </Transition>
                 </div>
             </form>

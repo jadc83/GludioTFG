@@ -68,4 +68,20 @@ class User extends Authenticatable
         if (!$tipo || $tipo === 'todos') return $query;
         return $query->where('tipo_documento', $tipo);
     }
+
+    /**
+     * Relación con las reservas del usuario (a través de morphs)
+     */
+    public function reservas()
+    {
+        return $this->morphMany(Reserva::class, 'reservable');
+    }
+
+    /**
+     * Relación con las reservas creadas por el usuario
+     */
+    public function reservasCreadas()
+    {
+        return $this->hasMany(Reserva::class, 'booked_by_user_id');
+    }
 }
