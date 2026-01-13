@@ -1,5 +1,5 @@
-import PrimaryButton from '../PrimaryButton';
-import CreateReservaPaso1 from './formulario/CreateReservaPaso1';
+import PrimaryButton from '@/Components/PrimaryButton';
+import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 
 export default function Paso3Datos({
     watch,
@@ -31,7 +31,7 @@ export default function Paso3Datos({
 
             <main className="flex-1 overflow-y-auto bg-gris px-3 py-2">
                 <div className="mx-auto max-w-2xl">
-                    <CreateReservaPaso1 form={formData} errores={errors} onChange={(e) => {
+                    <FormularioDatosCliente form={formData} errores={errors} onChange={(e) => {
                             const { name, value } = e.target;
                             setValue(name, value);
                         }}

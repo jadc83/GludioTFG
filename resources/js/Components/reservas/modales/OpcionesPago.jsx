@@ -1,5 +1,5 @@
-import PrimaryButton from '../PrimaryButton';
-import FormularioPago from '../pagos/FormularioPago';
+import PrimaryButton from '@/Components/PrimaryButton';
+import FormularioPago from '@/Components/pagos/FormularioPago';
 import { useState } from 'react';
 
 export default function OpcionesPago({
@@ -54,15 +54,30 @@ export default function OpcionesPago({
 
                 {opcionPagoSeleccionada && !pagarAlLlegar && (
                     <>
-                        <FormularioPago reservaData={prepararDatosReserva()} monto={monto} pagarAlLlegar={false}
-                                        onPagoExitoso={(data) => { const localizadorDelPago = data?.localizador || localizador;
-                                            setDatosReservaConfirmada({ localizador: localizadorDelPago,
-                                                                                     nombre: formData.name,
-                                                                                     check_in: rango?.from,
-                                                                                     check_out: rango?.to,
-                                                                                     cantidad_habitaciones: getTotalHabitaciones(),
-                                                                                     precio_total: monto});
-                                        setMostrarModalConfirmacion(true);}} onError={(mensaje) => { setErrorPago(mensaje);}}/>
+                        <FormularioPago
+                            reservaData={prepararDatosReserva()}
+                            monto={monto}
+                            pagarAlLlegar={false}
+                            onPagoExitoso={(data) => {
+                                console.log('✅ Pago exitoso, datos recibidos:', data);
+                                const localizadorDelPago = data?.localizador || localizador;
+                                console.log('🔖 Localizador para modal:', localizadorDelPago);
+
+                                setDatosReservaConfirmada({
+                                    localizador: localizadorDelPago,
+                                    nombre: formData.name,
+                                    check_in: rango?.from,
+                                    check_out: rango?.to,
+                                    cantidad_habitaciones: getTotalHabitaciones(),
+                                    precio_total: monto,
+                                    pagoAlLlegar: false
+                                });
+                                setMostrarModalConfirmacion(true);
+                            }}
+                            onError={(mensaje) => {
+                                setErrorPago(mensaje);
+                            }}
+                        />
                         </>
                 )}
 

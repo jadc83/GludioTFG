@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import PrimaryButton from '../PrimaryButton';
-import ModalConfirmacionReserva from './ModalConfirmacionReserva';
-import DesgloseFactura from './DesgloseFactura';
-import OpcionesPago from './OpcionesPago';
-import useConfirmacionReserva from '../../hooks/useConfirmacionReserva';
-import { calcularNoches, formatearMoneda } from '../../utils/formatters';
+import PrimaryButton from '@/Components/PrimaryButton';
+import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
+import DesgloseFactura from '../utilidades/DesgloseFactura';
+import OpcionesPago from '../modales/OpcionesPago';
+import useConfirmacionReserva from '@/hooks/useConfirmacionReserva';
+import { calcularNoches, formatearMoneda } from '@/utils/formatters';
 
 export default function Paso4Confirmacion({
     rango,
@@ -53,17 +53,37 @@ export default function Paso4Confirmacion({
             }
 
             try {
-                const montoCalculado = await calcularMontoTotal();
-                setMonto(montoCalculado);
+                const resultado = await calcularMontoTotal();
+                console.log('📊 Resultado calcular precio:', resultado);
 
-                // Calcular precio promedio por noche de UNA habitación
-                // (monto total / número de habitaciones / número de noches)
-                const numeroNoches = calcularNoches(rango.from, rango.to);
-                const totalHabitaciones = getTotalHabitaciones() || 1;
-                const precioPorNocheUnaHabitacion = numeroNoches > 0
-                    ? Math.round((montoCalculado / totalHabitaciones) / numeroNoches)
-                    : 0;
-                setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
+                // Si calcularMontoTotal devuelve un objeto con detalles
+                if (typeof resultado === 'object' && resultado.total !== undefined) {
+                    setMonto(resultado.total);
+                    console.log('💰 Total:', resultado.total);
+
+                    // Usar el precio promedio del backend si está disponible
+                    if (resultado.habitaciones && resultado.habitaciones.length > 0) {
+                        const precioPromedio = resultado.habitaciones[0].precioPromedioPorNoche || 0;
+                        console.log('🏨 Precio promedio por noche del backend:', precioPromedio);
+                        setPrecioPromedioPorNoche(precioPromedio);
+                    } else {
+                        setPrecioPromedioPorNoche(0);
+                    }
+                } else {
+                    // Si solo devuelve el total (número)
+                    const montoCalculado = resultado;
+                    setMonto(montoCalculado);
+                    console.log('⚠️ Resultado es solo número:', montoCalculado);
+
+                    // Calcular precio promedio sin redondear a entero
+                    const numeroNoches = calcularNoches(rango.from, rango.to);
+                    const totalHabitaciones = getTotalHabitaciones() || 1;
+                    const precioPorNocheUnaHabitacion = numeroNoches > 0
+                        ? (montoCalculado / totalHabitaciones) / numeroNoches
+                        : 0;
+                    console.log('🔢 Precio calculado manualmente:', precioPorNocheUnaHabitacion);
+                    setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
+                }
             } catch (error) {
                 console.error('Error al cargar precio:', error);
                 setMonto(0);

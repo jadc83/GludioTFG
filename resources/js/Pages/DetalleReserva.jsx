@@ -3,7 +3,7 @@ import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { useState } from 'react';
-import ExtenderReserva from '@/Components/reservas/ExtenderReserva';
+import ExtenderReserva from '@/Components/reservas/utilidades/ExtenderReserva';
 
 export default function DetalleReserva({ reserva }) {
     const [mostrarExtender, setMostrarExtender] = useState(false);

@@ -3,7 +3,7 @@ import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
-export default function CreateReservaPaso1({ form, errores, onChange, onNext, hideDates = false, hideNextButton = false}) {
+export default function FormularioDatosCliente({ form, errores, onChange, onNext, hideDates = false, hideNextButton = false}) {
 
     return (
         <form onSubmit={onNext} className="space-y-4 p-4">

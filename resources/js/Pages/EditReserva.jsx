@@ -7,7 +7,7 @@ import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '@/utils/precio
 import { ArrowLeftIcon, CalendarIcon, CurrencyEuroIcon, HomeIcon, UserIcon} from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import ExtenderReserva from '@/Components/reservas/ExtenderReserva';
+import ExtenderReserva from '@/Components/reservas/utilidades/ExtenderReserva';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 
 export default function EditReserva({ reserva, habitaciones }) {

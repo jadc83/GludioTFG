@@ -108,13 +108,11 @@ class PagoController extends Controller
                 // Actualizar estado de reserva
                 $pago->reserva->update(['pago' => 'pagado']);
 
-                // Marcar habitaciones como ocupadas
-                $pago->reserva->marcarHabitacionesComoOcupadas();
-
                 return response()->json([
                     'success' => true,
                     'message' => 'Pago completado exitosamente',
                     'reserva_id' => $pago->reserva_id,
+                    'localizador' => $pago->reserva->localizador,
                 ]);
             } else {
                 $pago->marcarComoFallido();
@@ -159,8 +157,6 @@ class PagoController extends Controller
                 if ($pago) {
                     $pago->marcarComoPagado();
                     $pago->reserva->update(['pago' => 'pagado']);
-                    // Marcar habitaciones como ocupadas
-                    $pago->reserva->marcarHabitacionesComoOcupadas();
                 }
             } elseif ($event->type === 'payment_intent.payment_failed') {
                 $paymentIntent = $event->data->object;
