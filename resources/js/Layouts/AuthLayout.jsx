@@ -1,4 +1,5 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import CookieBanner from '@/Components/CookieBanner';
 import { Link } from '@inertiajs/react';
 import { CheckCircleIcon, StarIcon, ShieldCheckIcon, BoltIcon } from '@heroicons/react/24/solid';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
@@ -83,6 +84,8 @@ export default function AuthLayout({ children }) {
                     </p>
                 </div>
             </div>
+
+            <CookieBanner />
         </div>
     );
 }

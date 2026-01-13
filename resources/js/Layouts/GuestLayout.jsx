@@ -1,4 +1,5 @@
 import Footer from '@/Components/Footer';
+import CookieBanner from '@/Components/CookieBanner';
 import BarraReservas from '@/Components/reservas/BarraReservas';
 import Navbar from '@/Components/Nav';
 
@@ -12,6 +13,8 @@ export default function GuestLayout({ children }) {
             <main className="flex flex-grow flex-col pt-16">{children}</main>
 
             <Footer />
+
+            <CookieBanner />
         </div>
     );
 }
