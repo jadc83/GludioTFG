@@ -40,13 +40,13 @@ export default function Servicios() {
                         {[
                             {
                                 src: '/spa.png',
-                                alt: 'Spa & Wellness',
+                                alt: 'Spa y bienestar',
                                 descripcion:
                                     'Masajes que te harán olvidar hasta tu nombre',
                             },
                             {
                                 src: '/spa2.jpg',
-                                alt: 'Spa & Wellness',
+                                alt: 'Spa y bienestar',
                                 descripcion:
                                     'Masajes que te harán olvidar hasta tu nombre',
                             },

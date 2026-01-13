@@ -1,22 +1,22 @@
-import useReservaForm from '../hooks/useReservaForm';
-import Paso1Fechas from './reservas/pasos/Paso1Fechas';
-import Paso2Habitaciones from './reservas/pasos/Paso2Habitaciones';
-import Paso3Datos from './reservas/pasos/Paso3Datos';
-import Paso4Confirmacion from './reservas/pasos/Paso4Confirmacion';
-import PrimaryButton from './PrimaryButton';
-import TypingAnimation from './TypingAnimation';
-import BuscadorNavbar from './BuscadorNavbar';
-import { formatearFecha, calcularNoches, obtenerDiaDelaSemana } from '../utils/formatters';
-import '../../css/createHabitacion.css';
-import '../../css/estiloCalendario.css';
-import '../../css/estiloMenuLateral.css';
+import useReservaForm from '../../hooks/useReservaForm';
+import Paso1Fechas from './pasos/Paso1Fechas';
+import Paso2Habitaciones from './pasos/Paso2Habitaciones';
+import Paso3Datos from './pasos/Paso3Datos';
+import Paso4Confirmacion from './pasos/Paso4Confirmacion';
+import PrimaryButton from '../PrimaryButton';
+import TypingAnimation from '../TypingAnimation';
+import BuscadorNavbar from '../BuscadorNavbar';
+import { formatearFecha, calcularNoches, obtenerDiaDelaSemana } from '../../utils/formatters';
+import '../../../css/createHabitacion.css';
+import '../../../css/estiloCalendario.css';
+import '../../../css/estiloMenuLateral.css';
 import { useState, useEffect, useRef } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { usePage } from '@inertiajs/react';
 import { CalendarIcon, HomeIcon } from '@heroicons/react/24/outline';
 
-export default function MenuLateral() {
+export default function BarraReservas() {
     const hook = useReservaForm();
     const page = usePage();
     const esPanelControl = page.url?.includes('panel') || page.component === 'PanelControl';

@@ -1,5 +1,5 @@
 import Footer from '@/Components/Footer';
-import MenuLateral from '@/Components/MenuLateral';
+import BarraReservas from '@/Components/reservas/BarraReservas';
 import Navbar from '@/Components/Nav';
 
 export default function GuestLayout({ children }) {
@@ -7,7 +7,7 @@ export default function GuestLayout({ children }) {
         <div className="flex min-h-screen flex-col bg-gray-100">
             <Navbar />
 
-            <MenuLateral />
+            <BarraReservas />
 
             <main className="flex flex-grow flex-col pt-16">{children}</main>
 
