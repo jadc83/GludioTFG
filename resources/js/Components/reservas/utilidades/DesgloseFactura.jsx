@@ -1,4 +1,4 @@
-import { calcularNoches, formatearMoneda } from '../../utils/formatters';
+import { calcularNoches, formatearMoneda } from '@/utils/formatters';
 
 export default function DesgloseFactura({ habitacionesSeleccionadas, rango, monto, getTotalHabitaciones, agruparHabitacionesPorTipo }) {
     const numeroNoches = calcularNoches(rango?.from, rango?.to);

@@ -129,7 +129,7 @@ class PrecioService
     }
 
     /**
-     * Calcula el total para múltiples habitaciones
+     * Calcula el precio total para múltiples habitaciones
      */
     public function calcularMontoTotal( array $habitaciones, Carbon $checkIn, Carbon $checkOut ): array
     {
@@ -161,5 +161,28 @@ class PrecioService
                  'checkIn' => $checkIn->format('Y-m-d'), 'checkOut' => $checkOut->format('Y-m-d'),
                  'numeroNoches' => $checkIn->diffInDays($checkOut)
         ];
+    }
+
+    /**
+     * Calcula el precio para una habitación entre dos fechas usando precios base
+     */
+    public function calcularPrecioEntreFechas(string $tipo, Carbon $checkIn, Carbon $checkOut): float
+    {
+        $precioBase = $this->obtenerPrecioBase($tipo);
+
+        if ($precioBase <= 0) {
+            return 0;
+        }
+
+        $total = 0;
+        $fecha = $checkIn->copy();
+
+        while ($fecha->lt($checkOut)) {
+            $multiplicador = $this->obtenerMultiplicador($fecha);
+            $total += round($precioBase * $multiplicador, 2);
+            $fecha->addDay();
+        }
+
+        return round($total, 2);
     }
 }

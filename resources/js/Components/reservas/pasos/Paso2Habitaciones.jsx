@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
-import PrimaryButton from '../PrimaryButton';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones, habitacionesSeleccionadas, agruparHabitacionesPorTipo, getImagen,

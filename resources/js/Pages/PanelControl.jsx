@@ -6,7 +6,7 @@ import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {BriefcaseIcon, HomeIcon, UsersIcon} from '@heroicons/react/24/outline';
 import TabClientes from '../Components/clientes/TabClientes';
-import TabReservas from '../Components/reservas/TabReservas';
+import TabReservas from '../Components/reservas/listado/TabReservas';
 
 const TABS = [
     { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },

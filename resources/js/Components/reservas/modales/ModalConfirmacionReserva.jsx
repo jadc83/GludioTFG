@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { formatearMoneda } from '../../utils/formatters';
+import { formatearMoneda } from '@/utils/formatters';
 
 export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
     const [animarSalida, setAnimarSalida] = useState(false);

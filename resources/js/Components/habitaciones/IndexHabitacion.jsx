@@ -86,7 +86,6 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                         <th>Número</th>
                                         <th>Tipo</th>
                                         <th>Capacidad</th>
-                                        <th>Precio/Noche</th>
                                         <th>Estado</th>
                                         <th>Descripción</th>
                                         <th>Acciones</th>
@@ -112,13 +111,6 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                         ? 's'
                                                         : ''}
                                                 </span>
-                                            </td>
-                                            <td className="font-mono text-sm">
-                                                €
-                                                {parseFloat(
-                                                    habitacion.precio_noche ||
-                                                        0,
-                                                ).toFixed(2)}
                                             </td>
                                             <td>
                                                 <span

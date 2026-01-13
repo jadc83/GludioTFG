@@ -154,9 +154,17 @@ export default function useReservaForm() {
         if (habitacionesArray.length === 0) return 0;
 
         try {
+            // Formatear fechas en zona horaria local (evitar cambios por UTC)
+            const formatearFechaLocal = (fecha) => {
+                const year = fecha.getFullYear();
+                const month = String(fecha.getMonth() + 1).padStart(2, '0');
+                const day = String(fecha.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
             const payload = {
-                check_in: rango.from.toISOString().split('T')[0],
-                check_out: rango.to.toISOString().split('T')[0],
+                check_in: formatearFechaLocal(rango.from),
+                check_out: formatearFechaLocal(rango.to),
                 habitaciones: habitacionesArray,
             };
 
@@ -176,8 +184,9 @@ export default function useReservaForm() {
 
             const data = await response.json();
 
-            if (data.success && data.data?.total) {
-                return data.data.total;
+            if (data.success && data.data) {
+                // Devolver el objeto completo con detalles
+                return data.data;
             } else {
                 console.error('Error en respuesta de precio:', data.error);
                 return 0;

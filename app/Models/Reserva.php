@@ -88,15 +88,4 @@ class Reserva extends Model
         });
     }
 
-    /**
-     * Marca todas las habitaciones de la reserva como ocupadas
-     */
-    public function marcarHabitacionesComoOcupadas()
-    {
-        $this->habitaciones()->each(function ($habitacionReserva) {
-            if ($habitacionReserva->habitacion) {
-                $habitacionReserva->habitacion->update(['estado' => 'ocupada']);
-            }
-        });
-    }
 }
