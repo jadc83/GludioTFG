@@ -25,6 +25,11 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'tipo_documento' => ['nullable', 'string', 'in:dni,pasaporte,tie'],
+            'numero_documento' => ['nullable', 'string', 'max:50'],
+            'nacionalidad' => ['nullable', 'string', 'max:100'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
         ];
     }
 }
