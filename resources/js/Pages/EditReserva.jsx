@@ -307,12 +307,18 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                 <div className="text-xs"> Capacidad:{' '}
                                                                     <span className="font-mono font-semibold">{ habitacion.capacidad}</span>
                                                                 </div>
-                                                                <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
-                                                                    { obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche
-                                                                </div>
-                                                                {form.check_in && form.check_out && (
-                                                                    <div className="text-xs text-gray-500">
-                                                                        Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €
+                                                                {form.check_in && form.check_out ? (
+                                                                    <>
+                                                                        <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
+                                                                            { (calcularPrecioDinamico(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500">
+                                                                            Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
+                                                                        { obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche
                                                                     </div>
                                                                 )}
                                                             </div>
