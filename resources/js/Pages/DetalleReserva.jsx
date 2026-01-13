@@ -168,7 +168,7 @@ export default function DetalleReserva({ reserva }) {
                             </div>
                         </div>
 
-                        {/* Botón de extensión de estadía */}
+                        {/* Botón de ampliación de reserva */}
                         {mostrarExtender && (
                             <ExtenderReserva
                                 reserva={reserva}
@@ -185,7 +185,7 @@ export default function DetalleReserva({ reserva }) {
                                 onClick={() => setMostrarExtender(true)}
                                 className="w-full bg-gradient-to-r from-[#7a0202] to-[#920303] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
                             >
-                                🏨 Extender tu estadía
+                                🏨 Ampliar reserva
                             </button>
                         )}
 

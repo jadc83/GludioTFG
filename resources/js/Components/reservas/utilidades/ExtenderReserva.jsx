@@ -291,7 +291,7 @@ export default function ExtenderReserva({ reserva, onClose }) {
     // Mostrar selector de días
     return (
         <div className="bg-white rounded-xl shadow-xl p-6 border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Extender estadía</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Ampliar reserva</h3>
             <p className="text-gray-600 text-sm mb-4">
                 Checkout actual: <span className="font-semibold capitalize">
                     {dayjs(reserva.check_out).format('dddd DD/MM/YYYY')}
