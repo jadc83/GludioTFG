@@ -14,10 +14,10 @@ class ReservaService
 {
     private PrecioService $precioService;
 
-    public function __construct(PrecioService $precioService = null)
-    {
-        $this->precioService = $precioService ?? new PrecioService();
-    }
+    public function __construct(?PrecioService $precioService = null)
+{
+    $this->precioService = $precioService ?? new PrecioService();
+}
 
     /**
      * Prepara y valida los datos de una reserva antes de crear
@@ -72,9 +72,9 @@ class ReservaService
         $validadas = [];
         $tiposValidos = ['doble', 'familiar', 'suite'];
 
-        foreach ($habitaciones as $hab) {
-            $tipo = strtolower(trim($hab['tipo'] ?? ''));
-            $cantidad = intval($hab['cantidad'] ?? 0);
+        foreach ($habitaciones as $habitacion) {
+            $tipo = strtolower(trim($habitacion['tipo'] ?? ''));
+            $cantidad = intval($habitacion['cantidad'] ?? 0);
 
             if (!in_array($tipo, $tiposValidos, true)) {
                 throw new \Exception("Tipo de habitación no válido: {$tipo}");
@@ -84,7 +84,7 @@ class ReservaService
                 continue;
             }
 
-            $personas = intval($hab['personas_por_habitacion'] ?? 1);
+            $personas = intval($habitacion['personas_por_habitacion'] ?? 1);
             if ($personas < 1) {
                 throw new \Exception("Número de personas inválido para habitación {$tipo}");
             }
@@ -137,6 +137,7 @@ class ReservaService
 
         // Buscar cliente existente por DNI
         if (!empty($datos['numero_documento'])) {
+
             $clienteExistente = Cliente::where('numero_documento', $datos['numero_documento'])->first();
 
             if ($clienteExistente) {
@@ -219,9 +220,9 @@ class ReservaService
      */
     public function verificarDisponibilidad(array $habitacionesRequeridas, Carbon $checkIn, Carbon $checkOut): bool
     {
-        foreach ($habitacionesRequeridas as $hab) {
-            $tipo = $hab['tipo'] ?? null;
-            $cantidad = $hab['cantidad'] ?? 0;
+        foreach ($habitacionesRequeridas as $habitacion) {
+            $tipo = $habitacion['tipo'] ?? null;
+            $cantidad = $habitacion['cantidad'] ?? 0;
 
             if ($cantidad <= 0) continue;
 
@@ -247,8 +248,7 @@ class ReservaService
                 // Hay conflicto si: check_in_nueva < check_out_existente AND check_out_nueva > check_in_existente
                 $query->where('check_in', '<', $checkOut)
                       ->where('check_out', '>', $checkIn);
-            })
-            ->count();
+            })->count();
     }
 
     /**
@@ -301,9 +301,9 @@ class ReservaService
      */
     public function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
     {
-        foreach ($habitacionesRequeridas as $req) {
-            $tipo = $req['tipo'];
-            $cantidad = $req['cantidad'];
+        foreach ($habitacionesRequeridas as $requerida) {
+            $tipo = $requerida['tipo'];
+            $cantidad = $requerida['cantidad'];
 
             // Obtener habitaciones disponibles del tipo solicitado
             $habitaciones = Habitacion::where('tipo', $tipo)
@@ -312,9 +312,7 @@ class ReservaService
                     $query->where('reserva_id', '!=', $reserva->id)
                           ->where('check_in', '<', $reserva->check_out)
                           ->where('check_out', '>', $reserva->check_in);
-                })
-                ->limit($cantidad)
-                ->get();
+                })->limit($cantidad)->get();
 
             if ($habitaciones->count() < $cantidad) {
                 throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
@@ -322,10 +320,7 @@ class ReservaService
 
             // Calcular precio usando el servicio de precios
             $precioPorHabitacion = $this->precioService->calcularPrecioEntreFechas(
-                $tipo,
-                Carbon::parse($reserva->check_in),
-                Carbon::parse($reserva->check_out)
-            );
+                $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
 
             foreach ($habitaciones as $habitacion) {
                 HabitacionReserva::create([
@@ -418,8 +413,7 @@ class ReservaService
         }
 
         // Actualizar fechas y estados
-        $reserva->update([
-            'check_in' => $checkIn,
+        $reserva->update(['check_in' => $checkIn,
             'check_out' => $checkOut,
             'status' => $validated['status'],
             'pago' => $validated['pago'],

@@ -62,8 +62,7 @@ class UserService
                 'numero_documento' => $registro['numero_documento'] ?? null,
                 'nacionalidad' => $registro['nacionalidad'] ?? null,
                 'direccion' => $registro['direccion'] ?? null,
-            ],
-            $tipo === 'usuario' ? ['email_verified_at' => $registro['email_verified_at'] ?? null] : []
+            ], $tipo === 'usuario' ? ['email_verified_at' => $registro['email_verified_at'] ?? null] : []
         );
     }
 
