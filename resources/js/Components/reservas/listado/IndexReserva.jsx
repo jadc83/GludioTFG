@@ -1,15 +1,11 @@
 import '@/../css/createReserva.css';
-import {
-    FunnelIcon,
-    InboxIcon,
-    PencilIcon,
-    TrashIcon,
-} from '@heroicons/react/24/outline';
+import { FunnelIcon, InboxIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
     const [filtros, setFiltros] = useState({ status: 'todos', localizador: '', cliente: '',  habitacion: '' });
+    const [refrescarTabla, setRefrescarTabla] = useState(0);
     const actualizarFiltro = (campo, valor) => {
         setFiltros((prev) => ({ ...prev, [campo]: valor }));
     };
@@ -35,7 +31,34 @@ export default function IndexReserva({ reservas = [] }) {
         }, 300);
 
         return () => clearTimeout(contador);
-    }, [filtros]);
+    }, [filtros, refrescarTabla]);
+
+    // Escuchar eventos de Reverb
+    useEffect(() => {
+
+        if (typeof window === 'undefined' || !window.Echo) return;
+
+        const handler = (e) => {
+            setRefrescarTabla((prev) => prev + 1);
+        };
+
+        const channel = window.Echo.private('reservas');
+        channel.listen('ReservaCreada', handler);
+        channel.listen('.ReservaCreada', handler);
+        channel.listen('ReservaActualizada', handler);
+        channel.listen('.ReservaActualizada', handler);
+
+        return () => {
+            try {
+                channel.stopListening('ReservaCreada');
+                channel.stopListening('.ReservaCreada');
+                channel.stopListening('ReservaActualizada');
+                channel.stopListening('.ReservaActualizada');
+            } catch (err) {
+
+            }
+        };
+    }, []);
 
     const obtenerColorStatus = (status) => {
         const colores = {

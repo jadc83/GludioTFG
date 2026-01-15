@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ReservaCreada;
+use App\Events\ReservaActualizada;
 use App\Http\Requests\StoreReservaRequest;
 use App\Http\Requests\UpdateReservaRequest;
 use App\Models\Cliente;
@@ -98,6 +100,8 @@ class ReservaController extends Controller
 
                 // Asignar habitaciones
                 $reservaService->asignarHabitaciones($reserva, $datosValidados['habitaciones']);
+
+                event(new ReservaCreada($reserva));
 
                 $respuesta = [
                     'success' => true,
@@ -296,7 +300,13 @@ class ReservaController extends Controller
                 $reservaService->actualizarReserva($reserva, $validated);
             });
 
-            return redirect()->route('panel')->with('success', "✅ Reserva {$reserva->localizador} actualizada correctamente.");
+            try {
+                event(new ReservaActualizada($reserva));
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo emitir ReservaActualizada: ' . $e->getMessage());
+            }
+
+            return redirect()->route('panel')->with('success', "Reserva {$reserva->localizador} actualizada correctamente.");
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
