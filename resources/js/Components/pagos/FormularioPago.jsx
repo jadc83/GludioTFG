@@ -1,9 +1,7 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
-import { formatearMoneda } from '@/utils/formatters';
 import React, { useState, useMemo } from 'react';
-import PrimaryButton from '../PrimaryButton';
 
 function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
     const page = usePage();
@@ -43,8 +41,6 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
             // PASO 1: Crear reserva (solo si no es extensión)
             if (!esExtension) {
                 const datosReservaConDireccion = { ...reservaData, direccion: direccion};
-
-                console.log('📤 Enviando datos de reserva:', datosReservaConDireccion);
 
                 const resReserva = await fetch('/reservas', {
                     method: 'POST',
@@ -110,10 +106,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
             const newClientSecret = dataPI.clientSecret;
             const newPagoId = dataPI.pago_id;
-            console.log('✅ PaymentIntent creado:', newClientSecret);
 
             // PASO 3: Procesar pago con Stripe
-            console.log('🔄 Procesando pago con Stripe...');
             const { paymentIntent, error } = await stripe.confirmCardPayment(newClientSecret, {
                 payment_method: {
                     card: elements.getElement(CardElement),

@@ -8,12 +8,7 @@ export default function TabReservas({
 }) {
     return (
         <div className="p-6">
-            <IndexReserva
-                reservas={reservas}
-                clientes={clientes}
-                users={users}
-                estadisticas={estadisticas}
-            />
+            <IndexReserva reservas={reservas} clientes={clientes} users={users} estadisticas={estadisticas} />
         </div>
     );
 }

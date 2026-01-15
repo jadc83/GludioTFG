@@ -110,35 +110,37 @@ export default function ExtenderReserva({ reserva, onClose }) {
         }
     };
 
-    const handlePagoExitoso = () => {
+    const handlePagoExitoso = async () => {
         setPagoConfirmado(true);
 
         // Confirmar la extensión en el backend después del pago
-        fetch(
-            `/reservas/${reserva.localizador}/extender`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken,
-                },
-                body: JSON.stringify({
-                    numero_dias: diasSeleccionados,
-                    confirmar: true,
-                }),
-            }
-        ).then((response) => response.json()).then((data) => {
-            console.log('Respuesta de extensión:', data);
+        try {
+            const response = await fetch(
+                `/reservas/${reserva.localizador}/extender`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        numero_dias: diasSeleccionados,
+                        confirmar: true,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
             if (data.nuevo_check_out) {
-                // Ejecutar el callback inmediatamente con la nueva fecha
                 onClose(data.nuevo_check_out);
             } else {
                 onClose();
             }
-        }).catch(err => {
+        } catch (err) {
             console.error('Error confirmando extensión:', err);
             onClose();
-        });
+        }
     };
 
     const handleConfirmarSinPago = async () => {
@@ -168,7 +170,6 @@ export default function ExtenderReserva({ reserva, onClose }) {
             }
 
             const data = await response.json();
-            console.log('Respuesta de confirmación:', data);
             setPagoConfirmado(true);
 
             // Ejecutar el callback inmediatamente con la nueva fecha

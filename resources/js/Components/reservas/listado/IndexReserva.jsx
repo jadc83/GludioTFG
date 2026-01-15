@@ -9,31 +9,17 @@ import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
-    const [filtros, setFiltros] = useState({
-        status: 'todos',
-        localizador: '',
-        cliente: '',
-        habitacion: '',
-    });
+    const [filtros, setFiltros] = useState({ status: 'todos', localizador: '', cliente: '',  habitacion: '' });
     const actualizarFiltro = (campo, valor) => {
         setFiltros((prev) => ({ ...prev, [campo]: valor }));
     };
-    const hayFiltrosActivos =
-        filtros.status !== 'todos' ||
-        filtros.localizador !== '' ||
-        filtros.cliente !== '' ||
-        filtros.habitacion !== '';
+    const hayFiltrosActivos = filtros.status !== 'todos' || filtros.localizador !== '' || filtros.cliente !== '' || filtros.habitacion !== '';
     const limpiarFiltros = () => {
-        setFiltros({
-            status: 'todos',
-            localizador: '',
-            cliente: '',
-            habitacion: '',
-        });
+        setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '' });
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        const contador = setTimeout(() => {
             const params = {
                 status: filtros.status !== 'todos' ? filtros.status : undefined,
                 localizador: filtros.localizador || undefined,
@@ -45,13 +31,10 @@ export default function IndexReserva({ reservas = [] }) {
                 (key) => params[key] === undefined && delete params[key],
             );
 
-            router.get(route('panel'), params, {
-                preserveState: true,
-                preserveScroll: true,
-            });
+            router.get(route('panel'), params, { preserveState: true, preserveScroll: true, replace: true });
         }, 300);
 
-        return () => clearTimeout(timer);
+        return () => clearTimeout(contador);
     }, [filtros]);
 
     const obtenerColorStatus = (status) => {
@@ -88,52 +71,23 @@ export default function IndexReserva({ reservas = [] }) {
             <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <div>
                     <label className="label">Localizador</label>
-                    <input
-                        type="text"
-                        placeholder="CLI58C95..."
-                        value={filtros.localizador}
-                        onChange={(e) =>
-                            actualizarFiltro('localizador', e.target.value)
-                        }
-                        className="input-bordered input w-full font-mono"
-                    />
+                    <input type="text" placeholder="Introduce localizador de reserva." value={filtros.localizador}
+                        onChange={(e) => actualizarFiltro('localizador', e.target.value)} className="input-bordered input w-full font-mono"/>
                 </div>
 
                 <div>
                     <label className="label">Cliente</label>
-                    <input
-                        type="text"
-                        placeholder="Juan Pérez..."
-                        value={filtros.cliente}
-                        onChange={(e) =>
-                            actualizarFiltro('cliente', e.target.value)
-                        }
-                        className="input-bordered input w-full"
-                    />
+                    <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)} className="input-bordered input w-full"/>
                 </div>
 
                 <div>
                     <label className="label">Habitación</label>
-                    <input
-                        type="text"
-                        placeholder="101, 102..."
-                        value={filtros.habitacion}
-                        onChange={(e) =>
-                            actualizarFiltro('habitacion', e.target.value)
-                        }
-                        className="input-bordered input w-full"
-                    />
+                    <input type="text" placeholder="101, 102..." value={filtros.habitacion} onChange={(e) => actualizarFiltro('habitacion', e.target.value)} className="input-bordered input w-full"/>
                 </div>
 
                 <div>
                     <label className="label">Estado</label>
-                    <select
-                        value={filtros.status}
-                        onChange={(e) =>
-                            actualizarFiltro('status', e.target.value)
-                        }
-                        className="select-bordered select w-full"
-                    >
+                    <select value={filtros.status} onChange={(e) => actualizarFiltro('status', e.target.value)} className="select-bordered select w-full">
                         <option value="todos">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
                         <option value="confirmado">Confirmado</option>
@@ -144,11 +98,7 @@ export default function IndexReserva({ reservas = [] }) {
                 </div>
 
                 <div className="self-end">
-                    <button
-                        type="button"
-                        onClick={limpiarFiltros}
-                        className="btn btn-info btn-outline w-full hover:btn-info"
-                    >
+                    <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline w-full hover:btn-info" >
                         <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
                     </button>
                 </div>
@@ -206,56 +156,33 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             <td className="celda-fechas font-mono">
                                                 <div>
-                                                    {new Date(
-                                                        reserva.check_in,
-                                                    ).toLocaleDateString(
-                                                        'es-ES',
-                                                    )}
+                                                    {new Date( reserva.check_in).toLocaleDateString('es-ES')}
                                                 </div>
                                                 <div className="fecha-checkout">
+                                                    {' '}→{' '}
+                                                    {new Date( reserva.check_out).toLocaleDateString('es-ES')}
                                                     {' '}
-                                                    →{' '}
-                                                    {new Date(
-                                                        reserva.check_out,
-                                                    ).toLocaleDateString(
-                                                        'es-ES',
-                                                    )}{' '}
                                                 </div>
                                             </td>
 
                                             <td className="celda-precio font-mono text-success">
-                                                {parseFloat(
-                                                    reserva.precio_total || 0,
-                                                ).toFixed(2)}
-                                                €
+                                                {parseFloat( reserva.precio_total || 0 ).toFixed(2)} €
                                             </td>
 
                                             <td>
-                                                <span
-                                                    className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}
-                                                >
-                                                    {reserva.status
-                                                        ?.replace('_', ' ')
-                                                        .toUpperCase()}
+                                                <span className={`badge ${obtenerColorStatus(reserva.status)} gap-2`}>
+                                                    {reserva.status ?.replace('_', ' ').toUpperCase()}
                                                 </span>
                                             </td>
 
                                             <td>
-                                                <span
-                                                    className={`badge ${obtenerColorPago(reserva.pago)}`}
-                                                >
-                                                    {reserva.pago}
-                                                </span>
+                                                <span className={`badge ${obtenerColorPago(reserva.pago)}`}>{reserva.pago}</span>
                                             </td>
 
                                             <td className="celda-creado font-mono">
                                                 {reserva.created_at ? (
                                                     <div>
-                                                        {new Date(
-                                                            reserva.created_at,
-                                                        ).toLocaleString(
-                                                            'es-ES',
-                                                        )}
+                                                        {new Date( reserva.created_at).toLocaleString('es-ES')}
                                                     </div>
                                                 ) : (
                                                     <span className="text-gray-400">
@@ -266,26 +193,12 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button
-                                                        className="btn btn-primary btn-sm"
-                                                        title="Editar reserva"
-                                                        onClick={() =>
-                                                            router.visit(
-                                                                `/reservas/${reserva.id}/edit`,
-                                                            )
-                                                        }
-                                                    >
+                                                    <button className="btn btn-primary btn-sm" title="Editar reserva"
+                                                        onClick={() => router.visit( `/reservas/${reserva.id}/edit`)}>
                                                         <PencilIcon className="h-4 w-4" />
                                                     </button>
-                                                    <button
-                                                        className="btn btn-error btn-ghost btn-sm hover:btn-error hover:text-white"
-                                                        title="Eliminar reserva"
-                                                        onClick={() =>
-                                                            eliminarReserva(
-                                                                reserva.id,
-                                                            )
-                                                        }
-                                                    >
+                                                    <button className="btn btn-error btn-ghost btn-sm hover:btn-error hover:text-white" title="Eliminar reserva"
+                                                        onClick={() => eliminarReserva(reserva.id)}>
                                                         <TrashIcon className="h-4 w-4" />
                                                     </button>
                                                 </div>

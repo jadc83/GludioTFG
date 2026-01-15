@@ -29,7 +29,6 @@ export default function EditReserva({ reserva, habitaciones }) {
     const [pendienteGuardar, setPendienteGuardar] = useState(null);
 
     const manejarExtensionExitosa = (nuevoCheckOut) => {
-        console.log('Nuevo checkout recibido:', nuevoCheckOut);
         if (nuevoCheckOut) {
             setForm((prev) => ({
                 ...prev,
@@ -87,7 +86,6 @@ export default function EditReserva({ reserva, habitaciones }) {
                 return sum;
             }
             // Usar calcularPrecioDinamico del frontend para garantizar consistencia
-            // Evita depender de datos del backend que pueden estar incorrectos
             const precioDinamico = calcularPrecioDinamico(
                 habitacion,
                 form.check_in,
@@ -190,19 +188,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                             </div>
                         </div>
 
-                        <div
-                            className={`badge ${
-                                reserva.status === 'confirmado'
-                                    ? 'badge-success'
-                                    : reserva.status === 'checked_in'
-                                      ? 'badge-info'
-                                      : reserva.status === 'checked_out'
-                                        ? 'badge-primary'
-                                        : reserva.status === 'cancelado'
-                                          ? 'badge-error'
-                                          : 'badge-warning'
-                            }`}
-                        >
+                        <div className={`badge ${ reserva.status === 'confirmado' ? 'badge-success' : reserva.status === 'checked_in'
+                                        ? 'badge-info' : reserva.status === 'checked_out'
+                                        ? 'badge-primary' : reserva.status === 'cancelado'
+                                        ? 'badge-error' : 'badge-warning'  }`} >
                             {reserva.status.replace('_', ' ')}
                         </div>
                     </div>
@@ -213,10 +202,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <UserIcon
-                                                className="h-5 w-5"
-                                                style={{ color: '#7a0202' }}
-                                            />
+                                            <UserIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
                                             <h3 className="font-bold">
                                                 Cliente
                                             </h3>
@@ -230,10 +216,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             </div>
                                             <div className="font-mono text-sm">
                                                 {reserva.cliente.tipo_documento?.toUpperCase()}{' '}
-                                                {
-                                                    reserva.cliente
-                                                        .numero_documento
-                                                }
+                                                {reserva.cliente.numero_documento}
                                             </div>
                                         </div>
                                     </div>
@@ -268,21 +251,14 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         {recalculando && (
                                             <div className="alert alert-info mb-3">
                                                 <span className="loading loading-spinner loading-sm"></span>
-                                                <span>
-                                                    Recalculando
-                                                    disponibilidad...
-                                                </span>
+                                                <span>Recalculando disponibilidad...</span>
                                             </div>
                                         )}
 
                                         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                                             {habitaciones.map((habitacion) => {
-                                                const isSelected =
-                                                    form.habitacion_ids.includes(
-                                                        habitacion.id,
-                                                    );
-                                                const esActual =
-                                                    habitacion.es_actual;
+                                                const isSelected = form.habitacion_ids.includes(habitacion.id);
+                                                const esActual = habitacion.es_actual;
                                                 return (
                                                     <div key={habitacion.id} onClick={() => toggleHabitacion( habitacion.id)
                                                         }
@@ -366,15 +342,12 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             </div>
                                             <div className="divider my-2"></div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-lg font-bold">
-                                                    Total:
-                                                </span>
+                                                <span className="text-lg font-bold">Total:</span>
                                                 <span className="font-mono text-2xl font-bold text-success">
                                                     €{calcularPrecioTotal()}
                                                 </span>
                                             </div>
-                                            <button type="button" onClick={() => setMostrarExtender(true)}
-                                                className="w-full py-3 px-4 rounded-lg font-semibold mt-4"
+                                            <button type="button" onClick={() => setMostrarExtender(true)} className="w-full py-3 px-4 rounded-lg font-semibold mt-4"
                                                 style={{ backgroundColor: '#7a0202', color: 'white' }}>
                                                 Ampliar reserva
                                             </button>
@@ -399,24 +372,12 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                 </label>
                                                 <select id="status" name="status" value={form.status} onChange={cambiar}
                                                     className="select-bordered select w-full border-gray-300 focus:border-burgundy">
-                                                    <option value="pendiente">
-                                                        Pendiente
-                                                    </option>
-                                                    <option value="confirmado">
-                                                        Confirmado
-                                                    </option>
-                                                    <option value="checked_in">
-                                                        Check-in
-                                                    </option>
-                                                    <option value="checked_out">
-                                                        Check-out
-                                                    </option>
-                                                    <option value="cancelado">
-                                                        Cancelado
-                                                    </option>
-                                                    <option value="no_presentado">
-                                                        No Presentado
-                                                    </option>
+                                                    <option value="pendiente">Pendiente</option>
+                                                    <option value="confirmado">Confirmado</option>
+                                                    <option value="checked_in">Check-in</option>
+                                                    <option value="checked_out">Check-out</option>
+                                                    <option value="cancelado">Cancelado</option>
+                                                    <option value="no_presentado">No Presentado</option>
                                                 </select>
                                                 {errores.status && (
                                                     <label className="label">

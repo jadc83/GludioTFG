@@ -59,10 +59,7 @@ export default function OpcionesPago({
                             monto={monto}
                             pagarAlLlegar={false}
                             onPagoExitoso={(data) => {
-                                console.log('✅ Pago exitoso, datos recibidos:', data);
                                 const localizadorDelPago = data?.localizador || localizador;
-                                console.log('🔖 Localizador para modal:', localizadorDelPago);
-
                                 setDatosReservaConfirmada({
                                     localizador: localizadorDelPago,
                                     nombre: formData.name,

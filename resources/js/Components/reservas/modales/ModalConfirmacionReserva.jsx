@@ -10,13 +10,6 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
         }
     }, [isOpen]);
 
-    // Debug: log de los datos recibidos
-    useEffect(() => {
-        if (isOpen && reserva) {
-            console.log('📋 ModalConfirmacionReserva abierto. Datos recibidos:', reserva);
-        }
-    }, [isOpen, reserva]);
-
     const handleClose = () => {
         setAnimarSalida(true);
         setTimeout(onClose, 300);
@@ -27,16 +20,10 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
     return (
         <>
             {/* Overlay */}
-            <div className={`fixed inset-0 bg-black/40 transition-opacity duration-300  ${ animarSalida ? 'opacity-0' : 'opacity-100' }`}
-                onClick={handleClose} style={{ zIndex: 999 }} />
+            <div className={`modal-overlay ${ animarSalida ? 'opacity-0' : 'opacity-100' }`} onClick={handleClose} />
 
             {/* Modal */}
-            <div className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-                    bg-white rounded-xl shadow-xl transition-all duration-300
-                    w-full max-w-md mx-4 max-h-[90vh] overflow-hidden flex flex-col
-                    border border-gray-100
-                    ${animarSalida ? 'scale-95 opacity-0' : 'scale-100 opacity-100' }`}
-                style={{ zIndex: 1000 }}>
+            <div className={`modal-wrapper ${animarSalida ? 'scale-95 opacity-0' : 'scale-100 opacity-100' }`}>
 
                 {/* Header */}
                 <div className="px-6 py-5 border-b border-gray-100 bg-white">
@@ -114,8 +101,7 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
                     </div>
 
                     {/* Información del pago */}
-                    <div className={`rounded-lg p-4 border text-sm leading-relaxed ${
-                        reserva.pagoAlLlegar ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
+                    <div className={`rounded-lg p-4 border text-sm leading-relaxed ${ reserva.pagoAlLlegar ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
                         {reserva.pagoAlLlegar ? (
                             <div>
                                 <p className="font-semibold mb-1">Pago en Recepción</p>
@@ -137,9 +123,7 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
                 {/* Footer */}
                 <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
                     <button onClick={() => { setAnimarSalida(true); setTimeout(() => { window.location.href = '/'; }, 300); }}
-                        className="w-full bg-black text-white py-2.5 rounded-lg font-semibold text-sm
-                            hover:bg-[#7a0202] transition-colors duration-200
-                            focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2">
+                        className="modal-footer-btn">
                         Volver al Inicio
                     </button>
                 </div>

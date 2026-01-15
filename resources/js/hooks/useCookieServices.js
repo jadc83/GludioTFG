@@ -9,10 +9,6 @@ export function useAnalytics() {
 
     React.useEffect(() => {
         if (hasAcceptedAnalytics()) {
-            // Aquí puedes inicializar Google Analytics o el servicio que uses
-            // Ejemplo:
-            // window.gtag('config', 'GA_MEASUREMENT_ID');
-            console.log('Google Analytics habilitado');
         }
     }, [hasAcceptedAnalytics]);
 }
@@ -25,8 +21,7 @@ export function useMarketingServices() {
 
     React.useEffect(() => {
         if (hasAcceptedMarketing()) {
-            // Aquí puedes inicializar servicios de marketing como Facebook Pixel, etc.
-            console.log('Servicios de marketing habilitados');
+
         }
     }, [hasAcceptedMarketing]);
 }
@@ -40,7 +35,6 @@ export function usePreferenceCookies() {
     React.useEffect(() => {
         if (hasAcceptedPreferences()) {
             // Aquí puedes guardar preferencias del usuario (idioma, tema, etc.)
-            console.log('Cookies de preferencia habilitadas');
         }
     }, [hasAcceptedPreferences]);
 }

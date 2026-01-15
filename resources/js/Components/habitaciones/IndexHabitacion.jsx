@@ -1,5 +1,5 @@
 import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
-import { EyeIcon, InboxIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { InboxIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useState, useMemo, useEffect } from 'react';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
@@ -93,57 +93,26 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                 </thead>
                                 <tbody>
                                     {habitacionesPaginadas.map((habitacion) => (
-                                        <tr
-                                            key={habitacion.id}
-                                            className="hover"
-                                        >
-                                            <td className="font-mono font-semibold">
-                                                {habitacion.numero}
-                                            </td>
-                                            <td className="capitalize">
-                                                {habitacion.tipo}
-                                            </td>
+                                        <tr key={habitacion.id} className="hover">
+                                            <td className="font-mono font-semibold">{habitacion.numero}</td>
+                                            <td className="capitalize">{habitacion.tipo}</td>
                                             <td>
                                                 <span className="badge badge-outline badge-sm">
-                                                    {habitacion.capacidad}{' '}
-                                                    persona
-                                                    {habitacion.capacidad > 1
-                                                        ? 's'
-                                                        : ''}
+                                                    {habitacion.capacidad}{' '}personas
                                                 </span>
                                             </td>
                                             <td>
-                                                <span
-                                                    className={`badge ${obtenerColorEstado(habitacion.estado)} gap-2 capitalize`}
-                                                >
-                                                    {habitacion.estado}
-                                                </span>
+                                                <span className={`badge ${obtenerColorEstado(habitacion.estado)} gap-2 capitalize`}>{habitacion.estado}</span>
                                             </td>
                                             <td className="max-w-xs">
                                                 {habitacion.descripcion || (
-                                                    <span className="text-xs italic text-gray-400">
-                                                        Sin descripción
-                                                    </span>
+                                                    <span className="text-xs italic text-gray-400">Sin descripción</span>
                                                 )}
                                             </td>
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button
-                                                        className="btn btn-ghost btn-outline btn-sm"
-                                                        title="Ver habitación"
-                                                    >
-                                                        <EyeIcon className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-primary btn-sm"
-                                                        title="Editar habitación"
-                                                        onClick={() =>
-                                                            abrirEdicion(
-                                                                habitacion,
-                                                            )
-                                                        }
-                                                    >
-                                                        <PencilIcon className="h-4 w-4" />
+                                                    <button className="btn btn-primary btn-sm" title="Editar habitación" onClick={() => abrirEdicion( habitacion)}>
+                                                        <PencilIcon className="h-6 w-6" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -167,38 +136,23 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={irAPaginaAnterior}
-                                disabled={paginaActual === 1}
-                                className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
-                                title="Página anterior"
-                            >
+                            <button onClick={irAPaginaAnterior} disabled={paginaActual === 1} className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Página anterior">
                                 <ChevronLeftIcon className="h-4 w-4" />
                                 <span className="hidden sm:inline">Anterior</span>
                             </button>
 
                             <div className="flex items-center gap-1 rounded-lg bg-white p-2 shadow-sm">
                                 {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
-                                    <button
-                                        key={pagina}
-                                        onClick={() => setPaginaActual(pagina)}
-                                        className={`btn btn-xs px-3 transition-all ${
-                                            paginaActual === pagina
-                                                ? 'border-0 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                                    <button key={pagina} onClick={() => setPaginaActual(pagina)} className={`btn btn-xs px-3 transition-all ${
+                                            paginaActual === pagina ? 'border-0 bg-gradient-to-r from-red-500 to-red-600'
                                                 : 'border-0 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
+                                        }`}>
                                         {pagina}
                                     </button>
                                 ))}
                             </div>
 
-                            <button
-                                onClick={irAProximaPagina}
-                                disabled={paginaActual === totalPaginas}
-                                className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
-                                title="Próxima página"
-                            >
+                            <button onClick={irAProximaPagina} disabled={paginaActual === totalPaginas} className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
                                 <span className="hidden sm:inline">Siguiente</span>
                                 <ChevronRightIcon className="h-4 w-4" />
                             </button>
@@ -206,11 +160,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                     </div>
                 )}
             </div>
-            <EditHabitacion
-                habitacion={habitacionEditar}
-                abierto={drawerAbierto}
-                onCerrar={cerrarEdicion}
-            />
+            <EditHabitacion habitacion={habitacionEditar} abierto={drawerAbierto} onCerrar={cerrarEdicion}/>
         </>
     );
 }

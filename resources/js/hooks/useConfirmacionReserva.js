@@ -49,10 +49,9 @@ export default function useConfirmacionReserva() {
      */
     const crearReservaAlLlegar = async (datosReserva) => {
         try {
+
             setProcesando(true);
             setErrorPago(null);
-
-            console.log('🔄 Creando reserva (pago al llegar):', datosReserva);
 
             const res = await fetch('/reservas', {
                 method: 'POST',
@@ -104,11 +103,5 @@ export default function useConfirmacionReserva() {
         setErrorPago(null);
     };
 
-    return {
-        procesando,
-        errorPago,
-        prepararDatosReserva,
-        crearReservaAlLlegar,
-        resetearErrores,
-    };
+    return { procesando, errorPago, prepararDatosReserva, crearReservaAlLlegar, resetearErrores};
 }

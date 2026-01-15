@@ -54,17 +54,14 @@ export default function Paso4Confirmacion({
 
             try {
                 const resultado = await calcularMontoTotal();
-                console.log('📊 Resultado calcular precio:', resultado);
 
                 // Si calcularMontoTotal devuelve un objeto con detalles
                 if (typeof resultado === 'object' && resultado.total !== undefined) {
                     setMonto(resultado.total);
-                    console.log('💰 Total:', resultado.total);
 
                     // Usar el precio promedio del backend si está disponible
                     if (resultado.habitaciones && resultado.habitaciones.length > 0) {
                         const precioPromedio = resultado.habitaciones[0].precioPromedioPorNoche || 0;
-                        console.log('🏨 Precio promedio por noche del backend:', precioPromedio);
                         setPrecioPromedioPorNoche(precioPromedio);
                     } else {
                         setPrecioPromedioPorNoche(0);
@@ -73,7 +70,6 @@ export default function Paso4Confirmacion({
                     // Si solo devuelve el total (número)
                     const montoCalculado = resultado;
                     setMonto(montoCalculado);
-                    console.log('⚠️ Resultado es solo número:', montoCalculado);
 
                     // Calcular precio promedio sin redondear a entero
                     const numeroNoches = calcularNoches(rango.from, rango.to);
@@ -81,7 +77,6 @@ export default function Paso4Confirmacion({
                     const precioPorNocheUnaHabitacion = numeroNoches > 0
                         ? (montoCalculado / totalHabitaciones) / numeroNoches
                         : 0;
-                    console.log('🔢 Precio calculado manualmente:', precioPorNocheUnaHabitacion);
                     setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
                 }
             } catch (error) {
@@ -135,7 +130,7 @@ export default function Paso4Confirmacion({
     };
 
     const handleResetearReserva = () => {
-        console.log('🔄 Reseteando reserva...');
+        // debug log removed
         // Cerrar el modal
         setMostrarModalConfirmacion(false);
         setDatosReservaConfirmada(null);
