@@ -1,26 +1,15 @@
 export function useCookieConsent() {
     const getCookieConsent = () => {
         const cookieConsent = localStorage.getItem('cookieConsent');
-        
+
         if (!cookieConsent) {
-            return {
-                accepted: false,
-                analytics: false,
-                marketing: false,
-                preferences: false
-            };
+            return { accepted: false, analytics: false, marketing: false, preferences: false };
         }
 
         try {
             return JSON.parse(cookieConsent);
         } catch (error) {
-            console.error('Error al parsear cookieConsent:', error);
-            return {
-                accepted: false,
-                analytics: false,
-                marketing: false,
-                preferences: false
-            };
+            return { accepted: false,  analytics: false, marketing: false, preferences: false };
         }
     };
 

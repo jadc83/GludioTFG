@@ -87,12 +87,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
      * Obtiene el icono Unicode para un tipo de habitación
      */
     const getIcono = (tipo) => {
-        const iconos = {
-            individual: '🛏️',
-            doble: '🛏️🛏️',
-            familiar: '👨‍👩‍👧‍👦',
-            suite: '👑',
-        };
+        const iconos = { individual: '🛏️', doble: '🛏️🛏️', familiar: '👨‍👩‍👧‍👦',  suite: '👑' };
         return iconos[tipo?.toLowerCase()] || '🏨';
     };
 

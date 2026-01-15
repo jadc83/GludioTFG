@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import PrimaryButton from '@/Components/PrimaryButton';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
 import OpcionesPago from '../modales/OpcionesPago';
@@ -23,14 +22,11 @@ export default function Paso4Confirmacion({
     limpiarRango,
     setValue,
     actualizarSeleccionHabitacion,
-    habitacionesDisponibles,
     agruparHabitacionesPorTipo,
 }) {
     const formData = watch();
-    const page = usePage();
     const {
         procesando,
-        errorPago,
         prepararDatosReserva,
         crearReservaAlLlegar: crearReservaHook,
     } = useConfirmacionReserva();
@@ -251,17 +247,12 @@ export default function Paso4Confirmacion({
                             </div>
 
                             {/* Monto a Pagar */}
-                            <DesgloseFactura
-                                habitacionesSeleccionadas={habitacionesSeleccionadas}
-                                rango={rango}
-                                monto={monto}
-                                getTotalHabitaciones={getTotalHabitaciones}
-                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
-                            />
+                            <DesgloseFactura habitacionesSeleccionadas={habitacionesSeleccionadas}
+                                rango={rango} monto={monto} getTotalHabitaciones={getTotalHabitaciones}
+                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}/>
                         </div>
                     </div>
-
-                    {/* Opción de pago - PRIMERO elegir, LUEGO mostrar formulario */}
+                    {/* Opciones de Pago */}
                     <OpcionesPago
                         pagarAlLlegar={pagarAlLlegar}
                         setPagarAlLlegar={setPagarAlLlegar}

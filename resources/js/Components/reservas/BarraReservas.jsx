@@ -125,10 +125,8 @@ export default function BarraReservas() {
                                 <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                                     Entrada
                                 </label>
-                                <button
-                                    onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
-                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner"
-                                >
+                                <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
+                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner">
                                     {hook.rango?.from ? formatearFecha(hook.rango.from, 'corta') : '—'}
                                 </button>
 
@@ -164,10 +162,8 @@ export default function BarraReservas() {
                                 <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                                     Salida
                                 </label>
-                                <button
-                                    onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')}
-                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={!hook.rango?.from}>
+                                <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')}
+                                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed" disabled={!hook.rango?.from}>
                                     {hook.rango?.to ? formatearFecha(hook.rango.to, 'corta') : '—'}
                                 </button>
 
@@ -182,9 +178,7 @@ export default function BarraReservas() {
                                                     formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
                                             </div>
                                             <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
-                                                <button
-                                                    onClick={hook.limpiarRango}
-                                                    className="btn btn-sm btn-outline">
+                                                <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
                                                     Limpiar
                                                 </button>
                                                 <PrimaryButton onClick={() => {

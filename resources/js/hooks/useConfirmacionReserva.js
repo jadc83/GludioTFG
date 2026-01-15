@@ -17,13 +17,8 @@ export default function useConfirmacionReserva() {
      */
     const prepararDatosReserva = (getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual) => {
         const values = getValues();
-        const habitaciones = Object.entries(habitacionesSeleccionadas)
-            .filter(([, r]) => r.cantidad > 0)
-            .map(([tipo, r]) => ({
-                tipo,
-                cantidad: r.cantidad,
-                personas_por_habitacion: Number(r.personas) > 0 ? Number(r.personas) : 1,
-            }));
+        const habitaciones = Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0)
+              .map(([tipo, r]) => ({ tipo, cantidad: r.cantidad, personas_por_habitacion: Number(r.personas) > 0 ? Number(r.personas) : 1 }));
 
         // Devolver datos crudos el servidor hará la validación y transformación
         return {

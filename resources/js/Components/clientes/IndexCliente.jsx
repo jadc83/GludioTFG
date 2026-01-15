@@ -1,33 +1,16 @@
 import EditCliente from '@/Components/clientes/formulario/EditCliente';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { obtenerColorDocumento, obtenerNombreDocumento } from '@/utils/formatters';
-import { TIPOS_DOCUMENTO } from '@/utils/constantes';
-import {
-EyeIcon,
-FunnelIcon,
-InboxIcon,
-MagnifyingGlassIcon,
-PencilIcon,
-StarIcon,
-ChevronLeftIcon,
-ChevronRightIcon,
-} from '@heroicons/react/24/outline';
+import { EyeIcon, FunnelIcon, InboxIcon, MagnifyingGlassIcon, PencilIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
 import { useState, useMemo, useEffect } from 'react';
 
-export default function IndexCliente({
-clientes = [],
-users = [],
-clientesFiltrados = [],
-}) {
-const [clienteEditar, setClienteEditar] = useState(null);
-const [drawerAbierto, setDrawerAbierto] = useState(false);
-const [paginaActual, setPaginaActual] = useState(1);
-const itemsPorPagina = 10;
-
-const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
-    { tipo_documento: 'todos', busqueda: '' },
-    'panel',
-    ['clientes', 'clientesFiltrados']
+export default function IndexCliente({ clientes = [], users = [], clientesFiltrados = [] }) {
+    const [clienteEditar, setClienteEditar] = useState(null);
+    const [drawerAbierto, setDrawerAbierto] = useState(false);
+    const [paginaActual, setPaginaActual] = useState(1);
+    const itemsPorPagina = 10;
+    const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
+        { tipo_documento: 'todos', busqueda: '' }, 'panel', ['clientes', 'clientesFiltrados']
 );
 
 const todosLosRegistros = clientesFiltrados;
@@ -35,28 +18,18 @@ const todosLosRegistros = clientesFiltrados;
 /**
  * Resetea la paginación cuando cambian los filtros o datos
  */
-useEffect(() => {
-    setPaginaActual(1);
-}, [todosLosRegistros.length, filtros.tipo_documento, filtros.busqueda]);
+useEffect(() => { setPaginaActual(1); }, [todosLosRegistros.length, filtros.tipo_documento, filtros.busqueda]);
+    const abrirEdicion = (cliente) => { setClienteEditar(cliente); setDrawerAbierto(true); };
+    const cerrarEdicion = () => { setDrawerAbierto(false); setTimeout(() => setClienteEditar(null), 300);};
 
-const abrirEdicion = (cliente) => {
-setClienteEditar(cliente);
-setDrawerAbierto(true);
-};
-
-const cerrarEdicion = () => {
-setDrawerAbierto(false);
-setTimeout(() => setClienteEditar(null), 300);
-};
-
-// Paginacion
-const { clientesPaginados, totalPaginas, inicio, fin } = useMemo(() => {
-const totalPaginas = Math.ceil(todosLosRegistros.length / itemsPorPagina);
-const inicio = (paginaActual - 1) * itemsPorPagina;
-const fin = inicio + itemsPorPagina;
-const clientesPaginados = todosLosRegistros.slice(inicio, fin);
-return { clientesPaginados, totalPaginas, inicio, fin };
-}, [todosLosRegistros, paginaActual]);
+    // Paginacion
+    const { clientesPaginados, totalPaginas, inicio, fin } = useMemo(() => {
+    const totalPaginas = Math.ceil(todosLosRegistros.length / itemsPorPagina);
+    const inicio = (paginaActual - 1) * itemsPorPagina;
+    const fin = inicio + itemsPorPagina;
+    const clientesPaginados = todosLosRegistros.slice(inicio, fin);
+    return { clientesPaginados, totalPaginas, inicio, fin };
+    }, [todosLosRegistros, paginaActual]);
 
 const irAProximaPagina = () => {
 if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const irAPaginaAnterior=()=> {
@@ -73,29 +46,17 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
             <div className="relative flex-1">
                 <MagnifyingGlassIcon
                     className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
-                <input
-                    type="text"
-                    className="input-bordered input w-full pl-11"
-                    value={filtros.busqueda}
-                    placeholder="Nombre, email, documento o teléfono..."
-                    onChange={(e) => actualizarFiltro('busqueda', e.target.value)}
-                />
+                <input type="text" className="input-bordered input w-full pl-11" value={filtros.busqueda} placeholder="Nombre, email, documento o teléfono..."
+                    onChange={(e) => actualizarFiltro('busqueda', e.target.value)}/>
             </div>
-            <select
-                className="select-bordered select w-full max-w-xs lg:w-auto"
-                value={filtros.tipo_documento}
-                onChange={(e) => actualizarFiltro('tipo_documento', e.target.value)}
-            >
+            <select className="select-bordered select w-full max-w-xs lg:w-auto" value={filtros.tipo_documento}
+                onChange={(e) => actualizarFiltro('tipo_documento', e.target.value)}>
                 <option value="todos">Todos los documentos</option>
                 <option value="dni">DNI</option>
                 <option value="pasaporte">Pasaporte</option>
                 <option value="tie">TIE</option>
             </select>
-            <button
-                type="button"
-                onClick={limpiarFiltros}
-                className="btn btn-info btn-outline hover:btn-info"
-            >
+            <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline hover:btn-info">
                 <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
             </button>
         </div>
@@ -220,16 +181,14 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button onClick={irAPaginaAnterior} disabled={paginaActual===1}
-                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
-                        title="Página anterior">
+                    <button onClick={irAPaginaAnterior} disabled={paginaActual===1} title="Página anterior"
+                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400">
                         <ChevronLeftIcon className="h-4 w-4" />
                         <span className="hidden sm:inline">Anterior</span>
                     </button>
 
                     <button onClick={irAProximaPagina} disabled={paginaActual===totalPaginas}
-                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400"
-                        title="Próxima página">
+                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
                         <span className="hidden sm:inline">Siguiente</span>
                         <ChevronRightIcon className="h-4 w-4" />
                     </button>

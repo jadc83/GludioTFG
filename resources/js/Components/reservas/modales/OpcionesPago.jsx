@@ -92,12 +92,8 @@ export default function OpcionesPago({
             {opcionPagoSeleccionada && (
                 <div className="border-t border-gray-300 pt-2 mt-2">
                     <label className="flex items-center justify-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={aceptaTerminos}
-                            onChange={(e) => setAceptaTerminos(e.target.checked)}
-                            className="h-3 w-3 cursor-pointer accent-black"
-                        />
+                        <input type="checkbox" checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)}
+                            className="h-3 w-3 cursor-pointer accent-black"/>
                         <span className="text-xs text-gray-700 text-center leading-tight">
                             Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.
                         </span>

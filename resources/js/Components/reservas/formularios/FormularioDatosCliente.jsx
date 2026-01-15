@@ -1,4 +1,3 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
 import Campo from '@/Components/Campo';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
@@ -25,12 +24,7 @@ export default function FormularioDatosCliente({ form, errores, onChange, onNext
                         <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad} onChange={onChange} />
                     </div>
 
-                    <Campo
-                        id="direccion"
-                        label="Dirección"
-                        value={form.direccion}
-                        onChange={onChange}
-                    />
+                    <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange}/>
 
                     <div className="mt-6 flex items-start gap-3 text-sm text-gray-700">
                         <div>

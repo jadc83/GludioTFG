@@ -49,7 +49,7 @@ export default function ExtenderReserva({ reserva, onClose }) {
     if (!infoExtension?.puede_extender) {
         return (
             <div className="bg-white rounded-xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">❌ Extensión no disponible</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Extensión no disponible</h3>
                 <p className="text-gray-600">
                     {infoExtension?.razon || 'No se puede extender esta reserva'}
                 </p>
@@ -268,20 +268,13 @@ export default function ExtenderReserva({ reserva, onClose }) {
                 )}
 
                 {!pagoConfirmado && (
-                    <button
-                        onClick={handleConfirmarSinPago}
-                        disabled={cargando}
-                        className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:opacity-90 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
+                    <button onClick={handleConfirmarSinPago} disabled={cargando} className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:opacity-90 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
                         {cargando ? 'Confirmando...' : 'Confirmar extensión'}
                     </button>
                 )}
 
                 {pagoConfirmado && (
-                    <button
-                        onClick={onClose}
-                        className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:opacity-90 transition mt-2"
-                    >
+                    <button onClick={onClose} className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:opacity-90 transition mt-2">
                         Cerrar
                     </button>
                 )}
@@ -319,16 +312,12 @@ export default function ExtenderReserva({ reserva, onClose }) {
                     </label>
                     <div className="grid grid-cols-3 gap-3 mb-4">
                         {[1, 2, 3].map((dias) => (
-                            <button
-                                key={dias}
-                                onClick={() => handleSeleccionarDias(dias)}
-                                disabled={cargando}
+                            <button key={dias} onClick={() => handleSeleccionarDias(dias)} disabled={cargando}
                                 className={`py-3 px-4 rounded-xl font-bold text-base transition duration-200 border-2 ${
                                     diasSeleccionados === dias
                                         ? 'bg-black text-white border-black shadow-lg scale-105'
                                         : 'bg-white text-gray-800 border-gray-200 hover:border-gray-400 hover:shadow-md'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}>
                                 {dias}
                             </button>
                         ))}

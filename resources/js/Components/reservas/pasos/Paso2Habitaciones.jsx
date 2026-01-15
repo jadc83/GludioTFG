@@ -7,7 +7,6 @@ export default function Paso2Habitaciones({
     actualizarSeleccionHabitacion, getTotalHabitaciones, getTotalDisponibles, avanzarPaso, retrocederPaso
 }) {
     const [imagenModalAbierto, setImagenModalAbierto] = useState(null);
-
     const totalDisponibles = getTotalDisponibles();
     const totalSeleccionado = getTotalHabitaciones();
     const puedoSeleccionarMas = totalSeleccionado < totalDisponibles && totalSeleccionado < CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA;
@@ -59,10 +58,10 @@ export default function Paso2Habitaciones({
                             }`}>
                                 Habitaciones seleccionadas: <span className="font-bold">{totalSeleccionado}</span> / {totalDisponibles} disponibles (máx. {CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA})
                                 {totalSeleccionado >= CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA && (
-                                    <span className="ml-2">⚠️ Límite alcanzado</span>
+                                    <span className="ml-2">Límite alcanzado</span>
                                 )}
                                 {totalSeleccionado >= totalDisponibles && totalSeleccionado < CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA && (
-                                    <span className="ml-2">✅ Todas reservadas</span>
+                                    <span className="ml-2">Todas reservadas</span>
                                 )}
                             </div>
                         )}
@@ -159,11 +158,8 @@ export default function Paso2Habitaciones({
                             <div className="col-span-2">
                                 {/* Foto principal */}
                                 <div className="mb-6 rounded-lg overflow-hidden bg-gray-100 aspect-video">
-                                    <img
-                                        src={getImagen(imagenModalAbierto)}
-                                        alt={imagenModalAbierto}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <img src={getImagen(imagenModalAbierto)} alt={imagenModalAbierto}
+                                        className="w-full h-full object-cover"/>
                                 </div>
 
                                 {/* Descripción */}
@@ -234,37 +230,24 @@ export default function Paso2Habitaciones({
                                     <div className="mb-4">
                                         <label className="text-xs font-semibold uppercase text-gray-600 block mb-3">Seleccionar cantidad</label>
                                         <div className="flex gap-2 items-stretch">
-                                            <button
-                                                type="button"
-                                                onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', Math.max(0, (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) - 1))}
+                                            <button type="button" onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', Math.max(0, (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) - 1))}
                                                 disabled={(habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) === 0}
-                                                className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center"
-                                            >
+                                                className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">
                                                 −
                                             </button>
-                                            <input
-                                                type="number"
-                                                value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}
-                                                readOnly
-                                                className="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-white"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) + 1)}
+                                            <input type="number" readOnly className="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-white"
+                                                value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}/>
+                                            <button type="button" onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) + 1)}
                                                 disabled={(habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) >= agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad}
-                                                className="w-10 h-10 flex-shrink-0 rounded bg-black text-white hover:bg-[#7a0202] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center"
-                                            >
+                                                className="w-10 h-10 flex-shrink-0 rounded bg-black text-white hover:bg-[#7a0202] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">
                                                 +
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Botón guardar */}
-                                    <button
-                                        onClick={() => setImagenModalAbierto(null)}
-                                        className="w-full py-3 rounded-lg bg-[#7a0202] text-white font-bold hover:bg-[#8b0303] transition"
-                                    >
-                                        ✓ Confirmar
+                                    <button onClick={() => setImagenModalAbierto(null)} className="w-full py-3 rounded-lg bg-[#7a0202] text-white font-bold hover:bg-[#8b0303] transition">
+                                        Confirmar
                                     </button>
                                 </div>
                             </div>

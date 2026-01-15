@@ -23,17 +23,7 @@ export function useClienteForm(cliente = null, alGuardar) {
     const { rutaCrear, rutaActualizar } = obtenerRutas();
 
     const form = useFormGenerico(
-        {
-            name: '',
-            email: '',
-            telefono: '',
-            tipo_documento: 'dni',
-            numero_documento: '',
-            nacionalidad: '',
-            direccion: '',
-        },
-        rutaCrear,
-        rutaActualizar,
+        { name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '',  direccion: ''}, rutaCrear,  rutaActualizar,
         () => {
             alGuardar?.();
             router.reload({ only: ['clientes'] });
@@ -44,27 +34,17 @@ export function useClienteForm(cliente = null, alGuardar) {
      * Pre-rellena el formulario cuando cambia el cliente seleccionado
      */
     useEffect(() => {
-        if (cliente) {
-            form.cargarDatos({
-                name: cliente.name || '',
-                email: cliente.email || '',
-                telefono: cliente.telefono || '',
-                tipo_documento: cliente.tipo_documento || 'dni',
-                numero_documento: cliente.numero_documento || '',
-                nacionalidad: cliente.nacionalidad || '',
-                direccion: cliente.direccion || '',
-            });
+        if (cliente) { form.cargarDatos({ name: cliente.name || '',
+                                          email: cliente.email || '',
+                                          telefono: cliente.telefono || '',
+                                          tipo_documento: cliente.tipo_documento || 'dni',
+                                          numero_documento: cliente.numero_documento || '',
+                                          nacionalidad: cliente.nacionalidad || '',
+                                          direccion: cliente.direccion || ''});
         } else {
             form.limpiar();
         }
     }, [cliente?.id]);
 
-    return {
-        formulario: form.formulario,
-        errores: form.errores,
-        estaCargando: form.estaCargando,
-        cambiar: form.cambiar,
-        enviar: form.guardar,
-        limpiar: form.limpiar,
-    };
+    return { formulario: form.formulario, errores: form.errores, estaCargando: form.estaCargando, cambiar: form.cambiar, enviar: form.guardar, limpiar: form.limpiar };
 }

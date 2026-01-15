@@ -14,17 +14,7 @@ export function useFormGenerico(
 ) {
     const esEdicion = !!rutaActualizar;
 
-    const {
-        data: formulario,
-        setData,
-        post,
-        put,
-        patch,
-        processing: estaCargando,
-        errors: errores,
-        reset: resetFormulario,
-        clearErrors,
-    } = useForm(datosIniciales);
+    const { data: formulario, setData, post, put, patch, processing: estaCargando, errors: errores, reset: resetFormulario, clearErrors } = useForm(datosIniciales);
 
     /**
      * Actualiza un campo del formulario
@@ -86,9 +76,7 @@ export function useFormGenerico(
     /**
      * Actualiza un campo específico directamente
      */
-    const actualizarCampo = (campo, valor) => {
-        setData(campo, valor);
-    };
+    const actualizarCampo = (campo, valor) => { setData(campo, valor); };
 
     return {
         // Estado del formulario

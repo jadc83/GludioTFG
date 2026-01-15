@@ -8,22 +8,8 @@ const MAX_FOTOS = 4;
 export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
     const esEdicion = !!habitacionInicial?.id;
 
-    const {
-        data: formulario,
-        setData,
-        processing: estaCargando,
-        errors: errores,
-        reset: resetForm,
-        clearErrors,
-    } = useForm({
-        numero: '',
-        tipo: 'doble',
-        precio_noche: '',
-        capacidad: CAPACIDADES['doble'],
-        estado: 'disponible',
-        descripcion: '',
-        notas: '',
-    });
+    const { data: formulario, setData, processing: estaCargando, errors: errores, reset: resetForm, clearErrors } = useForm({
+        numero: '', tipo: 'doble', precio_noche: '', capacidad: CAPACIDADES['doble'], estado: 'disponible', descripcion: '', notas: '' });
 
     // Estados para manejo de fotos
     const [fotos, setFotos] = useState([]);
@@ -59,13 +45,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
             setFotosAEliminar([]);
             clearErrors();
         }
-    }, [
-        esEdicion,
-        habitacionInicial,
-        habitacionInicial?.id,
-        setData,
-        clearErrors,
-    ]);
+    }, [ esEdicion, habitacionInicial, habitacionInicial?.id, setData, clearErrors]);
 
     /**
      * Actualiza un campo del formulario

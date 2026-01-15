@@ -36,11 +36,7 @@ export default function Paso3Datos({
                             setValue(name, value);
                         }}
 
-                        onNext={(e) => {
-                            e.preventDefault();
-                            avanzarPaso();
-                        }}
-                        hideDates={true}
+                        onNext={(e) => { e.preventDefault(); avanzarPaso(); }} hideDates={true}
                         hideNextButton={true} />
                 </div>
             </main>
