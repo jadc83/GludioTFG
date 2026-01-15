@@ -12,6 +12,7 @@
         "laravel/breeze": "^2.3",
         "laravel/cashier": "^16.1",
         "laravel/framework": "^12.0",
+        "laravel/reverb": "^1.7",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "tightenco/ziggy": "^2.0"
