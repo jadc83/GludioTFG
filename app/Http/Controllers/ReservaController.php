@@ -21,6 +21,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ReservaCompletada;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReservaController extends Controller
@@ -79,7 +81,7 @@ class ReservaController extends Controller
                 $datosValidados['tipo_usuario'] = 'cliente';
             }
 
-            return DB::transaction(function () use ($reservaService, $datosValidados, $request) {
+            $reservaId = DB::transaction(function () use ($reservaService, $datosValidados, $request) {
                 // Generar localizador único
                 $localizador = $reservaService->generarLocalizador();
 
@@ -103,22 +105,37 @@ class ReservaController extends Controller
 
                 event(new ReservaCreada($reserva));
 
-                $respuesta = [
-                    'success' => true,
-                    'message' => "Reserva {$localizador} creada (Total: €{$datosValidados['precio_total']})",
-                    'localizador' => $localizador,
-                    'reserva_id' => $reserva->id
-                ];
-
-                if ($request->wantsJson()) {
-                    return response()->json($respuesta);
-                }
-
-                return redirect()->back()
-                    ->with('success', $respuesta['message'])
-                    ->with('reserva_id', $reserva->id)
-                    ->with('localizador', $localizador);
+                // Devolver id para poder enviar el correo fuera de la transacción
+                return $reserva->id;
             });
+
+            // Cargar la reserva con relaciones necesarias
+            $reserva = Reserva::with(['reservable', 'habitaciones.habitacion'])->find($reservaId);
+
+            try {
+                if ($reserva && ($reserva->reservable?->email || $datosValidados['email'] ?? null)) {
+                    $destino = $reserva->reservable?->email ?? $datosValidados['email'];
+                    Mail::to($destino)->send(new ReservaCompletada($reserva));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo enviar email de reserva creada: ' . $e->getMessage());
+            }
+
+            $respuesta = [
+                'success' => true,
+                'message' => "Reserva {$reserva->localizador} creada (Total: €{$datosValidados['precio_total']})",
+                'localizador' => $reserva->localizador,
+                'reserva_id' => $reserva->id
+            ];
+
+            if ($request->wantsJson()) {
+                return response()->json($respuesta);
+            }
+
+            return redirect()->back()
+                ->with('success', $respuesta['message'])
+                ->with('reserva_id', $reserva->id)
+                ->with('localizador', $reserva->localizador);
         } catch (\Exception $e) {
             Log::error('Error en ReservaController::store', [
                 'mensaje' => $e->getMessage(),
