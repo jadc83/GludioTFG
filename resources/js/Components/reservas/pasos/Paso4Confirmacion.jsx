@@ -178,7 +178,7 @@ export default function Paso4Confirmacion({
     );
 
     return (
-        <main className="flex h-full flex-col bg-gris p-2">
+        <main className="flex h-full flex-col bg-gris p-1.5 md:p-2">
             <header className="mb-0.5 border-b border-gray-200 pb-0.5">
                 <h3 className="mb-0 text-center text-xs font-bold text-gray-900">Confirmación de Reserva</h3>
                 <Migitas />
@@ -187,24 +187,24 @@ export default function Paso4Confirmacion({
             <section className="flex-1 overflow-hidden">
                 <div className="space-y-1">
                     {/* Resumen */}
-                    <div className="bg-white rounded-lg p-2 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-lg p-1.5 md:p-2 shadow-sm border border-gray-100">
                         <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">Resumen de tu Reserva</h4>
 
                         <div className="space-y-1">
                             {/* Número de reserva */}
                             {localizador && (
                                 <div className="pb-0.5">
-                                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
-                                    <p className="font-mono font-bold text-[#7a0202] text-sm tracking-wide">{localizador}</p>
+                                    <p className="text-[10px] md:text-xs font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
+                                    <p className="font-mono font-bold text-[#7a0202] text-xs md:text-sm tracking-wide">{localizador}</p>
                                 </div>
                             )}
 
                             {/* Información de la reserva */}
-                            <div className="grid grid-cols-5 gap-0.5 w-full">
+                            <div className="grid grid-cols-3 md:grid-cols-5 gap-0.5 w-full">
                                 {/* Huésped */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
-                                    <p className="text-[11px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
+                                <div className="px-0.5 md:px-1 text-center">
+                                    <p className="text-[9px] md:text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
+                                    <p className="text-[10px] md:text-[11px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
                                 </div>
 
                                 {/* Fechas */}
@@ -283,7 +283,7 @@ export default function Paso4Confirmacion({
                 </div>
             </section>
 
-            <footer className="border-t border-gray-200 mt-0.5 pt-0.5 bg-gris">
+            <footer className="border-t border-gray-200 mt-0.5 pt-0.5 bg-gris px-1.5 md:px-2">
                 <div className="flex items-center justify-between gap-1">
                     <button onClick={retrocederPaso} className="px-1.5 py-0.5 text-xs font-semibold text-gray-700 bg-gris rounded hover:bg-gray-300 transition">
                         Atrás

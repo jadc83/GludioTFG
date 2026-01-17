@@ -25,12 +25,12 @@ export default function Paso2Habitaciones({
 
     return (
         <div className="flex h-full flex-col bg-gris">
-            <header className="bg-gris px-4 pb-2 pt-3">
-                <h3 className="titulo-rojo titulo-espaciado mb-1 text-center text-lg font-bold">Selecciona tus habitaciones</h3>
+            <header className="bg-gris px-3 md:px-4 pb-2 pt-3">
+                <h3 className="titulo-rojo titulo-espaciado mb-1 text-center text-sm md:text-lg font-bold">Selecciona tus habitaciones</h3>
                 <Migitas />
             </header>
 
-            <main className="flex-1 overflow-y-auto bg-gris px-3 py-2">
+            <main className="flex-1 overflow-y-auto bg-gris px-2 md:px-3 py-2">
                 {estaCargandoHabitaciones ? (
                     <div className="flex h-full flex-col items-center justify-center gap-6 py-12">
                         <div className="flex flex-col items-center gap-4">
@@ -66,7 +66,7 @@ export default function Paso2Habitaciones({
                             </div>
                         )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                         {Object.entries(agruparHabitacionesPorTipo()).map(([tipo, info]) => {
                             const isSelected = habitacionesSeleccionadas[tipo]?.cantidad > 0;
                             const puedeAgregarMas = puedoSeleccionarMas || isSelected;
@@ -131,8 +131,8 @@ export default function Paso2Habitaciones({
                 )}
             </main>
 
-            <footer className="border-t border-gray-300 bg-gris px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
+            <footer className="border-t border-gray-300 bg-gris px-2 md:px-4 py-3">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-2 md:gap-3">
                     <PrimaryButton onClick={() => {
                         retrocederPaso();
                         //delay para que se actualice el paso antes de abrir el calendario
@@ -145,27 +145,27 @@ export default function Paso2Habitaciones({
 
             {/* Modal de imagen grande */}
             {imagenModalAbierto && (
-                <div className="fixed inset-0 z-[999] flex items-start justify-center bg-black/75 overflow-y-auto pt-[60px]" onClick={() => setImagenModalAbierto(null)}>
-                    <div className="relative w-11/12 max-w-4xl rounded-lg bg-white mb-12" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[999] flex items-start justify-center bg-black/75 overflow-y-auto pt-[20px] md:pt-[60px] p-2 md:p-0" onClick={() => setImagenModalAbierto(null)}>
+                    <div className="relative w-full max-w-4xl rounded-lg bg-white mb-12" onClick={(e) => e.stopPropagation()}>
                         {/* Botón cerrar */}
                         <button onClick={() => setImagenModalAbierto(null)}
                             className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#7a0202] text-xl font-bold text-white shadow-md hover:bg-[#8b0303]">
                             ✕
                         </button>
 
-                        <div className="grid grid-cols-3 gap-6 p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-8">
                             {/* Galería y descripción */}
-                            <div className="col-span-2">
+                            <div className="col-span-1 md:col-span-2">
                                 {/* Foto principal */}
-                                <div className="mb-6 rounded-lg overflow-hidden bg-gray-100 aspect-video">
+                                <div className="mb-4 md:mb-6 rounded-lg overflow-hidden bg-gray-100 aspect-video">
                                     <img src={getImagen(imagenModalAbierto)} alt={imagenModalAbierto}
                                         className="w-full h-full object-cover"/>
                                 </div>
 
                                 {/* Descripción */}
-                                <div className="mb-8">
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Habitación {imagenModalAbierto}</h2>
-                                    <p className="text-gray-700 leading-relaxed mb-4">
+                                <div className="mb-6 md:mb-8">
+                                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 md:mb-3">Habitación {imagenModalAbierto}</h2>
+                                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
                                         Disfruta del máximo confort en nuestras habitaciones {imagenModalAbierto.toLowerCase()},
                                         diseñadas para proporcionar una experiencia inolvidable. Cada detalle ha sido cuidadosamente
                                         seleccionado para garantizar tu comodidad y satisfacción.
@@ -174,8 +174,8 @@ export default function Paso2Habitaciones({
 
                                 {/* Servicios */}
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Amenidades incluidas</h3>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Amenidades incluidas</h3>
+                                    <div className="grid grid-cols-2 gap-2 md:gap-3">
                                         {[
                                             { icon: '🛏️', name: 'Cama premium' },
                                             { icon: '❄️', name: 'Aire acondicionado' },
@@ -194,10 +194,10 @@ export default function Paso2Habitaciones({
                             </div>
 
                             {/* Panel lateral */}
-                            <div className="col-span-1">
-                                <div className="rounded-lg border border-gray-200 p-5 shadow-sm sticky top-28 bg-gray-50">
+                            <div className="col-span-1 md:col-span-1">
+                                <div className="rounded-lg border border-gray-200 p-3 md:p-5 shadow-sm md:sticky md:top-28 bg-gray-50">
                                     {/* Título */}
-                                    <h3 className="text-xl font-bold text-gray-900 mb-5">{imagenModalAbierto}</h3>
+                                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-5">{imagenModalAbierto}</h3>
 
                                     {/* Capacidad */}
                                     <div className="mb-5 pb-5 border-b border-gray-200">

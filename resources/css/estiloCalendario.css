@@ -74,21 +74,21 @@
 
 @media (max-width: 480px) {
   :root {
-    --rdp-day-height: 5vh;
-    --rdp-day-width: 5vh;
-    --rdp-day_button-height: 5vh;
-    --rdp-day_button-width: 5vh;
+    --rdp-day-height: 6.5vh;
+    --rdp-day-width: 6.5vh;
+    --rdp-day_button-height: 6.5vh;
+    --rdp-day_button-width: 6.5vh;
 
-    --rdp-dropdown-gap: 0.15rem;
-    --rdp-months-gap: 0.5rem;
+    --rdp-dropdown-gap: 0.25rem;
+    --rdp-months-gap: 1rem;
 
-    --rdp-weekday-padding: 0.8vh 0;
+    --rdp-weekday-padding: 1.2vh 0;
 
-    --rdp-nav-height: 3vh;
+    --rdp-nav-height: 4vh;
   }
 
   .rdp-root {
-    padding-inline-start: 4.5rem;
+    padding-inline-start: 1rem;
   }
 }
 

@@ -22,7 +22,19 @@ export default function BarraReservas() {
     const esPanelControl = page.url?.includes('panel') || page.component === 'PanelControl';
     const [mostrarDetalle, setMostrarDetalle] = useState(false);
     const [calendarioAbierto, setCalendarioAbierto] = useState(null); // 'entrada' o 'salida'
+    const [isMobile, setIsMobile] = useState(false);
     const calendarioRef = useRef(null);
+
+    // Detectar si es móvil
+    useEffect(() => {
+        const detectarMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        detectarMobile();
+        window.addEventListener('resize', detectarMobile);
+        return () => window.removeEventListener('resize', detectarMobile);
+    }, []);
 
     // Cerrar calendario al hacer click fuera
     useEffect(() => {
@@ -75,8 +87,8 @@ export default function BarraReservas() {
         <>
             {/* MODAL PASO 2: HABITACIONES */}
             {hook.pasoActual === 2 && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-[150px]" onClick={() => hook.retrocederPaso()}>
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:pt-[150px] md:items-start" onClick={() => hook.retrocederPaso()}>
+                    <div className="bg-white rounded-lg max-w-sm md:max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <Paso2Habitaciones {...hook} />
                     </div>
                 </div>
@@ -84,8 +96,8 @@ export default function BarraReservas() {
 
             {/* MODAL PASO 3: DATOS DEL CLIENTE */}
             {hook.pasoActual === 3 && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-[150px]" onClick={() => hook.retrocederPaso()}>
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:pt-[150px] md:items-start" onClick={() => hook.retrocederPaso()}>
+                    <div className="bg-white rounded-lg max-w-sm md:max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <Paso3Datos {...hook} />
                     </div>
                 </div>
@@ -93,8 +105,8 @@ export default function BarraReservas() {
 
             {/* MODAL PASO 4: CONFIRMACIÓN */}
             {hook.pasoActual === 4 && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-[150px]" onClick={() => hook.retrocederPaso()}>
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:pt-[150px] md:items-start" onClick={() => hook.retrocederPaso()}>
+                    <div className="bg-white rounded-lg max-w-sm md:max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <Paso4Confirmacion
                             {...hook}
                             usuarioActual={hook.usuarioActual}
@@ -134,25 +146,50 @@ export default function BarraReservas() {
                                 {calendarioAbierto === 'entrada' && (
                                     <>
                                         <style>{`.rdp { --rdp-cell_size: 2.5rem; --rdp-accent_color: #7a0202; --rdp-background_color: #fef2f2; } .rdp-caption { font-weight: 600; color: #1f2937; padding-bottom: 1rem; } .rdp-head_cell { font-weight: 600; color: #6b7280; font-size: 0.875rem; } .rdp-cell { position: relative; } .rdp-day_selected { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_range_middle { background-color: #fee2e2 !important; color: #1f2937; } .rdp-day_range_start, .rdp-day_range_end { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day:hover:not([disabled]) { background-color: #fee2e2; border-radius: 0.5rem; } .rdp-day_today { font-weight: 700; color: #7a0202; }`}</style>
-                                        <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
-                                            <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
-                                                <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
-                                                    locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
-                                                    formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
+                                        {isMobile ? (
+                                            <div className="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center" onClick={() => setCalendarioAbierto(null)}>
+                                                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 px-4 py-6 flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Selecciona entrada</h3>
+                                                    <div className="flex-1">
+                                                        <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
+                                                            locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
+                                                            formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date).substring(0, 3)}} />
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-gray-200">
+                                                        <button onClick={() => { hook.limpiarRango(); setCalendarioAbierto(null); }} className="btn btn-sm btn-outline flex-1">
+                                                            Limpiar
+                                                        </button>
+                                                        <PrimaryButton onClick={() => {
+                                                                setCalendarioAbierto(null);
+                                                                if (hook.pasoActual === 1) hook.avanzarPaso();
+                                                            }}
+                                                            disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs flex-1">
+                                                            Continuar
+                                                        </PrimaryButton>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
-                                                <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
-                                                    Limpiar
-                                                </button>
-                                                <PrimaryButton onClick={() => {
-                                                        setCalendarioAbierto(null);
-                                                        if (hook.pasoActual === 1) hook.avanzarPaso();
-                                                    }}
-                                                    disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs">
-                                                    Continuar
-                                                </PrimaryButton>
+                                        ) : (
+                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
+                                                <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
+                                                    <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
+                                                        locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
+                                                        formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
+                                                </div>
+                                                <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+                                                    <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
+                                                        Limpiar
+                                                    </button>
+                                                    <PrimaryButton onClick={() => {
+                                                            setCalendarioAbierto(null);
+                                                            if (hook.pasoActual === 1) hook.avanzarPaso();
+                                                        }}
+                                                        disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs">
+                                                        Continuar
+                                                    </PrimaryButton>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -171,26 +208,50 @@ export default function BarraReservas() {
                                 {calendarioAbierto === 'salida' && hook.rango?.from && (
                                     <>
                                         <style>{`.rdp { --rdp-cell_size: 2.5rem; --rdp-accent_color: #7a0202; --rdp-background_color: #fef2f2; } .rdp-caption { font-weight: 600; color: #1f2937; padding-bottom: 1rem; } .rdp-head_cell { font-weight: 600; color: #6b7280; font-size: 0.875rem; } .rdp-cell { position: relative; } .rdp-day_selected { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_range_middle { background-color: #fee2e2 !important; color: #1f2937; } .rdp-day_range_start, .rdp-day_range_end { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day:hover:not([disabled]) { background-color: #fee2e2; border-radius: 0.5rem; } .rdp-day_today { font-weight: 700; color: #7a0202; }`}</style>
-                                        <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
-                                            <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
-                                                <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
-                                                    locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
-                                                    formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
+                                        {isMobile ? (
+                                            <div className="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center" onClick={() => setCalendarioAbierto(null)}>
+                                                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 px-4 py-6 flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Selecciona salida</h3>
+                                                    <div className="flex-1">
+                                                        <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
+                                                            locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
+                                                            formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date).substring(0, 3)}} />
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-gray-200">
+                                                        <button onClick={() => { hook.limpiarRango(); setCalendarioAbierto(null); }} className="btn btn-sm btn-outline flex-1">
+                                                            Limpiar
+                                                        </button>
+                                                        <PrimaryButton onClick={() => {
+                                                                setCalendarioAbierto(null);
+                                                                if (hook.pasoActual === 1) hook.avanzarPaso();
+                                                            }}
+                                                            disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs flex-1">
+                                                            Continuar
+                                                        </PrimaryButton>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
-                                                <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
-                                                    Limpiar
-                                                </button>
-                                                <PrimaryButton onClick={() => {
-                                                    setCalendarioAbierto(null);
-
-                                                   if (hook.pasoActual === 1) hook.avanzarPaso();}}
-                                                    disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs">
-
-                                                    Continuar
-                                                </PrimaryButton>
+                                        ) : (
+                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
+                                                <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
+                                                    <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
+                                                        locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
+                                                        formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date)}} />
+                                                </div>
+                                                <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+                                                    <button onClick={hook.limpiarRango} className="btn btn-sm btn-outline">
+                                                        Limpiar
+                                                    </button>
+                                                    <PrimaryButton onClick={() => {
+                                                        setCalendarioAbierto(null);
+                                                        if (hook.pasoActual === 1) hook.avanzarPaso();
+                                                    }}
+                                                        disabled={!hook.rango?.from || !hook.rango?.to} className="py-1 px-3 text-xs">
+                                                        Continuar
+                                                    </PrimaryButton>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </>
                                 )}
                             </div>

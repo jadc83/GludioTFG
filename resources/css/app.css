@@ -38,7 +38,7 @@
   .modal-wrapper {
     @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
       bg-white rounded-xl shadow-xl transition-all duration-300
-      w-full max-w-md mx-4 max-h-[90vh] overflow-hidden flex flex-col
+      w-[calc(100%-2rem)] max-w-sm md:max-w-md md:w-full md:mx-4 max-h-[90vh] overflow-hidden flex flex-col
       border border-gray-100;
     z-index: 1000;
   }
