@@ -1,4 +1,31 @@
 Guía rápida: instalación y configuración de Reverb (Laravel)
+Archivos relacionados (NO modificar — solo se ha editado este MD):
+
+- docs/REVERB_SETUP.md (este archivo — modificado)
+- composer.json (indica el paquete `laravel/reverb` instalado)
+- config/reverb.php
+- config/broadcasting.php
+- app/Http/Controllers/ReservaController.php
+- app/Events/ReservaCreada.php
+- app/Events/ReservaActualizada.php
+- resources/js/bootstrap.js
+- resources/js/Components/reservas/listado/IndexReserva.jsx
+- vendor/laravel/reverb (paquete instalado)
+
+- - -
+Qué crea / actualiza automáticamente al ejecutar `php artisan reverb:install`
+
+- Añade variables al archivo `.env` (genera `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` y añade `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` y variables `VITE_REVERB_*`).
+- Publica el archivo de configuración del paquete en `config/reverb.php` (ejecuta `vendor:publish --provider="Laravel\\Reverb\\ReverbServiceProvider" --tag="reverb-config"`).
+- Inserta una conexión `reverb` en `config/broadcasting.php` si no existe (bloque con `driver => 'reverb'`, `key/secret/app_id` y `options`).
+- Intenta habilitar el broadcasting de Laravel: descomenta `App\\Providers\\BroadcastServiceProvider::class` en `config/app.php` si está comentado y, opcionalmente, ejecuta el instalador de broadcasting (`install:broadcasting`) para crear `routes/channels.php` y los archivos auxiliares.
+- Actualiza el `.env` para establecer `BROADCAST_CONNECTION=reverb` (pregunta interactiva durante la instalación).
+
+Notas sobre lo que NO crea automáticamente
+
+- No crea migraciones ni tablas de base de datos.
+- No publica vistas ni assets del paquete fuera de `vendor/laravel/reverb` (las vistas se cargan desde `vendor` si procede).
+- No modifica controladores ni eventos del proyecto; el instalador sólo agrega/actualiza `.env` y `config`.
 
 Objetivo
 - Dejar Reverb (server WebSocket) funcionando en desarrollo para broadcasting con Laravel Echo.
@@ -11,14 +38,14 @@ Requisitos
 1) Instalar el paquete Reverb
 - Instala la dependencia (si no está instalada):
 
-  composer require ta-tikoma/reverb
+  composer require laravel/reverb
 
 (la librería puede variar; en este proyecto ya aparece código y config de Reverb.)
 
 2) Publicar configuración (si el paquete lo provee)
 - Publica config/archivos del paquete (si aplica):
 
-  php artisan vendor:publish --provider="TaTikoma\Reverb\ReverbServiceProvider" --tag="config"
+  php artisan vendor:publish --provider="Laravel\\Reverb\\ReverbServiceProvider" --tag="reverb-config"
 
 3) Variables de entorno
 - Añade en tu `.env` (ejemplo):
@@ -139,7 +166,34 @@ Requisitos
 - Para datos sensibles usa `PrivateChannel` y configura auth en Echo (laravel-echo + axios). 
 - En producción usa TLS (`wss`) y un servidor WebSocket separado o servicio gestionado.
 
+Implementación en este proyecto
+
+- Controlador: en `app/Http/Controllers/ReservaController.php` se emiten los eventos relacionados con reservas:
+  - `event(new \App\Events\ReservaCreada($reserva));` cuando se crea una reserva (método `store`).
+  - `event(new \App\Events\ReservaActualizada($reserva));` cuando se actualiza una reserva (método `update`).
+  Consulta el controlador para ver el flujo de creación/actualización: [app/Http/Controllers/ReservaController.php](app/Http/Controllers/ReservaController.php#L1-L220).
+
+- Eventos: las clases de evento implementan `ShouldBroadcastNow` y usan `PrivateChannel`:
+  - `app/Events/ReservaCreada.php` — difunde en `new PrivateChannel('reservas')`.
+  - `app/Events/ReservaActualizada.php` — difunde en `new PrivateChannel('reservas')` y `new PrivateChannel('reservas.{id}')`.
+  Estas clases envían los datos mínimos necesarios en `broadcastWith()` (id, localizador, status, fechas, precio).
+  Ver fuentes: [app/Events/ReservaCreada.php](app/Events/ReservaCreada.php#L1-L80) y [app/Events/ReservaActualizada.php](app/Events/ReservaActualizada.php#L1-L120).
+
+- Configuración de broadcasting: el proyecto usa una conexión `reverb` en `config/broadcasting.php` con driver tipo `reverb` (el adaptador actúa como driver `pusher` en el cliente). Revisa [config/broadcasting.php](config/broadcasting.php#L1-L120) y [config/reverb.php](config/reverb.php#L1-L120) para parámetros de servidor y apps.
+
+- Frontend: Echo se inicializa en `resources/js/bootstrap.js` usando `pusher-js` apuntando al servidor Reverb (host/port/key desde `VITE_REVERB_*` o `REVERB_*`).
+  - El componente de listado de reservas `resources/js/Components/reservas/listado/IndexReserva.jsx` se suscribe al canal privado `reservas` y escucha los eventos `ReservaCreada` y `ReservaActualizada` para forzar una recarga/refresh de la tabla.
+  - Rutas de autenticación para canales privados seguirán usando la ruta de broadcasting de Laravel (`/broadcasting/auth`) y requieren autenticación por defecto.
+  Ver inicialización y suscripción en: [resources/js/bootstrap.js](resources/js/bootstrap.js#L1-L80) y [resources/js/Components/reservas/listado/IndexReserva.jsx](resources/js/Components/reservas/listado/IndexReserva.jsx#L40-L60).
+
+- Comportamiento importante:
+  - Los eventos usan `ShouldBroadcastNow`, por lo que se transmiten de forma síncrona sin necesidad de workers de cola (útil en desarrollo).
+  - Al usar `PrivateChannel` es necesario que el cliente esté autenticado y que la ruta de auth de broadcasting (por defecto `/broadcasting/auth`) devuelva autorización.
+
 Notas finales
-- Esta guía asume que el paquete Reverb ya está presente en el proyecto (en este repo ya existen `php artisan reverb:*` y `config/reverb.php`). Ajusta nombres de provider/tag según el paquete que uses.
+- En este proyecto el paquete instalado es `laravel/reverb` (ver `composer.json`).
+- El proveedor de servicio y comandos provienen del namespace `Laravel\\Reverb` (ej. `Laravel\\Reverb\\ReverbServiceProvider`).
+- Al publicar la configuración use el tag `reverb-config` o `reverb` según prefieras; el paquete registra ambos.
+- Esta guía asume que ya existen `php artisan reverb:*` y `config/reverb.php` en el repo.
 
 Si quieres, preparo un archivo de ejemplo `App\Events\ReservaActualizada.php` y las líneas exactas a añadir en `config/broadcasting.php` y `resources/js/bootstrap.js` adaptadas al proyecto. Dime si lo dejo así y lo genero automáticamente.
