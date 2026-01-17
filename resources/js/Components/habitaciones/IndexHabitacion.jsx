@@ -79,8 +79,8 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                     </div>
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
-                        <div className="overflow-x-auto p-4">
-                            <table className="table-compact table-pro table w-full">
+                        <div className="overflow-x-auto p-2 md:p-4">
+                            <table className="table-compact table-pro table w-full text-xs md:text-sm">
                                 <thead>
                                     <tr>
                                         <th>Número</th>
@@ -125,8 +125,8 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 )}
 
                 {habitaciones.length > 0 && (
-                    <div className="flex flex-col items-center justify-between gap-6 border-t border-gray-200 bg-gris px-6 py-6 sm:flex-row">
-                        <div className="text-sm font-medium text-gray-700">
+                    <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 bg-gris px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 sm:flex-row">
+                        <div className="text-xs font-medium text-gray-700 md:text-sm">
                             <span className="font-semibold text-primary">{inicio + 1}</span>
                             <span className="mx-1 text-gray-500">a</span>
                             <span className="font-semibold text-primary">{Math.min(fin, habitaciones.length)}</span>
@@ -135,26 +135,26 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             <span className="ml-1 text-gray-600">habitacion{habitaciones.length !== 1 ? 'es' : ''}</span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <button onClick={irAPaginaAnterior} disabled={paginaActual === 1} className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Página anterior">
-                                <ChevronLeftIcon className="h-4 w-4" />
-                                <span className="hidden sm:inline">Anterior</span>
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <button onClick={irAPaginaAnterior} disabled={paginaActual === 1} className="btn btn-xs md:btn-sm gap-1 md:gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Página anterior">
+                                <ChevronLeftIcon className="h-3 w-3 md:h-4 md:w-4" />
+                                <span className="hidden sm:inline text-xs md:text-base">Anterior</span>
                             </button>
 
-                            <div className="flex items-center gap-1 rounded-lg bg-white p-2 shadow-sm">
+                            <div className="flex items-center gap-1 rounded-lg bg-white p-1 md:p-2 shadow-sm">
                                 {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
-                                    <button key={pagina} onClick={() => setPaginaActual(pagina)} className={`btn btn-xs px-3 transition-all ${
-                                            paginaActual === pagina ? 'border-0 bg-gradient-to-r from-red-500 to-red-600'
-                                                : 'border-0 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    <button key={pagina} onClick={() => setPaginaActual(pagina)} className={`btn btn-xs px-2 md:px-3 transition-all ${
+                                            paginaActual === pagina ? 'border-0 bg-gradient-to-r from-red-500 to-red-600 text-xs md:text-base'
+                                                : 'border-0 bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs md:text-base'
                                         }`}>
                                         {pagina}
                                     </button>
                                 ))}
                             </div>
 
-                            <button onClick={irAProximaPagina} disabled={paginaActual === totalPaginas} className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
-                                <span className="hidden sm:inline">Siguiente</span>
-                                <ChevronRightIcon className="h-4 w-4" />
+                            <button onClick={irAProximaPagina} disabled={paginaActual === totalPaginas} className="btn btn-xs md:btn-sm gap-1 md:gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
+                                <span className="hidden sm:inline text-xs md:text-base">Siguiente</span>
+                                <ChevronRightIcon className="h-3 w-3 md:h-4 md:w-4" />
                             </button>
                         </div>
                     </div>

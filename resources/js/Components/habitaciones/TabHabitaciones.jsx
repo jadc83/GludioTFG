@@ -24,21 +24,21 @@ export default function TabHabitaciones({ habitaciones = [] }) {
     }, [filtros]);
 
     return (
-        <div className="p-6">
-            <div className="mb-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-medium">
+        <div className="p-3 md:p-6">
+            <div className="mb-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:gap-3 lg:grid-cols-5">
+                    <div className="form-control w-full">
+                        <label className="label py-1">
+                            <span className="label-text text-xs md:text-sm font-medium">
                                 Búsqueda
                             </span>
                         </label>
-                        <input type="text" placeholder="busca algun dato" className="input-bordered input w-full" value={filtros.busqueda || ''}
+                        <input type="text" placeholder="busca algun dato" className="input input-bordered w-full" value={filtros.busqueda || ''}
                             onChange={(e) => actualizarFiltro('busqueda', e.target.value)} />
                     </div>
-                    <div className="form-control">
-                        <label className="label">Estado</label>
-                        <select className="select-bordered select w-full" value={filtros.estado} onChange={(e) =>
+                    <div className="form-control w-full">
+                        <label className="label py-1"><span className="label-text text-xs md:text-sm">Estado</span></label>
+                        <select className="select select-bordered w-full" value={filtros.estado} onChange={(e) =>
                                 actualizarFiltro('estado', e.target.value)}>
                             <option value="todos">Todos</option>
                             <option value="disponible">Disponibles</option>
@@ -48,11 +48,11 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         </select>
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-medium">Tipo</span>
+                    <div className="form-control w-full">
+                        <label className="label py-1">
+                            <span className="label-text text-xs md:text-sm font-medium">Tipo</span>
                         </label>
-                        <select className="select-bordered select w-full" value={filtros.tipo} onChange={(e) => actualizarFiltro('tipo', e.target.value)}>
+                        <select className="select select-bordered w-full" value={filtros.tipo} onChange={(e) => actualizarFiltro('tipo', e.target.value)}>
                             <option value="todos">Todos</option>
                             <option value="doble">Doble</option>
                             <option value="suite">Suite</option>
@@ -60,12 +60,12 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         </select>
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">Precio</label>
+                    <div className="form-control w-full">
+                        <label className="label py-1"><span className="label-text text-xs md:text-sm">Precio</span></label>
                         <div className="flex gap-2">
-                            <input type="number" placeholder="Mín" className="input-bordered input w-full" value={filtros.precio_min || ''}
+                            <input type="number" placeholder="Mín" className="input input-bordered w-full" value={filtros.precio_min || ''}
                                 onChange={(e) => actualizarFiltro('precio_min', e.target.value)}/>
-                            <input type="number" placeholder="Máx" className="input-bordered input w-full" value={filtros.precio_max || ''}
+                            <input type="number" placeholder="Máx" className="input input-bordered w-full" value={filtros.precio_max || ''}
                                 onChange={(e) => actualizarFiltro('precio_max', e.target.value)}/>
                         </div>
                     </div>

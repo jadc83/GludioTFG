@@ -42,22 +42,22 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
 
     return (
     <>
-        <div className="mb-6 flex flex-col items-center gap-4 lg:flex-row">
+        <div className="mb-4 flex flex-col items-stretch gap-2 md:items-center md:flex-row md:gap-3">
             <div className="relative flex-1">
                 <MagnifyingGlassIcon
-                    className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
-                <input type="text" className="input-bordered input w-full pl-11" value={filtros.busqueda} placeholder="Nombre, email, documento o teléfono..."
+                    className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 transform text-gray-400" />
+                <input type="text" className="input input-bordered w-full pl-10 text-sm md:text-base" value={filtros.busqueda} placeholder="Nombre, email, documento..."
                     onChange={(e) => actualizarFiltro('busqueda', e.target.value)}/>
             </div>
-            <select className="select-bordered select w-full max-w-xs lg:w-auto" value={filtros.tipo_documento}
+            <select className="select select-bordered w-full md:max-w-xs text-sm md:text-base" value={filtros.tipo_documento}
                 onChange={(e) => actualizarFiltro('tipo_documento', e.target.value)}>
                 <option value="todos">Todos los documentos</option>
                 <option value="dni">DNI</option>
                 <option value="pasaporte">Pasaporte</option>
                 <option value="tie">TIE</option>
             </select>
-            <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline hover:btn-info">
-                <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
+            <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline btn-sm md:btn-md w-full md:w-auto hover:btn-info">
+                <FunnelIcon className="mr-2 h-3 w-3 md:h-4 md:w-4" /> <span className="hidden sm:inline">Limpiar filtros</span>
             </button>
         </div>
 
@@ -94,8 +94,8 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
             </div>
             ) : (
             <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
-                <div className="overflow-x-auto p-4">
-                    <table className="table-compact table-pro table w-full">
+                <div className="overflow-x-auto p-2 md:p-4">
+                    <table className="table-compact table-pro table w-full text-xs md:text-sm">
                         <thead>
                             <tr>
                                 <th>Nombre</th>
@@ -170,8 +170,8 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
 
             {todosLosRegistros.length > 0 && (
             <div
-                className="flex flex-col items-center justify-between gap-6 border-t border-gray-200 bg-gris px-6 py-6 sm:flex-row">
-                <div className="text-sm font-medium text-gray-700">
+                className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 bg-gris px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 sm:flex-row">
+                <div className="text-xs font-medium text-gray-700 md:text-sm">
                     <span className="font-semibold text-primary">{inicio + 1}</span>
                     <span className="mx-1 text-gray-500">a</span>
                     <span className="font-semibold text-primary">{Math.min(fin, todosLosRegistros.length)}</span>
@@ -180,17 +180,17 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                     <span className="ml-1 text-gray-600">cliente{todosLosRegistros.length !== 1 ? 's' : ''}</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                     <button onClick={irAPaginaAnterior} disabled={paginaActual===1} title="Página anterior"
-                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400">
-                        <ChevronLeftIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline">Anterior</span>
+                        className="btn btn-xs md:btn-sm gap-1 md:gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400">
+                        <ChevronLeftIcon className="h-3 w-3 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline text-xs md:text-base">Anterior</span>
                     </button>
 
                     <button onClick={irAProximaPagina} disabled={paginaActual===totalPaginas}
-                        className="btn btn-sm gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
-                        <span className="hidden sm:inline">Siguiente</span>
-                        <ChevronRightIcon className="h-4 w-4" />
+                        className="btn btn-xs md:btn-sm gap-1 md:gap-2 border-0 text-gray-700 transition-all hover:text-primary disabled:text-gray-400" title="Próxima página">
+                        <span className="hidden sm:inline text-xs md:text-base">Siguiente</span>
+                        <ChevronRightIcon className="h-3 w-3 md:h-4 md:w-4" />
                     </button>
                 </div>
             </div>

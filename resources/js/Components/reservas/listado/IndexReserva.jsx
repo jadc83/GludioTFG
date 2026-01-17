@@ -91,26 +91,26 @@ export default function IndexReserva({ reservas = [] }) {
 
     return (
         <>
-            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <div>
-                    <label className="label">Localizador</label>
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:gap-3 lg:grid-cols-5">
+                <div className="form-control w-full">
+                    <label className="label py-1"><span className="label-text text-xs md:text-sm">Localizador</span></label>
                     <input type="text" placeholder="Introduce localizador de reserva." value={filtros.localizador}
-                        onChange={(e) => actualizarFiltro('localizador', e.target.value)} className="input-bordered input w-full font-mono"/>
+                        onChange={(e) => actualizarFiltro('localizador', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
                 </div>
 
-                <div>
-                    <label className="label">Cliente</label>
-                    <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)} className="input-bordered input w-full"/>
+                <div className="form-control w-full">
+                    <label className="label py-1"><span className="label-text text-xs md:text-sm">Cliente</span></label>
+                    <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
                 </div>
 
-                <div>
-                    <label className="label">Habitación</label>
-                    <input type="text" placeholder="101, 102..." value={filtros.habitacion} onChange={(e) => actualizarFiltro('habitacion', e.target.value)} className="input-bordered input w-full"/>
+                <div className="form-control w-full">
+                    <label className="label py-1"><span className="label-text text-xs md:text-sm">Habitación</span></label>
+                    <input type="text" placeholder="101, 102..." value={filtros.habitacion} onChange={(e) => actualizarFiltro('habitacion', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
                 </div>
 
-                <div>
-                    <label className="label">Estado</label>
-                    <select value={filtros.status} onChange={(e) => actualizarFiltro('status', e.target.value)} className="select-bordered select w-full">
+                <div className="form-control w-full">
+                    <label className="label py-1"><span className="label-text text-xs md:text-sm">Estado</span></label>
+                    <select value={filtros.status} onChange={(e) => actualizarFiltro('status', e.target.value)} className="select select-bordered w-full text-sm md:text-base">
                         <option value="todos">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
                         <option value="confirmado">Confirmado</option>
@@ -120,9 +120,9 @@ export default function IndexReserva({ reservas = [] }) {
                     </select>
                 </div>
 
-                <div className="self-end">
-                    <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline w-full hover:btn-info" >
-                        <FunnelIcon className="mr-2 h-4 w-4" /> Limpiar filtros
+                <div className="form-control w-full">
+                    <button type="button" onClick={limpiarFiltros} className="btn btn-info btn-outline btn-sm md:btn-md w-full hover:btn-info mt-6" >
+                        <FunnelIcon className="h-3 w-3 md:h-4 md:w-4" /> <span className="hidden sm:inline">Limpiar</span>
                     </button>
                 </div>
             </div>
@@ -142,8 +142,8 @@ export default function IndexReserva({ reservas = [] }) {
                     </div>
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
-                        <div className="overflow-x-auto p-4">
-                            <table className="table-compact table-pro table w-full">
+                        <div className="overflow-x-auto p-2 md:p-4">
+                            <table className="table-compact table-pro table w-full text-xs md:text-sm">
                                 <thead>
                                     <tr>
                                         <th>Localizador</th>

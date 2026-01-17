@@ -71,8 +71,14 @@
 .contenidoEncabezado {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 16px 24px;
+    padding: 12px 16px;
     background: #f8fafc;
+}
+
+@media (min-width: 768px) {
+    .contenidoEncabezado {
+        padding: 16px 24px;
+    }
 }
 
 .flexEncabezado {
@@ -83,9 +89,15 @@
 }
 
 .tituloEncabezado {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #1f2937;
+}
+
+@media (min-width: 768px) {
+    .tituloEncabezado {
+        font-size: 1.5rem;
+    }
 }
 
 .subtituloEncabezado {
@@ -109,7 +121,13 @@
 .envoltorioContenido {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 12px 8px;
+}
+
+@media (min-width: 768px) {
+    .envoltorioContenido {
+        padding: 24px;
+    }
 }
 
 
