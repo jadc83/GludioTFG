@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
@@ -46,6 +46,21 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
 }
 export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = []}) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
+
+    // Cargar tab desde localStorage al montar
+    useEffect(() => {
+        const tabGuardado = localStorage.getItem('panelControlTab');
+        if (tabGuardado && TABS.some(t => t.id === tabGuardado)) {
+            setTabActiva(tabGuardado);
+        }
+    }, []);
+
+    // Guardar tab en localStorage cuando cambia
+    const cambiarTab = (tabId) => {
+        setTabActiva(tabId);
+        localStorage.setItem('panelControlTab', tabId);
+    };
+
     return (
         <AuthenticatedLayout>
             <div className="contenedorPrincipal">
@@ -72,7 +87,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
                         <div className="mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1">
                             <div className="inline-flex gap-2">
                                 {TABS.map((tab) => (
-                                    <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={setTabActiva}/>
+                                    <BotonTab key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} activa={tabActiva === tab.id} onClick={cambiarTab}/>
                                 ))}
                             </div>
                         </div>
