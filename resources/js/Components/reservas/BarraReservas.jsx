@@ -14,14 +14,13 @@ import { useState, useEffect, useRef } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { usePage } from '@inertiajs/react';
-import { CalendarIcon, HomeIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 
 export default function BarraReservas() {
     const hook = useReservaForm();
     const page = usePage();
     const esPanelControl = page.url?.includes('panel') || page.component === 'PanelControl';
-    const [mostrarDetalle, setMostrarDetalle] = useState(false);
-    const [calendarioAbierto, setCalendarioAbierto] = useState(null); // 'entrada' o 'salida'
+    const [calendarioAbierto, setCalendarioAbierto] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
     const calendarioRef = useRef(null);
 
@@ -63,16 +62,6 @@ export default function BarraReservas() {
             window.removeEventListener('abrirCalendario', handleAbrirCalendario);
         };
     }, []);
-
-
-
-    const ErrorToast = ({ message }) => (
-        <div className="toast toast-center toast-top z-50">
-            <div className="alert alert-error shadow-lg">
-                <span>{message}</span>
-            </div>
-        </div>
-    );
 
     // Calcular noches
     const noches = hook.rango?.from && hook.rango?.to ? calcularNoches(hook.rango.from, hook.rango.to) : 0;
@@ -134,9 +123,7 @@ export default function BarraReservas() {
                             </div>
                             {/* Input Entrada */}
                             <div className="flex items-center gap-2 relative">
-                                <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                                    Entrada
-                                </label>
+                                <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Entrada</label>
                                 <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
                                     className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner">
                                     {hook.rango?.from ? formatearFecha(hook.rango.from, 'corta') : '—'}
