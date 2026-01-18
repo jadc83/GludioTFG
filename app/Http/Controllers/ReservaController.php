@@ -4,21 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Events\ReservaCreada;
 use App\Events\ReservaActualizada;
+use App\Events\ReservaBorrada;
 use App\Http\Requests\StoreReservaRequest;
 use App\Http\Requests\UpdateReservaRequest;
 use App\Models\Cliente;
 use App\Models\Habitacion;
-use App\Models\HabitacionReserva;
 use App\Models\Reserva;
 use App\Models\User;
 use App\Services\ReservaService;
 use App\Services\HabitacionService;
 use App\Services\PrecioService;
-use App\Helpers\ErrorHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -332,6 +330,9 @@ class ReservaController extends Controller
     public function destroy(Reserva $reserva)
     {
         try {
+            // Disparar el evento ANTES de eliminar
+            event(new ReservaBorrada($reserva));
+
             DB::transaction(function () use ($reserva) {
                 $reserva->habitaciones()->delete();
                 $reserva->delete();

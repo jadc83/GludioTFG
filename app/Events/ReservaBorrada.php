@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ReservaCreada implements ShouldBroadcastNow
+class ReservaBorrada implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -26,6 +26,6 @@ class ReservaCreada implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
-        return [ 'id' => $this->reserva->id ];
+        return [ 'id' => $this->reserva->id];
     }
 }

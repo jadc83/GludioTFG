@@ -12,23 +12,10 @@ class Reserva extends Model
 
     protected $table = 'reservas';
 
-    protected $fillable = [
-        'localizador',
-        'user_id',
-        'booked_by_user_id',
-        'check_in',
-        'check_out',
-        'precio_total',
-        'status',
-        'pago',
-        'notas',
-        'reservable_type',
-        'reservable_id',
-    ];
+    protected $fillable = [ 'localizador', 'user_id', 'booked_by_user_id', 'check_in', 'check_out', 'precio_total',
+        'status', 'pago', 'notas', 'reservable_type', 'reservable_id'];
 
-    protected $casts = [
-        'precio_total' => 'float',
-    ];
+    protected $casts = [ 'precio_total' => 'float'];
 
     public function reservable()
     {
@@ -40,22 +27,22 @@ class Reserva extends Model
         return $this->belongsTo(User::class, 'booked_by_user_id');
     }
 
-    /**
-     * Scope para eager load de reservable (Cliente o User)
-     */
-    public function scopeWithReservable($query)
-    {
-        return $query->with(['reservable']);
-    }
 
     public function habitaciones()
     {
         return $this->hasMany(HabitacionReserva::class, 'reserva_id');
-    }
+        }
 
-    public function pagos()
+        public function pagos()
+        {
+            return $this->hasMany(Pago::class, 'reserva_id');
+            }
+
+    /** Scopes **/
+
+    public function scopeWithReservable($query)
     {
-        return $this->hasMany(Pago::class, 'reserva_id');
+        return $query->with(['reservable']);
     }
 
     public function scopeStatus($query, $status)

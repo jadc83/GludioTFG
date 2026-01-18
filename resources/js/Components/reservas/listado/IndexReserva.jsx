@@ -16,18 +16,18 @@ export default function IndexReserva({ reservas = [] }) {
 
     useEffect(() => {
         const contador = setTimeout(() => {
-            const params = {
+            const criterios = {
                 status: filtros.status !== 'todos' ? filtros.status : undefined,
                 localizador: filtros.localizador || undefined,
                 cliente: filtros.cliente || undefined,
                 habitacion: filtros.habitacion || undefined,
             };
 
-            Object.keys(params).forEach(
-                (key) => params[key] === undefined && delete params[key],
+            Object.keys(criterios).forEach(
+                (key) => criterios[key] === undefined && delete criterios[key],
             );
 
-            router.get(route('panel'), params, { preserveState: true, preserveScroll: true, replace: true });
+            router.get(route('panel'), criterios, { preserveState: true, preserveScroll: true, replace: true });
         }, 300);
 
         return () => clearTimeout(contador);
@@ -44,16 +44,14 @@ export default function IndexReserva({ reservas = [] }) {
 
         const channel = window.Echo.private('reservas');
         channel.listen('ReservaCreada', handler);
-        channel.listen('.ReservaCreada', handler);
         channel.listen('ReservaActualizada', handler);
-        channel.listen('.ReservaActualizada', handler);
+        channel.listen('ReservaBorrada', handler);
 
         return () => {
             try {
                 channel.stopListening('ReservaCreada');
-                channel.stopListening('.ReservaCreada');
                 channel.stopListening('ReservaActualizada');
-                channel.stopListening('.ReservaActualizada');
+                channel.stopListening('ReservaBorrada');
             } catch (err) {
 
             }

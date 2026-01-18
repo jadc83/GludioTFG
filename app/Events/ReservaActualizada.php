@@ -35,13 +35,6 @@ class ReservaActualizada implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
-        return [
-            'id' => $this->reserva->id,
-            'localizador' => $this->reserva->localizador ?? null,
-            'status' => $this->reserva->status ?? null,
-            'check_in' => $this->reserva->check_in ?? null,
-            'check_out' => $this->reserva->check_out ?? null,
-            'precio_total' => $this->reserva->precio_total ?? null,
-        ];
+        return [ 'id' => $this->reserva->id ];
     }
 }
