@@ -11,6 +11,11 @@
     text-rendering: optimizeLegibility;
   }
 
+/* Restaurar ubicación por defecto del popup de calendario en pantallas >1366px */
+@media (min-width: 1367px) {
+  .calendar-pos-1366 { top: 170px !important; border: 1px solid #f3f4f6 !important; }
+}
+
   /* Fuente mono para números, códigos y datos técnicos */
   .font-mono {
     font-feature-settings: 'zero', 'cv11', 'ss01';
