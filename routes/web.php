@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
 Route::get('/terminos', function () { return Inertia::render('TerminosCondiciones'); })->name('terminos');
+Route::get('/scan-qr', function () { return Inertia::render('ScanQR'); })->name('scan-qr')->middleware(['auth', 'verified']);
 
 // Rutas de reservas
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])->name('reserva.show');

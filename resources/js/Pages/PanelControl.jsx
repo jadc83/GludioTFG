@@ -5,6 +5,7 @@ import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitac
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {BriefcaseIcon, HomeIcon, UsersIcon} from '@heroicons/react/24/outline';
+import { Link } from '@inertiajs/react';
 import TabClientes from '../Components/clientes/TabClientes';
 import TabReservas from '../Components/reservas/listado/TabReservas';
 
@@ -74,6 +75,12 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
                                     </h1>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    <Link href={route('scan-qr')} className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Escáner QR
+                                    </Link>
                                     <CreateCliente iconOnly />
                                     <CreateHabitacion iconOnly />
                                 </div>

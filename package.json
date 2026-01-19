@@ -45,6 +45,7 @@
         "daisyui": "^5.5.5",
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.19",
+        "jsqr": "^1.4.0",
         "react-day-picker": "^9.11.3",
         "react-hook-form": "^7.70.0",
         "recharts": "^3.5.1",
