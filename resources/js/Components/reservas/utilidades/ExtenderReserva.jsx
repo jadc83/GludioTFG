@@ -201,7 +201,7 @@ export default function ExtenderReserva({ reserva, onClose }) {
                     </div>
                     <div className="border-t pt-2 flex justify-between">
                         <span className="font-bold">Precio adicional:</span>
-                        <span className="font-bold text-lg" style={{ color: '#7a0202' }}>
+                        <span className="font-bold text-lg accent-1366">
                             €{precioExtension.precio.toFixed(2)}
                         </span>
                     </div>
@@ -249,7 +249,7 @@ export default function ExtenderReserva({ reserva, onClose }) {
                     </div>
                     <div className="border-t pt-3 flex justify-between">
                         <span className="font-bold text-gray-800">Precio adicional:</span>
-                        <span className="font-bold text-lg" style={{ color: '#7a0202' }}>
+                        <span className="font-bold text-lg accent-1366">
                             €{precioExtension.precio.toFixed(2)}
                         </span>
                     </div>

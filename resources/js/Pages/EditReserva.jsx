@@ -202,10 +202,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <UserIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
-                                            <h3 className="font-bold">
-                                                Cliente
-                                            </h3>
+                                            <UserIcon className="h-5 w-5 accent-1366" />
+                                            <h3 className="font-bold">Cliente</h3>
                                         </div>
                                         <div className="space-y-2">
                                             <div className="text-lg font-semibold">
@@ -225,10 +223,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <CalendarIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
-                                            <h3 className="font-bold">
-                                                Fechas de Reserva
-                                            </h3>
+                                            <CalendarIcon className="h-5 w-5 accent-1366" />
+                                            <h3 className="font-bold">Fechas de Reserva</h3>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <Campo id="check_in" label="Check-in" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
@@ -242,10 +238,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <HomeIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
-                                            <h3 className="font-bold">
-                                                Habitaciones
-                                            </h3>
+                                            <HomeIcon className="h-5 w-5 accent-1366" />
+                                            <h3 className="font-bold">Habitaciones</h3>
                                         </div>
 
                                         {recalculando && (
@@ -267,8 +261,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         }`}>
                                                         <div className="card-body p-3">
                                                             <div className="mb-2 flex items-center justify-between">
-                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm"
-                                                                    style={{ accentColor: '#7a0202'}}/>
+                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm accent-checkbox-1366" />
                                                                 <span className="font-mono font-bold">
                                                                     { habitacion.numero }
                                                                 </span>
@@ -285,7 +278,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                 </div>
                                                                 {form.check_in && form.check_out ? (
                                                                     <>
-                                                                        <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
+                                                                        <div className="font-mono text-sm font-bold accent-1366">
                                                                             { (calcularPrecioDinamico(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche
                                                                         </div>
                                                                         <div className="text-xs text-gray-500">
@@ -293,7 +286,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                         </div>
                                                                     </>
                                                                 ) : (
-                                                                    <div className="font-mono text-sm font-bold" style={{ color: '#7a0202' }}>
+                                                                    <div className="font-mono text-sm font-bold accent-1366">
                                                                         { obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche
                                                                     </div>
                                                                 )}
@@ -317,10 +310,8 @@ export default function EditReserva({ reserva, habitaciones }) {
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
-                                            <CurrencyEuroIcon className="h-5 w-5" style={{ color: '#7a0202' }}/>
-                                            <h3 className="font-bold">
-                                                Resumen
-                                            </h3>
+                                            <CurrencyEuroIcon className="h-5 w-5 accent-1366" />
+                                            <h3 className="font-bold">Resumen</h3>
                                         </div>
 
                                         <div className="space-y-3">
@@ -347,8 +338,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                     €{calcularPrecioTotal()}
                                                 </span>
                                             </div>
-                                            <button type="button" onClick={() => setMostrarExtender(true)} className="w-full py-3 px-4 rounded-lg font-semibold mt-4"
-                                                style={{ backgroundColor: '#7a0202', color: 'white' }}>
+                                            <button type="button" onClick={() => setMostrarExtender(true)} className="w-full py-3 px-4 rounded-lg font-semibold mt-4 btn-accent-1366">
                                                 Ampliar reserva
                                             </button>
 

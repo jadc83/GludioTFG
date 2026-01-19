@@ -49,3 +49,112 @@
       focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2;
   }
 }
+
+  /* Ajustes específicos para pantallas hasta 1366px (1366x768) */
+  @media (max-width: 1366px) {
+    /* Navbar: reducir altura, logo y texto */
+    nav.fixed.top-0.z-50 .h-16 {
+      height: 3.25rem !important;
+    }
+
+    nav.fixed.top-0.z-50 p.font-semibold {
+      font-size: 0.9rem !important;
+    }
+
+    nav.fixed.top-0.z-50 .block.h-9,
+    nav.fixed.top-0.z-50 svg.h-9 {
+      height: 2rem !important;
+      width: auto !important;
+    }
+
+    /* Barra de reservas: reducir paddings y tamaños de inputs */
+    .sticky.top-16 {
+      top: 3.25rem !important;
+    }
+
+    .sticky.top-16 .px-4.py-3 {
+      padding-top: 0.45rem !important;
+      padding-bottom: 0.45rem !important;
+    }
+
+    .sticky.top-16 .w-80 {
+      width: 16rem !important;
+    }
+
+    /* Botones e inputs: menos padding y fuente más pequeña */
+    .sticky.top-16 button,
+    .sticky.top-16 .btn,
+    .sticky.top-16 .btn-sm,
+    nav.fixed.top-0.z-50 button {
+      padding: 0.35rem 0.6rem !important;
+      font-size: 0.85rem !important;
+    }
+
+    /* Modales: ancho máximo menor para evitar desbordes */
+    .modal-wrapper {
+      max-width: calc(100% - 2rem) !important;
+      padding: 0.5rem !important;
+    }
+
+    /* Calendario: reducir tamaño de celdas */
+    .rdp {
+      --rdp-cell_size: 1.5rem !important;
+    }
+
+    .rdp-caption {
+      padding-bottom: 0.3rem !important;
+      font-size: 0.88rem !important;
+    }
+
+    /* Limitar alto del calendario, mantener footer visible y ajustar cuerpo para evitar scroll completo */
+    .calendar-pos-1366 {
+      display: flex !important;
+      flex-direction: column !important;
+      max-height: 80vh !important;
+    }
+
+    /* Hacer que el panel del DayPicker sea el que pueda desplazar si hace falta */
+    .calendar-pos-1366 > .w-full.p-6 {
+      padding: 0.6rem !important;
+      flex: 1 1 auto !important;
+      overflow-y: auto !important;
+    }
+
+    /* Footer del calendario: no debe desplazarse */
+    .calendar-pos-1366 > .flex.items-center.justify-between.px-6.py-4 {
+      flex: 0 0 auto !important;
+      padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Ajustes generales para evitar textos muy largos que solapen */
+    .truncate,
+    .max-w-[10rem] {
+      max-width: 8.5rem !important;
+    }
+
+    /* Clases utilitarias específicas para resolución 1366px */
+    .accent-1366 { color: #7a0202 !important; }
+    .tab-active-1366 { color: #920303 !important; }
+    .bg-muted-1366 { background-color: #f5f3f0 !important; }
+    .bg-accent-1366 { background-color: #7a0202 !important; color: white !important; }
+    .btn-accent-1366 { background-color: #7a0202 !important; color: white !important; }
+    .btn-accent-1366:hover { background-color: #920303 !important; }
+    .btn-outline-accent-1366 { background-color: transparent !important; border-color: #7a0202 !important; color: #7a0202 !important; }
+    .btn-outline-accent-1366:hover { background-color: #E2E0DC !important; border-color: #920303 !important; color: #920303 !important; }
+    .link-accent-1366 { color: #7a0202 !important; }
+    .link-accent-1366:hover { color: #920303 !important; }
+    .calendar-pos-1366 { top: 120px !important; border: 1px solid #f3f4f6 !important; }
+    .accent-checkbox-1366 { accent-color: #7a0202 !important; }
+
+    /* Estado reservas */
+    .status-completada-1366 { background-color: #d1fae5 !important; color: #065f46 !important; }
+    .status-confirmada-1366 { background-color: #dbeafe !important; color: #1e40af !important; }
+    .status-encurso-1366 { background-color: #fef08a !important; color: #713f12 !important; }
+    .status-cancelada-1366 { background-color: #fee2e2 !important; color: #7f1d1d !important; }
+    .status-default-1366 { background-color: #fef3c7 !important; color: #92400e !important; }
+
+    /* Banner cookies */
+    .border-top-accent-1366 { border-top-color: #7a0202 !important; }
+
+  }
+

@@ -27,8 +27,8 @@ export default function Navbar() {
                         <p className="font-semibold text-black">HOTEL GLUDIO</p>
                     </div>
 
-                    <div className="hidden sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:flex sm:items-center">
-                        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex justify-center sm:space-x-8">
+                    <div className="hidden lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:flex lg:items-center">
+                        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex justify-center lg:space-x-8">
                             <NavLink href={route('home')} active={route().current('home')}>
                                 Home
                             </NavLink>
@@ -43,7 +43,7 @@ export default function Navbar() {
 
                     <div className="flex items-center space-x-4 flex-1 justify-end">
                         {user ? (
-                            <div className="relative hidden sm:block">
+                            <div className="relative hidden lg:block">
                                 <button onClick={() =>   setOpenUserMenu(!openUserMenu)
                                     }
                                     className="inline-flex items-center gap-3 rounded-md border border-gray-200 bg-gris px-3 py-1 text-sm font-medium hover:shadow-sm"
@@ -72,7 +72,7 @@ export default function Navbar() {
                                 )}
                             </div>
                         ) : (
-                            <div className="hidden sm:block">
+                            <div className="hidden lg:block">
                                 <Link href={route('login')} className="inline-flex min-w-[5.5rem] items-center justify-center whitespace-nowrap rounded-md border border-gray-200 bg-white px-4 py-1 text-sm font-medium text-black hover:shadow-sm">
                                     Log in
                                 </Link>
