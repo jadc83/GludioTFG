@@ -64,7 +64,9 @@
   top: 0;
   left: 0;
   width: 32rem;
+  max-width: 90vw;
   height: 100vh;
+  max-height: 100vh;
   padding: 1.5rem;
   background-color: #fff;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
@@ -73,6 +75,8 @@
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   z-index: 51;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .drawer-panel.abierto {

@@ -500,3 +500,17 @@
   animation: rdp-fade_out var(--rdp-animation_duration)
     var(--rdp-animation_timing) forwards;
 }
+
+/* Ajustes responsivos para el contenedor del calendario emergente */
+[data-calendario] {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  width: min(40rem, calc(100% - 2rem));
+  box-sizing: border-box;
+}
+
+@media (max-height: 800px) {
+  [data-calendario] {
+    max-height: calc(100vh - 140px);
+  }
+}

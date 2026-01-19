@@ -157,7 +157,7 @@ export default function BarraReservas() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
+                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-full max-w-[40rem] mx-4 z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
                                                 <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
                                                     <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
                                                         locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
@@ -219,7 +219,7 @@ export default function BarraReservas() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-[40rem] z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
+                                            <div ref={calendarioRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-full max-w-[40rem] mx-4 z-50 left-1/2 -translate-x-1/2" style={{top: '170px', border: '1px solid #f3f4f6'}} data-calendario>
                                                 <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
                                                     <DayPicker mode="range" selected={hook.rango} onSelect={handleSeleccionRango}
                                                         locale={es} disabled={{ before: new Date() }} numberOfMonths={1}
