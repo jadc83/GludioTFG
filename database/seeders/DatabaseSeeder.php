@@ -20,6 +20,11 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'tipo_documento' => 'dni',
+            'numero_documento' => '00000000T',
+            'nacionalidad' => 'Española',
+            'direccion' => 'Dirección de prueba',
+            'telefono' => '600000000'
         ]);
     }
 }
