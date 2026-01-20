@@ -5,29 +5,19 @@ import { useEffect } from 'react';
  * Hook generico para gestionar formularios Inertia
  * agrupa la lógica común de crear/editar registros
  */
-export function useFormGenerico(
-    datosIniciales = {},
-    rutaCrear = '',
-    rutaActualizar = '',
-    alGuardar = null,
-    metodoActualizacion = 'put'
-) {
-    const esEdicion = !!rutaActualizar;
+export function useFormGenerico( datosIniciales = {}, rutaCrear = '', rutaActualizar = '', alGuardar = null, metodoActualizacion = 'put') {
 
+    const esEdicion = !!rutaActualizar;
     const { data: formulario, setData, post, put, patch, processing: estaCargando, errors: errores, reset: resetFormulario, clearErrors } = useForm(datosIniciales);
 
-    /**
-     * Actualiza un campo del formulario
-     */
+    /* Actualiza un campo del formulario */
     const cambiar = (evento) => {
         const { name, value, type, checked } = evento.target;
         const valorFinal = type === 'checkbox' ? checked : value;
         setData(name, valorFinal);
     };
 
-    /**
-     * Pre-rellena el formulario con datos existentes
-     */
+    /* Pre-rellena el formulario con datos existentes */
     const cargarDatos = (datos) => {
         if (datos) {
             setData(datos);

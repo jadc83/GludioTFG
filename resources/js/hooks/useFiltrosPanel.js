@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 /**
  * Hook para gestionar filtros en paneles con sincronización a servidor
- * Mantiene los filtros en estado local pero sincroniza con URL/servidor via Inertia
+ * Mantiene los filtros en estado local pero sincroniza con URL/servidor con Inertia
  */
 export function useFiltrosPanel(filtrosIniciales = {}, ruta = 'panel', propsActualizar = []) {
     const [filtros, setFiltros] = useState(filtrosIniciales);
@@ -33,17 +33,8 @@ export function useFiltrosPanel(filtrosIniciales = {}, ruta = 'panel', propsActu
      */
     const limpiarFiltros = useCallback(() => {
         setFiltros(filtrosIniciales);
-        router.get(ruta, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: propsActualizar,
-            replace: true,
-        });
-    }, [filtrosIniciales, ruta, propsActualizar]);
+        router.get(ruta, {}, { preserveState: true, preserveScroll: true, only: propsActualizar, replace: true });
+        }, [filtrosIniciales, ruta, propsActualizar]);
 
-    return {
-        filtros,
-        actualizarFiltro,
-        limpiarFiltros,
-    };
+    return { filtros, actualizarFiltro, limpiarFiltros};
 }

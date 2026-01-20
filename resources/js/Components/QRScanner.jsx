@@ -17,11 +17,9 @@ export default function QRScanner({ onScanSuccess }) {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     videoRef.current.play();
-                    console.log('Cámara iniciada correctamente');
                     scan();
                 }
             } catch (err) {
-                console.error('Error al acceder a la cámara:', err);
                 setPermissionDenied(true);
             }
         };
@@ -72,11 +70,7 @@ export default function QRScanner({ onScanSuccess }) {
                     Permiso de cámara denegado. Por favor, permite el acceso a la cámara en los ajustes de tu navegador.
                 </div>
             )}
-            <video
-                ref={videoRef}
-                className="w-full rounded-lg border-2 border-gray-300 bg-black"
-                style={{ minHeight: '400px' }}
-            />
+            <video ref={videoRef} className="w-full rounded-lg border-2 border-gray-300 bg-black" style={{ minHeight: '400px' }}/>
             <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
     );

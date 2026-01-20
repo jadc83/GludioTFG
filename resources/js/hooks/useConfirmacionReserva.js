@@ -40,7 +40,6 @@ export default function useConfirmacionReserva() {
 
     /**
      * Crea una reserva para pago al llegar
-     * El servidor ahora valida, prepara y asigna todo
      */
     const crearReservaAlLlegar = async (datosReserva) => {
         try {
@@ -66,10 +65,7 @@ export default function useConfirmacionReserva() {
                     errorData = await res.json();
                 }
 
-                throw {
-                    status: res.status,
-                    ...errorData
-                };
+                throw { status: res.status, ...errorData };
             }
 
             const data = await res.json();
