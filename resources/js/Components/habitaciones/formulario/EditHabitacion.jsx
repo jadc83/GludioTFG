@@ -90,7 +90,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 )}
                             </div>
 
-                            
+
 
                             <div className="campo">
                                 <label

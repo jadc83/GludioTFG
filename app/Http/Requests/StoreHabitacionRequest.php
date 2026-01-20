@@ -32,7 +32,7 @@ class StoreHabitacionRequest extends FormRequest
             'numero.unique' => 'El número de habitación ya existe.',
             'tipo.required' => 'El tipo de habitación es obligatorio.',
             'tipo.in' => 'El tipo de habitación no es válido.',
-            
+
             'capacidad.required' => 'La capacidad es obligatoria.',
             'capacidad.integer' => 'La capacidad debe ser un número entero.',
             'fotos.*. image' => 'Las fotos deben ser imágenes válidas.',

@@ -38,7 +38,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 ))}
                             </Campo>
 
-                            
+
 
                             <Campo id="capacidad" label="Capacidad" type="number" min="1" value={formulario.capacidad} onChange={cambiar}
                                 error={errores.capacidad} readOnly={capacidadFija} classNameExtra={ capacidadFija ? 'soloLectura font-mono' : 'font-mono' }/>
