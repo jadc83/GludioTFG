@@ -185,20 +185,6 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
         formulario.tipo,
     );
 
-    return {
-        formulario,
-        fotos,
-        previsualizaciones,
-        fotosGuardadas,
-        errores,
-        estaCargando,
-        capacidadFija,
-        MAX_FOTOS,
-        esEdicion,
-        cambiar,
-        agregarFotos,
-        quitarFoto,
-        enviar,
-        reset,
-    };
+    return { formulario, fotos, previsualizaciones, fotosGuardadas, errores, estaCargando, capacidadFija, MAX_FOTOS,
+        esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset };
 }

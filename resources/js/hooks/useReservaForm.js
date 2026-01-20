@@ -197,14 +197,8 @@ export default function useReservaForm() {
         }
     };
 
-    /**
-     * ✅ AHORA EN BACKEND: La creación de reserva está en ReservaService
-     * El frontend solo prepara datos básicos y deja la transformación al servidor
-     * Esta función se mantiene para referencia de flujo UI
-     */
     const confirmarReserva = async () => {
         // El servidor ahora maneja toda la validación y transformación
-        // Solo recibimos el estado final de la reserva
         const valoresFormulario = getValues();
 
         const datosReserva = {
@@ -243,7 +237,7 @@ export default function useReservaForm() {
                         drawerCheckbox.checked = false;
                     }
                 } catch (error) {
-                    console.error('⚠️ Error closing drawer:', error);
+                    console.error('Error cerrando drawer:', error);
                 }
 
                 // Recargar la página para refrescar los datos (especialmente habitaciones en panel)

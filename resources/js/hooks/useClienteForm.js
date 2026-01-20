@@ -4,7 +4,7 @@ import { useFormGenerico } from './useFormGenerico';
 
 export function useClienteForm(cliente = null, alGuardar) {
     /**
-     * Determina si el cliente es un usuario basándose en la presencia de email_verified_at
+     * Determina si el cliente es un usuario basándose en la columna de email_verified_at
      */
     const esUsuario = () => {
         return cliente && Object.prototype.hasOwnProperty.call(cliente, 'email_verified_at');

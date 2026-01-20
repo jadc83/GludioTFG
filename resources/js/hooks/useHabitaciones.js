@@ -12,10 +12,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
     // Estado de habitaciones seleccionadas
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState({});
 
-    /**
-     * Carga habitaciones disponibles desde el servidor
-     * El servidor ya devuelve agrupadas por tipo y con precios calculados
-     */
+    /* Carga habitaciones disponibles desde el servidor */
     useEffect(() => {
         if (paso !== 2) {
             setEstaCargandoHabitaciones(false);
@@ -37,8 +34,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 const fechaEntrada = formatearFecha(rango.from);
                 const fechaSalida = formatearFecha(rango.to);
 
-                const respuesta = await fetch(
-                    `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
+                const respuesta = await fetch( `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
                     {
                         headers: { Accept: 'application/json' },
                         credentials: 'include'
@@ -52,7 +48,6 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                     setHabitacionesDisponibles([]);
                 }
             } catch (error) {
-                console.error('Error al cargar habitaciones:', error);
                 setHabitacionesDisponibles([]);
             } finally {
                 setEstaCargandoHabitaciones(false);
