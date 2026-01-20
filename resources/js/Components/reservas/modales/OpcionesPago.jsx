@@ -22,26 +22,26 @@ export default function OpcionesPago({
 }) {
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
     return (
-        <div className="bg-gris rounded-lg p-3 space-y-2">
+        <div className="bg-gris rounded-lg p-2 space-y-1 text-xs md:text-sm">
             {/* Opción de pago */}
             <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">Forma de Pago</h4>
-                <div className="flex justify-center gap-4">
-                    <label className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 mb-1">Forma de Pago</h4>
+                <div className="flex justify-center gap-2">
+                    <label className="flex items-center gap-1 px-2 py-1 cursor-pointer text-xs">
                         <input type="radio" name="metodoPago" checked={!pagarAlLlegar} onChange={() => {
                                 setPagarAlLlegar(false);
                                 setOpcionPagoSeleccionada(true);
                             }} className="h-3 w-3 cursor-pointer" />
-                        <span className="text-sm">💳</span>
+                        <span className="text-xs">💳</span>
                         <span className="font-medium text-gray-900 text-xs">Tarjeta</span>
                     </label>
 
-                    <label className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs">
+                    <label className="flex items-center gap-1 px-2 py-1 cursor-pointer text-xs">
                         <input type="radio" name="metodoPago" checked={pagarAlLlegar} onChange={() => {
                                 setPagarAlLlegar(true);
                                 setOpcionPagoSeleccionada(true);}}
                             className="h-3 w-3 cursor-pointer"/>
-                        <span className="text-sm">🏨</span>
+                        <span className="text-xs">🏨</span>
                         <span className="font-medium text-gray-900 text-xs">En recepción</span>
                     </label>
                 </div>

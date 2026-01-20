@@ -85,8 +85,8 @@ export default function BarraReservas() {
 
             {/* MODAL PASO 3: DATOS DEL CLIENTE */}
             {hook.pasoActual === 3 && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:pt-[150px] md:items-start" onClick={() => hook.retrocederPaso()}>
-                    <div className="bg-white rounded-lg max-w-sm md:max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-2 pt-[40px] md:pt-[60px]" onClick={() => hook.retrocederPaso()}>
+                    <div className="bg-gris rounded-lg max-w-2xl md:max-w-4xl w-full max-h-[90vh] overflow-y-visible p-6" onClick={(e) => e.stopPropagation()}>
                         <Paso3Datos {...hook} />
                     </div>
                 </div>
@@ -94,8 +94,8 @@ export default function BarraReservas() {
 
             {/* MODAL PASO 4: CONFIRMACIÓN */}
             {hook.pasoActual === 4 && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:pt-[150px] md:items-start" onClick={() => hook.retrocederPaso()}>
-                    <div className="bg-white rounded-lg max-w-sm md:max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-2 pt-[40px] md:pt-[60px]" onClick={() => hook.retrocederPaso()}>
+                    <div className="bg-white rounded-lg max-w-sm md:max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <Paso4Confirmacion
                             {...hook}
                             usuarioActual={hook.usuarioActual}

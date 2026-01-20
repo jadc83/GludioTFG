@@ -24,7 +24,7 @@ export default function Paso2Habitaciones({
     );
 
     return (
-        <div className="flex h-full flex-col bg-gris">
+        <div className="flex h-full flex-col bg-gris rounded-lg">
             <header className="bg-gris px-3 md:px-4 pb-2 pt-3">
                 <h3 className="titulo-rojo titulo-espaciado mb-1 text-center text-sm md:text-lg font-bold">Selecciona tus habitaciones</h3>
                 <Migitas />
@@ -43,7 +43,7 @@ export default function Paso2Habitaciones({
                         </div>
                     </div>
                 ) : Object.keys(agruparHabitacionesPorTipo()).length === 0 ? (
-                    <div className="rounded-2xl bg-white p-12 text-center shadow-lg">
+                    <div className="rounded-2xl bg-gris p-12 text-center shadow-lg">
                         <p className="text-lg text-gray-600">No hay habitaciones disponibles</p>
                         <p className="mt-2 text-sm text-gray-400">Intenta con otras fechas</p>
                     </div>
@@ -71,15 +71,15 @@ export default function Paso2Habitaciones({
                             const isSelected = habitacionesSeleccionadas[tipo]?.cantidad > 0;
                             const puedeAgregarMas = puedoSeleccionarMas || isSelected;
                             return (
-                                <div key={tipo} className={`group relative overflow-hidden rounded-lg transition-all duration-200 ${isSelected ? 'tarjeta-seleccionada shadow-lg ring-2 ring-opacity-50' : 'shadow hover:shadow-md'} ${!puedeAgregarMas ? 'opacity-60' : ''}`}>
+                                <div key={tipo} className={`group relative overflow-hidden rounded-lg transition-all duration-200 bg-gris ${isSelected ? 'tarjeta-seleccionada shadow-lg ring-2 ring-opacity-50' : 'shadow hover:shadow-md'} ${!puedeAgregarMas ? 'opacity-60' : ''}`}>
                                     {isSelected && <div className="barra-acento absolute left-0 right-0 top-0 h-0.5"></div>}
                                     <div className="flex flex-col items-center justify-center gap-3 p-3">
                                         {/* Imagen cuadrada */}
-                                        <div className="h-32 w-full overflow-hidden rounded-md bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setImagenModalAbierto(tipo)}>
+                                        <div className="h-32 w-full overflow-hidden rounded-md bg-gris cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setImagenModalAbierto(tipo)}>
                                             {getImagen(tipo) ? (
                                                 <img src={getImagen(tipo)} alt={tipo} className="h-full w-full object-cover" />
                                             ) : (
-                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
+                                                <div className="flex h-full w-full items-center justify-center bg-gris">
                                                     <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
@@ -146,7 +146,7 @@ export default function Paso2Habitaciones({
             {/* Modal de imagen grande */}
             {imagenModalAbierto && (
                 <div className="fixed inset-0 z-[999] flex items-start justify-center bg-black/75 overflow-y-auto pt-[20px] md:pt-[60px] p-2 md:p-0" onClick={() => setImagenModalAbierto(null)}>
-                    <div className="relative w-full max-w-4xl rounded-lg bg-white mb-12" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative w-full max-w-4xl rounded-lg bg-gris mb-12" onClick={(e) => e.stopPropagation()}>
                         {/* Botón cerrar */}
                         <button onClick={() => setImagenModalAbierto(null)}
                             className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#7a0202] text-xl font-bold text-white shadow-md hover:bg-[#8b0303]">
@@ -157,7 +157,7 @@ export default function Paso2Habitaciones({
                             {/* Galería y descripción */}
                             <div className="col-span-1 md:col-span-2">
                                 {/* Foto principal */}
-                                <div className="mb-4 md:mb-6 rounded-lg overflow-hidden bg-gray-100 aspect-video">
+                                <div className="mb-4 md:mb-6 rounded-lg overflow-hidden bg-gris aspect-video">
                                     <img src={getImagen(imagenModalAbierto)} alt={imagenModalAbierto}
                                         className="w-full h-full object-cover"/>
                                 </div>
@@ -195,7 +195,7 @@ export default function Paso2Habitaciones({
 
                             {/* Panel lateral */}
                             <div className="col-span-1 md:col-span-1">
-                                <div className="rounded-lg border border-gray-200 p-3 md:p-5 shadow-sm md:sticky md:top-28 bg-gray-50">
+                                <div className="rounded-lg border border-gray-200 p-3 md:p-5 shadow-sm md:sticky md:top-28 bg-gris">
                                     {/* Título */}
                                     <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-5">{imagenModalAbierto}</h3>
 
@@ -235,7 +235,7 @@ export default function Paso2Habitaciones({
                                                 className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">
                                                 −
                                             </button>
-                                            <input type="number" readOnly className="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-white"
+                                            <input type="number" readOnly className="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-gris"
                                                 value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}/>
                                             <button type="button" onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) + 1)}
                                                 disabled={(habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) >= agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad}

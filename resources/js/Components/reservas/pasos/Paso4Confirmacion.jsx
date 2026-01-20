@@ -178,9 +178,9 @@ export default function Paso4Confirmacion({
     );
 
     return (
-        <main className="flex h-full flex-col bg-gris p-1.5 md:p-2">
-            <header className="mb-0.5 border-b border-gray-200 pb-0.5">
-                <h3 className="mb-0 text-center text-xs font-bold text-gray-900">Confirmación de Reserva</h3>
+        <main className="flex h-full flex-col bg-gris p-1 md:p-1.5 text-[12px] md:text-[13px]">
+            <header className="mb-0 border-b border-gray-200 pb-0 pt-1">
+                <h3 className="mb-0 text-center text-[13px] font-bold text-gray-900">Confirmación de Reserva</h3>
                 <Migitas />
             </header>
 

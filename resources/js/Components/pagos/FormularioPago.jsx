@@ -162,8 +162,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
     };
 
     return (
-        <div className="w-full">
-            <form onSubmit={procesarPago} className="space-y-2">
+        <div className="w-full text-xs md:text-[13px]">
+            <form onSubmit={procesarPago} className="space-y-1">
                 {procesando && (
                     <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 text-center">
                         <div className="flex justify-center mb-2">
@@ -178,25 +178,25 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
                 {/* Dirección de Facturación */}
                 <div>
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
                         Dirección de Facturación
                     </label>
 
-                    <div className="mb-2">
+                    <div className="mb-1">
                         <input type="text" placeholder="Calle y número" value={direccion.calle} onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
                             required/>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1">
                         <input type="text" placeholder="Ciudad" value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
                             required/>
                         <input type="text" placeholder="Código Postal" value={direccion.codigo_postal} onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
                             required/>
                         <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
+                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
                             <option value="ES">España</option>
                             <option value="FR">Francia</option>
                             <option value="PT">Portugal</option>
@@ -209,16 +209,16 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
                 {/* Datos de la tarjeta */}
                 <div>
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
                         Datos de la Tarjeta
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white">
+                    <div className="border border-gray-300 rounded-lg p-2 bg-white">
                         <CardElement
                             options={{
                                 hidePostalCode: true,
                                 style: {
                                     base: {
-                                        fontSize: '14px',
+                                        fontSize: '12px',
                                         color: '#1f2937',
                                         fontFamily: '"Inter", sans-serif',
                                         '::placeholder': {

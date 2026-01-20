@@ -23,30 +23,41 @@ export default function Paso3Datos({
     );
 
     return (
-        <div className="flex h-full flex-col">
-            <header className="bg-gris px-2 md:px-4 pb-3 pt-2">
-                <h3 className="titulo-rojo titulo-espaciado mb-2 text-center text-base md:text-xl font-bold">Datos del cliente</h3>
+        <div className="bg-gris rounded-lg">
+            {/* Si hay paneles internos con fondo blanco, cámbialos a bg-gris en los componentes hijos también. */}
+            <header>
+                <h3 className="titulo-rojo titulo-espaciado mb-2 text-center font-bold">Datos del cliente</h3>
                 <Migitas />
             </header>
 
-            <main className="flex-1 overflow-y-auto bg-gris px-2 md:px-3 py-2">
-                <div className="mx-auto max-w-2xl">
+            <main>
+                <div>
                     <FormularioDatosCliente form={formData} errores={errors} onChange={(e) => {
                             const { name, value } = e.target;
                             setValue(name, value);
                         }}
-
                         onNext={(e) => { e.preventDefault(); avanzarPaso(); }} hideDates={true}
                         hideNextButton={true} />
                 </div>
             </main>
 
-            <footer className="border-t border-gray-300 bg-gris px-2 md:px-4 py-3">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-2 md:gap-3">
+            <footer>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <PrimaryButton type="button" onClick={retrocederPaso}>
                         Volver a habitaciones
                     </PrimaryButton>
-                    <PrimaryButton onClick={avanzarPaso}>
+                    <PrimaryButton
+                        onClick={avanzarPaso}
+                        disabled={
+                            !formData.name ||
+                            !formData.tipo_documento ||
+                            !formData.numero_documento ||
+                            !formData.email ||
+                            !formData.telefono ||
+                            !formData.nacionalidad ||
+                            !formData.direccion
+                        }
+                    >
                         Siguiente
                     </PrimaryButton>
                 </div>
