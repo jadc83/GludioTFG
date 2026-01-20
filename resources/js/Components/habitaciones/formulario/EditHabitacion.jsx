@@ -90,31 +90,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 )}
                             </div>
 
-                            <div className="campo">
-                                <label
-                                    className="campo-label"
-                                    htmlFor="precio_noche"
-                                >
-                                    <span className="campo-label-text">
-                                        Precio (€)
-                                    </span>
-                                </label>
-                                <input
-                                    id="precio_noche"
-                                    name="precio_noche"
-                                    type="number"
-                                    step="0.01"
-                                    value={formulario.precio_noche}
-                                    onChange={cambiar}
-                                    className={`campo-input font-mono ${errores.precio_noche ? 'error' : ''}`}
-                                    required
-                                />
-                                {errores.precio_noche && (
-                                    <span className="campo-error">
-                                        {errores.precio_noche[0]}
-                                    </span>
-                                )}
-                            </div>
+                            
 
                             <div className="campo">
                                 <label

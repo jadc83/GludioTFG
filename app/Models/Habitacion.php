@@ -14,7 +14,6 @@ class Habitacion extends Model
     protected $fillable = [
         'numero',
         'tipo',
-        'precio_noche',
         'capacidad',
         'estado',
         'descripcion',
@@ -69,14 +68,14 @@ public function servicios()
 
     public function scopePrecioMin($query, $precioMin)
     {
-        if (!$precioMin) return $query;
-        return $query->where('precio_noche', '>=', (float)$precioMin);
+        // Precio almacenado eliminado: no filtrar por precio aquí.
+        return $query;
     }
 
     public function scopePrecioMax($query, $precioMax)
     {
-        if (!$precioMax) return $query;
-        return $query->where('precio_noche', '<=', (float)$precioMax);
+        // Precio almacenado eliminado: no filtrar por precio aquí.
+        return $query;
     }
 
     public function scopeDisponiblesEntre($query, $entrada, $salida, $ignoreReservaId = null)

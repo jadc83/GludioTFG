@@ -9,7 +9,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
     const esEdicion = !!habitacionInicial?.id;
 
     const { data: formulario, setData, processing: estaCargando, errors: errores, reset: resetForm, clearErrors } = useForm({
-        numero: '', tipo: 'doble', precio_noche: '', capacidad: CAPACIDADES['doble'], estado: 'disponible', descripcion: '', notas: '' });
+        numero: '', tipo: 'doble', capacidad: CAPACIDADES['doble'], estado: 'disponible', descripcion: '', notas: '' });
 
     // Estados para manejo de fotos
     const [fotos, setFotos] = useState([]);
@@ -25,7 +25,6 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
             setData({
                 numero: habitacionInicial.numero || '',
                 tipo: habitacionInicial.tipo || 'doble',
-                precio_noche: habitacionInicial.precio_noche || '',
                 capacidad:
                     habitacionInicial.capacidad ||
                     CAPACIDADES[habitacionInicial.tipo],

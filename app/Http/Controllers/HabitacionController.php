@@ -147,7 +147,6 @@ class HabitacionController extends Controller
                 'id' => $habitacion->id,
                 'numero' => $habitacion->numero,
                 'tipo' => $habitacion->tipo,
-                'precio_noche' => $habitacion->precio_noche,
                 'capacidad' => $habitacion->capacidad,
                 'estado' => $habitacion->estado,
                 'descripcion' => $habitacion->descripcion,

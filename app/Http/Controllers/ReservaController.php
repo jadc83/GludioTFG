@@ -220,12 +220,12 @@ class ReservaController extends Controller
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
-                    return [
-                        'numero' => $hr->habitacion->numero,
-                        'tipo' => $hr->habitacion->tipo,
-                        'precio' => $hr->precio,
-                    ];
-                }),
+                        return [
+                            'numero' => $hr->habitacion->numero,
+                            'tipo' => $hr->habitacion->tipo,
+                            'precio' => $hr->precio,
+                        ];
+                    }),
             ]
         ]);
     }
@@ -254,12 +254,13 @@ class ReservaController extends Controller
                 'numero_documento' => $reserva->reservable->numero_documento ?? null,
                 'tipo_documento' => $reserva->reservable->tipo_documento ?? null,
             ],
-            'habitaciones' => $reserva->habitaciones->map(function ($hr) {
+            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($checkIn, $checkOut) {
+                $noches = max(1, $checkIn->diffInDays($checkOut));
                 return [
                     'id' => $hr->habitacion->id,
                     'numero' => $hr->habitacion->numero,
                     'tipo' => $hr->habitacion->tipo,
-                    'precio_noche' => $hr->habitacion->precio_noche,
+                    'precio_noche' => $hr->precio ? round($hr->precio / $noches, 2) : null,
                     'capacidad' => $hr->habitacion->capacidad,
                     'precio' => $hr->precio,
                 ];
@@ -267,7 +268,7 @@ class ReservaController extends Controller
         ];
 
         $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->toArray();
-        $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'precio_noche', 'capacidad', 'estado')
+        $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
             ->where(function ($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
                 $query->whereIn('id', $habitacionesActualesIds)
                     ->orWhere(function ($q) use ($reserva, $checkIn, $checkOut) {
@@ -285,12 +286,13 @@ class ReservaController extends Controller
                 // Usar servicio de precios
                 $precioService = new PrecioService();
                 $precioDinamico = $precioService->calcularPrecioEntreFechas($hab->tipo, $checkIn, $checkOut);
+                $noches = max(1, $checkIn->diffInDays($checkOut));
 
                 return [
                     'id' => $hab->id,
                     'numero' => $hab->numero,
                     'tipo' => $hab->tipo,
-                    'precio_noche' => $hab->precio_noche,
+                    'precio_noche' => round($precioDinamico / $noches, 2),
                     'precio_total' => $precioDinamico,
                     'capacidad' => $hab->capacidad,
                     'estado' => $hab->estado,

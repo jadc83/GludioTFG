@@ -38,8 +38,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 ))}
                             </Campo>
 
-                            <Campo id="precio_noche" label="Precio €" type="number" step="0.01" value={formulario.precio_noche} onChange={cambiar}
-                                error={errores.precio_noche} classNameExtra="font-mono" required/>
+                            
 
                             <Campo id="capacidad" label="Capacidad" type="number" min="1" value={formulario.capacidad} onChange={cambiar}
                                 error={errores.capacidad} readOnly={capacidadFija} classNameExtra={ capacidadFija ? 'soloLectura font-mono' : 'font-mono' }/>
