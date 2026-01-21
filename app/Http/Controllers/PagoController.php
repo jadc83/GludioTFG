@@ -108,28 +108,42 @@ class PagoController extends Controller
                 // Actualizar estado de reserva
                 $pago->reserva->update(['pago' => 'pagado']);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pago completado exitosamente',
-                    'reserva_id' => $pago->reserva_id,
-                    'localizador' => $pago->reserva->localizador,
-                ]);
+                // Enviar correo de confirmación de pago
+                try {
+                    $reserva = $pago->reserva->fresh(['reservable', 'pagos']);
+                    $destino = $reserva->reservable?->email ?? null;
+                    if ($destino) {
+                        $esTarjeta = !empty($pago->stripe_payment_intent_id);
+                        $pagoTexto = $esTarjeta ? 'Abonado (Tarjeta)' : 'Pendiente';
+                        $subject = "Pago recibido - Reserva {$reserva->localizador}";
+                        $body = "Hola {$reserva->reservable?->name},\n\nHemos recibido el pago para la reserva {$reserva->localizador}.\nEstado: {$pagoTexto}\nImporte: €{$pago->monto}\n\nGracias.";
+
+                        try {
+                            \Illuminate\Support\Facades\Mail::raw($body, function ($msg) use ($destino, $subject) {
+                                $msg->to($destino)->subject($subject);
+                            });
+                        } catch (\Throwable $e) {
+                            Log::warning('No se pudo enviar email de confirmación de pago: ' . $e->getMessage());
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Error preparando email de confirmación de pago: ' . $e->getMessage());
+                }
+
+                return response()->json([ 'success' => true, 'message' => 'Pago completado exitosamente',
+                    'reserva_id' => $pago->reserva_id, 'localizador' => $pago->reserva->localizador ]);
+
             } else {
+
                 $pago->marcarComoFallido();
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El pago no se pudo procesar',
-                ], 400);
+                return response()->json([ 'success' => false, 'message' => 'El pago no se pudo procesar' ], 400);
             }
         } catch (\Exception $e) {
             $pago->marcarComoFallido();
             Log::error('Confirmar Pago Error: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'error' => 'No se pudo confirmar el pago. Por favor, intenta nuevamente.',
-            ], 400);
+            return response()->json([ 'success' => false, 'error' => 'No se pudo confirmar el pago. Por favor, intenta nuevamente.' ], 400);
         }
     }
 
@@ -144,11 +158,7 @@ class PagoController extends Controller
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? null;
 
         try {
-            $event = \Stripe\Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpointSecret
-            );
+            $event = \Stripe\Webhook::constructEvent( $payload, $sig_header, $endpointSecret );
 
             if ($event->type === 'payment_intent.succeeded') {
                 $paymentIntent = $event->data->object;

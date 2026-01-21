@@ -2,15 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ReservaCreada;
 use App\Events\ReservaActualizada;
-use App\Events\ReservaBorrada;
 use App\Http\Requests\StoreReservaRequest;
 use App\Http\Requests\UpdateReservaRequest;
-use App\Models\Cliente;
-use App\Models\Habitacion;
 use App\Models\Reserva;
-use App\Models\User;
 use App\Services\ReservaService;
 use App\Services\HabitacionService;
 use App\Services\PrecioService;
@@ -21,7 +16,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ReservaCompletada;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReservaController extends Controller
 {
@@ -58,72 +52,21 @@ class ReservaController extends Controller
         Log::info('Crear Reserva - Datos recibidos:', $request->all());
 
         try {
-            // Preparar y validar datos
-            $datosValidados = $reservaService->prepararDatosReserva($request->all());
-
-            // Verificar disponibilidad
-            $reservaService->verificarDisponibilidad(
-                $datosValidados['habitaciones'],
-                $datosValidados['check_in'],
-                $datosValidados['check_out']
-            );
-
-            // Obtener o crear cliente (si no hay usuario logeado)
-            if ($datosValidados['tipo_usuario'] === 'usuario') {
-                // Usar el usuario logeado
-                $datosValidados['reservable_id'] = Auth::id();
-            } else {
-                // Obtener o crear cliente
-                $clienteId = $reservaService->obtenerOCrearCliente($datosValidados);
-                $datosValidados['reservable_id'] = $clienteId;
-                $datosValidados['tipo_usuario'] = 'cliente';
-            }
-
-            $reservaId = DB::transaction(function () use ($reservaService, $datosValidados, $request) {
-                // Generar localizador único
-                $localizador = $reservaService->generarLocalizador();
-
-                // Crear reserva
-                $reservableType = $datosValidados['tipo_usuario'] === 'usuario' ? User::class : Cliente::class;
-                $reserva = Reserva::create([
-                    'localizador' => $localizador,
-                    'reservable_id' => $datosValidados['reservable_id'],
-                    'reservable_type' => $reservableType,
-                    'booked_by_user_id' => Auth::user()->id ?? null,
-                    'check_in' => $datosValidados['check_in'],
-                    'check_out' => $datosValidados['check_out'],
-                    'precio_total' => $datosValidados['precio_total'],
-                    'status' => $request->status ?? 'pendiente',
-                    'pago' => $request->pago ?? 'pendiente',
-                    'notas' => $request->notas ?? "Reserva creada",
-                ]);
-
-                // Asignar habitaciones
-                $reservaService->asignarHabitaciones($reserva, $datosValidados['habitaciones']);
-
-                event(new ReservaCreada($reserva));
-
-                // Devolver id para poder enviar el correo fuera de la transacción
-                return $reserva->id;
-            });
-
-            // Cargar la reserva con relaciones necesarias
-            $reserva = Reserva::with(['reservable', 'habitaciones.habitacion'])->find($reservaId);
+            $usuario = Auth::user();
+            $reserva = $reservaService->crearReserva($request->all(), $usuario, $request->status ?? 'pendiente');
+            $reserva->load(['reservable', 'habitaciones.habitacion']);
 
             try {
-                if ($reserva && ($reserva->reservable?->email || $datosValidados['email'] ?? null)) {
-                    $destino = $reserva->reservable?->email ?? $datosValidados['email'];
+                $destino = $reserva->reservable?->email ?? $request->input('email');
+                if ($destino) {
                     Mail::to($destino)->send(new ReservaCompletada($reserva));
                 }
             } catch (\Throwable $e) {
                 Log::warning('No se pudo enviar email de reserva creada: ' . $e->getMessage());
             }
 
-            $respuesta = [
-                'success' => true,
-                'message' => "Reserva {$reserva->localizador} creada (Total: €{$datosValidados['precio_total']})",
-                'localizador' => $reserva->localizador,
-                'reserva_id' => $reserva->id
+            $respuesta = [ 'success' => true,  'localizador' => $reserva->localizador, 'reserva_id' => $reserva->id,
+                'message' => "Reserva {$reserva->localizador} creada (Total: €{$reserva->precio_total})",
             ];
 
             if ($request->wantsJson()) {
@@ -134,6 +77,7 @@ class ReservaController extends Controller
                 ->with('success', $respuesta['message'])
                 ->with('reserva_id', $reserva->id)
                 ->with('localizador', $reserva->localizador);
+
         } catch (\Exception $e) {
             Log::error('Error en ReservaController::store', [
                 'mensaje' => $e->getMessage(),
@@ -142,7 +86,6 @@ class ReservaController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Intentar parsear si es JSON (para cliente_existe_sin_confirmacion)
             $decodificado = json_decode($e->getMessage(), true);
             if (is_array($decodificado) && isset($decodificado['codigo'])) {
                 if ($request->wantsJson()) {
@@ -164,19 +107,6 @@ class ReservaController extends Controller
         }
     }
 
-    public function buscar(Request $request)
-    {
-        $query = $request->query('query');
-
-        $users = User::where(function ($q) use ($query) {
-            $q->where('name', 'LIKE', "%{$query}%")
-                ->orWhere('email', 'LIKE', "%{$query}%")
-                ->orWhere('numero_documento', 'LIKE', "%{$query}%");
-        })->select('id', 'name', 'email', 'numero_documento', 'telefono', 'nacionalidad')->limit(10)->get();
-
-        return response()->json($users);
-    }
-
     public function habitacionesDisponibles(Request $request)
     {
         $habitacionService = new HabitacionService();
@@ -189,20 +119,20 @@ class ReservaController extends Controller
                 return response()->json(['error' => 'Fechas inválidas'], 400);
             }
 
-            // Obtener disponibles del servicio (agrupados por tipo y con precios)
             $disponibles = $habitacionService->obtenerDisponibles($entrada, $salida);
 
-            // Si no hay disponibles, devolver array vacío
             if (empty($disponibles)) {
                 return response()->json([]);
             }
 
             return response()->json($disponibles);
+
         } catch (\Exception $e) {
             Log::error('Error en habitacionesDisponibles: ' . $e->getMessage());
             return response()->json(['error' => 'Error al cargar habitaciones'], 400);
         }
     }
+
 
     public function show(Reserva $reserva)
     {
@@ -220,91 +150,24 @@ class ReservaController extends Controller
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
-                        return [
-                            'numero' => $hr->habitacion->numero,
-                            'tipo' => $hr->habitacion->tipo,
-                            'precio' => $hr->precio,
-                        ];
-                    }),
-            ]
-        ]);
+                    return [ 'numero' => $hr->habitacion->numero, 'tipo' => $hr->habitacion->tipo, 'precio' => $hr->precio ]; }) ]]);
     }
 
     public function edit(Request $request, Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
 
-        $checkIn = Carbon::parse($request->check_in ?? $reserva->check_in);
-        $checkOut = Carbon::parse($request->check_out ?? $reserva->check_out);
+        $reservaService = new ReservaService();
+        [$checkIn, $checkOut] = $reservaService->prepararFechasParaEdicion($request->all(), $reserva);
 
-        $reservaData = [
-            'id' => $reserva->id,
-            'localizador' => $reserva->localizador,
-            'check_in' => $reserva->check_in,
-            'check_out' => $reserva->check_out,
-            'precio_total' => $reserva->precio_total,
-            'status' => $reserva->status,
-            'pago' => $reserva->pago,
-            'notas' => $reserva->notas,
-            'cliente' => [
-                'id' => $reserva->reservable->id ?? null,
-                'name' => $reserva->reservable->name ?? 'N/A',
-                'email' => $reserva->reservable->email ?? null,
-                'telefono' => $reserva->reservable->telefono ?? null,
-                'numero_documento' => $reserva->reservable->numero_documento ?? null,
-                'tipo_documento' => $reserva->reservable->tipo_documento ?? null,
-            ],
-            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($checkIn, $checkOut) {
-                $noches = max(1, $checkIn->diffInDays($checkOut));
-                return [
-                    'id' => $hr->habitacion->id,
-                    'numero' => $hr->habitacion->numero,
-                    'tipo' => $hr->habitacion->tipo,
-                    'precio_noche' => $hr->precio ? round($hr->precio / $noches, 2) : null,
-                    'capacidad' => $hr->habitacion->capacidad,
-                    'precio' => $hr->precio,
-                ];
-            })->values()
-        ];
-
-        $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->toArray();
-        $habitacionesDisponibles = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
-            ->where(function ($query) use ($reserva, $habitacionesActualesIds, $checkIn, $checkOut) {
-                $query->whereIn('id', $habitacionesActualesIds)
-                    ->orWhere(function ($q) use ($reserva, $checkIn, $checkOut) {
-                        $q->where('estado', 'disponible')
-                            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkIn, $checkOut) {
-                                $subQ->where('reserva_id', '!=', $reserva->id)
-                                    ->where('check_in', '<', $checkOut)
-                                    ->where('check_out', '>', $checkIn);
-                            });
-                    });
-            })
-            ->orderBy('numero')
-            ->get()
-            ->map(function ($hab) use ($habitacionesActualesIds, $checkIn, $checkOut) {
-                // Usar servicio de precios
-                $precioService = new PrecioService();
-                $precioDinamico = $precioService->calcularPrecioEntreFechas($hab->tipo, $checkIn, $checkOut);
-                $noches = max(1, $checkIn->diffInDays($checkOut));
-
-                return [
-                    'id' => $hab->id,
-                    'numero' => $hab->numero,
-                    'tipo' => $hab->tipo,
-                    'precio_noche' => round($precioDinamico / $noches, 2),
-                    'precio_total' => $precioDinamico,
-                    'capacidad' => $hab->capacidad,
-                    'estado' => $hab->estado,
-                    'es_actual' => in_array($hab->id, $habitacionesActualesIds)
-                ];
-            });
+        $reservaData = $reservaService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
+        $habitacionesDisponibles = $reservaService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
         return inertia('EditReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
-    }
+}
 
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
@@ -316,12 +179,7 @@ class ReservaController extends Controller
             DB::transaction(function () use ($reservaService, $validated, $reserva) {
                 $reservaService->actualizarReserva($reserva, $validated);
             });
-
-            try {
-                event(new ReservaActualizada($reserva));
-            } catch (\Throwable $e) {
-                Log::warning('No se pudo emitir ReservaActualizada: ' . $e->getMessage());
-            }
+            // La emisión del evento ReservaActualizada ahora la maneja ReservaService
 
             return redirect()->route('panel')->with('success', "Reserva {$reserva->localizador} actualizada correctamente.");
         } catch (\Exception $e) {
@@ -332,13 +190,8 @@ class ReservaController extends Controller
     public function destroy(Reserva $reserva)
     {
         try {
-            // Disparar el evento ANTES de eliminar
-            event(new ReservaBorrada($reserva));
-
-            DB::transaction(function () use ($reserva) {
-                $reserva->habitaciones()->delete();
-                $reserva->delete();
-            });
+            $reservaService = new ReservaService();
+            $reservaService->eliminarReserva($reserva);
 
             return redirect()->back()->with('success', 'Reserva eliminada con éxito');
         } catch (\Exception $e) {
@@ -346,10 +199,7 @@ class ReservaController extends Controller
         }
     }
 
-    /**
-     * Calcula el precio dinámico para una reserva
-     * POST /reservas/calcular-precio
-     */
+    /* Calcula el precio dinámico para una reserva */
     public function calcularPrecio(Request $request)
     {
         $validated = $request->validate([
@@ -358,37 +208,25 @@ class ReservaController extends Controller
             'habitaciones' => 'required|array|min:1',
             'habitaciones.*.tipo' => 'required|string|in:doble,familiar,suite',
             'habitaciones.*.cantidad' => 'required|integer|min:1',
-        ]);
+            ]);
 
-        try {
-            $precioService = new \App\Services\PrecioService();
+            try {
+                $precioService = new \App\Services\PrecioService();
             $checkIn = Carbon::createFromFormat('Y-m-d', $validated['check_in']);
             $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
 
             $resultado = $precioService->calcularMontoTotal( $validated['habitaciones'], $checkIn, $checkOut);
 
             if (isset($resultado['error'])) {
-                return response()->json([
-                    'success' => false,
-                    'error' => $resultado['error'],
-                ], 422);
+                return response()->json([ 'success' => false, 'error' => $resultado['error']], 422);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $resultado,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error en calcularPrecio', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
+            return response()->json([ 'success' => true, 'data' => $resultado ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al calcular precio: ' . $e->getMessage(),
-            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Error en calcularPrecio', [ 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine() ]);
+
+            return response()->json([  'success' => false, 'error' => 'Error al calcular precio: ' . $e->getMessage() ], 500);
         }
     }
 
@@ -435,185 +273,99 @@ class ReservaController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Error al buscar reserva: ' . $e->getMessage(),
-            ], 500);
-        }
+                ], 500);
+                }
     }
 
-    /**
-     * Descarga un comprobante de reserva en PDF
-     */
+    /* Descarga un comprobante de reserva en PDF */
     public function descargarComprobante($localizador)
     {
         try {
             $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
                 ->where('localizador', $localizador)
                 ->firstOrFail();
-
             $reservaService = new ReservaService();
 
-            // Calcular noches
-            $checkIn = Carbon::parse($reserva->check_in);
-            $checkOut = Carbon::parse($reserva->check_out);
-            $noches = max(1, abs($checkOut->diffInDays($checkIn)));
-
-            // Preparar datos para el PDF
-            $data = [
-                'reserva' => $reserva,
-                'cliente' => $reservaService->formatearCliente($reserva),
-                'noches' => $noches,
-                'fecha_generacion' => now()->format('d/m/Y H:i'),
-            ];
-
-            // Generar PDF
-            $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
-
-            // Descargar PDF
+            $pdf = $reservaService->generarComprobantePdf($reserva);
             return $pdf->download("Comprobante_{$localizador}.pdf");
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'No se encontró la reserva o error al generar PDF: ' . $e->getMessage(),
-            ], 404);
-        }
+                ], 404);
+                }
     }
 
-    /**
-     * Obtiene información sobre si una reserva puede extenderse
-     * GET /reservas/{localizador}/info-extension
-     */
+    /* Obtiene información sobre si una reserva puede extenderse */
     public function infoExtension($localizador)
     {
         try {
             $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
             $reservaService = new ReservaService();
-
             $info = $reservaService->obtenerInfoExtension($reserva);
+            return response()->json([ 'success' => true, ...$info ]);
 
-            return response()->json([
-                'success' => true,
-                ...$info,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 404);
-        }
+            } catch (\Exception $e) {
+            return response()->json([ 'success' => false, 'error' => $e->getMessage()], 404);
+            }
     }
 
-    /**
-     * Extiende una reserva con nuevos días adicionales
-     * POST /reservas/{localizador}/extender
-     */
+    /* Extiende una reserva con nuevos días adicionales */
     public function extenderReserva(Request $request, $localizador)
     {
         try {
-            $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])
-                ->where('localizador', $localizador)
-                ->firstOrFail();
+            $numeroDias = (int) $request->input('numero_dias');
+            $confirmar = (bool) $request->input('confirmar');
 
             $reservaService = new ReservaService();
+            $resultado = $reservaService->extenderReserva($localizador, $numeroDias, $confirmar);
 
-            // Verificar que la reserva se puede extender
-            $checkOut = Carbon::parse($reserva->check_out);
-            $horasHastaCheckout = now()->diffInHours($checkOut);
-
-            if ($horasHastaCheckout >= 24) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'La extensión solo está disponible 24 horas antes del checkout',
-                ], 422);
-            }
-
-            if ($reserva->status === 'cancelada') {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'No se puede extender una reserva cancelada',
-                ], 422);
-            }
-
-            // Obtener número de días a extender
-            $numeroDias = (int) $request->input('numero_dias');
-
-            if ($numeroDias < 1 || $numeroDias > 3) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Debes seleccionar entre 1 y 3 días de extensión',
-                ], 422);
-            }
-
-            // Calcular nuevo checkout
-            $nuevoCheckOut = $checkOut->copy()->addDays($numeroDias);
-
-            // Verificar disponibilidad de habitaciones
-            $habitacionesNoDisponibles = $reservaService->verificarDisponibilidadExtension(
-                $reserva,
-                $checkOut,
-                $nuevoCheckOut
-            );
-
-            if (!empty($habitacionesNoDisponibles)) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Las habitaciones no están disponibles para la extensión seleccionada',
-                ], 422);
-            }
-
-            // Calcular precio de la extensión
-            $precioExtension = $reservaService->calcularPrecioExtension($reserva, $checkOut, $nuevoCheckOut);
-
-            // Verificar si necesita pago
-            $necesitaPago = $reserva->pago === 'pagado';
-
-            // Si es confirmación, aplicar extensión
-            if ($request->input('confirmar')) {
-                $reservaService->aplicarExtension($reserva, $nuevoCheckOut, $precioExtension);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Reserva extendida correctamente',
-                    'nuevo_check_out' => $nuevoCheckOut->toDateString(),
-                    'precio_extension' => $precioExtension,
-                    'necesita_pago' => $necesitaPago,
-                ]);
-            }
-
-            // Retornar información de extensión (sin aplicar aún)
-            return response()->json([
-                'success' => true,
-                'message' => 'Extensión calculada',
-                'nuevo_check_out' => $nuevoCheckOut->toDateString(),
-                'precio_extension' => $precioExtension,
-                'necesita_pago' => $necesitaPago,
-            ]);
+            return response()->json($resultado);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al extender la reserva: ' . $e->getMessage(),
-            ], 500);
+            return response()->json([ 'success' => false, 'error' => 'Error al extender la reserva: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Recalcula los precios de todas las reservas basándose en sus habitaciones
-     * Esta es una operación de mantenimiento para arreglar precios históricos incorrectos
-     */
-    public function recalcularPreciosReservas()
+    public function preciosPorDia(Request $request)
     {
         try {
-            $reservaService = new ReservaService();
-            $actualizadas = $reservaService->recalcularPreciosTodasReservas();
+            $inicio = $request->query('inicio');
+            $fin = $request->query('fin');
+            $fechaInicio = $inicio ? Carbon::createFromFormat('Y-m-d', $inicio) : Carbon::today();
+            $fechaFin = $fin ? Carbon::createFromFormat('Y-m-d', $fin) : Carbon::today()->addDays(90);
 
-            return response()->json([
-                'success' => true,
-                'message' => "Se recalcularon los precios de {$actualizadas} reservas.",
-                'actualizadas' => $actualizadas,
-            ]);
+            if ($fechaFin->lt($fechaInicio)) {
+                return response()->json(['success' => false, 'error' => 'Rango de fechas inválido'], 400);
+            }
+
+            $precioService = new PrecioService();
+            $resultados = $precioService->preciosPorRango($fechaInicio, $fechaFin);
+
+            return response()->json(['success' => true, 'data' => $resultados]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al recalcular precios: ' . $e->getMessage(),
-            ], 500);
+            Log::error('Error en preciosPorDia: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Error calculando precios'], 500);
         }
     }
+
+    /* Devuelve precios para un mes concreto */
+    public function preciosMes($yyyy, $mm)
+    {
+        try {
+            $anio = (int) $yyyy;
+            $mes = (int) $mm;
+            if ($anio < 2000 || $mes < 1 || $mes > 12) {
+                return response()->json(['success' => false, 'error' => 'Fecha inválida'], 400);
+            }
+
+            $precioService = new PrecioService();
+            $resultados = $precioService->preciosMes($anio, $mes);
+
+            return response()->json(['success' => true, 'data' => $resultados]);
+        } catch (\Exception $e) {
+            Log::error('Error en preciosMes: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Error calculando precios por mes'], 500);
+        }
+    }
+
 }

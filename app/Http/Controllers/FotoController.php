@@ -2,65 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreFotoRequest;
-use App\Http\Requests\UpdateFotoRequest;
-use App\Models\Foto;
+use Illuminate\Http\Request;
 
 class FotoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    private function eliminadoResponse()
     {
-        //
+        return response()->json(['success' => false, 'error' => 'Controlador Foto eliminado (no usado)'], 410);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreFotoRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Foto $foto)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Foto $foto)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateFotoRequest $request, Foto $foto)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Foto $foto)
-    {
-        //
-    }
+    public function index() { return $this->eliminadoResponse(); }
+    public function create() { return $this->eliminadoResponse(); }
+    public function store(Request $request) { return $this->eliminadoResponse(); }
+    public function show($id) { return $this->eliminadoResponse(); }
+    public function edit($id) { return $this->eliminadoResponse(); }
+    public function update(Request $request, $id) { return $this->eliminadoResponse(); }
+    public function destroy($id) { return $this->eliminadoResponse(); }
 }

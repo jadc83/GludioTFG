@@ -4,310 +4,146 @@
     <meta charset="UTF-8">
     <title>Comprobante de Reserva {{ $reserva->localizador }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background: #E2E0DC;
-        }
-        @page {
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0;
-            background: #E2E0DC;
-            padding: 0;
-            box-shadow: none;
-        }
-        .header {
-            background: linear-gradient(135deg, #7a0202 0%, #920303 100%);
-            color: #7a0202;
-            padding: 20px 30px;
-            text-align: center;
-            margin: 0;
-            border-radius: 0;
-        }
-        .header h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 0 0 5px 0;
-            color: #7a0202;
-        }
-        .header p {
-            font-size: 12px;
-            margin: 0;
-            color: #7a0202;
-        }
-        .localizador {
-            font-family: monospace;
-            font-weight: bold;
-            font-size: 14px;
-            background: rgba(122, 2, 2, 0.1);
-            padding: 6px 12px;
-            border-radius: 0;
-            display: inline-block;
-            margin-top: 5px;
-            color: #7a0202;
-        }
-        .section {
-            margin-bottom: 15px;
-            margin-left: 30px;
-            margin-right: 30px;
-        }
-        .section:first-of-type {
-            margin-top: 15px;
-        }
-        .section-title {
-            font-size: 11px;
-            font-weight: bold;
-            color: white;
-            background: #7a0202;
-            text-transform: uppercase;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #920303;
-        }
-        .info-grid {
-            background: #E2E0DC;
-            padding: 12px;
-            border-radius: 0;
-            margin-bottom: 10px;
-            border: none;
-        }
-        .info-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        .info-row:last-child {
-            margin-bottom: 0;
-        }
-        .info-col {
-            display: table-cell;
-            width: 50%;
-            padding-right: 10px;
-            vertical-align: top;
-        }
-        .info-col:last-child {
-            padding-right: 0;
-        }
-        .info-label {
-            font-size: 11px;
-            color: #7a0202;
-            text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        .info-value {
-            font-size: 15px;
-            color: #2d2d2d;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: bold;
-            color: white;
-        }
-        .badge-success {
-            background-color: #10b981;
-        }
-        .badge-warning {
-            background-color: #f59e0b;
-        }
-        .badge-info {
-            background-color: #7a0202;
-        }
-        table {
-            width: calc(100% - 60px);
-            border-collapse: collapse;
-            margin-top: 15px;
-            margin-left: 30px;
-            margin-right: 30px;
-        }
-        th {
-            background-color: #7a0202;
-            color: white;
-            padding: 8px 12px;
-            text-align: left;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        td {
-            padding: 8px 12px;
-            border-bottom: none;
-            font-size: 13px;
-            background: #E2E0DC;
-        }
-        tr:nth-child(even) td {
-            background-color: #d8d4cc;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        .total-section {
-            background-color: #E2E0DC;
-            padding: 12px;
-            border-radius: 0;
-            margin-top: 12px;
-            margin-left: 30px;
-            margin-right: 30px;
-            border: none;
-        }
-        .total-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 5px;
-            font-size: 13px;
-        }
-        .total-label {
-            display: table-cell;
-            width: 70%;
-        }
-        .total-value {
-            display: table-cell;
-            width: 30%;
-            text-align: right;
-        }
-        .grand-total {
-            font-size: 16px;
-            font-weight: bold;
-            color: #7a0202;
-            border-top: 2px solid #7a0202;
-            padding-top: 12px;
-            margin-top: 12px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 15px;
-            padding: 15px 30px;
-            border-top: none;
-            font-size: 10px;
-            color: #666;
-            background: #E2E0DC;
-        }
+        /* Page setup for PDF */
+        @page { size: A4; margin: 20mm; }
+        body { font-family: Arial, Helvetica, sans-serif; color: #222; background: #fff; margin:0; padding:0; }
+        .container { width: 100%; max-width: 780px; margin: 0 auto; }
+        .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+        .brand { font-weight:700; color:#7a0202; }
+        .meta { text-align:right; font-size:12px; color:#555; }
+        .localizador { font-family: monospace; color:#7a0202; font-weight:700; margin-top:6px; display:block; }
+
+        .section { margin-bottom: 14px; }
+        .section-title { font-size:12px; font-weight:700; color:#fff; background:#7a0202; padding:6px 10px; display:inline-block; border-radius:3px; }
+
+        .info { display:flex; gap:20px; margin-top:8px; }
+        .info .col { flex:1; }
+        .info-label { font-size:10px; color:#7a0202; font-weight:700; text-transform:uppercase; }
+        .info-value { font-size:13px; color:#222; margin-top:6px; }
+
+        table.items { width:100%; border-collapse:collapse; margin-top:10px; }
+        table.items th, table.items td { border:1px solid #ddd; padding:8px 10px; text-align:left; font-size:13px; }
+        table.items th { background:#f5f5f5; font-weight:700; }
+
+        .totals { margin-top:12px; width:100%; display:flex; justify-content:flex-end; }
+        .totals .box { width:320px; }
+        .totals .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+        .totals .grand { font-weight:800; font-size:16px; color:#7a0202; border-top:2px solid #eee; padding-top:8px; }
+
+        .badge { display:inline-block; padding:6px 10px; border-radius:4px; color:#fff; font-weight:700; font-size:12px; }
+        .badge-success { background:#10b981; }
+        .badge-warning { background:#f59e0b; }
+
+        .footer { margin-top:22px; font-size:11px; color:#666; text-align:center; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>✓ COMPROBANTE DE RESERVA</h1>
-            <p>Hotel Gludio</p>
-            <div class="localizador">{{ $reserva->localizador }}</div>
+            <div class="brand">
+                <div style="font-size:18px;">Hotel Gludio</div>
+                <div style="font-size:12px;">Comprobante / Factura</div>
+            </div>
+            <div class="meta">
+                <div>{{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
+                <div class="localizador">{{ $reserva->localizador }}</div>
+            </div>
         </div>
 
         <div class="section">
             <div class="section-title">Información del Huésped</div>
-            <div class="info-grid">
-                <div class="info-row">
-                    <div class="info-col">
-                        <div class="info-label">Nombre</div>
-                        <div class="info-value">{{ $cliente['nombre'] }}</div>
-                    </div>
+            <div class="info">
+                <div class="col">
+                    <div class="info-label">Nombre</div>
+                    <div class="info-value">{{ $cliente['nombre'] ?? ($reserva->reservable?->name ?? 'N/A') }}</div>
+                </div>
+                <div class="col">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ optional($reserva->reservable)->email ?? '-' }}</div>
                 </div>
             </div>
         </div>
 
         <div class="section">
             <div class="section-title">Detalles de la Estancia</div>
-            <div class="info-grid">
-                <div class="info-row">
-                    <div class="info-col">
-                        <div class="info-label">Check-in</div>
-                        <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_in)->format('d/m/Y') }}</div>
-                    </div>
-                    <div class="info-col">
-                        <div class="info-label">Check-out</div>
-                        <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_out)->format('d/m/Y') }}</div>
-                    </div>
+            <div class="info">
+                <div class="col">
+                    <div class="info-label">Check-in</div>
+                    <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_in)->format('d/m/Y') }}</div>
                 </div>
-                <div class="info-row">
-                    <div class="info-col">
-                        <div class="info-label">Noches</div>
-                        <div class="info-value">{{ $noches }}</div>
-                    </div>
-                    <div class="info-col">
-                        <div class="info-label">Fecha Reserva</div>
-                        <div class="info-value">{{ \Carbon\Carbon::parse($reserva->created_at)->format('d/m/Y') }}</div>
-                    </div>
+                <div class="col">
+                    <div class="info-label">Check-out</div>
+                    <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_out)->format('d/m/Y') }}</div>
+                </div>
+                <div class="col">
+                    <div class="info-label">Noches</div>
+                    <div class="info-value">{{ $noches }}</div>
                 </div>
             </div>
         </div>
 
         <div class="section">
-            <div class="section-title">Habitaciones Reservadas</div>
-            <table>
-                <tr>
-                    <th>Tipo</th>
-                    <th>Habitación</th>
-                    <th>Precio Total</th>
-                </tr>
-                @foreach($reserva->habitaciones as $habitacion)
-                <tr>
-                    <td>{{ ucfirst($habitacion->habitacion->tipo) }}</td>
-                    <td>#{{ $habitacion->habitacion->numero }}</td>
-                    <td>€ {{ number_format($habitacion->precio, 2, ',', '.') }}</td>
-                </tr>
+            <div class="section-title">Habitaciones</div>
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th style="width:170px;text-align:right;">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($reserva->habitaciones as $hr)
+                    @php
+                        $tipo = $hr->habitacion->tipo ?? 'Habitación';
+                        $precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
+                    @endphp
+                    <tr>
+                        <td>Habitación {{ strtolower($tipo) }}</td>
+                        <td style="text-align:right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
+                    </tr>
                 @endforeach
+                </tbody>
             </table>
         </div>
 
-        <div class="total-section">
-            <div class="total-row">
-                <span class="total-label">Subtotal:</span>
-                <span class="total-value">€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</span>
-            </div>
-            <div class="total-row grand-total">
-                <span class="total-label">TOTAL A PAGAR:</span>
-                <span class="total-value">€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</span>
+        <div class="totals">
+            <div class="box">
+                <div class="row"><span>Subtotal</span><strong>€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</strong></div>
+                <div class="row grand"><span>TOTAL</span><strong>€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</strong></div>
             </div>
         </div>
 
-        <div class="section" style="margin-top: 30px;">
-            <div class="section-title">Estado de la Reserva</div>
-            <div class="info-grid">
-                <div class="info-row">
-                    <div class="info-col">
-                        <div class="info-label">Estado de Reserva</div>
-                        <div style="margin-top: 5px;">
-                            @if($reserva->status === 'confirmada')
-                                <span class="badge badge-success">✓ CONFIRMADA</span>
-                            @elseif($reserva->status === 'pendiente')
-                                <span class="badge badge-warning">⏳ PENDIENTE</span>
-                            @else
-                                <span class="badge badge-info">{{ ucfirst($reserva->status) }}</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="info-col">
-                        <div class="info-label">Estado de Pago</div>
-                        <div style="margin-top: 5px;">
-                            @if($reserva->pago === 'pagado')
-                                <span class="badge badge-success">✓ PAGADO</span>
-                            @elseif($reserva->pago === 'pendiente')
-                                <span class="badge badge-warning">⏳ PENDIENTE</span>
-                            @else
-                                <span class="badge badge-info">{{ ucfirst($reserva->pago) }}</span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
+        <div class="section" style="margin-top:20px;">
+            <div class="section-title">Estado de Pago</div>
+            <div style="margin-top:8px;">
+                @php
+                    // calcular pago_texto: sólo considerar abonado si existe pago completado con stripe id
+                    try { $reserva->loadMissing('pagos'); } catch (\Throwable $e) {}
+                    $pagosCollection = $reserva->pagos ?? collect();
+                    $ultimoTarjeta = $pagosCollection->where('estado','completado')
+                                    ->filter(function($p){ return !empty($p->stripe_payment_intent_id); })
+                                    ->sortByDesc('pagado_en')
+                                    ->first();
+                @endphp
+                @if(isset($pago_texto))
+                    @php $text = $pago_texto; @endphp
+                @elseif($ultimoTarjeta)
+                    @php $text = 'ABONADO (Tarjeta)'; @endphp
+                @else
+                    @php $text = 'PENDIENTE'; @endphp
+                @endif
+
+                @if(stripos($text,'abon') !== false)
+                    <span class="badge badge-success">{{ $text }}</span>
+                @else
+                    <span class="badge badge-warning">{{ $text }}</span>
+                @endif
             </div>
         </div>
 
         <div class="footer">
-            <p>Comprobante generado el {{ $fecha_generacion }}</p>
-            <p>Este documento confirma tu reserva. Guárdalo para futuras referencias.</p>
-            <p style="margin-top: 15px; font-size: 10px; color: #999;">
-                Hotel Gludio | +34 91 234 5678 | info@hotelgludio.com
-            </p>
+            <div>Comprobante generado el {{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
+            <div style="margin-top:6px;font-size:11px;color:#888;">Hotel Gludio — Guarda este documento para tus registros.</div>
         </div>
     </div>
 </body>
