@@ -9,6 +9,11 @@ use App\Models\Reserva;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use App\Events\ReservaCreada;
+use App\Events\ReservaBorrada;
+use App\Events\ReservaActualizada;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReservaService
 {
@@ -62,6 +67,109 @@ class ReservaService
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
         ];
+    }
+
+    /**
+     * Prepara y valida fechas para la vista de edición
+     * Devuelve array [Carbon $checkIn, Carbon $checkOut]
+     */
+    public function prepararFechasParaEdicion(array $requestDates, Reserva $reserva): array
+    {
+        $checkIn = isset($requestDates['check_in']) ? Carbon::parse($requestDates['check_in']) : Carbon::parse($reserva->check_in);
+        $checkOut = isset($requestDates['check_out']) ? Carbon::parse($requestDates['check_out']) : Carbon::parse($reserva->check_out);
+
+        if (!$checkIn || !$checkOut) {
+            throw new \Exception('Fechas inválidas para edición.');
+        }
+
+        if ($checkOut->lte($checkIn)) {
+            throw new \Exception('La fecha de salida debe ser posterior a la de entrada.');
+        }
+
+        return [$checkIn, $checkOut];
+    }
+
+    /**
+     * Formatea la reserva para la vista de edición
+     */
+    public function formatearReservaParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): array
+    {
+        $noches = max(1, $checkIn->diffInDays($checkOut));
+
+        $reservaData = [
+            'id' => $reserva->id,
+            'localizador' => $reserva->localizador,
+            'check_in' => Carbon::parse($reserva->check_in)->format('Y-m-d'),
+            'check_out' => Carbon::parse($reserva->check_out)->format('Y-m-d'),
+            'precio_total' => $reserva->precio_total,
+            'status' => $reserva->status,
+            'pago' => $reserva->pago,
+            'notas' => $reserva->notas,
+            'cliente' => [
+                'id' => $reserva->reservable->id ?? null,
+                'name' => $reserva->reservable->name ?? 'N/A',
+                'email' => $reserva->reservable->email ?? null,
+                'telefono' => $reserva->reservable->telefono ?? null,
+                'numero_documento' => $reserva->reservable->numero_documento ?? null,
+                'tipo_documento' => $reserva->reservable->tipo_documento ?? null,
+            ],
+            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches) {
+                return [
+                    'id' => $hr->habitacion->id,
+                    'numero' => $hr->habitacion->numero,
+                    'tipo' => $hr->habitacion->tipo,
+                    'precio_noche' => $hr->precio ? round($hr->precio / max(1, $noches), 2) : null,
+                    'capacidad' => $hr->habitacion->capacidad,
+                    'precio' => $hr->precio,
+                ];
+            })->values(),
+        ];
+
+        return $reservaData;
+    }
+
+    /**
+     * Obtiene las habitaciones disponibles y calcula precios para la vista de edición
+     * Devuelve una colección mapeada lista para enviar a la vista.
+     */
+    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
+    {
+        $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
+
+        $checkInStr = $checkIn->toDateString();
+        $checkOutStr = $checkOut->toDateString();
+
+        $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
+            ->where(function ($query) use ($reserva, $habitacionesActualesIds, $checkInStr, $checkOutStr) {
+                $query->whereIn('id', $habitacionesActualesIds)
+                    ->orWhere(function ($q) use ($reserva, $checkInStr, $checkOutStr) {
+                        $q->where('estado', 'disponible')
+                            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
+                                $subQ->where('reserva_id', '!=', $reserva->id)
+                                    ->where('check_in', '<', $checkOutStr)
+                                    ->where('check_out', '>', $checkInStr);
+                            });
+                    });
+            })
+            ->orderBy('numero')
+            ->get();
+
+        $noches = max(1, $checkIn->diffInDays($checkOut));
+
+        return $habitaciones->map(function ($hab) use ($habitacionesActualesIds, $checkIn, $checkOut, $noches) {
+            $precioDinamico = $this->precioService->calcularPrecioEntreFechas($hab->tipo, $checkIn, $checkOut);
+
+            return [
+                'id' => $hab->id,
+                'numero' => $hab->numero,
+                'tipo' => $hab->tipo,
+                'precio_noche' => round($precioDinamico / $noches, 2),
+                'precio_total' => $precioDinamico,
+                'capacidad' => $hab->capacidad,
+                'estado' => $hab->estado,
+                'es_actual' => in_array($hab->id, $habitacionesActualesIds),
+            ];
+        });
     }
 
     /**
@@ -123,6 +231,67 @@ class ReservaService
         } while (Reserva::where('localizador', $localizador)->exists());
 
         return $localizador;
+    }
+
+    /**
+     * Crea una reserva usando los helpers del servicio.
+     * Devuelve la instancia creada (con id).
+     */
+    public function crearReserva(array $datos, ?User $usuario = null, string $status = 'pendiente'): Reserva
+    {
+        $datosPreparados = $this->prepararDatosReserva($datos);
+
+        // Verificar disponibilidad
+        $this->verificarDisponibilidad($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
+
+        // Resolver reservable (usuario o cliente)
+        if (($datosPreparados['tipo_usuario'] ?? '') === 'usuario' && $usuario) {
+            $datosPreparados['reservable_id'] = $usuario->id;
+            $reservableType = User::class;
+        } else {
+            $clienteId = $this->obtenerOCrearCliente($datosPreparados);
+            $datosPreparados['reservable_id'] = $clienteId;
+            $reservableType = Cliente::class;
+            $datosPreparados['tipo_usuario'] = 'cliente';
+        }
+
+        // Crear dentro de transacción
+        return DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
+            $localizador = $this->generarLocalizador();
+
+            $reserva = Reserva::create([
+                'localizador' => $localizador,
+                'reservable_id' => $datosPreparados['reservable_id'],
+                'reservable_type' => $reservableType,
+                'booked_by_user_id' => $usuario->id ?? null,
+                'check_in' => $datosPreparados['check_in'],
+                'check_out' => $datosPreparados['check_out'],
+                'precio_total' => $datosPreparados['precio_total'],
+                'status' => $status,
+                'pago' => $datosPreparados['pago'] ?? 'pendiente',
+                'notas' => $datosPreparados['notas'] ?? 'Reserva creada',
+            ]);
+
+            // Asignar habitaciones
+            $this->asignarHabitaciones($reserva, $datosPreparados['habitaciones']);
+
+            // Disparar evento
+            event(new ReservaCreada($reserva));
+
+            return $reserva;
+        });
+    }
+
+    /**
+     * Elimina una reserva y sus relaciones dentro de transacción.
+     */
+    public function eliminarReserva(Reserva $reserva): void
+    {
+        DB::transaction(function () use ($reserva) {
+            $reserva->habitaciones()->delete();
+            $reserva->delete();
+            event(new ReservaBorrada($reserva));
+        });
     }
 
     /**
@@ -297,6 +466,25 @@ class ReservaService
     }
 
     /**
+     * Genera y devuelve el objeto PDF para una reserva (no lo descarga)
+     */
+    public function generarComprobantePdf(Reserva $reserva)
+    {
+        $checkIn = Carbon::parse($reserva->check_in);
+        $checkOut = Carbon::parse($reserva->check_out);
+        $noches = max(1, $checkIn->diffInDays($checkOut));
+
+        $data = [
+            'reserva' => $reserva,
+            'cliente' => $this->formatearCliente($reserva),
+            'noches' => $noches,
+            'fecha_generacion' => now()->format('d/m/Y H:i'),
+        ];
+
+        return Pdf::loadView('pdf.comprobante-reserva', $data);
+    }
+
+    /**
      * Asigna habitaciones a una reserva
      */
     public function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
@@ -444,6 +632,12 @@ class ReservaService
         }
 
         $reserva->update(['precio_total' => $precioTotal]);
+
+        try {
+            event(new ReservaActualizada($reserva));
+        } catch (\Throwable $e) {
+            // No detener la lógica en caso de fallo al emitir el evento
+        }
     }
 
     /**
@@ -533,6 +727,61 @@ class ReservaService
             $habitacionReserva->check_out = $nuevoCheckOut;
             $habitacionReserva->save();
         }
+    }
+
+    /**
+     * Extiende una reserva: valida, calcula precio y aplica si se confirma.
+     * Retorna información útil para el controlador/cliente.
+     * @param string $localizador
+     * @param int $numeroDias
+     * @param bool $confirmar
+     * @return array
+     * @throws \Exception
+     */
+    public function extenderReserva(string $localizador, int $numeroDias, bool $confirmar = false): array
+    {
+        $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])->where('localizador', $localizador)->first();
+        if (!$reserva) {
+            throw new \Exception('Reserva no encontrada');
+        }
+
+        $checkOut = Carbon::parse($reserva->check_out);
+        $horas = now()->diffInHours($checkOut);
+
+        if ($horas >= 24) {
+            throw new \Exception('La extensión solo está disponible 24 horas antes del checkout');
+        }
+
+        if ($reserva->status === 'cancelada') {
+            throw new \Exception('No se puede extender una reserva cancelada');
+        }
+
+        if ($numeroDias < 1 || $numeroDias > 3) {
+            throw new \Exception('Debes seleccionar entre 1 y 3 días de extensión');
+        }
+
+        $nuevoCheckOut = $checkOut->copy()->addDays($numeroDias);
+
+        // Verificar disponibilidad
+        $habitacionesNoDisponibles = $this->verificarDisponibilidadExtension($reserva, $checkOut, $nuevoCheckOut);
+        if (!empty($habitacionesNoDisponibles)) {
+            return [ 'success' => false, 'error' => 'Las habitaciones no están disponibles para la extensión seleccionada', 'habitaciones_no_disponibles' => $habitacionesNoDisponibles ];
+        }
+
+        $precioExtension = $this->calcularPrecioExtension($reserva, $checkOut, $nuevoCheckOut);
+        $necesitaPago = $reserva->pago === 'pagado';
+
+        if ($confirmar) {
+            $this->aplicarExtension($reserva, $nuevoCheckOut, $precioExtension);
+            try {
+                event(new ReservaActualizada($reserva));
+            } catch (\Throwable $e) {
+                // ignore
+            }
+            return [ 'success' => true, 'aplicada' => true, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
+        }
+
+        return [ 'success' => true, 'aplicada' => false, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
     }
 
     /**

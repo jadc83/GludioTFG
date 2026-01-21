@@ -57,14 +57,13 @@ export default function DetalleReserva({ reserva }) {
                                     <p className="text-gray-800 font-semibold">{formatearFecha(reserva.check_out)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-[#7a0202] uppercase">Estado</p>
-                                    <div className="flex gap-1">
-                                        <span className={`badge ${getStatusBadge(reserva.status)} text-xs py-0.5 px-2`}>
-                                            {reserva.status.charAt(0).toUpperCase() + reserva.status.slice(1)}
-                                        </span>
-                                        <span className={`badge ${getPagoBadge(reserva.pago)} text-xs py-0.5 px-2`}>
-                                            {reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1)}
-                                        </span>
+                                    <div className="mb-1">
+                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Estado reserva</p>
+                                        <span className={`badge ${getStatusBadge(reserva.status)} text-xs py-0.5 px-2`}>{reserva.status.charAt(0).toUpperCase() + reserva.status.slice(1)}</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Estado pago</p>
+                                        <span className={`badge ${getPagoBadge(reserva.pago)} text-xs py-0.5 px-2`}>{reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1)}</span>
                                     </div>
                                 </div>
                             </div>

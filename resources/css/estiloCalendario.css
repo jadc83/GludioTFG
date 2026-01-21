@@ -96,9 +96,46 @@
   box-sizing: border-box;
 }
 
+/* Precio pequeño dentro del botón del día */
+.rdp-day_price {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  line-height: 1;
+  margin: 0;
+  pointer-events: none;
+  z-index: 2;
+  color: #7a0202;
+}
+
+.rdp-day[data-precio]:not([data-precio=""]) {
+  position: relative;
+}
+.rdp-day[data-precio]:not([data-precio=""])::before {
+  content: attr(data-precio);
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  line-height: 1.05;
+  font-weight: 600;
+  color: #7a0202;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .rdp-day {
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Alinea número y precio verticalmente dentro de la celda */
+/* keep .rdp-day as table-cell for correct calendar layout */
+.rdp-day {
+  /* no display override here; leave default table-cell behavior */
 }
 
 .rdp-day_button {
@@ -111,11 +148,16 @@
   justify-content: center;
   align-items: center;
   display: flex;
+  flex-direction: column;
+
+  position: relative;
+  overflow: visible;
 
   width: var(--rdp-day_button-width);
   height: var(--rdp-day_button-height);
   border: var(--rdp-day_button-border);
   border-radius: var(--rdp-day_button-border-radius);
+  z-index: 0;
 }
 
 .rdp-day_button:disabled {
@@ -339,21 +381,31 @@
 
 
 .rdp-selected .rdp-day_button {
-  background-color: transparent !important;
-  border: 4px solid var(--rdp-accent-color) !important;
-  color: var(--rdp-accent-color);
-  border-radius: 4px;
+  /* Destacado principal: fondo suave y número oscuro */
+  background-color: rgba(122,2,2,0.10) !important;
+  color: #1f2937 !important;
+  border: none !important;
+  border-radius: 0.35rem !important;
+  box-shadow: none;
 }
 
 
 .rdp-range_start .rdp-day_button,
 .rdp-range_middle .rdp-day_button,
 .rdp-range_end .rdp-day_button {
-  background-color: transparent !important;
+  /* Rango: fondo sutil con bordes redondeados en cada celda */
+  background-color: rgba(122,2,2,0.06) !important;
+  color: #1f2937 !important;
   border: none !important;
-  border-bottom: 4px solid var(--rdp-range-border-color) !important;
-  color: var(--rdp-range-border-color);
-  border-radius: 0 !important;
+  border-radius: 0.25rem !important;
+}
+
+.rdp-range_start .rdp-day_button,
+.rdp-range_end .rdp-day_button {
+  /* Inicio/fin del rango con mayor énfasis (sin degradado fuerte) */
+  background-color: rgba(122,2,2,0.12) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
 }
 
 .rdp-outside {
@@ -384,6 +436,52 @@
 
 .rdp-focusable {
   cursor: pointer;
+
+  /* Evitar que el rule inline coloree toda la celda: dejamos el fondo transparente
+     y pintamos un fondo más pequeño con ::before al hacer hover */
+}
+
+/* Anular fondo completo aplicado por estilos inline y usar un pseudo-elemento
+   para dibujar un fondo más pequeño (menos 'padding' visual) al hacer hover */
+.rdp-day:hover:not([disabled]) {
+  background-color: transparent !important;
+}
+
+.rdp-day_button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background-color: transparent;
+  transition: all 0.12s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.rdp-day_button > * {
+  position: relative;
+  z-index: 2;
+}
+
+.rdp-day_button:hover::before {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(122,2,2,0.10);
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+/* Asegurar que el texto del botón (número y precio) sea visible sobre el fondo hover */
+.rdp-day_button:hover > * {
+  color: #1f2937 !important;
+}
+
+.rdp-day_button .rdp-day_price {
+  color: #7a0202 !important;
 }
 
 

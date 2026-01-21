@@ -3,30 +3,21 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use App\Models\Habitacion;
 
 class PrecioService
 {
-    /**
-     * Precios base por tipo de habitación (en EUR)
-     */
-    private const PRECIOS_BASE = [
-        'doble' => 75,
-        'familiar' => 125,
-        'suite' => 200,
-    ];
+    /* Precios base por tipo de habitación */
+    private const PRECIOS_BASE = [ 'doble' => 75, 'familiar' => 125, 'suite' => 200 ];
 
-    /**
-     * Obtiene el precio base para un tipo de habitación
-     */
+    /* Obtiene el precio base para un tipo de habitación */
     public function obtenerPrecioBase(string $tipo): float
     {
         $tipo = strtolower(trim($tipo));
         return self::PRECIOS_BASE[$tipo] ?? 0;
     }
 
-    /**
-     * Calcula el precio dinámico aplicando multiplicadores
-     */
+    /* Calcula el precio dinámico aplicando multiplicadores */
     public function calcularPrecioDinamico( string $tipo, Carbon $checkIn, Carbon $checkOut, int $cantidad = 1 ): array
      {
         $precioBase = $this->obtenerPrecioBase($tipo);
@@ -67,9 +58,7 @@ class PrecioService
         ];
     }
 
-    /**
-     * Calcula el multiplicador para una fecha específica
-     */
+    /* Calcula el multiplicador para una fecha específica */
     private function obtenerMultiplicador(Carbon $fecha): float
     {
         $multiplicadores = [];
@@ -105,9 +94,7 @@ class PrecioService
         return $multiplicadorFinal;
     }
 
-    /**
-     * Verifica si una fecha es festivo en España
-     */
+    /* Verifica si una fecha es festivo en España */
     private function esFestivo(Carbon $fecha): bool
     {
         $mes = $fecha->month;
@@ -128,9 +115,7 @@ class PrecioService
         return isset($festivosFijos[$fecha_str]);
     }
 
-    /**
-     * Calcula el precio total para múltiples habitaciones
-     */
+    /* Calcula el precio total para múltiples habitaciones */
     public function calcularMontoTotal( array $habitaciones, Carbon $checkIn, Carbon $checkOut ): array
     {
         $montoTotal = 0;
@@ -163,9 +148,7 @@ class PrecioService
         ];
     }
 
-    /**
-     * Calcula el precio para una habitación entre dos fechas usando precios base
-     */
+    /* Calcula el precio para una habitación entre dos fechas usando precios base */
     public function calcularPrecioEntreFechas(string $tipo, Carbon $checkIn, Carbon $checkOut): float
     {
         $precioBase = $this->obtenerPrecioBase($tipo);
@@ -185,4 +168,35 @@ class PrecioService
 
         return round($total, 2);
     }
+
+    /* Devuelve un mapa fecha->precio mínimo entre tipos para un rango dado */
+    public function preciosPorRango(Carbon $inicio, Carbon $fin): array
+    {
+        $tipos = Habitacion::where('estado', '!=', 'mantenimiento')->distinct()->pluck('tipo')->toArray();
+        $resultados = [];
+        $fecha = $inicio->copy();
+        while ($fecha->lte($fin)) {
+            $minimo = null;
+            foreach ($tipos as $tipo) {
+                $precioDia = $this->calcularPrecioEntreFechas($tipo, $fecha, $fecha->copy()->addDay());
+                if ($minimo === null || $precioDia < $minimo) {
+                    $minimo = $precioDia;
+                }
+            }
+            $key = $fecha->format('Y-m-d');
+            $resultados[$key] = $minimo !== null ? round($minimo, 2) : null;
+            $fecha->addDay();
+        }
+
+        return $resultados;
+    }
+
+    /* Devuelve precios para un mes concreto */
+    public function preciosMes(int $anio, int $mes): array
+    {
+        $inicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fin = $inicio->copy()->endOfMonth();
+        return $this->preciosPorRango($inicio, $fin);
+    }
+
 }

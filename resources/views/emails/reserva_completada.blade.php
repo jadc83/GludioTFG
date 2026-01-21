@@ -37,10 +37,6 @@
                     <td style="padding:6px 0;font-weight:600;color:#444;">Precio</td>
                     <td style="padding:6px 0;color:#222;">€{{ $reserva->precio_total }}</td>
                   </tr>
-                  <tr>
-                    <td style="padding:6px 0;font-weight:600;color:#444;">Estado</td>
-                    <td style="padding:6px 0;color:#222;">{{ $reserva->status }}</td>
-                  </tr>
                 </table>
 
                 <div style="text-align:center;margin:18px 0;">

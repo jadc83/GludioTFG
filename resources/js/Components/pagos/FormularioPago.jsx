@@ -34,12 +34,13 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
         setProcesando(true);
 
         try {
-            // Verificar si es una extensión de reserva
-            const esExtension = reservaData?.es_extension;
+            // Crear una reserva nueva o usar una existente.
+            // En caso de edición (es_edicion_pago) o extensión (es_extension) no crear Reserva.
+            const esExtension = Boolean(reservaData?.es_extension || reservaData?.es_edicion_pago);
             let resId = reservaData?.reserva_id;
 
-            // PASO 1: Crear reserva (solo si no es extensión)
             if (!esExtension) {
+                // PASO 1: Crear reserva (solo si no es extensión/edición)
                 const datosReservaConDireccion = { ...reservaData, direccion: direccion};
 
                 const resReserva = await fetch('/reservas', {
@@ -252,18 +253,12 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                     }`}>
                     {procesando ? 'Procesando pago...' : 'Confirmar Pago'}
                 </button>
-
-                {/* Nota de seguridad */}
-                <p className="text-xs text-center text-gray-500">
-                    Pago seguro por <strong>Stripe</strong>
-                </p>
             </form>
         </div>
     );
 }
 
 export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError }) {
-    // Cachear la Promise de Stripe para que no cambie en cada render
     const stripePromise = useMemo(() => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY), []);
 
     return (
