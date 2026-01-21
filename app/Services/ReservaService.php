@@ -5,6 +5,10 @@ namespace App\Services;
 use App\Models\Cliente;
 use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
+use App\Models\Pago;
+use App\Models\Refund;
+use Illuminate\Support\Facades\Log;
+use Stripe\StripeClient;
 use App\Models\Reserva;
 use App\Models\User;
 use Carbon\Carbon;
@@ -482,6 +486,212 @@ class ReservaService
         ];
 
         return Pdf::loadView('pdf.comprobante-reserva', $data);
+    }
+
+    /**
+     * Determina si la reserva es elegible para reembolso (48h y pago pagado)
+     */
+    public function puedeReembolsar(Reserva $reserva): bool
+    {
+        try {
+            $checkIn = Carbon::parse($reserva->check_in);
+            $deadline = $checkIn->copy()->subHours(48);
+            if (Carbon::now()->greaterThan($deadline)) {
+                return false;
+            }
+
+            if (strtolower($reserva->pago) !== 'pagado') {
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Error evaluando puedeReembolsar: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Solicita un reembolso para la reserva: busca el pago, aplica fallbacks, crea refund en Stripe y registra en BD.
+     * Retorna array con keys: success (bool) y message (string).
+     */
+    public function solicitarReembolso(Reserva $reserva, $usuario): array
+    {
+        // Permisos: el usuario debe ser el reservable o el creador
+        $esPropietario = false;
+        try {
+            $esPropietario = (
+                ($reserva->reservable_type === get_class($usuario) && $reserva->reservable_id == $usuario->id)
+                || $reserva->user_id == $usuario->id
+                || $reserva->booked_by_user_id == $usuario->id
+            );
+        } catch (\Throwable $e) {
+            $esPropietario = false;
+        }
+
+        if (! $esPropietario) {
+            return ['success' => false, 'message' => 'No autorizado para solicitar este reembolso.'];
+        }
+
+        if (! $this->puedeReembolsar($reserva)) {
+            return ['success' => false, 'message' => 'No se puede solicitar reembolso con menos de 48 horas antes del check-in o reserva no pagada.'];
+        }
+
+        // Buscar pago preferente: último completado
+        $pago = $reserva->pagos()->where('estado', 'completado')->orderByDesc('pagado_en')->first();
+        if (! $pago) {
+            $pago = Pago::where('reserva_id', $reserva->id)->whereNotNull('stripe_payment_intent_id')->orderByDesc('pagado_en')->first();
+            if ($pago) {
+                Log::info("ReservaService fallback: encontrado pago por reserva_id para reembolso: {$pago->id}");
+            }
+        }
+
+        $payment_intent_id = $pago->stripe_payment_intent_id ?? null;
+
+        if (empty($payment_intent_id) && $pago && !empty($pago->stripe_response)) {
+            try {
+                $resp = is_array($pago->stripe_response) ? $pago->stripe_response : (array)$pago->stripe_response;
+                if (!empty($resp['id'])) {
+                    $payment_intent_id = $resp['id'];
+                } elseif (!empty($resp['payment_intent'])) {
+                    $payment_intent_id = $resp['payment_intent'];
+                } elseif (!empty($resp['charges']) && is_array($resp['charges']) && !empty($resp['charges']['data'][0]['payment_intent'])) {
+                    $payment_intent_id = $resp['charges']['data'][0]['payment_intent'];
+                }
+                if ($payment_intent_id) {
+                    Log::info("ReservaService: extraído payment_intent desde stripe_response del pago {$pago->id}: {$payment_intent_id}");
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo parsear stripe_response para extraer payment_intent: ' . $e->getMessage());
+            }
+        }
+
+        // Intentar buscar en Stripe por metadata.localizador si aún no tenemos payment_intent
+        if (empty($payment_intent_id)) {
+            try {
+                $stripeClient = new StripeClient(config('services.stripe.secret'));
+                $query = "metadata['localizador']:'{$reserva->localizador}'";
+                $search = $stripeClient->paymentIntents->search(['query' => $query, 'limit' => 1]);
+                if (!empty($search->data) && count($search->data) > 0) {
+                    $pi = $search->data[0];
+                    $payment_intent_id = $pi->id ?? null;
+                    Log::info("ReservaService: encontrado PaymentIntent en Stripe por metadata.localizador={$reserva->localizador}: {$payment_intent_id}");
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Error buscando PaymentIntent en Stripe por metadata.localizador: ' . $e->getMessage());
+            }
+        }
+
+        if (! $pago || empty($payment_intent_id)) {
+            return ['success' => false, 'message' => 'No se encontró un pago válido para reembolsar.'];
+        }
+
+        // Evitar reembolsos dobles
+        if (Refund::where('pago_id', $pago->id)->exists()) {
+            return ['success' => false, 'message' => 'Este pago ya fue reembolsado.'];
+        }
+
+        try {
+            $stripe = new StripeClient(config('services.stripe.secret'));
+            $refund = $stripe->refunds->create(['payment_intent' => $payment_intent_id]);
+
+            Refund::create([
+                'pago_id' => $pago->id,
+                'reserva_id' => $reserva->id,
+                'stripe_refund_id' => $refund->id ?? null,
+                'amount_cents' => $refund->amount ?? null,
+                'currency' => $refund->currency ?? null,
+                'status' => $refund->status ?? null,
+                'stripe_response' => $refund->toArray(),
+            ]);
+
+            try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso: ' . $e->getMessage()); }
+            try { $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso: ' . $e->getMessage()); }
+
+            return ['success' => true, 'message' => 'Reembolso solicitado correctamente.'];
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::error('Stripe Refund Error: ' . $e->getMessage());
+            $msg = $e->getMessage();
+            if (stripos($msg, 'already been refunded') !== false || stripos($msg, 'already refunded') !== false) {
+                return ['success' => false, 'message' => 'El cargo ya ha sido reembolsado anteriormente.'];
+            }
+            return ['success' => false, 'message' => 'Error al solicitar reembolso en Stripe.'];
+        } catch (\Throwable $e) {
+            Log::error('ReservaService Refund Error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Error interno al procesar reembolso.'];
+        }
+    }
+
+    /**
+     * Maneja un evento de reembolso/charge.refunded desde Stripe.
+     * Acepta el objeto de refund/charge (puede venir como stdClass/array) y crea/actualiza Refund en BD.
+     */
+    public function handleRefundEvent($refundObj): void
+    {
+        try {
+            // Para 'charge.refunded' el objeto puede ser un Charge con 'refunds' o un Refund directo
+            if (is_object($refundObj) && property_exists($refundObj, 'refunds')) {
+                $charge = $refundObj;
+                $refunds = $charge->refunds ?? null;
+                if ($refunds && isset($refunds->data) && count($refunds->data) > 0) {
+                    $single = end($refunds->data);
+                    $refundData = $single;
+                } else {
+                    $refundData = null;
+                }
+            } else {
+                $refundData = $refundObj;
+            }
+
+            if (empty($refundData)) return;
+
+            // Buscar pago por payment_intent o por charge
+            $pago = null;
+            if (!empty($refundData->payment_intent)) {
+                $pago = Pago::where('stripe_payment_intent_id', $refundData->payment_intent)->first();
+            }
+            if (!$pago && !empty($refundData->charge)) {
+                $pago = Pago::whereJsonContains('stripe_response', ['charge' => $refundData->charge])->first();
+            }
+
+            // Si no encontramos por payment_intent/charge, intentar recuperar metadata del payment_intent en Stripe
+            if (!$pago && !empty($refundData->payment_intent)) {
+                try {
+                    $stripeClient = new StripeClient(config('services.stripe.secret'));
+                    $pi = $stripeClient->paymentIntents->retrieve($refundData->payment_intent, []);
+                    $metadata = $pi->metadata ?? null;
+                    if (!empty($metadata) && !empty($metadata->localizador)) {
+                        $localizador = $metadata->localizador;
+                        $pago = Pago::whereHas('reserva', function ($q) use ($localizador) {
+                            $q->where('localizador', $localizador);
+                        })->where('estado', 'completado')->orderByDesc('pagado_en')->first();
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('ReservaService.handleRefundEvent: no se pudo recuperar PaymentIntent desde Stripe: ' . $e->getMessage());
+                }
+            }
+
+            if ($pago) {
+                $existing = Refund::where('stripe_refund_id', $refundData->id)->first();
+                if (!$existing) {
+                    Refund::create([
+                        'pago_id' => $pago->id,
+                        'reserva_id' => $pago->reserva_id,
+                        'stripe_refund_id' => $refundData->id ?? null,
+                        'amount_cents' => $refundData->amount ?? null,
+                        'currency' => $refundData->currency ?? null,
+                        'status' => $refundData->status ?? null,
+                        'reason' => $refundData->reason ?? null,
+                        'stripe_response' => is_object($refundData) ? (array)$refundData : $refundData,
+                    ]);
+                }
+
+                try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago desde handleRefundEvent: ' . $e->getMessage()); }
+                try { $pago->reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva desde handleRefundEvent: ' . $e->getMessage()); }
+            }
+        } catch (\Throwable $e) {
+            Log::error('ReservaService.handleRefundEvent error: ' . $e->getMessage());
+        }
     }
 
     /**
