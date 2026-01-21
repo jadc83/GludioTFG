@@ -38,6 +38,11 @@ class Reserva extends Model
             return $this->hasMany(Pago::class, 'reserva_id');
             }
 
+        public function reembolsos()
+        {
+            return $this->hasMany(Refund::class, 'reserva_id');
+        }
+
     /** Scopes **/
 
     public function scopeWithReservable($query)

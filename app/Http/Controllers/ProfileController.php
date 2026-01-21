@@ -23,7 +23,7 @@ class ProfileController extends Controller
 
         // Obtener las reservas del usuario
         $reservas = $user->reservas()
-            ->with(['habitaciones.habitacion', 'pagos'])
+            ->with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
             ->orderBy('check_in', 'desc')
             ->get();
 
@@ -38,7 +38,10 @@ class ProfileController extends Controller
             'fecha_salida' => (new \DateTime($reserva->check_out))->format('d/m/Y'),
             'noches' => $reserva->check_in ? (new \DateTime($reserva->check_out))->diff(new \DateTime($reserva->check_in))->days : 0,
             'monto_total' => number_format($reserva->precio_total, 2, ',', '.') . '€',
-            'estado' => $this->mapearEstado($reserva->status),
+            'estado' => (
+                (isset($reserva->reembolsos) && $reserva->reembolsos->isNotEmpty())
+                || ($reserva->pago ?? '') === 'devuelto'
+            ) ? 'Reembolsado' : $this->mapearEstado($reserva->status),
         ]);
 
         return Inertia::render('Profile/Edit', [

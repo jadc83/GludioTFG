@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import axios from 'axios';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -168,13 +169,15 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                             </span>
                                                         </td>
                                                         <td className="py-4 px-4">
-                                                            <Link
-                                                                href={`/reservas/${reserva.id}`}
-                                                                className="text-sm font-bold underline transition-colors"
-                                                                className="text-sm font-bold underline transition-colors accent-1366 link-accent-1366"
-                                                            >
-                                                                Ver
-                                                            </Link>
+                                                            <div className="flex gap-3 items-center">
+                                                                <Link
+                                                                    href={`/reservas/${reserva.id}`}
+                                                                    className="text-sm font-bold underline transition-colors accent-1366 link-accent-1366"
+                                                                >
+                                                                    Ver
+                                                                </Link>
+                                                                {/* El botón de reembolso se muestra ahora en la vista detalle de la reserva */}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}

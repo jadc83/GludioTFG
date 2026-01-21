@@ -8,16 +8,46 @@ export default function ScanQR() {
     const [error, setError] = useState(null);
 
     const handleScanSuccess = useCallback((decodedText) => {
-        // Limpiar espacios en blanco
-        const localizador = decodedText.trim();
+        // Limpiar posibles errores previos y espacios en blanco
+        setError(null);
+        let localizador = String(decodedText || '').trim();
+        if (!localizador) return; // ignora datos vacíos
 
-        if (!localizador) {
-            setError('QR inválido');
-            return;
+        setScannedData(localizador);
+
+        // Si el QR contiene una URL, intentar extraer el último segmento
+        try {
+            if (localizador.startsWith('http')) {
+                const url = new URL(localizador);
+                const parts = url.pathname.split('/').filter(Boolean);
+                if (parts.length > 0) {
+                    localizador = parts[parts.length - 1];
+                }
+            }
+        } catch (e) {
+            // ignore, mantener localizador como estaba
         }
 
-        // Redirigir al show de la reserva
-        router.visit(route('reserva.show', { reserva: localizador }));
+        // Comprobar primero que existe la reserva para evitar modal 404
+        fetch(`/reservas/buscar/${encodeURIComponent(localizador)}`, { headers: { 'Accept': 'application/json' } })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body?.error || 'Reserva no encontrada');
+                }
+                return res.json();
+            })
+            .then((data) => {
+                if (data?.reserva) {
+                    router.visit(route('reserva.show', { reserva: localizador }));
+                } else {
+                    setError('No se encontró la reserva asociada al código QR.');
+                }
+            })
+            .catch((err) => {
+                console.warn('ScanQR: reserva no encontrada o error:', err);
+                setError(err.message || 'No se encontró la reserva');
+            });
     }, []);
 
     return (

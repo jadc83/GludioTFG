@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Pago;
 use App\Models\Reserva;
+use App\Models\Refund;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\ReservaService;
 
 class PagoController extends Controller
 {
@@ -150,7 +154,7 @@ class PagoController extends Controller
     /**
      * Webhook de Stripe
      */
-    public function webhook(Request $request)
+    public function webhook(Request $request, \App\Services\ReservaService $reservaService)
     {
         $endpointSecret = config('services.stripe.webhook_secret');
 
@@ -175,11 +179,32 @@ class PagoController extends Controller
                 if ($pago) {
                     $pago->marcarComoFallido();
                 }
+            } elseif (in_array($event->type, ['charge.refunded', 'refund.updated', 'refund.created'])) {
+                try {
+                    $refundObj = $event->data->object;
+                    $reservaService->handleRefundEvent($refundObj);
+                } catch (\Throwable $e) {
+                    Log::error('Error delegando evento de reembolso al servicio: ' . $e->getMessage());
+                }
             }
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
+    }
+
+    /**
+     * Reembolsar una reserva: busca el último pago completado y crea un reembolso en Stripe.
+     */
+    public function reembolsarReserva(Request $request, Reserva $reserva, ReservaService $reservaService)
+    {
+        $user = Auth::user();
+        $resultado = $reservaService->solicitarReembolso($reserva, $user);
+        $status = $resultado['success'] ? 200 : 400;
+        if (isset($resultado['status_code'])) {
+            $status = $resultado['status_code'];
+        }
+        return response()->json($resultado, $status);
     }
 }
