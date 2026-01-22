@@ -141,7 +141,7 @@ export default function IndexReserva({ reservas = [] }) {
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
                         <div className="overflow-x-auto p-2 md:p-4">
-                            <table className="table-compact table-pro table w-full text-xs md:text-sm">
+                            <table className="table table-zebra table-compact w-full text-xs md:text-sm">
                                 <thead>
                                     <tr>
                                         <th>Localizador</th>
