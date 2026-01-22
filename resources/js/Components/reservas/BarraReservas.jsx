@@ -159,11 +159,8 @@ export default function BarraReservas() {
                 {/* INPUT SALIDA */}
                 <div className="flex items-center gap-2 relative">
                   <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Salida</label>
-                  <button
-                    onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')}
-                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!formularioReserva.rango?.from}
-                  >
+                  <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')} disabled={!formularioReserva.rango?.from}
+                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed">
                     {formularioReserva.rango?.to ? formatearFecha(formularioReserva.rango.to, 'corta') : '—'}
                   </button>
                   <CalendarioStyles />

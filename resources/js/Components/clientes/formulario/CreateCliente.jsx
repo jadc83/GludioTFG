@@ -9,10 +9,7 @@ import { useState } from 'react';
 export default function CreateCliente({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
 
-    const { formulario, cambiar, errores, enviar, limpiar } = useClienteForm(
-        null,
-        () => { setAbierto(false); limpiar();
-        }
+    const { formulario, cambiar, errores, enviar, limpiar } = useClienteForm( null, () => { setAbierto(false); limpiar(); }
     );
 
     const handleCerrar = () => { setAbierto(false); limpiar();};
@@ -27,9 +24,7 @@ export default function CreateCliente({ iconOnly = false }) {
                 <div className={`drawer-panel ${abierto ? 'abierto' : 'cerrado'}`}>
                     <header className="drawer-header">
                         <h3 className="drawer-titulo">Alta de Cliente</h3>
-                        <button onClick={handleCerrar} className="btn-cerrar">
-                            ✕
-                        </button>
+                        <button onClick={handleCerrar} className="btn-cerrar">✕</button>
                     </header>
 
                     <form onSubmit={enviar} className="form-cliente">

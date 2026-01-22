@@ -1,7 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import axios from 'axios';
-import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import { CalendarIcon, CreditCardIcon, UserIcon, LockClosedIcon, TrashIcon } from '@heroicons/react/24/solid';
@@ -17,13 +15,9 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
     ];
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Mi Perfil
-                </h2>
-            }
-        >
+        <AuthenticatedLayout header={
+             <h2 className="text-xl font-semibold leading-tight text-gray-800">Mi Perfil</h2>
+            }>
             <Head title="Mi Perfil" />
 
             <div className="py-12">
@@ -34,15 +28,9 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                                                activeTab === tab.id
-                                                    ? 'bg-white shadow-sm ring-1 ring-black/5 tab-active-1366'
-                                                    : 'text-gray-700 hover:bg-gray-200/50'
-                                            }`}
-                                    >
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200
+                                    ${ activeTab === tab.id ? 'bg-white shadow-sm ring-1 ring-black/5 tab-active-1366' : 'text-gray-700 hover:bg-gray-200/50' }`}>
                                         <Icon className="h-4 w-4" />
                                         {tab.label}
                                     </button>
@@ -96,14 +84,8 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
 
                                 {/* Formulario de edición */}
                                 <div>
-                                    <h3 className="text-3xl font-bold mb-8 accent-1366">
-                                        Editar Información
-                                    </h3>
-                                    <UpdateProfileInformationForm
-                                        mustVerifyEmail={mustVerifyEmail}
-                                        status={status}
-                                        className="max-w-2xl"
-                                    />
+                                    <h3 className="text-3xl font-bold mb-8 accent-1366">Editar Información </h3>
+                                    <UpdateProfileInformationForm mustVerifyEmail={mustVerifyEmail} status={status} className="max-w-2xl"/>
                                 </div>
                             </div>
                         )}
@@ -118,10 +100,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                 {reservas.length === 0 ? (
                                         <div className="text-center py-12">
                                         <p className="text-gray-600 mb-6 text-lg">📭 Aún no tienes reservas</p>
-                                        <Link
-                                            href="/"
-                                            className="inline-block px-8 py-3 rounded-lg font-semibold transition-colors duration-200 btn-accent-1366"
-                                        >
+                                        <Link href="/" className="inline-block px-8 py-3 rounded-lg font-semibold transition-colors duration-200 btn-accent-1366">
                                             Hacer una Reserva
                                         </Link>
                                     </div>
@@ -157,26 +136,19 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                         <td className="py-4 px-4 text-gray-700">{reserva.noches}</td>
                                                         <td className="py-4 px-4 font-bold accent-1366">{reserva.monto_total}</td>
                                                         <td className="py-4 px-4">
-                                                            <span
-                                                                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                                     reserva.estado === 'Completada' ? 'status-completada-1366' :
                                                                     reserva.estado === 'Confirmada' ? 'status-confirmada-1366' :
                                                                     reserva.estado === 'En curso' ? 'status-encurso-1366' :
-                                                                    reserva.estado === 'Cancelada' ? 'status-cancelada-1366' : 'status-default-1366'
-                                                                }`}
-                                                            >
+                                                                    reserva.estado === 'Cancelada' ? 'status-cancelada-1366' : 'status-default-1366'}`}>
                                                                 {reserva.estado}
                                                             </span>
                                                         </td>
                                                         <td className="py-4 px-4">
                                                             <div className="flex gap-3 items-center">
-                                                                <Link
-                                                                    href={`/reservas/${reserva.id}`}
-                                                                    className="text-sm font-bold underline transition-colors accent-1366 link-accent-1366"
-                                                                >
+                                                                <Link href={`/reservas/${reserva.id}`} className="text-sm font-bold underline transition-colors accent-1366 link-accent-1366">
                                                                     Ver
                                                                 </Link>
-                                                                {/* El botón de reembolso se muestra ahora en la vista detalle de la reserva */}
                                                             </div>
                                                         </td>
                                                     </tr>
