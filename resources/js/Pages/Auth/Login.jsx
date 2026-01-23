@@ -2,7 +2,7 @@ import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Campo from '@/Components/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -51,14 +51,14 @@ export default function Login({ status, canResetPassword }) {
                         <InputLabel htmlFor="email" value="Correo" />
                         <div className="relative mt-1">
                             <EnvelopeIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                            <TextInput
+                            <Campo
                                 id="email"
                                 type="email"
                                 name="email"
                                 value={data.email}
-                                className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 autoComplete="username"
-                                isFocused={true}
+                                estaFocalizado={true}
                                 onChange={(e) => setData('email', e.target.value)}
                                 placeholder="tu@email.com"
                             />
@@ -71,12 +71,12 @@ export default function Login({ status, canResetPassword }) {
                         <InputLabel htmlFor="password" value="Contraseña" />
                         <div className="relative mt-1">
                             <LockClosedIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                            <TextInput
+                            <Campo
                                 id="password"
                                 type="password"
                                 name="password"
                                 value={data.password}
-                                className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 autoComplete="current-password"
                                 onChange={(e) => setData('password', e.target.value)}
                                 placeholder="••••••••"

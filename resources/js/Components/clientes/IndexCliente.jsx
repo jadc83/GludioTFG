@@ -1,4 +1,5 @@
 import EditCliente from '@/Components/clientes/formulario/EditCliente';
+import Campo from '@/Components/Campo';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { obtenerColorDocumento, obtenerNombreDocumento } from '@/utils/formatters';
 import { EyeIcon, FunnelIcon, InboxIcon, MagnifyingGlassIcon, PencilIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
@@ -43,11 +44,17 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
     return (
     <>
         <div className="mb-4 flex flex-col items-stretch gap-2 md:items-center md:flex-row md:gap-3">
-            <div className="relative flex-1">
+                <div className="relative flex-1">
                 <MagnifyingGlassIcon
                     className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 transform text-gray-400" />
-                <input type="text" className="input input-bordered w-full pl-10 text-sm md:text-base" value={filtros.busqueda} placeholder="Nombre, email, documento..."
-                    onChange={(e) => actualizarFiltro('busqueda', e.target.value)}/>
+                <Campo
+                    id="cliente_busqueda"
+                    name="busqueda"
+                    clase="input input-bordered w-full pl-10 text-sm md:text-base"
+                    value={filtros.busqueda}
+                    placeholder="Nombre, email, documento..."
+                    onChange={(e) => actualizarFiltro('busqueda', e.target.value)}
+                />
             </div>
             <select className="select select-bordered w-full md:max-w-xs text-sm md:text-base" value={filtros.tipo_documento}
                 onChange={(e) => actualizarFiltro('tipo_documento', e.target.value)}>

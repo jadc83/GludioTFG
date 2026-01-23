@@ -23,7 +23,7 @@ export function useClienteForm(cliente = null, alGuardar) {
     const { rutaCrear, rutaActualizar } = obtenerRutas();
 
     const form = useFormGenerico(
-        { name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '',  direccion: ''}, rutaCrear,  rutaActualizar,
+        { name: '', email: '', telefono: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '',  direccion: '', ciudad: '', codigo_postal: ''}, rutaCrear,  rutaActualizar,
         () => {
             alGuardar?.();
             router.reload({ only: ['clientes'] });
@@ -40,7 +40,9 @@ export function useClienteForm(cliente = null, alGuardar) {
                                           tipo_documento: cliente.tipo_documento || 'dni',
                                           numero_documento: cliente.numero_documento || '',
                                           nacionalidad: cliente.nacionalidad || '',
-                                          direccion: cliente.direccion || ''});
+                                          direccion: cliente.direccion || '',
+                                          ciudad: cliente.ciudad || '',
+                                          codigo_postal: cliente.codigo_postal || ''});
         } else {
             form.limpiar();
         }

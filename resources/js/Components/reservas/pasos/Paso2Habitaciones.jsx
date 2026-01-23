@@ -235,8 +235,13 @@ export default function Paso2Habitaciones({
                                                 className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">
                                                 −
                                             </button>
-                                            <input type="number" readOnly className="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-gris"
-                                                value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}/>
+                                            <Campo
+                                                id={`cantidad_${imagenModalAbierto}`}
+                                                type="number"
+                                                readOnly
+                                                clase="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-gris"
+                                                value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}
+                                            />
                                             <button type="button" onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) + 1)}
                                                 disabled={(habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) >= agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad}
                                                 className="w-10 h-10 flex-shrink-0 rounded bg-black text-white hover:bg-[#7a0202] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">

@@ -49,18 +49,18 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 value={formulario.numero}
                                 onChange={cambiar}
                                 placeholder="Ej: 101"
-                                classNameExtra="font-mono"
+                                claseExtra="font-mono"
                                 required
                                 error={errores.numero}
-                                noDefaultStyles={true}
-                                wrapperClass="contenedorCampo"
-                                labelClass="etiquetaCampo"
-                                errorClass="campo-error"
-                                className="entradaTexto"
+                                sinEstilosPorDefecto={true}
+                                claseContenedor="contenedorCampo"
+                                claseEtiqueta="etiquetaCampo"
+                                claseError="campo-error"
+                                clase="entradaTexto"
                             />
 
                             <Campo id="tipo" label="Tipo" as="select" value={formulario.tipo} onChange={cambiar} error={errores.tipo}
-                                noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="campo-error" className="selector">
+                                sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="campo-error" clase="selector">
                                 {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
                                     <option key={clave} value={valor}>
                                         {valor.charAt(0).toUpperCase() + valor.slice(1)}
@@ -78,15 +78,15 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     min="1"
                                     value={formulario.capacidad}
                                     onChange={cambiar}
-                                    classNameExtra={capacidadFija ? 'readonly font-mono' : 'font-mono'}
+                                    claseExtra={capacidadFija ? 'readonly font-mono' : 'font-mono'}
                                     readOnly={capacidadFija}
                                     required
                                     error={errores.capacidad}
-                                    noDefaultStyles={true}
-                                    wrapperClass="contenedorCampo"
-                                    labelClass="etiquetaCampo"
-                                    errorClass="campo-error"
-                                    className="entradaTexto"
+                                    sinEstilosPorDefecto={true}
+                                    claseContenedor="contenedorCampo"
+                                    claseEtiqueta="etiquetaCampo"
+                                    claseError="campo-error"
+                                    clase="entradaTexto"
                                 />
                             )}
                         </div>
@@ -211,11 +211,11 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             onChange={cambiar}
                             placeholder="Detalles públicos..."
                             error={errores.descripcion}
-                            noDefaultStyles={true}
-                            wrapperClass="contenedorCampo"
-                            labelClass="campo-label"
-                            errorClass="campo-error"
-                            className="campo-textarea"
+                            sinEstilosPorDefecto={true}
+                            claseContenedor="contenedorCampo"
+                            claseEtiqueta="campo-label"
+                            claseError="campo-error"
+                            clase="campo-textarea"
                         />
 
                         <Campo
@@ -227,11 +227,11 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             onChange={cambiar}
                             placeholder="Solo uso interno..."
                             error={errores.notas}
-                            noDefaultStyles={true}
-                            wrapperClass="contenedorCampo"
-                            labelClass="campo-label"
-                            errorClass="campo-error"
-                            className="campo-textarea"
+                            sinEstilosPorDefecto={true}
+                            claseContenedor="contenedorCampo"
+                            claseEtiqueta="campo-label"
+                            claseError="campo-error"
+                            clase="campo-textarea"
                         />
 
                         <PrimaryButton type="submit" className="w-full">

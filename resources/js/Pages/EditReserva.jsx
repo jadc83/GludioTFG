@@ -275,7 +275,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                             </div>
 
                             <div className="space-y-4 xl:col-span-1">
-                                <div className="card bg-white shadow-md border border-gray-200">
+                                <div className="card bg-gris shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
                                             <CurrencyEuroIcon className="h-5 w-5 accent-1366" />
@@ -285,9 +285,9 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         <div className="space-y-3">
                                             <div className="grid grid-cols-2 gap-2 mb-2">
                                                 <Campo id="check_in" label="Entrada" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
-                                                    noDefaultStyles={true} className="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
+                                                    sinEstilosPorDefecto={true} clase="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
                                                 <Campo id="check_out" label="Salida" type="date" value={form.check_out} onChange={cambiar} error={errores.check_out}
-                                                    noDefaultStyles={true} className="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
+                                                    sinEstilosPorDefecto={true} clase="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
                                             </div>
 
                                             <div className="mb-2">
@@ -338,7 +338,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         <div className="space-y-4">
                                             <div>
                                                 <Campo id="status" label="Estado Reserva" as="select" value={form.status} onChange={cambiar} error={errores.status}
-                                                    noDefaultStyles={true} className="select-bordered select w-full border-gray-300 focus:border-burgundy">
+                                                    sinEstilosPorDefecto={true} clase="select-bordered select w-full border-gray-300 focus:border-burgundy">
                                                     <option value="pendiente">Pendiente</option>
                                                     <option value="confirmado">Confirmado</option>
                                                     <option value="checked_in">Check-in</option>
@@ -350,7 +350,7 @@ export default function EditReserva({ reserva, habitaciones }) {
 
                                             <div>
                                                 <Campo id="pago" label="Estado Pago" as="select" value={form.pago} onChange={cambiar} error={errores.pago}
-                                                    noDefaultStyles={true} className="select-bordered select w-full border-gray-300 focus:border-burgundy">
+                                                    sinEstilosPorDefecto={true} clase="select-bordered select w-full border-gray-300 focus:border-burgundy">
                                                     <option value="pendiente">Pendiente</option>
                                                     <option value="parcial">Parcial</option>
                                                     <option value="pagado">Pagado</option>
@@ -360,7 +360,7 @@ export default function EditReserva({ reserva, habitaciones }) {
 
                                             <div>
                                                 <Campo id="notas" label="Notas" as="textarea" rows={3} value={form.notas || ''} onChange={cambiar} error={errores.notas}
-                                                    noDefaultStyles={true} className="textarea-bordered textarea w-full border-gray-300 focus:border-burgundy" placeholder="Observaciones..." />
+                                                    sinEstilosPorDefecto={true} clase="textarea-bordered textarea w-full border-gray-300 focus:border-burgundy" placeholder="Observaciones..." />
                                             </div>
                                         </div>
                                     </div>

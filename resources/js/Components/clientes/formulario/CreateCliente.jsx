@@ -36,7 +36,7 @@ export default function CreateCliente({ iconOnly = false }) {
                         </div>
 
                         <Campo id="telefono" label="Teléfono" type="tel" value={formulario.telefono} onChange={cambiar}
-                            error={errores.telefono} classNameExtra="font-mono"/>
+                            error={errores.telefono} claseExtra="font-mono"/>
 
                         <div className="form-grid">
                             <Campo id="tipo_documento" label="Tipo Documento" as="select" value={formulario.tipo_documento}
@@ -48,7 +48,7 @@ export default function CreateCliente({ iconOnly = false }) {
                                 ))}
                             </Campo>
                             <Campo id="numero_documento" label="Número Documento" value={formulario.numero_documento}
-                                onChange={cambiar} required classNameExtra="font-mono" error={errores.numero_documento}/>
+                                onChange={cambiar} required claseExtra="font-mono" error={errores.numero_documento}/>
                         </div>
 
                         <Campo id="nacionalidad" label="Nacionalidad" value={formulario.nacionalidad}

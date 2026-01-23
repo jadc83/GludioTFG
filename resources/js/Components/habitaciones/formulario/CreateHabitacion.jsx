@@ -32,11 +32,11 @@ export default function CreateHabitacion({ iconOnly = false }) {
                     <form onSubmit={enviar} className="formularioHabitacion">
                         <div className="rejillaFormulario">
                             <Campo id="numero" label="Número" type="text" value={formulario.numero} onChange={cambiar} error={errores.numero}
-                                placeholder="Ej: 101" classNameExtra="font-mono" required
-                                noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="entradaTexto" />
+                                placeholder="Ej: 101" claseExtra="font-mono" required
+                                sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="entradaTexto" />
 
                             <Campo id="tipo" label="Tipo" as="select" value={formulario.tipo} onChange={cambiar} error={errores.tipo}
-                                noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="selector">
+                                sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="selector">
                                 {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
                                     <option key={clave} value={valor}>
                                         {valor.charAt(0).toUpperCase() + valor.slice(1)}
@@ -50,13 +50,13 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                 <input type="hidden" id="capacidad" name="capacidad" value={formulario.capacidad} readOnly />
                             ) : (
                                 <Campo id="capacidad" label="Capacidad" type="number" min="1" value={formulario.capacidad} onChange={cambiar}
-                                    error={errores.capacidad} readOnly={capacidadFija} classNameExtra={capacidadFija ? 'soloLectura font-mono' : 'font-mono'}
-                                    noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="entradaTexto" />
+                                    error={errores.capacidad} readOnly={capacidadFija} claseExtra={capacidadFija ? 'soloLectura font-mono' : 'font-mono'}
+                                    sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="entradaTexto" />
                             )}
                         </div>
 
                         <Campo id="estado" label="Estado" as="select" value={formulario.estado} onChange={cambiar} error={errores.estado}
-                            noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="selector">
+                            sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="selector">
                             <option value="disponible">Disponible</option>
                             <option value="ocupada">Ocupada</option>
                             <option value="mantenimiento">Mantenimiento</option>
@@ -67,10 +67,10 @@ export default function CreateHabitacion({ iconOnly = false }) {
                             maxFotos={MAX_FOTOS}/>
 
                         <Campo id="descripcion" label="Descripción" as="textarea" value={formulario.descripcion} onChange={cambiar} error={errores.descripcion}
-                            placeholder="Detalles públicos..." noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="areaTexto" />
+                            placeholder="Detalles públicos..." sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="areaTexto" />
 
                         <Campo id="notas" label="Notas Privadas" as="textarea" rows={3} value={formulario.notas} onChange={cambiar} error={errores.notas}
-                            placeholder="Uso interno..." noDefaultStyles={true} wrapperClass="contenedorCampo" labelClass="etiquetaCampo" errorClass="mensajeError" className="areaTexto" />
+                            placeholder="Uso interno..." sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="mensajeError" clase="areaTexto" />
 
                         <PrimaryButton type="submit" className="mt-4 w-full">
                             {estaCargando ? 'Guardando...' : 'Crear Habitación'}

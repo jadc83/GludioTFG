@@ -53,7 +53,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                             value={formulario.telefono || ''}
                             onChange={cambiar}
                             error={errores.telefono}
-                            classNameExtra="font-mono"
+                            claseExtra="font-mono"
                         />
 
                         <div className="form-grid">
@@ -80,7 +80,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                                 onChange={cambiar}
                                 error={errores.numero_documento}
                                 required
-                                classNameExtra="font-mono"
+                                claseExtra="font-mono"
                             />
                         </div>
 

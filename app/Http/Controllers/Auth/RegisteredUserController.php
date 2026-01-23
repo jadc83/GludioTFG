@@ -38,6 +38,8 @@ class RegisteredUserController extends Controller
             'numero_documento' => 'required|string|max:50|unique:users,numero_documento',
             'nacionalidad' => 'required|string|max:100',
             'direccion' => 'required|string|max:500',
+            'ciudad' => 'nullable|string|max:100',
+            'codigo_postal' => 'nullable|string|max:20',
             'telefono' => 'required|string|max:20',
         ]);
 
@@ -49,6 +51,8 @@ class RegisteredUserController extends Controller
             'numero_documento' => $request->numero_documento,
             'nacionalidad' => $request->nacionalidad,
             'direccion' => $request->direccion,
+            'ciudad' => $request->ciudad,
+            'codigo_postal' => $request->codigo_postal,
             'telefono' => $request->telefono,
         ]);
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Campo from '@/Components/Campo';
 import { MagnifyingGlassIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 
@@ -71,19 +72,9 @@ export default function BuscadorReserva() {
 
                 <form onSubmit={handleBuscar} className="mb-6">
                     <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={localizador}
-                            onChange={(e) => setLocalizador(e.target.value.toUpperCase())}
-                            placeholder="Ej: GZ02JMV"
-                            className="input-bordered input flex-1"
-                            disabled={buscando}
-                        />
-                        <button
-                            type="submit"
-                            disabled={buscando}
-                            className="btn btn-primary gap-2"
-                        >
+                        <Campo id="localizador_buscar" name="localizador" value={localizador} onChange={(e) => setLocalizador(e.target.value.toUpperCase())}
+                            placeholder="Ej: GZ02JMV" className="input-bordered input flex-1" disabled={buscando}/>
+                        <button type="submit" disabled={buscando} className="btn btn-primary gap-2">
                             <MagnifyingGlassIcon className="h-5 w-5" />
                             {buscando ? 'Buscando...' : 'Buscar'}
                         </button>
@@ -165,10 +156,8 @@ export default function BuscadorReserva() {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`}
-                                className="btn btn-primary btn-outline mt-6 w-full gap-2"
-                            >
+                            <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`}
+                                className="btn btn-primary btn-outline mt-6 w-full gap-2">
                                 <DocumentArrowDownIcon className="h-5 w-5 bg-transparent" />
                                 Descargar Comprobante PDF
                             </button>

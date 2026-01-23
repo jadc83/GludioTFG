@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import IndexHabitacion from './IndexHabitacion';
+import Campo from '@/Components/Campo';
 
 export default function TabHabitaciones({ habitaciones = [] }) {
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
@@ -33,8 +34,14 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                                 Búsqueda
                             </span>
                         </label>
-                        <input type="text" placeholder="busca algun dato" className="input input-bordered w-full" value={filtros.busqueda || ''}
-                            onChange={(e) => actualizarFiltro('busqueda', e.target.value)} />
+                        <Campo
+                            id="habitacion_busqueda"
+                            name="busqueda"
+                            placeholder="busca algun dato"
+                            clase="input input-bordered w-full"
+                            value={filtros.busqueda || ''}
+                            onChange={(e) => actualizarFiltro('busqueda', e.target.value)}
+                        />
                     </div>
                     <div className="form-control w-full">
                         <label className="label py-1"><span className="label-text text-xs md:text-sm">Estado</span></label>
@@ -63,10 +70,24 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                     <div className="form-control w-full">
                         <label className="label py-1"><span className="label-text text-xs md:text-sm">Precio</span></label>
                         <div className="flex gap-2">
-                            <input type="number" placeholder="Mín" className="input input-bordered w-full" value={filtros.precio_min || ''}
-                                onChange={(e) => actualizarFiltro('precio_min', e.target.value)}/>
-                            <input type="number" placeholder="Máx" className="input input-bordered w-full" value={filtros.precio_max || ''}
-                                onChange={(e) => actualizarFiltro('precio_max', e.target.value)}/>
+                            <Campo
+                                id="precio_min"
+                                name="precio_min"
+                                type="number"
+                                placeholder="Mín"
+                                clase="input input-bordered w-full"
+                                value={filtros.precio_min || ''}
+                                onChange={(e) => actualizarFiltro('precio_min', e.target.value)}
+                            />
+                            <Campo
+                                id="precio_max"
+                                name="precio_max"
+                                type="number"
+                                placeholder="Máx"
+                                clase="input input-bordered w-full"
+                                value={filtros.precio_max || ''}
+                                onChange={(e) => actualizarFiltro('precio_max', e.target.value)}
+                            />
                         </div>
                     </div>
 
