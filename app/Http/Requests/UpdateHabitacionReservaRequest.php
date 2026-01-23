@@ -6,6 +6,12 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateHabitacionReservaRequest extends FormRequest
 {
+    public function messages(): array
+    {
+        return [
+            'unique' => 'El campo ya está en uso.',
+        ];
+    }
     /**
      * Determine if the user is authorized to make this request.
      */

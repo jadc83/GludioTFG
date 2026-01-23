@@ -6,6 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateHuespedRequest extends FormRequest
 {
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre es obligatorio.',
+            'numero_documento.max' => 'El número de documento no puede tener más de 50 caracteres.',
+        ];
+    }
     /**
      * Determine if the user is authorized to make this request.
      */

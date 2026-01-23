@@ -6,6 +6,12 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreHuespedRequest extends FormRequest
 {
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre es obligatorio.',
+        ];
+    }
     /**
      * Determine if the user is authorized to make this request.
      */

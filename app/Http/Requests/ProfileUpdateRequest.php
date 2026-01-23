@@ -34,4 +34,18 @@ class ProfileUpdateRequest extends FormRequest
             'telefono' => ['nullable', 'string', 'max:20'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre es obligatorio.',
+            'name.max' => 'El nombre no puede tener más de 255 caracteres.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico no es válido.',
+            'email.max' => 'El correo electrónico no puede tener más de 255 caracteres.',
+            'numero_documento.max' => 'El número de documento no puede tener más de 50 caracteres.',
+            'numero_documento.unique' => 'El número de documento ya está registrado.',
+            'tipo_documento.in' => 'El tipo de documento no es válido.',
+        ];
+    }
 }
