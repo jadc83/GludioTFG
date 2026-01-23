@@ -25,6 +25,8 @@ class User extends Authenticatable
         'numero_documento',
         'nacionalidad',
         'direccion',
+        'ciudad',
+        'codigo_postal',
         'telefono',
     ];
 

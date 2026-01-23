@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Campo from '@/Components/Campo';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
@@ -21,6 +21,8 @@ export default function UpdateProfileInformation({
             numero_documento: user.numero_documento || '',
             nacionalidad: user.nacionalidad || '',
             direccion: user.direccion || '',
+            ciudad: user.ciudad || '',
+            codigo_postal: user.codigo_postal || '',
             telefono: user.telefono || '',
         });
 
@@ -33,6 +35,8 @@ export default function UpdateProfileInformation({
             numero_documento: user.numero_documento || '',
             nacionalidad: user.nacionalidad || '',
             direccion: user.direccion || '',
+            ciudad: user.ciudad || '',
+            codigo_postal: user.codigo_postal || '',
             telefono: user.telefono || '',
         });
     }, []);    const submit = (e) => {
@@ -59,9 +63,9 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="name" value="Nombre Completo" />
 
-                        <TextInput
+                        <Campo
                             id="name"
-                            className="mt-1 block w-full"
+                            clase="mt-1 block w-full"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             required
@@ -75,10 +79,10 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="email" value="Correo Electrónico" />
 
-                        <TextInput
+                        <Campo
                             id="email"
                             type="email"
-                            className="mt-1 block w-full"
+                            clase="mt-1 block w-full"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             required
@@ -112,9 +116,9 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="numero_documento" value="Número de Documento" />
 
-                        <TextInput
+                        <Campo
                             id="numero_documento"
-                            className="mt-1 block w-full"
+                            clase="mt-1 block w-full"
                             value={data.numero_documento}
                             onChange={(e) => setData('numero_documento', e.target.value)}
                             autoComplete="off"
@@ -129,9 +133,9 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="nacionalidad" value="Nacionalidad" />
 
-                        <TextInput
+                        <Campo
                             id="nacionalidad"
-                            className="mt-1 block w-full"
+                            clase="mt-1 block w-full"
                             value={data.nacionalidad}
                             onChange={(e) => setData('nacionalidad', e.target.value)}
                             autoComplete="country-name"
@@ -143,10 +147,10 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="telefono" value="Teléfono" />
 
-                        <TextInput
+                        <Campo
                             id="telefono"
                             type="tel"
-                            className="mt-1 block w-full"
+                            clase="mt-1 block w-full"
                             value={data.telefono}
                             onChange={(e) => setData('telefono', e.target.value)}
                             autoComplete="tel"
@@ -155,20 +159,45 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.telefono} />
                     </div>
                 </div>
-
-                {/* Fila 4: Dirección */}
+                {/* Fila 4: Dirección, Ciudad y Código Postal */}
                 <div>
                     <InputLabel htmlFor="direccion" value="Dirección" />
 
-                    <TextInput
+                    <Campo
                         id="direccion"
-                        className="mt-1 block w-full"
+                        clase="mt-1 block w-full"
                         value={data.direccion}
                         onChange={(e) => setData('direccion', e.target.value)}
                         autoComplete="street-address"
                     />
 
                     <InputError className="mt-2" message={errors.direccion} />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                        <div>
+                            <InputLabel htmlFor="ciudad" value="Ciudad" />
+                            <Campo
+                                id="ciudad"
+                                clase="mt-1 block w-full"
+                                value={data.ciudad}
+                                onChange={(e) => setData('ciudad', e.target.value)}
+                                autoComplete="address-level2"
+                            />
+                            <InputError className="mt-2" message={errors.ciudad} />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="codigo_postal" value="Código Postal" />
+                            <Campo
+                                id="codigo_postal"
+                                clase="mt-1 block w-full"
+                                value={data.codigo_postal}
+                                onChange={(e) => setData('codigo_postal', e.target.value)}
+                                autoComplete="postal-code"
+                            />
+                            <InputError className="mt-2" message={errors.codigo_postal} />
+                        </div>
+                    </div>
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (

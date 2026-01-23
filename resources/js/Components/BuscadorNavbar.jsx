@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
+import Campo from '@/Components/Campo';
 
 export default function BuscadorNavbar() {
     const [localizador, setLocalizador] = useState('');
@@ -33,8 +34,9 @@ export default function BuscadorNavbar() {
     return (
         <form onSubmit={handleBuscar} className="hidden md:flex items-center">
             <div className="relative">
-                <input
-                    type="text"
+                <Campo
+                    id="navbar_localizador"
+                    name="localizador"
                     value={localizador}
                     onChange={(e) => setLocalizador(e.target.value.toUpperCase())}
                     placeholder="Busca tu reserva..."

@@ -1,5 +1,6 @@
 import '@/../css/createHabitacion.css';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Campo from '@/Components/Campo';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
 import { TIPOS_HABITACION } from '@/utils/constantes';
 import {
@@ -41,86 +42,56 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                 {habitacion && (
                     <form onSubmit={enviar} className="form-habitacion">
                         <div className="form-grid">
-                            <div className="campo">
-                                <label className="campo-label" htmlFor="numero">
-                                    <span className="campo-label-text">
-                                        Número
-                                    </span>
-                                </label>
-                                <input
-                                    id="numero"
-                                    name="numero"
-                                    type="text"
-                                    value={formulario.numero}
-                                    onChange={cambiar}
-                                    placeholder="Ej: 101"
-                                    className={`campo-input font-mono ${errores.numero ? 'error' : ''}`}
-                                    required
-                                />
-                                {errores.numero && (
-                                    <span className="campo-error">
-                                        {errores.numero[0]}
-                                    </span>
-                                )}
-                            </div>
+                            <Campo
+                                id="numero"
+                                label="Número"
+                                type="text"
+                                value={formulario.numero}
+                                onChange={cambiar}
+                                placeholder="Ej: 101"
+                                claseExtra="font-mono"
+                                required
+                                error={errores.numero}
+                                sinEstilosPorDefecto={true}
+                                claseContenedor="contenedorCampo"
+                                claseEtiqueta="etiquetaCampo"
+                                claseError="campo-error"
+                                clase="entradaTexto"
+                            />
 
-                            <div className="campo">
-                                <label className="campo-label" htmlFor="tipo">
-                                    <span className="campo-label-text">
-                                        Tipo
-                                    </span>
-                                </label>
-                                <select
-                                    id="tipo"
-                                    name="tipo"
-                                    value={formulario.tipo}
-                                    onChange={cambiar}
-                                    className={`campo-select ${errores.tipo ? 'error' : ''}`}
-                                >
-                                    {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
-                                        <option key={clave} value={valor}>
-                                            {valor.charAt(0).toUpperCase() + valor.slice(1)}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errores.tipo && (
-                                    <span className="campo-error">
-                                        {errores.tipo[0]}
-                                    </span>
-                                )}
-                            </div>
+                            <Campo id="tipo" label="Tipo" as="select" value={formulario.tipo} onChange={cambiar} error={errores.tipo}
+                                sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="etiquetaCampo" claseError="campo-error" clase="selector">
+                                {Object.entries(TIPOS_HABITACION).map(([clave, valor]) => (
+                                    <option key={clave} value={valor}>
+                                        {valor.charAt(0).toUpperCase() + valor.slice(1)}
+                                    </option>
+                                ))}
+                            </Campo>
 
-
-
-                            <div className="campo">
-                                <label
-                                    className="campo-label"
-                                    htmlFor="capacidad"
-                                >
-                                    <span className="campo-label-text">
-                                        Capacidad
-                                    </span>
-                                </label>
-                                <input
+                            {capacidadFija ? (
+                                <input type="hidden" id="capacidad" name="capacidad" value={formulario.capacidad} readOnly />
+                            ) : (
+                                <Campo
                                     id="capacidad"
-                                    name="capacidad"
+                                    label="Capacidad"
                                     type="number"
                                     min="1"
                                     value={formulario.capacidad}
                                     onChange={cambiar}
-                                    className={`campo-input font-mono ${errores.capacidad ? 'error' : ''} ${capacidadFija ? 'readonly' : ''}`}
+                                    claseExtra={capacidadFija ? 'readonly font-mono' : 'font-mono'}
                                     readOnly={capacidadFija}
                                     required
+                                    error={errores.capacidad}
+                                    sinEstilosPorDefecto={true}
+                                    claseContenedor="contenedorCampo"
+                                    claseEtiqueta="etiquetaCampo"
+                                    claseError="campo-error"
+                                    clase="entradaTexto"
                                 />
-                                {errores.capacidad && (
-                                    <span className="campo-error">
-                                        {errores.capacidad[0]}
-                                    </span>
-                                )}
-                            </div>
+                            )}
                         </div>
 
-                        <div className="campo">
+                        <div>
                             <label className="campo-label" htmlFor="estado">
                                 <span className="campo-label-text">Estado</span>
                             </label>
@@ -217,7 +188,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
 
                             {errores.estado && (
                                 <span className="campo-error">
-                                    {errores.estado[0]}
+                                    {Array.isArray(errores.estado) ? errores.estado[0] : errores.estado}
                                 </span>
                             )}
                         </div>
@@ -232,51 +203,36 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                             maxFotos={4}
                         />
 
-                        <div className="campo">
-                            <label
-                                className="campo-label"
-                                htmlFor="descripcion"
-                            >
-                                <span className="campo-label-text">
-                                    Descripción
-                                </span>
-                            </label>
-                            <textarea
-                                id="descripcion"
-                                name="descripcion"
-                                value={formulario.descripcion}
-                                onChange={cambiar}
-                                placeholder="Detalles públicos..."
-                                className={`campo-textarea ${errores.descripcion ? 'error' : ''}`}
-                            />
-                            {errores.descripcion && (
-                                <span className="campo-error">
-                                    {errores.descripcion[0]}
-                                </span>
-                            )}
-                        </div>
+                        <Campo
+                            id="descripcion"
+                            label="Descripción"
+                            as="textarea"
+                            value={formulario.descripcion}
+                            onChange={cambiar}
+                            placeholder="Detalles públicos..."
+                            error={errores.descripcion}
+                            sinEstilosPorDefecto={true}
+                            claseContenedor="contenedorCampo"
+                            claseEtiqueta="campo-label"
+                            claseError="campo-error"
+                            clase="campo-textarea"
+                        />
 
-                        <div className="campo">
-                            <label className="campo-label" htmlFor="notas">
-                                <span className="campo-label-text">
-                                    Notas Privadas
-                                </span>
-                            </label>
-                            <textarea
-                                id="notas"
-                                name="notas"
-                                rows={3}
-                                value={formulario.notas}
-                                onChange={cambiar}
-                                placeholder="Solo uso interno..."
-                                className={`campo-textarea ${errores.notas ? 'error' : ''}`}
-                            />
-                            {errores.notas && (
-                                <span className="campo-error">
-                                    {errores.notas[0]}
-                                </span>
-                            )}
-                        </div>
+                        <Campo
+                            id="notas"
+                            label="Notas Privadas"
+                            as="textarea"
+                            rows={3}
+                            value={formulario.notas}
+                            onChange={cambiar}
+                            placeholder="Solo uso interno..."
+                            error={errores.notas}
+                            sinEstilosPorDefecto={true}
+                            claseContenedor="contenedorCampo"
+                            claseEtiqueta="campo-label"
+                            claseError="campo-error"
+                            clase="campo-textarea"
+                        />
 
                         <PrimaryButton type="submit" className="w-full">
                             {estaCargando

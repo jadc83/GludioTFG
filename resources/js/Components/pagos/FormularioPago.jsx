@@ -1,9 +1,10 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
-import React, { useState, useMemo } from 'react';
+import Campo from '@/Components/Campo';
+import React, { useState, useMemo, useEffect } from 'react';
 
-function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
+function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false }) {
     const page = usePage();
     const csrfToken = page?.props?.csrf_token || document.querySelector('meta[name="csrf-token"]')?.content || '';
     const stripe = useStripe();
@@ -13,14 +14,71 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
     // Obtener datos del usuario logueado
     const user = page?.props?.auth?.user;
+    const [direccion, setDireccion] = useState(() => {
+        const defaults = { calle: '', ciudad: '', codigo_postal: '', pais: 'ES' };
 
-    // Estado para dirección de facturación - pre-rellenado con datos del usuario si existe
-    const [direccion, setDireccion] = useState({
-        calle: user?.direccion || '',
-        ciudad: user?.ciudad || '',
-        codigo_postal: user?.codigo_postal || '',
-        pais: user?.pais || 'ES',
+        if (reservaData && reservaData.direccion) {
+            if (typeof reservaData.direccion === 'string') {
+                return { ...defaults, calle: reservaData.direccion };
+            }
+            // Mezclar valores del objeto con los defaults
+            return { ...defaults, ...reservaData.direccion };
+        }
+
+        return {
+            calle: user?.direccion || '',
+            ciudad: user?.ciudad || '',
+            codigo_postal: user?.codigo_postal || '',
+            pais: user?.pais || 'ES',
+        };
     });
+
+    // Si reservaData viene del formulario, queremos mostrar y editar los datos del huésped
+    const [name, setName] = useState(reservaData?.name || user?.name || 'Huésped Hotel');
+    const [email, setEmail] = useState(reservaData?.email || user?.email || '');
+    const [telefono, setTelefono] = useState(reservaData?.telefono || user?.telefono || '');
+    const [tipoDocumento, setTipoDocumento] = useState(reservaData?.tipo_documento || '');
+    const [numeroDocumento, setNumeroDocumento] = useState(reservaData?.numero_documento || '');
+    const [nacionalidad, setNacionalidad] = useState(reservaData?.nacionalidad || '');
+
+    // Sincronizar si reservaData cambia después del montaje
+    useEffect(() => {
+        if (!reservaData) return;
+
+        // Dirección: puede ser string u objeto
+        if (reservaData.direccion) {
+            if (typeof reservaData.direccion === 'string') {
+                setDireccion((d) => ({ ...d, calle: reservaData.direccion }));
+            } else if (typeof reservaData.direccion === 'object') {
+                setDireccion((d) => ({ ...d, ...reservaData.direccion }));
+            }
+        }
+
+        if (reservaData.name) setName(reservaData.name);
+        if (reservaData.email) setEmail(reservaData.email);
+        if (reservaData.telefono) setTelefono(reservaData.telefono);
+        if (reservaData.tipo_documento) setTipoDocumento(reservaData.tipo_documento);
+        if (reservaData.numero_documento) setNumeroDocumento(reservaData.numero_documento);
+        if (reservaData.nacionalidad) setNacionalidad(reservaData.nacionalidad);
+    }, [reservaData]);
+
+
+    useEffect(() => {
+        try {
+            console.log('FormularioPago - auth.user:', user);
+        } catch (e) {
+            console.error('Error al acceder a user en FormularioPago:', e);
+        }
+
+        if (!user) return;
+
+        setDireccion((prev) => {
+            const next = { ...prev };
+            if ((!next.ciudad || next.ciudad === '') && user.ciudad) next.ciudad = user.ciudad;
+            if ((!next.codigo_postal || next.codigo_postal === '') && (user.codigo_postal || user.cp)) next.codigo_postal = user.codigo_postal || user.cp || '';
+            return next;
+        });
+    }, [user]);
 
     // Procesar pago completo en un submit
     const procesarPago = async (e) => {
@@ -41,7 +99,16 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
             if (!esExtension) {
                 // PASO 1: Crear reserva (solo si no es extensión/edición)
-                const datosReservaConDireccion = { ...reservaData, direccion: direccion};
+                const datosReservaConDireccion = {
+                    ...reservaData,
+                    direccion: direccion,
+                    name,
+                    email,
+                    telefono,
+                    tipo_documento: tipoDocumento,
+                    numero_documento: numeroDocumento,
+                    nacionalidad,
+                };
 
                 const resReserva = await fetch('/reservas', {
                     method: 'POST',
@@ -110,10 +177,12 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
 
             // PASO 3: Procesar pago con Stripe
             const { paymentIntent, error } = await stripe.confirmCardPayment(newClientSecret, {
-                payment_method: {
+                    payment_method: {
                     card: elements.getElement(CardElement),
                     billing_details: {
-                        name: reservaData.name || 'Huésped Hotel',
+                        name: name || reservaData.name || 'Huésped Hotel',
+                        email: email || reservaData.email || undefined,
+                        phone: telefono || reservaData.telefono || undefined,
                         address: {
                             line1: direccion.calle,
                             city: direccion.ciudad,
@@ -184,18 +253,36 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                     </label>
 
                     <div className="mb-1">
-                        <input type="text" placeholder="Calle y número" value={direccion.calle} onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                        <Campo
+                            id="direccion_calle"
+                            name="direccion_calle"
+                            value={direccion.calle}
+                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                            placeholder="Calle y número"
                             className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required/>
+                            required
+                        />
                     </div>
 
                     <div className="grid grid-cols-3 gap-1">
-                        <input type="text" placeholder="Ciudad" value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                        <Campo
+                            id="direccion_ciudad"
+                            name="direccion_ciudad"
+                            value={direccion.ciudad}
+                            onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                            placeholder="Ciudad"
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required/>
-                        <input type="text" placeholder="Código Postal" value={direccion.codigo_postal} onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
+                            required
+                        />
+                        <Campo
+                            id="direccion_codigo_postal"
+                            name="direccion_codigo_postal"
+                            value={direccion.codigo_postal}
+                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
+                            placeholder="Código Postal"
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required/>
+                            required
+                        />
                         <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
                             <option value="ES">España</option>
@@ -206,7 +293,78 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                             <option value="GB">Reino Unido</option>
                         </select>
                     </div>
+
+                    {/* Si venimos del formulario, mostrar datos del huésped junto a la dirección */}
+                    {(reservaData?.name || reservaData?.email || reservaData?.telefono) && (
+                        <div className="mt-2">
+                            <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
+                                Datos del Huésped
+                            </label>
+
+                            <div className="mb-1">
+                                <Campo
+                                    id="huésped_nombre"
+                                    name="huésped_nombre"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Nombre completo"
+                                    className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-1">
+                                <Campo
+                                    id="huésped_email"
+                                    name="huésped_email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Email"
+                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                                    required
+                                />
+                                <Campo
+                                    id="huésped_telefono"
+                                    name="huésped_telefono"
+                                    value={telefono}
+                                    onChange={(e) => setTelefono(e.target.value)}
+                                    placeholder="Teléfono"
+                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                                    required
+                                />
+                                <Campo
+                                    id="huésped_nacionalidad"
+                                    name="huésped_nacionalidad"
+                                    value={nacionalidad}
+                                    onChange={(e) => setNacionalidad(e.target.value)}
+                                    placeholder="Nacionalidad"
+                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-1 mt-1">
+                                <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}
+                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
+                                    <option value="">Tipo Documento</option>
+                                    <option value="dni">DNI</option>
+                                    <option value="pasaporte">Pasaporte</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                                <Campo
+                                    id="huésped_numero_documento"
+                                    name="huésped_numero_documento"
+                                    value={numeroDocumento}
+                                    onChange={(e) => setNumeroDocumento(e.target.value)}
+                                    placeholder="Número de documento"
+                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+
 
                 {/* Datos de la tarjeta */}
                 <div>
@@ -247,23 +405,27 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError }) {
                 )}
 
                 {/* Botón de confirmación */}
-                <button type="submit" disabled={procesando || !stripe}
+                <button type="submit" disabled={procesando || !stripe || !aceptaTerminos}
                     className={`w-full py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
-                        procesando || !stripe ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
+                        procesando || !stripe || !aceptaTerminos ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
                     }`}>
                     {procesando ? 'Procesando pago...' : 'Confirmar Pago'}
                 </button>
+
+                {!aceptaTerminos && (
+                    <p className="text-xs text-red-600 mt-1">Debes aceptar los términos y condiciones para continuar.</p>
+                )}
             </form>
         </div>
     );
 }
 
-export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError }) {
+export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false }) {
     const stripePromise = useMemo(() => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY), []);
 
     return (
         <Elements stripe={stripePromise}>
-            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} />
+            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} aceptaTerminos={aceptaTerminos} />
         </Elements>
     );
 }

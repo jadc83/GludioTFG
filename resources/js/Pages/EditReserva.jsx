@@ -199,41 +199,9 @@ export default function EditReserva({ reserva, habitaciones }) {
                     <form onSubmit={enviar} className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                             <div className="space-y-4 xl:col-span-2">
-                                <div className="card bg-white shadow-md border border-gray-200">
-                                    <div className="card-body p-6">
-                                        <div className="mb-4 flex items-center gap-2">
-                                            <UserIcon className="h-5 w-5 accent-1366" />
-                                            <h3 className="font-bold">Cliente</h3>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="text-lg font-semibold">
-                                                {reserva.cliente.name}
-                                            </div>
-                                            <div className="font-mono text-sm">
-                                                {reserva.cliente.email}
-                                            </div>
-                                            <div className="font-mono text-sm">
-                                                {reserva.cliente.tipo_documento?.toUpperCase()}{' '}
-                                                {reserva.cliente.numero_documento}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* Cliente: movido al panel Resumen */}
 
-                                <div className="card bg-white shadow-md border border-gray-200">
-                                    <div className="card-body p-6">
-                                        <div className="mb-4 flex items-center gap-2">
-                                            <CalendarIcon className="h-5 w-5 accent-1366" />
-                                            <h3 className="font-bold">Fechas de Reserva</h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <Campo id="check_in" label="Check-in" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
-                                                classNameExtra="font-mono" required/>
-                                            <Campo id="check_out" label="Check-out" type="date" value={form.check_out} onChange={cambiar} error={errores.check_out}
-                                                classNameExtra="font-mono" required/>
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* Fechas integradas en el panel 'Resumen' — inputs antiguos eliminados */}
 
                                 <div className="card bg-white shadow-md border border-gray-200">
                                     <div className="card-body p-6">
@@ -249,7 +217,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                                             {habitaciones.map((habitacion) => {
                                                 const isSelected = form.habitacion_ids.includes(habitacion.id);
                                                 const esActual = habitacion.es_actual;
@@ -259,10 +227,10 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                         className={`card cursor-pointer border-2 transition-all ${
                                                             isSelected ? 'border-[#7a0202] bg-red-50' : 'border-transparent bg-gris hover:border-gray-300'
                                                         }`}>
-                                                        <div className="card-body p-3">
-                                                            <div className="mb-2 flex items-center justify-between">
-                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-sm accent-checkbox-1366" />
-                                                                <span className="font-mono font-bold">
+                                                        <div className="card-body p-2">
+                                                            <div className="mb-1 flex items-center justify-between">
+                                                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-xs accent-checkbox-1366" />
+                                                                <span className="font-mono text-sm font-bold">
                                                                     { habitacion.numero }
                                                                 </span>
                                                                 {esActual && (
@@ -271,22 +239,22 @@ export default function EditReserva({ reserva, habitaciones }) {
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs font-semibold capitalize"> { habitacion.tipo } </p>
-                                                                <div className="text-xs"> Capacidad:{' '}
-                                                                    <span className="font-mono font-semibold">{ habitacion.capacidad}</span>
-                                                                </div>
+                                                                <div className="space-y-1">
+                                                                <p className="text-[11px] font-semibold capitalize"> { habitacion.tipo } </p>
+                                                                {/* Capacidad eliminada: se deduce del tipo de habitación */}
                                                                 {form.check_in && form.check_out ? (
                                                                     <>
-                                                                        <div className="font-mono text-sm font-bold accent-1366">
-                                                                            { (calcularPrecioDinamico(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500">
-                                                                            Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="font-mono text-[11px] font-semibold accent-1366">
+                                                                                { (calcularPrecioDinamico(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche
+                                                                            </div>
+                                                                            <div className="text-[11px] text-gray-500 font-medium">
+                                                                                Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €
+                                                                            </div>
                                                                         </div>
                                                                     </>
                                                                 ) : (
-                                                                    <div className="font-mono text-sm font-bold accent-1366">
+                                                                    <div className="font-mono text-[11px] font-semibold accent-1366">
                                                                         { obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche
                                                                     </div>
                                                                 )}
@@ -307,7 +275,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                             </div>
 
                             <div className="space-y-4 xl:col-span-1">
-                                <div className="card bg-white shadow-md border border-gray-200">
+                                <div className="card bg-gris shadow-md border border-gray-200">
                                     <div className="card-body p-6">
                                         <div className="mb-4 flex items-center gap-2">
                                             <CurrencyEuroIcon className="h-5 w-5 accent-1366" />
@@ -315,6 +283,20 @@ export default function EditReserva({ reserva, habitaciones }) {
                                         </div>
 
                                         <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                                <Campo id="check_in" label="Entrada" type="date" value={form.check_in} onChange={cambiar} error={errores.check_in}
+                                                    sinEstilosPorDefecto={true} clase="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
+                                                <Campo id="check_out" label="Salida" type="date" value={form.check_out} onChange={cambiar} error={errores.check_out}
+                                                    sinEstilosPorDefecto={true} clase="w-full text-sm border-gray-300 rounded-md px-2 py-1" />
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <div className="font-semibold text-sm">{reserva.cliente.name}</div>
+                                                <div className="text-xs font-mono text-gray-600">{reserva.cliente.email}</div>
+                                                <div className="text-xs font-mono text-gray-600">
+                                                    {reserva.cliente.tipo_documento?.toUpperCase()}{' '}{reserva.cliente.numero_documento}
+                                                </div>
+                                            </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-base-content/70">
                                                     Habitaciones:
@@ -355,74 +337,30 @@ export default function EditReserva({ reserva, habitaciones }) {
                                     <div className="card-body p-6">
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="label">
-                                                    <span className="label-text font-semibold">
-                                                        Estado Reserva
-                                                    </span>
-                                                </label>
-                                                <select id="status" name="status" value={form.status} onChange={cambiar}
-                                                    className="select-bordered select w-full border-gray-300 focus:border-burgundy">
+                                                <Campo id="status" label="Estado Reserva" as="select" value={form.status} onChange={cambiar} error={errores.status}
+                                                    sinEstilosPorDefecto={true} clase="select-bordered select w-full border-gray-300 focus:border-burgundy">
                                                     <option value="pendiente">Pendiente</option>
                                                     <option value="confirmado">Confirmado</option>
                                                     <option value="checked_in">Check-in</option>
                                                     <option value="checked_out">Check-out</option>
                                                     <option value="cancelado">Cancelado</option>
                                                     <option value="no_presentado">No Presentado</option>
-                                                </select>
-                                                {errores.status && (
-                                                    <label className="label">
-                                                        <span className="label-text-alt text-error">
-                                                            {errores.status}
-                                                        </span>
-                                                    </label>
-                                                )}
+                                                </Campo>
                                             </div>
 
                                             <div>
-                                                <label className="label">
-                                                    <span className="label-text font-semibold">
-                                                        Estado Pago
-                                                    </span>
-                                                </label>
-                                                <select id="pago" name="pago" value={form.pago} onChange={cambiar}
-                                                    className="select-bordered select w-full border-gray-300 focus:border-burgundy">
-                                                    <option value="pendiente">
-                                                        Pendiente
-                                                    </option>
-                                                    <option value="parcial">
-                                                        Parcial
-                                                    </option>
-                                                    <option value="pagado">
-                                                        Pagado
-                                                    </option>
-                                                    <option value="devuelto">
-                                                        Devuelto
-                                                    </option>
-                                                </select>
-                                                {errores.pago && (
-                                                    <label className="label">
-                                                        <span className="label-text-alt text-error">
-                                                            {errores.pago}
-                                                        </span>
-                                                    </label>
-                                                )}
+                                                <Campo id="pago" label="Estado Pago" as="select" value={form.pago} onChange={cambiar} error={errores.pago}
+                                                    sinEstilosPorDefecto={true} clase="select-bordered select w-full border-gray-300 focus:border-burgundy">
+                                                    <option value="pendiente">Pendiente</option>
+                                                    <option value="parcial">Parcial</option>
+                                                    <option value="pagado">Pagado</option>
+                                                    <option value="devuelto">Devuelto</option>
+                                                </Campo>
                                             </div>
 
                                             <div>
-                                                <label className="label">
-                                                    <span className="label-text font-semibold">
-                                                        Notas
-                                                    </span>
-                                                </label>
-                                                <textarea id="notas" name="notas" value={form.notas || ''} onChange={cambiar}
-                                                    placeholder="Observaciones..." rows={3} className="textarea-bordered textarea w-full border-gray-300 focus:border-burgundy"/>
-                                                {errores.notas && (
-                                                    <label className="label">
-                                                        <span className="label-text-alt text-error">
-                                                            {errores.notas}
-                                                        </span>
-                                                    </label>
-                                                )}
+                                                <Campo id="notas" label="Notas" as="textarea" rows={3} value={form.notas || ''} onChange={cambiar} error={errores.notas}
+                                                    sinEstilosPorDefecto={true} clase="textarea-bordered textarea w-full border-gray-300 focus:border-burgundy" placeholder="Observaciones..." />
                                             </div>
                                         </div>
                                     </div>

@@ -18,8 +18,8 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
     };
 
     return (
-        <div className="w-full rounded-lg bg-gradient-to-br from-gray-50 to-white border border-gray-200 p-3">
-            <h3 className="text-xs font-bold text-gray-900 mb-2 pb-2 border-b border-gray-300">
+        <div className="w-full rounded-lg bg-gris p-3">
+            <h3 className="text-sm font-bold text-gray-900 mb-2 pb-2 border-b border-gray-300">
                 Desglose de tu reserva
             </h3>
 
@@ -32,14 +32,14 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                             const subtotal = calcularSubtotal(tipo, r.cantidad);
 
                             return (
-                                <div key={tipo} className="bg-white rounded-lg border border-gray-100 p-2 hover:shadow-sm transition">
+                                <div key={tipo} className="bg-gris rounded-lg p-2 hover:shadow-sm transition">
                                     {/* Encabezado */}
                                     <div className="flex items-center justify-between mb-1">
                                         <div>
-                                            <p className="text-[11px] font-bold text-gray-900">
+                                            <p className="text-[12px] font-bold text-gray-900">
                                                 {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
                                             </p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">
+                                            <p className="text-[11px] text-gray-500 mt-0.5">
                                                 {r.cantidad} Hab × {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
                                             </p>
                                         </div>
@@ -54,7 +54,7 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                                     </div>
 
                                     {/* Desglose de cálculo */}
-                                    <div className="text-[10px] text-gray-600 bg-gray-50 rounded p-1.5 border border-gray-100">
+                                        <div className="text-[11px] text-gray-600 bg-gris rounded p-1.5">
                                         <div className="flex justify-between mb-0.5">
                                             <span>{formatearMoneda(precioPorNoche)} × {numeroNoches}n</span>
                                             <span className="font-semibold">{formatearMoneda(precioPorNoche * numeroNoches)}</span>
@@ -70,11 +70,11 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                     </div>
 
                     {/* Resumen final */}
-                    <div className="bg-gradient-to-r from-[#7a0202]/5 to-[#7a0202]/10 rounded-lg p-2 border border-[#7a0202]/20">
+                    <div className="bg-gris rounded-lg p-2">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-[10px] text-gray-600 mb-0.5">Total a pagar</p>
-                                <p className="text-[10px] font-semibold text-gray-700">
+                                <p className="text-[11px] text-gray-600 mb-0.5">Total a pagar</p>
+                                <p className="text-[11px] font-semibold text-gray-700">
                                     {getTotalHabitaciones()} habitación{getTotalHabitaciones() !== 1 ? 'es' : ''} · {numeroNoches} noche{numeroNoches !== 1 ? 's' : ''}
                                 </p>
                             </div>
@@ -87,7 +87,7 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
                     </div>
                 </>
             ) : (
-                <div className="bg-gradient-to-r from-[#7a0202]/5 to-[#7a0202]/10 rounded-lg p-2 border border-[#7a0202]/20">
+                <div className="bg-gris rounded-lg p-2">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-[10px] text-gray-600 mb-0.5">Total a pagar</p>

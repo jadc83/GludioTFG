@@ -21,6 +21,8 @@ class StoreUserRequest extends FormRequest
             'numero_documento' => 'nullable|string|max:50|unique:users,numero_documento',
             'nacionalidad' => 'nullable|string|max:100',
             'direccion' => 'nullable|string|max:500',
+            'ciudad' => 'nullable|string|max:100',
+            'codigo_postal' => 'nullable|string|max:20',
         ];
     }
 

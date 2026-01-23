@@ -187,15 +187,13 @@ export default function Paso4Confirmacion({
             <section className="flex-1 overflow-hidden">
                 <div className="space-y-1">
                     {/* Resumen */}
-                    <div className="bg-white rounded-lg p-1.5 md:p-2 shadow-sm border border-gray-100">
-                        <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">Resumen de tu Reserva</h4>
-
+                    <div className="bg-gris rounded-lg p-3 mt-3 md:p-2">
                         <div className="space-y-1">
                             {/* Número de reserva */}
                             {localizador && (
                                 <div className="pb-0.5">
-                                    <p className="text-[10px] md:text-xs font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
-                                    <p className="font-mono font-bold text-[#7a0202] text-xs md:text-sm tracking-wide">{localizador}</p>
+                                    <p className="text-[11px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
+                                    <p className="font-mono font-bold text-[#7a0202] text-sm md:text-base tracking-wide">{localizador}</p>
                                 </div>
                             )}
 
@@ -203,20 +201,20 @@ export default function Paso4Confirmacion({
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-0.5 w-full">
                                 {/* Huésped */}
                                 <div className="px-0.5 md:px-1 text-center">
-                                    <p className="text-[9px] md:text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
-                                    <p className="text-[10px] md:text-[11px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
+                                    <p className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
+                                    <p className="text-[11px] md:text-[12px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
                                 </div>
 
                                 {/* Fechas */}
                                 <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
-                                    <p className="text-[11px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
+                                    <p className="text-[12px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
                                 </div>
 
                                 {/* Estancia */}
                                 <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Estancia</p>
-                                    <p className="text-[11px] font-medium text-gray-900">
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Estancia</p>
+                                    <p className="text-[12px] font-medium text-gray-900">
                                         {(() => {
                                             const numeroNoches = calcularNoches(rango?.from, rango?.to);
                                             return `${numeroNoches} noche${numeroNoches !== 1 ? 's' : ''}`;
@@ -226,20 +224,19 @@ export default function Paso4Confirmacion({
 
                                 {/* Precio por Noche */}
                                 <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Precio/Noche</p>
-                                    <p className="text-[11px] font-medium text-gray-900">
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Precio/Noche</p>
+                                    <p className="text-[12px] font-medium text-gray-900">
                                         {precioPromedioPorNoche > 0 ? formatearMoneda(precioPromedioPorNoche) : '—'}
                                     </p>
                                 </div>
 
                                 {/* Habitaciones */}
                                 <div className="px-1 text-center">
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Habitaciones</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Habitaciones</p>
                                     <div className="space-y-0.5">
                                         {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
-                                            <div key={tipo} className="text-[10px]">
+                                                <div key={tipo} className="text-[11px]">
                                                 <p className="font-medium text-gray-900 leading-none">{r.cantidad}x {tipo.charAt(0).toUpperCase() + tipo.slice(1)}</p>
-                                                <p className="text-[10px] text-gray-600 leading-none">{r.personas || 1}p</p>
                                             </div>
                                         ))}
                                     </div>

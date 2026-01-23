@@ -21,7 +21,7 @@ export default function FormularioDatosCliente({ form, errores, onChange, onNext
                 <Campo id="email" label="Email" type="email" value={form.email} onChange={onChange} error={errores.email} required/>
                 <Campo id="telefono" label="Teléfono" type="tel" value={form.telefono} onChange={onChange} error={errores.telefono}/>
                 <Campo id="nacionalidad" label="Nacionalidad" value={form.nacionalidad} onChange={onChange} />
-                <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange} className="md:col-span-3"/>
+                <Campo id="direccion" label="Dirección" value={form.direccion} onChange={onChange} clase="md:col-span-3"/>
             </div>
 
             <div className="mt-2 text-xs text-gray-700">

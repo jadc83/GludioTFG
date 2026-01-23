@@ -1,4 +1,5 @@
 import '@/../css/createReserva.css';
+import Campo from '@/Components/Campo';
 import { FunnelIcon, InboxIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -92,18 +93,38 @@ export default function IndexReserva({ reservas = [] }) {
             <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:gap-3 lg:grid-cols-5">
                 <div className="form-control w-full">
                     <label className="label py-1"><span className="label-text text-xs md:text-sm">Localizador</span></label>
-                    <input type="text" placeholder="Introduce localizador de reserva." value={filtros.localizador}
-                        onChange={(e) => actualizarFiltro('localizador', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
+                    <Campo
+                        id="filtro_localizador"
+                        name="localizador"
+                        placeholder="Introduce localizador de reserva."
+                        value={filtros.localizador}
+                        onChange={(e) => actualizarFiltro('localizador', e.target.value)}
+                        className="input input-bordered w-full text-sm md:text-base"
+                    />
                 </div>
 
                 <div className="form-control w-full">
                     <label className="label py-1"><span className="label-text text-xs md:text-sm">Cliente</span></label>
-                    <input type="text" placeholder="Juan Pérez..." value={filtros.cliente} onChange={(e) => actualizarFiltro('cliente', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
+                    <Campo
+                        id="filtro_cliente"
+                        name="cliente"
+                        placeholder="Juan Pérez..."
+                        value={filtros.cliente}
+                        onChange={(e) => actualizarFiltro('cliente', e.target.value)}
+                        className="input input-bordered w-full text-sm md:text-base"
+                    />
                 </div>
 
                 <div className="form-control w-full">
                     <label className="label py-1"><span className="label-text text-xs md:text-sm">Habitación</span></label>
-                    <input type="text" placeholder="101, 102..." value={filtros.habitacion} onChange={(e) => actualizarFiltro('habitacion', e.target.value)} className="input input-bordered w-full text-sm md:text-base"/>
+                    <Campo
+                        id="filtro_habitacion"
+                        name="habitacion"
+                        placeholder="101, 102..."
+                        value={filtros.habitacion}
+                        onChange={(e) => actualizarFiltro('habitacion', e.target.value)}
+                        className="input input-bordered w-full text-sm md:text-base"
+                    />
                 </div>
 
                 <div className="form-control w-full">
@@ -141,7 +162,7 @@ export default function IndexReserva({ reservas = [] }) {
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
                         <div className="overflow-x-auto p-2 md:p-4">
-                            <table className="table-compact table-pro table w-full text-xs md:text-sm">
+                            <table className="table table-zebra table-compact w-full text-xs md:text-sm">
                                 <thead>
                                     <tr>
                                         <th>Localizador</th>

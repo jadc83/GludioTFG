@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Campo from '@/Components/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, DocumentIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
@@ -16,6 +16,8 @@ export default function Register() {
         numero_documento: '',
         nacionalidad: '',
         direccion: '',
+        ciudad: '',
+        codigo_postal: '',
         telefono: '',
     });
 
@@ -70,13 +72,13 @@ export default function Register() {
                             <InputLabel htmlFor="name" value="Nombre" />
                             <div className="relative mt-0.5">
                                 <UserIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="name"
                                     name="name"
                                     value={data.name}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="name"
-                                    isFocused={true}
+                                    estaFocalizado={true}
                                     onChange={(e) => setData('name', e.target.value)}
                                     placeholder="Juan"
                                     required
@@ -89,12 +91,12 @@ export default function Register() {
                             <InputLabel htmlFor="email" value="Email" />
                             <div className="relative mt-0.5">
                                 <EnvelopeIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="email"
                                     type="email"
                                     name="email"
                                     value={data.email}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="username"
                                     onChange={(e) => setData('email', e.target.value)}
                                     placeholder="tu@email.com"
@@ -128,11 +130,11 @@ export default function Register() {
 
                         <div>
                             <InputLabel htmlFor="numero_documento" value="Nº" />
-                            <TextInput
+                            <Campo
                                 id="numero_documento"
                                 name="numero_documento"
                                 value={data.numero_documento}
-                                className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 onChange={(e) =>
                                     setData('numero_documento', e.target.value)
                                 }
@@ -149,11 +151,11 @@ export default function Register() {
                             <InputLabel htmlFor="nacionalidad" value="País" />
                             <div className="relative mt-0.5">
                                 <GlobeAltIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="nacionalidad"
                                     name="nacionalidad"
                                     value={data.nacionalidad}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     onChange={(e) =>
                                         setData('nacionalidad', e.target.value)
                                     }
@@ -168,12 +170,12 @@ export default function Register() {
                             <InputLabel htmlFor="telefono" value="Tlf" />
                             <div className="relative mt-0.5">
                                 <PhoneIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="telefono"
                                     type="tel"
                                     name="telefono"
                                     value={data.telefono}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 font-mono transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     onChange={(e) =>
                                         setData('telefono', e.target.value)
                                     }
@@ -201,18 +203,46 @@ export default function Register() {
                         <InputError message={errors.direccion} className="mt-0.5 text-xs" />
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <InputLabel htmlFor="ciudad" value="Ciudad" />
+                            <Campo
+                                id="ciudad"
+                                name="ciudad"
+                                value={data.ciudad}
+                                clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                onChange={(e) => setData('ciudad', e.target.value)}
+                                placeholder="Madrid"
+                            />
+                            <InputError message={errors.ciudad} className="mt-0.5 text-xs" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="codigo_postal" value="Código Postal" />
+                            <Campo
+                                id="codigo_postal"
+                                name="codigo_postal"
+                                value={data.codigo_postal}
+                                clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                onChange={(e) => setData('codigo_postal', e.target.value)}
+                                placeholder="28001"
+                            />
+                            <InputError message={errors.codigo_postal} className="mt-0.5 text-xs" />
+                        </div>
+                    </div>
+
                     {/* Password & Confirmation */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
                             <InputLabel htmlFor="password" value="Contraseña" />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="password"
                                     type="password"
                                     name="password"
                                     value={data.password}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="new-password"
                                     onChange={(e) =>
                                         setData('password', e.target.value)
@@ -228,12 +258,12 @@ export default function Register() {
                             <InputLabel htmlFor="password_confirmation" value="Confirmar" />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-                                <TextInput
+                                <Campo
                                     id="password_confirmation"
                                     type="password"
                                     name="password_confirmation"
                                     value={data.password_confirmation}
-                                    className="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
+                                    clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="new-password"
                                     onChange={(e) =>
                                         setData('password_confirmation', e.target.value)
