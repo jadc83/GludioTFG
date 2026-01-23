@@ -45,6 +45,8 @@ export default function UpdateProfileInformation({
         patch(route('profile.update'));
     };
 
+
+
     return (
         <section className={className}>
             <header>
@@ -236,6 +238,7 @@ export default function UpdateProfileInformation({
                     </Transition>
                 </div>
             </form>
+            {/* Errores mostrados inline bajo cada input */}
         </section>
     );
 }

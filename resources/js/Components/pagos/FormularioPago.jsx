@@ -11,6 +11,26 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const elements = useElements();
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
+    const [toast, setToast] = useState(null); // { message, type }
+
+    const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4500);
+    };
+
+    const extraerPrimerError = async (response) => {
+        try {
+            const json = await response.json();
+            if (json && json.errors) {
+                const firstField = Object.keys(json.errors)[0];
+                const firstMsg = json.errors[firstField] && json.errors[firstField][0];
+                return firstMsg || json.message || null;
+            }
+            return json.message || null;
+        } catch (err) {
+            return null;
+        }
+    };
 
     // Obtener datos del usuario logueado
     const user = page?.props?.auth?.user;
@@ -89,6 +109,12 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
             return;
         }
 
+        // Si no acepta términos, mostrar toast y cancelar
+        if (!aceptaTerminos) {
+            showToast('Debes aceptar los términos y condiciones para continuar.', 'error');
+            return;
+        }
+
         setProcesando(true);
 
         try {
@@ -121,17 +147,23 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                 });
 
                 if (!resReserva.ok) {
-                    const contentType = resReserva.headers.get('content-type');
                     let errorMessage = `HTTP ${resReserva.status}`;
+                    const contentType = resReserva.headers.get('content-type');
                     if (contentType?.includes('application/json')) {
-                        const error = await resReserva.json();
-                        console.error('Error de servidor:', error);
-                        errorMessage = error.message || error.error || errorMessage;
+                        const specific = await extraerPrimerError(resReserva);
+                        if (specific) {
+                            errorMessage = specific;
+                        } else {
+                            const err = await resReserva.json().catch(() => null);
+                            console.error('Error de servidor:', err);
+                            errorMessage = (err && (err.message || err.error)) || errorMessage;
+                        }
                     } else {
                         const text = await resReserva.text();
                         console.error('Error de texto:', text);
                         errorMessage = `Error ${resReserva.status}`;
                     }
+                    showToast(errorMessage, 'error');
                     throw new Error(errorMessage);
                 }
 
@@ -157,15 +189,20 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
             });
 
             if (!resPI.ok) {
-                const contentType = resPI.headers.get('content-type');
                 let errorMessage = `HTTP ${resPI.status}`;
+                const contentType = resPI.headers.get('content-type');
                 if (contentType?.includes('application/json')) {
-                    const error = await resPI.json();
-                    errorMessage = error.message || error.error || errorMessage;
+                    const specific = await extraerPrimerError(resPI);
+                    if (specific) errorMessage = specific;
+                    else {
+                        const err = await resPI.json().catch(() => null);
+                        errorMessage = (err && (err.message || err.error)) || errorMessage;
+                    }
                 } else {
                     const text = await resPI.text();
                     console.error('Response error:', text.substring(0, 500));
                 }
+                showToast(errorMessage, 'error');
                 throw new Error(errorMessage);
             }
 
@@ -294,74 +331,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                         </select>
                     </div>
 
-                    {/* Si venimos del formulario, mostrar datos del huésped junto a la dirección */}
-                    {(reservaData?.name || reservaData?.email || reservaData?.telefono) && (
-                        <div className="mt-2">
-                            <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
-                                Datos del Huésped
-                            </label>
-
-                            <div className="mb-1">
-                                <Campo
-                                    id="huésped_nombre"
-                                    name="huésped_nombre"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Nombre completo"
-                                    className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-1">
-                                <Campo
-                                    id="huésped_email"
-                                    name="huésped_email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                                    required
-                                />
-                                <Campo
-                                    id="huésped_telefono"
-                                    name="huésped_telefono"
-                                    value={telefono}
-                                    onChange={(e) => setTelefono(e.target.value)}
-                                    placeholder="Teléfono"
-                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                                    required
-                                />
-                                <Campo
-                                    id="huésped_nacionalidad"
-                                    name="huésped_nacionalidad"
-                                    value={nacionalidad}
-                                    onChange={(e) => setNacionalidad(e.target.value)}
-                                    placeholder="Nacionalidad"
-                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-1 mt-1">
-                                <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}
-                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
-                                    <option value="">Tipo Documento</option>
-                                    <option value="dni">DNI</option>
-                                    <option value="pasaporte">Pasaporte</option>
-                                    <option value="otro">Otro</option>
-                                </select>
-                                <Campo
-                                    id="huésped_numero_documento"
-                                    name="huésped_numero_documento"
-                                    value={numeroDocumento}
-                                    onChange={(e) => setNumeroDocumento(e.target.value)}
-                                    placeholder="Número de documento"
-                                    className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                                />
-                            </div>
-                        </div>
-                    )}
+                    {/* Datos del huésped ocultos: se usan los datos del usuario autenticado */}
                 </div>
 
 
@@ -405,17 +375,21 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                 )}
 
                 {/* Botón de confirmación */}
-                <button type="submit" disabled={procesando || !stripe || !aceptaTerminos}
+                <button type="submit" disabled={procesando || !stripe}
                     className={`w-full py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
-                        procesando || !stripe || !aceptaTerminos ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
+                        procesando || !stripe ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
                     }`}>
                     {procesando ? 'Procesando pago...' : 'Confirmar Pago'}
                 </button>
 
-                {!aceptaTerminos && (
-                    <p className="text-xs text-red-600 mt-1">Debes aceptar los términos y condiciones para continuar.</p>
-                )}
+                {/* Mensaje de términos mostrado ahora solo vía toast */}
             </form>
+            {/* Toast simple */}
+            {toast && (
+                <div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>
+                    {toast.message}
+                </div>
+            )}
         </div>
     );
 }

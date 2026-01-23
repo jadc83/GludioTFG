@@ -99,7 +99,7 @@ const Campo = forwardRef(({
     const nombre = (atributos.name || id || '').toString().toLowerCase();
     if (!atributos.pattern) {
         if (nombre.includes('email')) {
-            atributos.pattern = "^[^\s@]+@[^\s@]+\.[^\s@]+$";
+            atributos.pattern = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
             atributos.title = atributos.title || 'Introduce un email válido';
         }
         if (nombre.includes('tel') || nombre.includes('telefono') || nombre.includes('phone')) {
