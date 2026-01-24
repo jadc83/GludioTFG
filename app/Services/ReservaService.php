@@ -138,6 +138,14 @@ class ReservaService
      */
     public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
     {
+        // Aceptar también strings por seguridad: coerción a Carbon
+        if (!($checkIn instanceof Carbon)) {
+            $checkIn = Carbon::parse($checkIn);
+        }
+        if (!($checkOut instanceof Carbon)) {
+            $checkOut = Carbon::parse($checkOut);
+        }
+
         $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
 
         $checkInStr = $checkIn->toDateString();
@@ -1010,7 +1018,7 @@ class ReservaService
         return [ 'success' => true, 'aplicada' => false, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
     }
 
-    
+
 }
 
 
