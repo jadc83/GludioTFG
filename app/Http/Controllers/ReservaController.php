@@ -139,7 +139,7 @@ class ReservaController extends Controller
         $reserva->load(['reservable', 'habitaciones.habitacion']);
         $reservaService = new ReservaService();
 
-        return inertia('DetalleReserva', [
+        return inertia('Reservas/DetalleReserva', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -163,7 +163,7 @@ class ReservaController extends Controller
         $reservaData = $reservaService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $reservaService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('EditReserva', [
+        return inertia('Reservas/EditReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
@@ -365,6 +365,27 @@ class ReservaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en preciosMes: ' . $e->getMessage());
             return response()->json(['success' => false, 'error' => 'Error calculando precios por mes'], 500);
+        }
+    }
+
+    /**
+     * Marca una reserva como check-in (se usa desde el escáner)
+     */
+    public function marcarCheckIn(Request $request, $localizador)
+    {
+        try {
+            $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
+
+            // Actualizar estado a 'checked_in'
+            $reserva->status = 'checked_in';
+            $reserva->save();
+
+            try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
+
+            return response()->json([ 'success' => true, 'message' => 'Check-in realizado', 'reserva' => [ 'localizador' => $reserva->localizador, 'status' => $reserva->status ] ]);
+        } catch (\Exception $e) {
+            Log::error('Error en marcarCheckIn: ' . $e->getMessage());
+            return response()->json([ 'success' => false, 'error' => 'No se pudo marcar check-in: ' . $e->getMessage() ], 400);
         }
     }
 
