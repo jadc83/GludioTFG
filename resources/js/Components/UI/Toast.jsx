@@ -21,13 +21,7 @@ export default function Toast({ message, tipo = 'info', duration = 4500, onClose
     <div className="fixed top-4 right-4 z-50">
       <div className={`${bg} text-white px-4 py-2 rounded shadow-lg flex items-center`}>
         <div className="mr-3">{message}</div>
-        <button
-          onClick={() => typeof onClose === 'function' && onClose()}
-          className="text-white ml-2 opacity-90 hover:opacity-100 focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
+        <button onClick={() => typeof onClose === 'function' && onClose()} className="text-white ml-2 opacity-90 hover:opacity-100 focus:outline-none" aria-label="Cerrar">×</button>
       </div>
     </div>
   );

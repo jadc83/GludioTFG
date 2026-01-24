@@ -1,7 +1,7 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 import React, { useState, useMemo, useEffect } from 'react';
 
 function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false }) {

@@ -1,6 +1,6 @@
 import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
-import Campo from '@/Components/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, useForm } from '@inertiajs/react';
 

@@ -44,7 +44,7 @@ class PanelController extends Controller
 
         $reservaService = new ReservaService();
 
-        return Inertia::render('PanelControl', [
+        return Inertia::render('Panel/PanelControl', [
             'habitaciones'            => $habitaciones,
             'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
             'clientes'                => Cliente::orderBy('name')->get(),

@@ -485,7 +485,22 @@ class ReservaService
             'fecha_generacion' => now()->format('d/m/Y H:i'),
         ];
 
-        return Pdf::loadView('pdf.comprobante-reserva', $data);
+        // Se ha eliminado la generación y descarga del QR para el comprobante PDF.
+        // El PDF no incluirá el QR; si se desea mostrar el QR en otras ubicaciones
+        // (vistas o emails), gestionarlo allí explícitamente.
+
+        $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
+        // Permitir imágenes remotas y parser HTML5 para asegurar renderizado de imágenes/data-uris
+        try {
+            $pdf->setOptions([
+                'isRemoteEnabled' => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('No se pudieron aplicar opciones a DomPDF: ' . $e->getMessage());
+        }
+
+        return $pdf;
     }
 
     /**

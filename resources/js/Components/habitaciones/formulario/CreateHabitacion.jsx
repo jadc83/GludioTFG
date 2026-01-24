@@ -1,6 +1,6 @@
 import '@/../css/createHabitacion.css';
-import PrimaryButton from '@/Components/PrimaryButton';
-import Campo from '@/Components/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
 import { TIPOS_HABITACION } from '@/utils/constantes';
 import { HomeIcon } from '@heroicons/react/24/outline';

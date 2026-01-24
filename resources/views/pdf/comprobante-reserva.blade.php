@@ -47,6 +47,14 @@
             <div class="meta">
                 <div>{{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
                 <div class="localizador">{{ $reserva->localizador }}</div>
+                {{-- QR con enlace directo al comprobante/reserva (se genera vía Google Chart API) --}}
+                <div style="margin-top:8px;">
+                    @if(!empty($qr_data_uri))
+                        <img src="{{ $qr_data_uri }}" alt="QR" style="width:80px;height:80px;border:0;" />
+                    @else
+                        <img src="https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl={{ urlencode(url('/reserva/'.$reserva->localizador)) }}" alt="QR" style="width:80px;height:80px;border:0;" />
+                    @endif
+                </div>
             </div>
         </div>
 

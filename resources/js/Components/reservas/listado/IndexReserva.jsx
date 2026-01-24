@@ -1,5 +1,5 @@
 import '@/../css/createReserva.css';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 import { FunnelIcon, InboxIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';

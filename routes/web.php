@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Home');
+    return Inertia::render('Home/Home');
 })->name('home');
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard/Dashboard');
     })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -25,8 +25,13 @@ Route::middleware('auth')->group(function () {
     });
 
 Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
-Route::get('/terminos', function () { return Inertia::render('TerminosCondiciones'); })->name('terminos');
-Route::get('/scan-qr', function () { return Inertia::render('ScanQR'); })->name('scan-qr')->middleware(['auth', 'verified']);
+Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
+Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr')->middleware(['auth', 'verified']);
+
+Route::get('/scan-result', function () { return Inertia::render('Scan/ScanResult', ['localizador' => request('localizador')]); })->name('scan-result')->middleware(['auth', 'verified']);
+
+// Endpoint para marcar check-in desde el escáner
+Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->name('reservas.checkin')->middleware(['auth', 'verified']);
 
 // Rutas de reservas
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])->name('reserva.show');

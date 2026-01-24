@@ -28,10 +28,5 @@ export function useCookieConsent() {
         return consent.preferences === true;
     };
 
-    return {
-        getCookieConsent,
-        hasAcceptedAnalytics,
-        hasAcceptedMarketing,
-        hasAcceptedPreferences
-    };
+    return { getCookieConsent, hasAcceptedAnalytics, hasAcceptedMarketing, hasAcceptedPreferences };
 }

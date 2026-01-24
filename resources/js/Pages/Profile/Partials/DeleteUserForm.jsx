@@ -2,8 +2,8 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
-import SecondaryButton from '@/Components/SecondaryButton';
-import Campo from '@/Components/Campo';
+import SecondaryButton from '@/Components/UI/SecondaryButton';
+import Campo from '@/Components/formulario/Campo';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { obtenerDiaDelaSemana } from '../../utils/formatters';
-import PrimaryButton from '../PrimaryButton';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
 import PropTypes from 'prop-types';
 
 const CalendarioStyles = () => (

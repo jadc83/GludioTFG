@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 import { MagnifyingGlassIcon, CheckCircleIcon, InformationCircleIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 

@@ -39,7 +39,10 @@ class PagoController extends Controller
             $reserva = Reserva::findOrFail($validated['reserva_id']);
 
             // Crear PaymentIntent en Stripe
-            $paymentIntent = PaymentIntent::create([
+            // Incluimos receipt_email para que Stripe pueda enviar recibos si está habilitado
+            $receiptEmail = $reserva->reservable?->email ?? $request->input('email') ?? null;
+
+            $intentData = [
                 'amount' => (int)round($validated['monto'] * 100), // Stripe usa centavos
                 'currency' => 'eur',
                 'metadata' => [
@@ -47,7 +50,13 @@ class PagoController extends Controller
                     'localizador' => $reserva->localizador,
                 ],
                 'description' => "Pago de reserva {$reserva->localizador}",
-            ]);
+            ];
+
+            if ($receiptEmail) {
+                $intentData['receipt_email'] = $receiptEmail;
+            }
+
+            $paymentIntent = PaymentIntent::create($intentData);
 
             // Guardar registro de pago
             $pago = Pago::create([

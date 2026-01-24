@@ -1,21 +1,19 @@
 import { useCallback, useState } from 'react';
 import { router } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import QRScanner from '@/Components/QRScanner';
+import QRScanner from '@/Components/utilidades/QRScanner';
 
 export default function ScanQR() {
     const [scannedData, setScannedData] = useState(null);
     const [error, setError] = useState(null);
 
     const handleScanSuccess = useCallback((decodedText) => {
-        // Limpiar posibles errores previos y espacios en blanco
         setError(null);
         let localizador = String(decodedText || '').trim();
-        if (!localizador) return; // ignora datos vacíos
+        if (!localizador) return;
 
         setScannedData(localizador);
 
-        // Si el QR contiene una URL, intentar extraer el último segmento
         try {
             if (localizador.startsWith('http')) {
                 const url = new URL(localizador);
@@ -24,11 +22,8 @@ export default function ScanQR() {
                     localizador = parts[parts.length - 1];
                 }
             }
-        } catch (e) {
-            // ignore, mantener localizador como estaba
-        }
+        } catch (e) {}
 
-        // Comprobar primero que existe la reserva para evitar modal 404
         fetch(`/reservas/buscar/${encodeURIComponent(localizador)}`, { headers: { 'Accept': 'application/json' } })
             .then(async (res) => {
                 if (!res.ok) {
@@ -39,13 +34,12 @@ export default function ScanQR() {
             })
             .then((data) => {
                 if (data?.reserva) {
-                    router.visit(route('reserva.show', { reserva: localizador }));
+                    router.visit(route('scan-result') + '?localizador=' + encodeURIComponent(localizador));
                 } else {
                     setError('No se encontró la reserva asociada al código QR.');
                 }
             })
             .catch((err) => {
-                console.warn('ScanQR: reserva no encontrada o error:', err);
                 setError(err.message || 'No se encontró la reserva');
             });
     }, []);
@@ -69,9 +63,7 @@ export default function ScanQR() {
                         <div className="mb-8 rounded-lg bg-green-50 p-6 shadow-lg">
                             <h2 className="mb-4 text-xl font-semibold text-green-900">Código QR Detectado</h2>
                             <div className="mb-4 break-all rounded-lg bg-white p-4 font-mono text-sm text-slate-700">{scannedData}</div>
-                            <button onClick={() => setScannedData(null)} className="rounded-lg px-4 py-2 font-semibold">
-                                Limpiar
-                            </button>
+                            <button onClick={() => setScannedData(null)} className="rounded-lg px-4 py-2 font-semibold">Limpiar</button>
                         </div>
                     )}
                 </div>
