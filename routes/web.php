@@ -26,12 +26,16 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
-Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr')->middleware(['auth', 'verified']);
+Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr');
 
-Route::get('/scan-result', function () { return Inertia::render('Scan/ScanResult', ['localizador' => request('localizador')]); })->name('scan-result')->middleware(['auth', 'verified']);
+// Check-in desde el escáner
+Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->name('reservas.checkin');
+// Check-out desde el escáner
+Route::post('/reservas/{localizador}/checkout', [ReservaController::class, 'marcarCheckOut'])->name('reservas.checkout');
 
-// Endpoint para marcar check-in desde el escáner
-Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->name('reservas.checkin')->middleware(['auth', 'verified']);
+// Endpoint genérico para procesar un escaneo (buscar, checkin, checkout)
+use App\Http\Controllers\ScannerController;
+Route::post('/scan/procesar', [ScannerController::class, 'procesar'])->name('scan.procesar');
 
 // Rutas de reservas
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])->name('reserva.show');

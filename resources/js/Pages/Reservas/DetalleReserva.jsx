@@ -101,9 +101,20 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                         {mostrarExtender && (<ExtenderReserva reserva={reserva} onClose={() => { setMostrarExtender(false); window.location.reload(); }} />)}
 
-                        {!mostrarExtender && !String(reserva.status || '').toLowerCase().includes('cancel') && (<button onClick={() => setMostrarExtender(true)} className="w-full bg-gradient-to-r from-[#7a0202] to-[#920303] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">🏨 Ampliar reserva</button>)}
+                        {!mostrarExtender && !String(reserva.status || '').toLowerCase().includes('cancel') && String(reserva.status || '').toLowerCase() !== 'checked_out' && (
+                            <button onClick={() => setMostrarExtender(true)} className="w-full bg-gradient-to-r from-[#7a0202] to-[#920303] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">🏨 Ampliar reserva</button>
+                        )}
 
-                        <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
+                        <div className="grid grid-cols-2 gap-3">
+                            {String(reserva.status || '').toLowerCase() === 'pendiente' && (
+                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="w-full mb-0 bg-green-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">✅ Hacer check-in</button>
+                            )}
+                            {String(reserva.status || '').toLowerCase() !== 'checked_out' && (
+                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="w-full mb-0 bg-yellow-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">🧾 Hacer check-out</button>
+                            )}
+                        </div>
+
+                        <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm mt-3"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
 
                         {toast && (<div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>{toast.message}</div>)}
                     </div>

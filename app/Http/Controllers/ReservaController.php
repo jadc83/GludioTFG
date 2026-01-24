@@ -354,7 +354,8 @@ class ReservaController extends Controller
         try {
             $anio = (int) $yyyy;
             $mes = (int) $mm;
-            if ($anio < 2000 || $mes < 1 || $mes > 12) {
+
+            if (!checkdate($mes, 1, $anio)) {
                 return response()->json(['success' => false, 'error' => 'Fecha inválida'], 400);
             }
 
@@ -386,6 +387,40 @@ class ReservaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en marcarCheckIn: ' . $e->getMessage());
             return response()->json([ 'success' => false, 'error' => 'No se pudo marcar check-in: ' . $e->getMessage() ], 400);
+        }
+    }
+
+    /**
+     * Marca una reserva como check-out (se usa desde el escáner)
+     */
+    public function marcarCheckOut(Request $request, $localizador)
+    {
+        try {
+            $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
+
+            $now = Carbon::now();
+            $checkOut = Carbon::parse($reserva->check_out);
+
+            // Validar que el check-out se realice antes o en la fecha de salida
+            if ($now->startOfDay()->gt($checkOut->endOfDay())) {
+                return response()->json([ 'success' => false, 'error' => 'No se puede hacer check-out: la fecha de salida ya ha pasado.' ], 400);
+            }
+
+            // Solo permitir marcar checked_out si actualmente está checked_in
+            if ($reserva->status !== 'checked_in') {
+                return response()->json([ 'success' => false, 'error' => 'La reserva no está marcada como check-in.' ], 400);
+            }
+
+            $reserva->status = 'checked_out';
+            $reserva->save();
+
+            try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
+
+                return response()->json([ 'success' => true, 'message' => 'Check-out realizado', 'reserva' => [ 'localizador' => $reserva->localizador, 'status' => $reserva->status ] ]);
+        } catch (\Exception $e) {
+
+                Log::error('Error en marcarCheckOut: ' . $e->getMessage());
+                return response()->json([ 'success' => false, 'error' => 'No se pudo marcar check-out: ' . $e->getMessage() ], 400);
         }
     }
 
