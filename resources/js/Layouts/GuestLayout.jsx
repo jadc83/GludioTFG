@@ -1,8 +1,8 @@
-import Footer from '@/Components/Footer';
-import CookieBanner from '@/Components/CookieBanner';
+import Footer from '@/Components/UI/Footer';
+import CookieBanner from '@/Components/UI/CookieBanner';
 import BarraReservas from '@/Components/reservas/BarraReservas';
-import Navbar from '@/Components/Nav';
-import Toast from '@/Components/Toast';
+import Navbar from '@/Components/UI/Nav';
+import Toast from '@/Components/UI/Toast';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 

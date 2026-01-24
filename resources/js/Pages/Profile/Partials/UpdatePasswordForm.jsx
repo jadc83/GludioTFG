@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import Campo from '@/Components/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';

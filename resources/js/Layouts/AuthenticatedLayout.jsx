@@ -1,9 +1,9 @@
-import Footer from '@/Components/Footer';
-import CookieBanner from '@/Components/CookieBanner';
+import Footer from '@/Components/UI/Footer';
+import CookieBanner from '@/Components/UI/CookieBanner';
 import BarraReservas from '@/Components/reservas/BarraReservas';
-import Nav from '@/Components/Nav';
+import Nav from '@/Components/UI/Nav';
 import { usePage } from '@inertiajs/react';
-import Toast from '@/Components/Toast';
+import Toast from '@/Components/UI/Toast';
 import { useEffect, useState } from 'react';
 
 export default function AuthenticatedLayout({ children }) {

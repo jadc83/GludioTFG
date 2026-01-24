@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 
 export default function BuscadorNavbar() {
     const [localizador, setLocalizador] = useState('');
@@ -15,11 +15,9 @@ export default function BuscadorNavbar() {
         setBuscando(true);
 
         try {
-            // Verificar que la reserva existe
             const response = await fetch(`/reservas/buscar/${localizador.trim()}`);
 
             if (response.ok) {
-                // Redirigir a la página de detalle
                 router.visit(route('reserva.show', localizador.trim()));
             } else {
                 alert('No se encontró la reserva con ese localizador');

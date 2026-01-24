@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { router } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import QRScanner from '@/Components/QRScanner';
+import QRScanner from '@/Components/utilidades/QRScanner';
 
 export default function ScanQR() {
     const [scannedData, setScannedData] = useState(null);

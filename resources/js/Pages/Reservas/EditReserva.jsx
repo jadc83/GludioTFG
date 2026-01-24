@@ -1,6 +1,6 @@
-import Campo from '@/Components/Campo';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
+import Campo from '@/Components/formulario/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
+import SecondaryButton from '@/Components/UI/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
 import { calcularPrecioDinamico, obtenerPrecioBasePorTipo } from '@/utils/precios';

@@ -1,6 +1,6 @@
 import '@/../css/createCliente.css';
-import Campo from '@/Components/Campo';
-import PrimaryButton from '@/Components/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
 import { useClienteForm } from '@/hooks/useClienteForm';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { UserIcon } from '@heroicons/react/24/outline';

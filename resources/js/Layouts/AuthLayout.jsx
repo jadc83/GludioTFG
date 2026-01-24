@@ -1,5 +1,5 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import CookieBanner from '@/Components/CookieBanner';
+import ApplicationLogo from '@/Components/UI/ApplicationLogo';
+import CookieBanner from '@/Components/UI/CookieBanner';
 import { Link } from '@inertiajs/react';
 import { CheckCircleIcon, StarIcon, ShieldCheckIcon, BoltIcon } from '@heroicons/react/24/solid';
 import { Splide, SplideSlide } from '@splidejs/react-splide';

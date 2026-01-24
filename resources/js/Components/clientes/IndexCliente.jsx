@@ -1,5 +1,5 @@
 import EditCliente from '@/Components/clientes/formulario/EditCliente';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { obtenerColorDocumento, obtenerNombreDocumento } from '@/utils/formatters';
 import { EyeIcon, FunnelIcon, InboxIcon, MagnifyingGlassIcon, PencilIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';

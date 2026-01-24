@@ -1,6 +1,6 @@
-import Fondo from '@/Components/Fondo';
-import Servicios from '@/Components/Servicios';
-import Tarjetas from '@/Components/Tarjetas';
+import Fondo from '@/Components/UI/Fondo';
+import Servicios from '@/Components/home/Servicios';
+import Tarjetas from '@/Components/home/Tarjetas';
 import GuestLayout from '@/Layouts/GuestLayout';
 
 export default function Home() {

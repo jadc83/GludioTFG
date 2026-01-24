@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import '../../css/estiloPanelControl.css';
+import '../../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {BriefcaseIcon, HomeIcon, UsersIcon} from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
-import TabClientes from '../Components/clientes/TabClientes';
-import TabReservas from '../Components/reservas/listado/TabReservas';
+import TabClientes from '@/Components/clientes/TabClientes';
+import TabReservas from '@/Components/reservas/listado/TabReservas';
 
 const TABS = [
     { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },

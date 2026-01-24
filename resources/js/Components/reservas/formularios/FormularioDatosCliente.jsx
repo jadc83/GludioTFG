@@ -1,5 +1,5 @@
-import Campo from '@/Components/Campo';
-import PrimaryButton from '@/Components/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
 export default function FormularioDatosCliente({ form, errores, onChange, onNext, hideDates = false, hideNextButton = false}) {

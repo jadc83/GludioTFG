@@ -39,13 +39,10 @@ export default function QRScanner({ onScanSuccess }) {
                 try {
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     if (code && code.data && String(code.data).trim().length > 0) {
-                        console.log('QR detectado:', code.data);
                         onScanSuccess(code.data);
-                        return; // Detener scanning después de detectar
+                        return;
                     }
-                } catch (err) {
-                    // Error al decodificar, continuar intentando
-                }
+                } catch (err) {}
             }
 
             animationIdRef.current = requestAnimationFrame(scan);
@@ -54,9 +51,7 @@ export default function QRScanner({ onScanSuccess }) {
         initCamera();
 
         return () => {
-            if (animationIdRef.current) {
-                cancelAnimationFrame(animationIdRef.current);
-            }
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
             if (videoRef.current && videoRef.current.srcObject) {
                 videoRef.current.srcObject.getTracks().forEach(track => track.stop());
             }
@@ -66,11 +61,9 @@ export default function QRScanner({ onScanSuccess }) {
     return (
         <div className="w-full">
             {permissionDenied && (
-                <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-700">
-                    Permiso de cámara denegado. Por favor, permite el acceso a la cámara en los ajustes de tu navegador.
-                </div>
+                <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-700">Permiso de cámara denegado.</div>
             )}
-            <video ref={videoRef} className="w-full rounded-lg border-2 border-gray-300 bg-black" style={{ minHeight: '400px' }}/>
+            <video ref={videoRef} className="w-full rounded-lg border-2 border-gray-300 bg-black" style={{ minHeight: '400px' }} />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
     );

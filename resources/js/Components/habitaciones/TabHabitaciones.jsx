@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import IndexHabitacion from './IndexHabitacion';
-import Campo from '@/Components/Campo';
+import Campo from '@/Components/formulario/Campo';
 
 export default function TabHabitaciones({ habitaciones = [] }) {
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(

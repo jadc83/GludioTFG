@@ -1,4 +1,4 @@
-import '../../css/fondoLanding.css';
+import '../../../css/fondoLanding.css';
 
 export default function Fondo() {
     return (

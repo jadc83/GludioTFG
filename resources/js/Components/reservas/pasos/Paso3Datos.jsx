@@ -1,4 +1,4 @@
-import PrimaryButton from '@/Components/PrimaryButton';
+import PrimaryButton from '@/Components/UI/PrimaryButton';
 import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 
 export default function Paso3Datos({
