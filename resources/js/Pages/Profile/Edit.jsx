@@ -109,7 +109,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="bg-accent-1366">
-                                                    <th className="text-left py-4 px-4 font-bold text-white">Habitación</th>
+                                                    <th className="text-left py-4 px-4 font-bold text-white">Localizador</th>
                                                     <th className="text-left py-4 px-4 font-bold text-white">
                                                         <CalendarIcon className="inline w-4 h-4 mr-2" />
                                                         Entrada
@@ -130,7 +130,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                             <tbody>
                                                 {reservas.map((reserva, idx) => (
                                                     <tr key={reserva.id} className={`border-b transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                                                        <td className="py-4 px-4 font-semibold text-gray-900">Habitación {reserva.habitacion.numero}</td>
+                                                        <td className="py-4 px-4 font-semibold text-gray-900">{reserva.localizador}</td>
                                                         <td className="py-4 px-4 text-gray-700">{reserva.fecha_entrada}</td>
                                                         <td className="py-4 px-4 text-gray-700">{reserva.fecha_salida}</td>
                                                         <td className="py-4 px-4 text-gray-700">{reserva.noches}</td>

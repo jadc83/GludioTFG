@@ -150,7 +150,13 @@ class ReservaController extends Controller
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
-                    return [ 'numero' => $hr->habitacion->numero, 'tipo' => $hr->habitacion->tipo, 'precio' => $hr->precio ]; }) ]]);
+                    return [
+                        'numero' => $hr->habitacion?->numero ?? null,
+                        'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
+                        'precio' => $hr->precio,
+                    ];
+                })->values()
+            ]]);
     }
 
     public function edit(Request $request, Reserva $reserva)
@@ -262,11 +268,11 @@ class ReservaController extends Controller
                     'pago' => $reserva->pago,
                     'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                         return [
-                            'numero' => $hr->habitacion->numero,
-                            'tipo' => $hr->habitacion->tipo,
+                            'numero' => $hr->habitacion?->numero ?? null,
+                            'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
                             'precio' => $hr->precio,
                         ];
-                    }),
+                    })->values(),
                 ]
             ]);
         } catch (\Exception $e) {
@@ -303,7 +309,7 @@ class ReservaController extends Controller
             $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
             $reservaService = new ReservaService();
             $info = $reservaService->obtenerInfoExtension($reserva);
-            return response()->json([ 'success' => true, ...$info ]);
+            return response()->json(array_merge(['success' => true], is_array($info) ? $info : []));
 
             } catch (\Exception $e) {
             return response()->json([ 'success' => false, 'error' => $e->getMessage()], 404);
@@ -323,6 +329,132 @@ class ReservaController extends Controller
             return response()->json($resultado);
         } catch (\Exception $e) {
             return response()->json([ 'success' => false, 'error' => 'Error al extender la reserva: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Modifica las fechas de la estancia (ampliar o reducir) tras comprobar disponibilidad.
+     * Espera `check_in` y `check_out` en formato Y-m-d.
+     */
+    public function modificarEstancia(Request $request, $localizador)
+    {
+        $validated = $request->validate([
+            'check_in' => 'required|date_format:Y-m-d',
+            'check_out' => 'required|date_format:Y-m-d|after:check_in',
+        ]);
+
+        try {
+            $reserva = Reserva::where('localizador', $localizador)->with('habitaciones.habitacion')->firstOrFail();
+            $reservaService = new ReservaService();
+            $precioService = new PrecioService();
+
+            $checkIn = Carbon::createFromFormat('Y-m-d', $validated['check_in']);
+            $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
+
+            // Comprobar disponibilidad para cada habitación actualmente asignada (si ya tiene habitación concreta)
+            foreach ($reserva->habitaciones as $hr) {
+                $habitacionId = $hr->habitacion_id ?? null;
+                if ($habitacionId && ! $reservaService->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
+                    return response()->json([ 'success' => false, 'message' => "No hay disponibilidad para la habitación " . ($hr->habitacion?->numero ?? $habitacionId) ], 400);
+                }
+            }
+
+            // Calcular nuevo total y actualizar precios por habitación
+            $nuevoTotal = 0;
+            foreach ($reserva->habitaciones as $hr) {
+                $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
+                $precioHabitacion = $precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
+                $nuevoTotal += $precioHabitacion;
+                try { $hr->update(['precio' => $precioHabitacion]); } catch (\Throwable $e) { Log::warning('No se pudo actualizar precio habitacionReserva: ' . $e->getMessage()); }
+            }
+
+            // Actualizar reserva
+            $reserva->check_in = $checkIn->toDateString();
+            $reserva->check_out = $checkOut->toDateString();
+            $reserva->precio_total = round($nuevoTotal, 2);
+            $reserva->save();
+
+            try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
+
+            return response()->json([ 'success' => true, 'message' => 'Estancia modificada correctamente.', 'reserva' => [ 'check_in' => $reserva->check_in, 'check_out' => $reserva->check_out, 'precio_total' => $reserva->precio_total ] ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([ 'success' => false, 'message' => 'Reserva no encontrada.' ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error en modificarEstancia: ' . $e->getMessage());
+            return response()->json([ 'success' => false, 'message' => 'Error al modificar la estancia: ' . $e->getMessage() ], 500);
+        }
+    }
+
+    /**
+     * Preview de modificación de estancia: comprueba disponibilidad y estima precio/ajuste.
+     * Retorna: available (bool), nuevo_total, viejo_total, nights_old, nights_new, estimate_refund, estimate_charge
+     */
+    public function previewModificarEstancia(Request $request, $localizador)
+    {
+        $validated = $request->validate([
+            'check_in' => 'required|date_format:Y-m-d',
+            'check_out' => 'required|date_format:Y-m-d|after:check_in',
+        ]);
+
+        try {
+            $reserva = Reserva::where('localizador', $localizador)->with('habitaciones.habitacion')->firstOrFail();
+            $reservaService = new ReservaService();
+            $precioService = new PrecioService();
+
+            $checkIn = Carbon::createFromFormat('Y-m-d', $validated['check_in']);
+            $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
+
+            $disponible = true;
+            foreach ($reserva->habitaciones as $hr) {
+                $habitacionId = $hr->habitacion_id ?? null;
+                if ($habitacionId && ! $reservaService->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
+                    $disponible = false;
+                    break;
+                }
+            }
+
+            // Calcular nuevo total estimado
+            $nuevoTotal = 0;
+            foreach ($reserva->habitaciones as $hr) {
+                $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
+                $precioHabitacion = $precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
+                $nuevoTotal += $precioHabitacion;
+            }
+
+            $viejoTotal = (float) $reserva->precio_total;
+            $nightsOld = Carbon::parse($reserva->check_in)->diffInDays(Carbon::parse($reserva->check_out));
+            $nightsNew = $checkIn->diffInDays($checkOut);
+
+            $perNight = $nightsOld > 0 ? round($viejoTotal / $nightsOld, 2) : 0;
+
+            $estimateRefund = 0.00;
+            $estimateCharge = 0.00;
+
+            if ($nuevoTotal < $viejoTotal) {
+                // prorrateo menos 1 noche de penalización
+                $rawRefund = round($viejoTotal - $nuevoTotal, 2);
+                $penalizacion = $perNight; // una noche
+                $estimateRefund = max(0, round($rawRefund - $penalizacion, 2));
+            } else {
+                $estimateCharge = round(max(0, $nuevoTotal - $viejoTotal), 2);
+            }
+
+            return response()->json([
+                'success' => true,
+                'available' => $disponible,
+                'nuevo_total' => round($nuevoTotal, 2),
+                'viejo_total' => round($viejoTotal, 2),
+                'nights_old' => $nightsOld,
+                'nights_new' => $nightsNew,
+                'estimate_refund' => $estimateRefund,
+                'estimate_charge' => $estimateCharge,
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([ 'success' => false, 'message' => 'Reserva no encontrada.' ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error en previewModificarEstancia: ' . $e->getMessage());
+            return response()->json([ 'success' => false, 'message' => 'Error en preview: ' . $e->getMessage() ], 500);
         }
     }
 
@@ -377,13 +509,36 @@ class ReservaController extends Controller
         try {
             $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
 
-            // Actualizar estado a 'checked_in'
+            $reservaService = new ReservaService();
+            // Intentar asignar habitaciones concretas en check-in (first available)
+            $asignaciones = $reservaService->asignarHabitacionEnCheckIn($reserva, Auth::id());
+
+            // Si al menos una asignación falló, devolvemos un mensaje indicando intervención de recepción
+            $failed = array_filter($asignaciones, function($a){ return isset($a['assigned']) && $a['assigned'] === false; });
+            if (count($failed) > 0) {
+                return response()->json([ 'success' => false, 'message' => 'No se pudieron asignar todas las habitaciones en el check-in. Contacte recepción.', 'details' => $asignaciones ], 409);
+            }
+
+            // Marcar checked_in y emitir evento
             $reserva->status = 'checked_in';
             $reserva->save();
 
             try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
 
-            return response()->json([ 'success' => true, 'message' => 'Check-in realizado', 'reserva' => [ 'localizador' => $reserva->localizador, 'status' => $reserva->status ] ]);
+            // Notificar cliente con número(s) de habitación asignada (si hay email)
+            try {
+                $destino = $reserva->reservable?->email ?? null;
+                if ($destino) {
+                    // Build simple message: numbers assigned
+                    $numeros = array_values(array_map(function($a){ return $a['assigned'] ? $a['numero'] ?? null : null; }, $asignaciones));
+                    $numeros = array_filter($numeros);
+                    if (!empty($numeros)) {
+                        Mail::to($destino)->send(new \App\Mail\ReservaCompletada($reserva));
+                    }
+                }
+            } catch (\Throwable $e) { Log::warning('No se pudo notificar asignacion en checkin: ' . $e->getMessage()); }
+
+            return response()->json([ 'success' => true, 'message' => 'Check-in realizado', 'reserva' => [ 'localizador' => $reserva->localizador, 'status' => $reserva->status, 'asignaciones' => $asignaciones ] ]);
         } catch (\Exception $e) {
             Log::error('Error en marcarCheckIn: ' . $e->getMessage());
             return response()->json([ 'success' => false, 'error' => 'No se pudo marcar check-in: ' . $e->getMessage() ], 400);

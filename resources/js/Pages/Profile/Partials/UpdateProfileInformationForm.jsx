@@ -100,12 +100,8 @@ export default function UpdateProfileInformation({
                     <div>
                         <InputLabel htmlFor="tipo_documento" value="Tipo de Documento" />
 
-                        <select
-                            id="tipo_documento"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
-                            value={data.tipo_documento || ''}
-                            onChange={(e) => setData('tipo_documento', e.target.value)}
-                        >
+                        <select id="tipo_documento" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200" value={data.tipo_documento || ''}
+                            onChange={(e) => setData('tipo_documento', e.target.value)}>
                             <option value="">Seleccionar...</option>
                             <option value="dni">DNI</option>
                             <option value="pasaporte">Pasaporte</option>

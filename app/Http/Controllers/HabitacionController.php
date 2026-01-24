@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreHabitacionRequest;
 use App\Http\Requests\UpdateHabitacionRequest;
 use App\Models\Habitacion;
-use Carbon\Carbon;
+
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

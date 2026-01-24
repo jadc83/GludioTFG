@@ -4,10 +4,11 @@ import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, DocumentIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 
 export default function Register() {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
         password: '',
@@ -24,7 +25,7 @@ export default function Register() {
     const submit = (e) => {
         e.preventDefault();
         post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+            onFinish: () => limpiarFormulario(reset, clearErrors, 'password', 'password_confirmation'),
         });
     };
 

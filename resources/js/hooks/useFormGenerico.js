@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
+import { limpiarFormulario } from './useFormHelpers';
 
 /**
  * Hook generico para gestionar formularios Inertia
@@ -28,8 +29,7 @@ export function useFormGenerico( datosIniciales = {}, rutaCrear = '', rutaActual
      * Resetea el formulario a valores iniciales
      */
     const limpiar = () => {
-        resetFormulario();
-        clearErrors();
+        limpiarFormulario(resetFormulario, clearErrors);
     };
 
     /**

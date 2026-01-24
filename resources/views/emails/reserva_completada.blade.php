@@ -47,7 +47,7 @@
                 <p style="margin:12px 0 6px 0;font-weight:600;color:#444;">Habitaciones asignadas</p>
                 <ul style="margin:6px 0 16px 20px;color:#333;">
                   @foreach($reserva->habitaciones as $hr)
-                    <li style="margin:6px 0;">#{{ $hr->habitacion->numero ?? 'N/A' }} — {{ $hr->habitacion->tipo ?? 'N/A' }} (€{{ $hr->precio }})</li>
+                    <li style="margin:6px 0;">#{{ $hr->habitacion?->numero ?? 'N/A' }} — {{ $hr->habitacion?->tipo ?? ($hr->tipo ?? 'N/A') }} (€{{ $hr->precio }})</li>
                   @endforeach
                 </ul>
 

@@ -119,11 +119,11 @@ class ReservaService
             ],
             'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches) {
                 return [
-                    'id' => $hr->habitacion->id,
-                    'numero' => $hr->habitacion->numero,
-                    'tipo' => $hr->habitacion->tipo,
+                    'id' => $hr->habitacion?->id ?? $hr->id,
+                    'numero' => $hr->habitacion?->numero ?? null,
+                    'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
                     'precio_noche' => $hr->precio ? round($hr->precio / max(1, $noches), 2) : null,
-                    'capacidad' => $hr->habitacion->capacidad,
+                    'capacidad' => $hr->habitacion?->capacidad ?? null,
                     'precio' => $hr->precio,
                 ];
             })->values(),
@@ -138,6 +138,14 @@ class ReservaService
      */
     public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
     {
+        // Aceptar también strings por seguridad: coerción a Carbon
+        if (!($checkIn instanceof Carbon)) {
+            $checkIn = Carbon::parse($checkIn);
+        }
+        if (!($checkOut instanceof Carbon)) {
+            $checkOut = Carbon::parse($checkOut);
+        }
+
         $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
 
         $checkInStr = $checkIn->toDateString();
@@ -418,24 +426,11 @@ class ReservaService
     {
         return Habitacion::where('tipo', $tipo)
             ->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                // Hay conflicto si: check_in_nueva < check_out_existente AND check_out_nueva > check_in_existente
-                $query->where('check_in', '<', $checkOut)
-                      ->where('check_out', '>', $checkIn);
+                $query->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn);
             })->count();
     }
 
-    /**
-     * Calcula la cantidad de noches de una reserva
-     */
-    public function calcularNoches($checkIn, $checkOut): int
-    {
-        return DateService::calcularNoches($checkIn, $checkOut);
-    }
-
-    /**
-     * Calcula el precio promedio por noche
-     * Se usa para mostrar en desglose de factura
-     */
+    /* Calcula el precio promedio por noche para mostrar desglose en la factura */
     public function calcularPrecioPromedioPorNoche($precioTotal, $noches, $habitaciones): float
     {
         if ($noches <= 0 || $habitaciones <= 0) {
@@ -443,30 +438,6 @@ class ReservaService
         }
 
         return round($precioTotal / $noches / $habitaciones, 2);
-    }
-
-    /**
-     * Obtiene el resumen de una reserva para mostrar en pantalla
-     * Unifica datos de múltiples tablas en un solo objeto
-     */
-    public function obtenerResumenReserva(Reserva $reserva): array
-    {
-        $noches = $this->calcularNoches($reserva->check_in, $reserva->check_out);
-        $cantidadHabitaciones = $reserva->habitacionReservas->count();
-
-        return [
-            'id' => $reserva->id,
-            'localizador' => $reserva->localizador,
-            'check_in' => DateService::formatear($reserva->check_in),
-            'check_out' => DateService::formatear($reserva->check_out),
-            'noches' => $noches,
-            'habitaciones' => $cantidadHabitaciones,
-            'precio_total' => $reserva->precio_total,
-            'precio_por_noche' => $this->calcularPrecioPromedioPorNoche($reserva->precio_total, $noches, $cantidadHabitaciones),
-            'estado' => $reserva->estado,
-            'cliente' => $reserva->cliente ? UserService::normalizarDatos($reserva->cliente) : null,
-            'tipo_usuario' => $reserva->booked_by_user ? 'usuario' : 'cliente',
-        ];
     }
 
     /**
@@ -484,10 +455,6 @@ class ReservaService
             'noches' => $noches,
             'fecha_generacion' => now()->format('d/m/Y H:i'),
         ];
-
-        // Se ha eliminado la generación y descarga del QR para el comprobante PDF.
-        // El PDF no incluirá el QR; si se desea mostrar el QR en otras ubicaciones
-        // (vistas o emails), gestionarlo allí explícitamente.
 
         $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
         // Permitir imágenes remotas y parser HTML5 para asegurar renderizado de imágenes/data-uris
@@ -714,37 +681,76 @@ class ReservaService
      */
     public function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
     {
+        // Instead of assigning concrete room numbers at booking time, create placeholder records
+        // with habitacion_id = null and store the requested `tipo`. Actual assignment will happen at check-in.
         foreach ($habitacionesRequeridas as $requerida) {
             $tipo = $requerida['tipo'];
             $cantidad = $requerida['cantidad'];
 
-            // Obtener habitaciones disponibles del tipo solicitado
-            $habitaciones = Habitacion::where('tipo', $tipo)
-                ->where('estado', 'disponible')
-                ->whereDoesntHave('reservas', function ($query) use ($reserva) {
-                    $query->where('reserva_id', '!=', $reserva->id)
-                          ->where('check_in', '<', $reserva->check_out)
-                          ->where('check_out', '>', $reserva->check_in);
-                })->limit($cantidad)->get();
-
-            if ($habitaciones->count() < $cantidad) {
+            // Check that there is capacity for the requested type
+            $disponibles = $this->contarHabitacionesDisponibles($tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+            if ($disponibles < $cantidad) {
                 throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
             }
 
-            // Calcular precio usando el servicio de precios
+            // Calcular precio por habitación
             $precioPorHabitacion = $this->precioService->calcularPrecioEntreFechas(
                 $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
 
-            foreach ($habitaciones as $habitacion) {
+            for ($i = 0; $i < $cantidad; $i++) {
                 HabitacionReserva::create([
                     'reserva_id' => $reserva->id,
-                    'habitacion_id' => $habitacion->id,
+                    'habitacion_id' => null,
+                    'tipo' => $tipo,
                     'check_in' => $reserva->check_in,
                     'check_out' => $reserva->check_out,
                     'precio' => $precioPorHabitacion,
                 ]);
             }
         }
+    }
+
+    /**
+     * Asigna habitaciones concretas al hacer check-in: toma la primera habitación disponible del tipo.
+     * Retorna array con detalles de asignación.
+     */
+    public function asignarHabitacionEnCheckIn(Reserva $reserva, $actorId = null): array
+    {
+        $asignadas = [];
+
+        DB::transaction(function () use ($reserva, &$asignadas, $actorId) {
+            $checkIn = Carbon::parse($reserva->check_in);
+            $checkOut = Carbon::parse($reserva->check_out);
+
+            $placeholders = HabitacionReserva::where('reserva_id', $reserva->id)->whereNull('habitacion_id')->get();
+
+            foreach ($placeholders as $ph) {
+                // Find first candidate room of the requested type and lock it
+                $candidate = Habitacion::where('tipo', $ph->tipo)
+                    ->where('estado', 'disponible')
+                    ->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut, $reserva) {
+                        $q->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn)->where('reserva_id', '!=', $reserva->id);
+                    })
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $candidate) {
+                    // failed to assign this placeholder
+                    $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => false, 'reason' => 'no_available'];
+                    continue;
+                }
+
+                // Assign
+                $ph->habitacion_id = $candidate->id;
+                $ph->save();
+
+                try { $candidate->update(['estado' => 'ocupada']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de habitacion tras asignacion: ' . $e->getMessage()); }
+
+                $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => true, 'habitacion_id' => $candidate->id, 'numero' => $candidate->numero];
+            }
+        });
+
+        return $asignadas;
     }
 
     /**
@@ -786,7 +792,10 @@ class ReservaService
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
                 'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
-                'habitacion_numero' => $reserva->habitaciones->count() ? $reserva->habitaciones->pluck('habitacion.numero')->implode(', ') : 'Sin asignar',
+                'habitacion_numero' => (function() use ($reserva) {
+                    $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
+                    return $nums->count() ? $nums->implode(', ') : 'Sin asignar';
+                })(),
             ];
         })->toArray();
     }
@@ -1009,40 +1018,7 @@ class ReservaService
         return [ 'success' => true, 'aplicada' => false, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
     }
 
-    /**
-     * Recalcula los precios de todas las reservas
-     */
-    public function recalcularPreciosTodasReservas(): int
-    {
-        $reservas = Reserva::with(['habitaciones.habitacion'])->get();
-        $actualizadas = 0;
 
-        foreach ($reservas as $reserva) {
-            $precioTotal = 0;
-
-            foreach ($reserva->habitaciones as $habitacionReserva) {
-                if ($habitacionReserva->habitacion) {
-                    $precioDia = $this->precioService->calcularPrecioEntreFechas(
-                        $habitacionReserva->habitacion->tipo,
-                        Carbon::parse($habitacionReserva->check_in ?? $reserva->check_in),
-                        Carbon::parse($habitacionReserva->check_out ?? $reserva->check_out)
-                    );
-                    $precioTotal += $precioDia;
-
-                    // Actualizar el precio en la tabla habitacion_reserva
-                    $habitacionReserva->update(['precio' => $precioDia]);
-                }
-            }
-
-            // Actualizar el precio_total en la tabla reserva
-            if ($precioTotal > 0) {
-                $reserva->update(['precio_total' => $precioTotal]);
-                $actualizadas++;
-            }
-        }
-
-        return $actualizadas;
-    }
 }
 
 

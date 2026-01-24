@@ -15,11 +15,8 @@ export const NOMBRES_HABITACION = {
     familiar: 'Familiar',
 };
 
-export const CAPACIDADES_HABITACION = {
-    doble: 2,
-    suite: 2,
-    familiar: 4,
-};
+// Las capacidades ya provienen de la tabla `tipos_habitacion` en el servidor.
+// Mantener este bloque aquí está obsoleto; usar `tiposHabitacion` inyectado por Inertia.
 
 // Estados de reserva
 export const ESTADOS_RESERVA = {
@@ -129,7 +126,6 @@ export const MENSAJES_EXITO = {
 export default {
     TIPOS_HABITACION,
     NOMBRES_HABITACION,
-    CAPACIDADES_HABITACION,
     ESTADOS_RESERVA,
     ESTADOS_HABITACION,
     TIPOS_DOCUMENTO,

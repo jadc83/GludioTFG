@@ -18,6 +18,7 @@ class HabitacionReserva extends Model
         'precio',
         'check_in',
         'check_out',
+        'tipo',
     ];
 
     protected $casts = [

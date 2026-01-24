@@ -3,18 +3,36 @@
 namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Habitacion;
+use App\Models\TipoHabitacion;
 
 class PrecioService
 {
-    /* Precios base por tipo de habitación */
-    private const PRECIOS_BASE = [ 'doble' => 75, 'familiar' => 125, 'suite' => 200 ];
+    /* Obtiene el mapa de precios base desde la base de datos (cache sencillo en memoria por request) */
+    private static ?array $mapaPreciosBase = null;
 
-    /* Obtiene el precio base para un tipo de habitación */
+    private function cargarMapaPreciosBase(): array
+    {
+        if (self::$mapaPreciosBase !== null) {
+            return self::$mapaPreciosBase;
+        }
+
+        $mapeo = TipoHabitacion::query()->pluck('precio_base', 'slug')->toArray();
+        // Asegurar claves en minúsculas
+        $mapeoMinusculas = [];
+        foreach ($mapeo as $slug => $precio) {
+            $mapeoMinusculas[strtolower($slug)] = (float) $precio;
+        }
+
+        self::$mapaPreciosBase = $mapeoMinusculas;
+        return self::$mapaPreciosBase;
+    }
+
+    /* Obtiene el precio base para un tipo de habitación (desde BD) */
     public function obtenerPrecioBase(string $tipo): float
     {
-        $tipo = strtolower(trim($tipo));
-        return self::PRECIOS_BASE[$tipo] ?? 0;
+        $tipoKey = strtolower(trim($tipo));
+        $mapeo = $this->cargarMapaPreciosBase();
+        return $mapeo[$tipoKey] ?? 0;
     }
 
     /* Calcula el precio dinámico aplicando multiplicadores */
@@ -172,7 +190,8 @@ class PrecioService
     /* Devuelve un mapa fecha->precio mínimo entre tipos para un rango dado */
     public function preciosPorRango(Carbon $inicio, Carbon $fin): array
     {
-        $tipos = Habitacion::where('estado', '!=', 'mantenimiento')->distinct()->pluck('tipo')->toArray();
+        // Obtener tipos desde tabla de tipos de habitación en la BD
+        $tipos = TipoHabitacion::pluck('slug')->toArray();
         $resultados = [];
         $fecha = $inicio->copy();
         while ($fecha->lte($fin)) {

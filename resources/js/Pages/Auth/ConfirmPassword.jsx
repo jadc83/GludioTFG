@@ -4,9 +4,10 @@ import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, useForm } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 
 export default function ConfirmPassword() {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         password: '',
     });
 
@@ -14,7 +15,7 @@ export default function ConfirmPassword() {
         e.preventDefault();
 
         post(route('password.confirm'), {
-            onFinish: () => reset('password'),
+            onFinish: () => limpiarFormulario(reset, clearErrors, 'password'),
         });
     };
 

@@ -41,12 +41,17 @@ Route::post('/scan/procesar', [ScannerController::class, 'procesar'])->name('sca
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])->name('reserva.show');
 Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])->name('reservas.disponibles');
 Route::get('/reservas/precios-por-dia', [ReservaController::class, 'preciosPorDia'])->name('reservas.precios-por-dia');
+// Endpoint público para obtener precios base por tipo desde la base de datos
+use App\Http\Controllers\Api\TipoHabitacionController;
+Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
 Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'preciosMes'])->name('reservas.precios-mes');
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->name('reservas.buscar-localizador');
 Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])->name('reservas.descargar-comprobante');
 Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])->name('reservas.calcular-precio');
 Route::get('/reservas/{localizador}/info-extension', [ReservaController::class, 'infoExtension'])->name('reservas.info-extension');
 Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])->name('reservas.extender');
+Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::class, 'modificarEstancia'])->name('reservas.modificar-estancia');
+Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->name('reservas.preview-modificar-estancia');
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 
 // Rutas de pagos

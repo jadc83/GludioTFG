@@ -1,15 +1,27 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { limpiarFormulario } from './useFormHelpers';
 
-// Capacidades predefinidas por tipo de habitación
-const CAPACIDADES = { doble: 2, suite: 2, familiar: 4 };
+// Las capacidades ahora se obtienen desde los tipos de habitación inyectados por Inertia
 const MAX_FOTOS = 4;
 
 export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
     const esEdicion = !!habitacionInicial?.id;
 
+    const { props } = usePage();
+    const tiposHabitacion = props.tiposHabitacion || {};
+
+    const capacidadPorTipo = (tipo) => {
+        if (!tipo) return '';
+        const key = tipo.toLowerCase();
+        return tiposHabitacion[key]?.capacidad ?? '';
+    };
+
+    const tipoPorDefecto = 'doble';
+    const capacidadDefecto = capacidadPorTipo(tipoPorDefecto) || 2;
+
     const { data: formulario, setData, processing: estaCargando, errors: errores, reset: resetForm, clearErrors } = useForm({
-        numero: '', tipo: 'doble', capacidad: CAPACIDADES['doble'], estado: 'disponible', descripcion: '', notas: '' });
+        numero: '', tipo: tipoPorDefecto, capacidad: capacidadDefecto, estado: 'disponible', descripcion: '', notas: '' });
 
     // Estados para manejo de fotos
     const [fotos, setFotos] = useState([]);
@@ -27,7 +39,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
                 tipo: habitacionInicial.tipo || 'doble',
                 capacidad:
                     habitacionInicial.capacidad ||
-                    CAPACIDADES[habitacionInicial.tipo],
+                    capacidadPorTipo(habitacionInicial.tipo),
                 estado: habitacionInicial.estado || 'disponible',
                 descripcion: habitacionInicial.descripcion || '',
                 notas: habitacionInicial.notas || '',
@@ -55,8 +67,8 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
         setData((datosActuales) => ({
             ...datosActuales,
             [name]: value,
-            // Si cambia el tipo, actualizar capacidad a la predefinida
-            ...(name === 'tipo' && { capacidad: CAPACIDADES[value] || '' }),
+            // Si cambia el tipo, actualizar capacidad según tiposHabitacion
+            ...(name === 'tipo' && { capacidad: capacidadPorTipo(value) || '' }),
         }));
     };
 
@@ -171,7 +183,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
      * Resetea todos los campos y estados del formulario
      */
     const reset = () => {
-        resetForm();
+        limpiarFormulario(resetForm, clearErrors);
         setFotos([]);
         setPresualizaciones([]);
         setFotosGuardadas([]);
@@ -180,10 +192,10 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
 
     // Verificar si la capacidad es fija para este tipo
     const capacidadFija = Object.prototype.hasOwnProperty.call(
-        CAPACIDADES,
+        tiposHabitacion,
         formulario.tipo,
     );
 
     return { formulario, fotos, previsualizaciones, fotosGuardadas, errores, estaCargando, capacidadFija, MAX_FOTOS,
-        esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset };
+        esEdicion, cambiar, agregarFotos, quitarFoto, enviar, reset, clearErrors };
 }
