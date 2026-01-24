@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { useRef } from 'react';
 
 export default function UpdatePasswordForm({ className = '' }) {
@@ -16,6 +17,7 @@ export default function UpdatePasswordForm({ className = '' }) {
         errors,
         put,
         reset,
+        clearErrors,
         processing,
         recentlySuccessful,
     } = useForm({
@@ -29,15 +31,15 @@ export default function UpdatePasswordForm({ className = '' }) {
 
         put(route('password.update'), {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: () => limpiarFormulario(reset, clearErrors),
             onError: (errors) => {
                 if (errors.password) {
-                    reset('password', 'password_confirmation');
+                    limpiarFormulario(reset, clearErrors, 'password', 'password_confirmation');
                     passwordInput.current.focus();
                 }
 
                 if (errors.current_password) {
-                    reset('current_password');
+                    limpiarFormulario(reset, clearErrors, 'current_password');
                     currentPasswordInput.current.focus();
                 }
             },

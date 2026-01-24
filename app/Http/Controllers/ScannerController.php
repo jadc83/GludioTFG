@@ -4,23 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Events\ReservaActualizada;
 use App\Models\Reserva;
+use App\Services\ReservaService;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ScannerController extends Controller
 {
-    /**
-     * Process a scanned payload from the client.
-     * Expected JSON: { localizador: string, action: 'checkin'|'checkout' }
-     */
     public function procesar(Request $request)
     {
         $localizador = $request->input('localizador');
-        $action = $request->input('action');
+        $accion = $request->input('accion');
 
         if (!$localizador) {
-            return response()->json(['success' => false, 'error' => 'Missing localizador'], 400);
+            return response()->json(['success' => false, 'error' => 'Localizador no encontrado'], 400);
         }
 
         try {
@@ -29,10 +27,24 @@ class ScannerController extends Controller
                 return response()->json(['success' => false, 'error' => 'Reserva no encontrada'], 404);
             }
 
-            if ($action === 'checkin') {
-                // Only allow check-in if not already checked_in
+            if ($accion === 'checkin') {
+                // Hacer check-in solo si no se hizo ya
                 if ($reserva->status === 'checked_in') {
                     return response()->json(['success' => true, 'message' => 'Reserva ya marcada como check-in', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
+                }
+
+                // Asignar habitaciones
+                try {
+                    $reservaService = new ReservaService();
+                    $asignaciones = $reservaService->asignarHabitacionEnCheckIn($reserva, Auth::id());
+
+                    $fallos = array_filter($asignaciones, function($a){ return isset($a['assigned']) && $a['assigned'] === false; });
+                    if (count($fallos) > 0) {
+                        return response()->json([ 'success' => false, 'message' => 'No se pudieron asignar todas las habitaciones en el check-in. Contacte recepción.', 'details' => $asignaciones ], 409);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error asignando habitaciones via scanner: ' . $e->getMessage());
+                    return response()->json([ 'success' => false, 'error' => 'Error al asignar habitaciones en check-in: ' . $e->getMessage() ], 500);
                 }
 
                 $reserva->status = 'checked_in';
@@ -43,12 +55,12 @@ class ScannerController extends Controller
                 return response()->json(['success' => true, 'message' => 'Check-in realizado', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
             }
 
-            if ($action === 'checkout') {
-                $now = Carbon::now();
+            if ($accion === 'checkout') {
+                $ahora = Carbon::ahora();
                 $checkOut = Carbon::parse($reserva->check_out);
 
-                if ($now->startOfDay()->gt($checkOut->endOfDay())) {
-                    return response()->json(['success' => false, 'error' => 'No se puede hacer check-out: la fecha de salida ya ha pasado.'], 400);
+                if ($ahora->startOfDay()->gt($checkOut->endOfDay())) {
+                    return response()->json(['success' => false, 'error' => 'No se puede hacer check-out, la fecha de salida ya ha pasado.'], 400);
                 }
 
                 if ($reserva->status !== 'checked_in') {
@@ -58,12 +70,11 @@ class ScannerController extends Controller
                 $reserva->status = 'checked_out';
                 $reserva->save();
 
-                try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
+                try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignorar */ }
 
                 return response()->json(['success' => true, 'message' => 'Check-out realizado', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
             }
 
-            // If no action provided, just return reservation data
             return response()->json(['success' => true, 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status, 'check_in' => $reserva->check_in, 'check_out' => $reserva->check_out]]);
 
         } catch (\Exception $e) {

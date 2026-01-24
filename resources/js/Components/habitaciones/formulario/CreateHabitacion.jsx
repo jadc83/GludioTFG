@@ -2,6 +2,7 @@ import '@/../css/createHabitacion.css';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import { useHabitacionForm } from '@/hooks/useHabitacionForm';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { TIPOS_HABITACION } from '@/utils/constantes';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -10,10 +11,10 @@ export default function CreateHabitacion({ iconOnly = false }) {
 
     const [abierto, setAbierto] = useState(false);
 
-    const { formulario, cambiar, errores, estaCargando, capacidadFija, fotos, previsualizaciones, agregarFotos, quitarFoto, enviar, reset, MAX_FOTOS
-          } = useHabitacionForm(null, () => { setAbierto(false); reset(); });
+        const { formulario, cambiar, errores, estaCargando, capacidadFija, fotos, previsualizaciones, agregarFotos, quitarFoto, enviar, reset, clearErrors, MAX_FOTOS
+            } = useHabitacionForm(null, () => { setAbierto(false); limpiarFormulario(reset, clearErrors); });
 
-    const handleCerrar = () => { setAbierto(false); reset(); };
+        const handleCerrar = () => { setAbierto(false); limpiarFormulario(reset, clearErrors); };
 
     return (
         <>

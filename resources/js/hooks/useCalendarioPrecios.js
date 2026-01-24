@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatearFecha } from '@/utils/fecha';
 
 export default function useCalendarioPrecios() {
   const [preciosPorDia, setPreciosPorDia] = useState({});
@@ -11,16 +12,7 @@ export default function useCalendarioPrecios() {
     return () => window.removeEventListener('resize', detectarMobile);
   }, []);
 
-  const formatISO = useCallback((date) => {
-    if (!date) return null;
-    const d = date instanceof Date ? date : new Date(date);
-    if (Number.isNaN(d.getTime())) return null;
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }, []);
-
+  const formatISO = useCallback((date) => formatearFecha(date), []);
   const consultaPrecios = useCallback(async (startISO, endISO) => {
     if (!startISO || !endISO) return false;
     try {

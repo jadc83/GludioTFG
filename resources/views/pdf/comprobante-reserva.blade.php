@@ -102,9 +102,9 @@
                 <tbody>
                 @foreach($reserva->habitaciones as $hr)
                     @php
-                        $tipo = $hr->habitacion->tipo ?? 'Habitación';
-                        $precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
-                    @endphp
+                            $tipo = $hr->habitacion?->tipo ?? ($hr->tipo ?? 'Habitación');
+                            $precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
+                        @endphp
                     <tr>
                         <td>Habitación {{ strtolower($tipo) }}</td>
                         <td style="text-align:right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>

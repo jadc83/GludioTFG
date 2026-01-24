@@ -5,10 +5,11 @@ import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function Login({ status, canResetPassword }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         email: '',
         password: '',
         remember: false,
@@ -18,7 +19,7 @@ export default function Login({ status, canResetPassword }) {
         e.preventDefault();
 
         post(route('login'), {
-            onFinish: () => reset('password'),
+            onFinish: () => limpiarFormulario(reset, clearErrors, 'password'),
         });
     };
 

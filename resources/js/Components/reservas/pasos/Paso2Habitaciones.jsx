@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
+import Campo from '@/Components/formulario/Campo';
 
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones, habitacionesSeleccionadas, agruparHabitacionesPorTipo, getImagen,
@@ -242,8 +243,19 @@ export default function Paso2Habitaciones({
                                                 clase="flex-1 min-w-0 px-2 text-center border border-gray-300 rounded font-bold text-lg bg-gris"
                                                 value={habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0}
                                             />
-                                            <button type="button" onClick={() => actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) + 1)}
-                                                disabled={(habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) >= agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad}
+                                            <button type="button" onClick={() => {
+                                                const totalSel = totalSeleccionado;
+                                                const maxPorReserva = CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA;
+                                                const disponiblesTipo = agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad || 0;
+                                                const actual = (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0);
+                                                if (totalSel >= maxPorReserva || totalSel >= totalDisponibles || actual >= disponiblesTipo) return;
+                                                actualizarSeleccionHabitacion(imagenModalAbierto, 'cantidad', actual + 1);
+                                            }}
+                                                disabled={
+                                                    (habitacionesSeleccionadas[imagenModalAbierto]?.cantidad || 0) >= agruparHabitacionesPorTipo()[imagenModalAbierto]?.cantidad ||
+                                                    totalSeleccionado >= CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA ||
+                                                    totalSeleccionado >= totalDisponibles
+                                                }
                                                 className="w-10 h-10 flex-shrink-0 rounded bg-black text-white hover:bg-[#7a0202] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center">
                                                 +
                                             </button>

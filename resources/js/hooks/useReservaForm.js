@@ -2,12 +2,15 @@ import { useForm } from 'react-hook-form';
 import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
+import { formatearFecha } from '@/utils/fecha';
+import { getReservaPayload } from '@/utils/reservaPayload';
 import useHabitaciones from './useHabitaciones';
 
 export default function useReservaForm() {
     const page = usePage();
     const usuarioActual = page?.props?.auth?.user ?? null;
-    const csrfToken = page?.props?.csrf_token ?? '';
+    // Obtener CSRF token desde props de Inertia o desde la meta tag como fallback
+    const csrfToken = page?.props?.csrf_token ?? (typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') : '') ?? '';
     const flashIdReserva = page?.props?.flash?.reserva_id ?? null;
     const flashLocalizador = page?.props?.flash?.localizador ?? null;
 
@@ -154,17 +157,9 @@ export default function useReservaForm() {
         if (habitacionesArray.length === 0) return 0;
 
         try {
-            // Formatear fechas en zona horaria local (evitar cambios por UTC)
-            const formatearFechaLocal = (fecha) => {
-                const year = fecha.getFullYear();
-                const month = String(fecha.getMonth() + 1).padStart(2, '0');
-                const day = String(fecha.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
             const payload = {
-                check_in: formatearFechaLocal(rango.from),
-                check_out: formatearFechaLocal(rango.to),
+                check_in: formatearFecha(rango.from),
+                check_out: formatearFecha(rango.to),
                 habitaciones: habitacionesArray,
             };
 
@@ -174,11 +169,14 @@ export default function useReservaForm() {
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': csrfToken,
                 },
+                credentials: 'include',
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
-                console.error('Error HTTP al calcular precio:', response.statusText);
+                let text = '';
+                try { text = await response.text(); } catch (e) { text = response.statusText; }
+                console.error('Error HTTP al calcular precio:', response.status, response.statusText, text);
                 return 0;
             }
 
@@ -188,7 +186,7 @@ export default function useReservaForm() {
                 // Devolver el objeto completo con detalles
                 return data.data;
             } else {
-                console.error('Error en respuesta de precio:', data.error);
+                console.error('Error en respuesta de precio:', data.error ?? data);
                 return 0;
             }
         } catch (error) {
@@ -201,27 +199,7 @@ export default function useReservaForm() {
         // El servidor ahora maneja toda la validación y transformación
         const valoresFormulario = getValues();
 
-        const datosReserva = {
-            name: valoresFormulario.name,
-            email: valoresFormulario.email,
-            telefono: valoresFormulario.telefono,
-            tipo_documento: valoresFormulario.tipo_documento,
-            numero_documento: valoresFormulario.numero_documento,
-            nacionalidad: valoresFormulario.nacionalidad,
-            direccion: valoresFormulario.direccion,
-            check_in: rango?.from,
-            check_out: rango?.to,
-            habitaciones: Object.entries(habitacionesSeleccionadas)
-                .filter(([, seleccion]) => seleccion.cantidad > 0)
-                .map(([tipoHabitacion, seleccion]) => ({
-                    tipo: tipoHabitacion,
-                    cantidad: seleccion.cantidad,
-                    personas_por_habitacion: Number(seleccion.personas) > 0 ? Number(seleccion.personas) : 1,
-                })),
-            reservable_id: idClienteSeleccionado,
-            tipo_usuario: tipoClienteSeleccionado,
-            booked_by_user_id: usuarioActual?.id || null,
-        };
+        const datosReserva = getReservaPayload({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual });
 
         router.post('/reservas', datosReserva, {
             onSuccess: () => {

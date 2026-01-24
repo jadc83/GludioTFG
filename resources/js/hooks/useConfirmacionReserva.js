@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { formatearFecha } from '../utils/fecha';
+import { getReservaPayload } from '@/utils/reservaPayload';
 
 /**
  * Hook para manejar la confirmación y creación de reservas
@@ -14,28 +14,10 @@ export default function useConfirmacionReserva() {
 
     /**
      * Prepara los datos de la reserva para enviar al servidor
+     * Implementado localmente para delegar la validación autoritativa al backend.
      */
-    const prepararDatosReserva = (getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual) => {
-        const values = getValues();
-        const habitaciones = Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0)
-              .map(([tipo, r]) => ({ tipo, cantidad: r.cantidad, personas_por_habitacion: Number(r.personas) > 0 ? Number(r.personas) : 1 }));
-
-        // Devolver datos crudos el servidor hará la validación y transformación
-        return {
-            name: values.name,
-            email: values.email,
-            telefono: values.telefono,
-            tipo_documento: values.tipo_documento,
-            numero_documento: values.numero_documento,
-            nacionalidad: values.nacionalidad,
-            direccion: values.direccion,
-            check_in: formatearFecha(rango?.from),
-            check_out: formatearFecha(rango?.to),
-            habitaciones,
-            reservable_id: idClienteSeleccionado,
-            tipo_usuario: tipoClienteSeleccionado || 'cliente',
-            booked_by_user_id: usuarioActual?.id || null,
-        };
+    const prepararDatosReservaHook = (getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual) => {
+        return getReservaPayload({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual });
     };
 
     /**
@@ -94,5 +76,5 @@ export default function useConfirmacionReserva() {
         setErrorPago(null);
     };
 
-    return { procesando, errorPago, prepararDatosReserva, crearReservaAlLlegar, resetearErrores};
+    return { procesando, errorPago, prepararDatosReserva: prepararDatosReservaHook, crearReservaAlLlegar, resetearErrores};
 }

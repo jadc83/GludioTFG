@@ -1,20 +1,83 @@
-import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon, CreditCardIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon, CreditCardIcon, ShieldCheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { useState } from 'react';
-import ExtenderReserva from '@/Components/reservas/utilidades/ExtenderReserva';
+import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
-    const [mostrarExtender, setMostrarExtender] = useState(false);
     const [reserva, setReserva] = useState(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState(null);
+    const [showDateModal, setShowDateModal] = useState(false);
+    const [modalCheckIn, setModalCheckIn] = useState('');
+    const [modalCheckOut, setModalCheckOut] = useState('');
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [preview, setPreview] = useState(null);
+    const [previewError, setPreviewError] = useState(null);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 4500);
     };
+
+    const applyDateChange = async (newCheckIn, newCheckOut) => {
+        try {
+            setIsProcessing(true);
+            const axios = (await import('axios')).default;
+            const payload = { check_in: newCheckIn.format('YYYY-MM-DD'), check_out: newCheckOut.format('YYYY-MM-DD') };
+            const res = await axios.post(`/reservas/${reserva.localizador}/modificar-estancia`, payload);
+            showToast(res?.data?.message || 'Reserva actualizada', 'success');
+            if (res?.data?.reserva) setReserva(prev => ({ ...prev, ...res.data.reserva }));
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
+            showToast(msg, 'error');
+        } finally { setIsProcessing(false); }
+    };
+
+    const fetchPreview = async (checkInStr, checkOutStr) => {
+        try {
+            setPreviewError(null);
+            setPreviewLoading(true);
+            const axios = (await import('axios')).default;
+            const res = await axios.get(`/reservas/${reserva.localizador}/preview-modificar-estancia`, { params: { check_in: checkInStr, check_out: checkOutStr } });
+            setPreview(res?.data || null);
+        } catch (err) {
+            setPreview(null);
+            setPreviewError(err?.response?.data?.message || err?.message || 'Error calculando vista previa');
+        } finally { setPreviewLoading(false); }
+    };
+
+    const openDateModal = () => {
+        const ci = dayjs(reserva.check_in).format('YYYY-MM-DD');
+        const co = dayjs(reserva.check_out).format('YYYY-MM-DD');
+        setModalCheckIn(ci);
+        setModalCheckOut(co);
+        setShowDateModal(true);
+        fetchPreview(ci, co);
+    };
+
+    // Modal confirm handler: re-use applyDateChange after re-checking preview
+    const confirmDateModal = async () => {
+        try {
+            setIsProcessing(true);
+            const newCheckIn = dayjs(modalCheckIn);
+            const newCheckOut = dayjs(modalCheckOut);
+            if (!newCheckOut.isAfter(newCheckIn)) { showToast('Fechas inválidas.', 'error'); return; }
+
+            // Refetch preview to ensure availability
+            await fetchPreview(modalCheckIn, modalCheckOut);
+            if (preview && preview.available === false) { showToast('No hay disponibilidad para las fechas seleccionadas.', 'error'); return; }
+
+            await applyDateChange(newCheckIn, newCheckOut);
+            setShowDateModal(false);
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
+            showToast(msg, 'error');
+        } finally { setIsProcessing(false); }
+    };
+
+
 
     const getStatusBadge = (status) => {
         const colors = { 'pendiente': 'badge-warning', 'confirmada': 'badge-success', 'completada': 'badge-success', 'cancelada': 'badge-error' };
@@ -61,8 +124,33 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                         <div className="rounded-lg bg-white p-3 shadow-md space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                 <div><p className="text-xs font-bold text-[#7a0202] uppercase">Huésped</p><p className="text-gray-800 font-semibold">{reserva.cliente.nombre}</p></div>
-                                <div><p className="text-xs font-bold text-[#7a0202] uppercase">Check-in</p><p className="text-gray-800 font-semibold">{formatearFecha(reserva.check_in)}</p></div>
-                                <div><p className="text-xs font-bold text-[#7a0202] uppercase">Check-out</p><p className="text-gray-800 font-semibold">{formatearFecha(reserva.check_out)}</p></div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Check-in</p>
+                                        <div className="flex items-center gap-2">
+                                            <>
+                                                <div className="text-gray-800 font-semibold">{formatearFecha(reserva.check_in)}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <button title="Editar fechas" onClick={openDateModal} className="h-7 w-7 flex items-center justify-center rounded-full bg-transparent hover:bg-gray-100">
+                                                        <PencilIcon className="h-4 w-4 text-gray-600" />
+                                                    </button>
+                                                </div>
+                                            </>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Check-out</p>
+                                        <div className="flex items-center gap-2">
+                                            <>
+                                                <div className="text-gray-800 font-semibold">{formatearFecha(reserva.check_out)}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <button title="Editar fechas" onClick={openDateModal} className="h-7 w-7 flex items-center justify-center rounded-full bg-transparent hover:bg-gray-100">
+                                                        <PencilIcon className="h-4 w-4 text-gray-600" />
+                                                    </button>
+                                                </div>
+                                            </>
+                                        </div>
+                                    </div>
                                 <div>
                                     <div className="mb-1"><p className="text-xs font-bold text-[#7a0202] uppercase">Estado reserva</p><span className={`badge ${getStatusBadge(reserva.status)} text-xs py-0.5 px-2`}>{reserva.status.charAt(0).toUpperCase() + reserva.status.slice(1)}</span></div>
                                     <div><p className="text-xs font-bold text-[#7a0202] uppercase">Estado pago</p><span className={`badge ${getPagoBadge(reserva.pago)} text-xs py-0.5 px-2`}>{reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1)}</span></div>
@@ -73,7 +161,10 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 <h3 className="text-sm font-bold text-gray-800 mb-2">Habitaciones</h3>
                                 <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
                                     {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={idx} className="border border-gris p-2 rounded text-xs flex justify-between items-center"><span className="font-semibold">{hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)} #{hab.numero}</span><span className="text-[#7a0202] font-bold">{formatearMoneda(hab.precio)}</span></div>
+                                        <div key={idx} className="border border-gris p-2 rounded text-xs flex justify-between items-center">
+                                            <span className="font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</span>
+                                            <span className="text-[#7a0202] font-bold">{formatearMoneda(hab.precio)}</span>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -99,11 +190,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                             </div>
                         </div>
 
-                        {mostrarExtender && (<ExtenderReserva reserva={reserva} onClose={() => { setMostrarExtender(false); window.location.reload(); }} />)}
-
-                        {!mostrarExtender && !String(reserva.status || '').toLowerCase().includes('cancel') && String(reserva.status || '').toLowerCase() !== 'checked_out' && (
-                            <button onClick={() => setMostrarExtender(true)} className="w-full bg-gradient-to-r from-[#7a0202] to-[#920303] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">🏨 Ampliar reserva</button>
-                        )}
+                        {/* Edición via modal eliminada; permitimos cambios directos con botones */}
 
                         <div className="grid grid-cols-2 gap-3">
                             {String(reserva.status || '').toLowerCase() === 'pendiente' && (
@@ -114,9 +201,55 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                             )}
                         </div>
 
+
+
                         <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm mt-3"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
 
                         {toast && (<div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>{toast.message}</div>)}
+                        {/* Date modal */}
+                        {showDateModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold">Modificar fechas</h3>
+                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <label className="text-xs font-semibold">Check-in</label>
+                                        <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" />
+                                        <label className="text-xs font-semibold">Check-out</label>
+                                        <input type="date" value={modalCheckOut} onChange={(e) => { setModalCheckOut(e.target.value); fetchPreview(modalCheckIn, e.target.value); }} className="input input-bordered w-full" />
+                                    </div>
+
+                                    <div className="mt-4 p-3 border rounded bg-gray-50">
+                                        {previewLoading && (<div className="text-sm text-gray-600">Cargando vista previa…</div>)}
+                                        {previewError && (<div className="text-sm text-red-600">{previewError}</div>)}
+                                        {preview && !previewLoading && (
+                                            <div className="text-sm text-gray-800 space-y-2">
+                                                <div className="flex justify-between"><span>Nueva estancia:</span><strong>{formatearMoneda(preview.nuevo_total)}</strong></div>
+                                                <div className="flex justify-between"><span>Importe actual:</span><span>{formatearMoneda(preview.viejo_total)}</span></div>
+                                                <div className="flex justify-between"><span>Noches actuales:</span><span>{preview.nights_old}</span></div>
+                                                <div className="flex justify-between"><span>Noches nuevas:</span><span>{preview.nights_new}</span></div>
+                                                {preview.estimate_refund > 0 && (<div className="flex justify-between text-green-700"><span>Estimado reembolso (prorrateado - 1n):</span><strong>{formatearMoneda(preview.estimate_refund)}</strong></div>)}
+                                                {preview.estimate_charge > 0 && (<div className="flex justify-between text-red-700"><span>Estimado cargo adicional:</span><strong>{formatearMoneda(preview.estimate_charge)}</strong></div>)}
+                                                <div className="mt-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm">Disponible para cambio</span>
+                                                        {preview.available ? (<span className="text-sm text-green-700 font-semibold">Sí</span>) : (<span className="text-sm text-red-700 font-semibold">No</span>)}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">"Sí" significa que las habitaciones asignadas están libres en ese rango y se puede aplicar el cambio.</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4 flex justify-end gap-2">
+                                        <button onClick={() => setShowDateModal(false)} className="btn btn-ghost">Cancelar</button>
+                                        <button disabled={isProcessing || (preview && preview.available === false)} onClick={confirmDateModal} className="btn btn-primary">{isProcessing ? 'Procesando…' : 'Confirmar'}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
