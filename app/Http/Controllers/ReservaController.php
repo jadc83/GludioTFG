@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ReservaCompletada;
+use App\Models\Pago;
 
 class ReservaController extends Controller
 {
@@ -136,8 +137,26 @@ class ReservaController extends Controller
 
     public function show(Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion']);
+        $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
         $reservaService = new ReservaService();
+        // Preparar lista de reembolsos con tipo (parcial/completo) para la vista
+        $reembolsosList = $reserva->reembolsos->map(function ($r) use ($reserva) {
+            $amount = ($r->amount_cents ?? 0) / 100;
+            $reservaTotal = $reserva->precio_total ?? 0;
+            $tipo = 'parcial';
+            if ($reservaTotal > 0 && $amount >= $reservaTotal) {
+                $tipo = 'completo';
+            }
+
+            return [
+                'id' => $r->id,
+                'monto' => round($amount, 2),
+                'status' => $r->status,
+                'reason' => $r->reason ?? null,
+                'created_at' => $r->created_at?->format('Y-m-d H:i:s') ?? null,
+                'tipo' => $tipo,
+            ];
+        })->values();
 
         return inertia('Reservas/DetalleReserva', [
             'reserva' => [
@@ -149,6 +168,8 @@ class ReservaController extends Controller
                 'precio_total' => $reserva->precio_total,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
+                'reembolsos_total' => ($reserva->reembolsos->sum('amount_cents') ?? 0) / 100,
+                'reembolsos' => $reembolsosList,
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                     return [
                         'numero' => $hr->habitacion?->numero ?? null,
@@ -266,6 +287,7 @@ class ReservaController extends Controller
                     'precio_total' => $reserva->precio_total,
                     'status' => $reserva->status,
                     'pago' => $reserva->pago,
+                    'reembolsos_total' => ($reserva->reembolsos()->sum('amount_cents') ?? 0) / 100,
                     'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                         return [
                             'numero' => $hr->habitacion?->numero ?? null,
@@ -365,6 +387,28 @@ class ReservaController extends Controller
                 $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
                 $precioHabitacion = $precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
                 $nuevoTotal += $precioHabitacion;
+            }
+
+            $viejoTotal = (float) $reserva->precio_total;
+            $diff = round(max(0, $nuevoTotal - $viejoTotal), 2);
+
+            // Si hay cargo adicional, requerimos un pago válido (pago_id)
+            if ($diff > 0) {
+                $pagoId = $request->input('pago_id');
+                if (!$pagoId) {
+                    return response()->json([ 'success' => false, 'error' => 'pago_requerido', 'required_amount' => $diff, 'message' => 'Se requiere un pago adicional para ampliar la estancia.' ], 402);
+                }
+
+                $pago = Pago::find($pagoId);
+                if (! $pago || $pago->reserva_id != $reserva->id || $pago->estado !== 'completado' || (float)$pago->monto < $diff) {
+                    return response()->json([ 'success' => false, 'error' => 'pago_invalido', 'required_amount' => $diff, 'message' => 'Pago no válido o insuficiente.' ], 402);
+                }
+            }
+
+            // Ahora que el pago (si aplica) está verificado, actualizar precios por habitación
+            foreach ($reserva->habitaciones as $hr) {
+                $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
+                $precioHabitacion = $precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
                 try { $hr->update(['precio' => $precioHabitacion]); } catch (\Throwable $e) { Log::warning('No se pudo actualizar precio habitacionReserva: ' . $e->getMessage()); }
             }
 
@@ -431,11 +475,12 @@ class ReservaController extends Controller
             $estimateCharge = 0.00;
 
             if ($nuevoTotal < $viejoTotal) {
-                // prorrateo menos 1 noche de penalización
+                // prorrateo menos penalización fija
                 $rawRefund = round($viejoTotal - $nuevoTotal, 2);
-                $penalizacion = $perNight; // una noche
+                $penalizacion = 20.00; // Penalización fija de 20 euros
                 $estimateRefund = max(0, round($rawRefund - $penalizacion, 2));
             } else {
+                $penalizacion = 0.00;
                 $estimateCharge = round(max(0, $nuevoTotal - $viejoTotal), 2);
             }
 
@@ -447,6 +492,7 @@ class ReservaController extends Controller
                 'nights_old' => $nightsOld,
                 'nights_new' => $nightsNew,
                 'estimate_refund' => $estimateRefund,
+                'penalizacion' => $penalizacion,
                 'estimate_charge' => $estimateCharge,
             ]);
 
