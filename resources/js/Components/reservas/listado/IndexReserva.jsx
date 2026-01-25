@@ -72,14 +72,16 @@ export default function IndexReserva({ reservas = [] }) {
         return colores[status] || 'badge-neutral';
     };
 
-    const obtenerColorPago = (pago) => {
+    const obtenerColorPago = (reserva) => {
+        // Mostrar 'parcial' si hay reembolsos parciales realizados (0 < reembolsos_total < precio_total)
+        const reembolsos = reserva.reembolsos_total || 0;
+        if (reembolsos > 0 && reserva.precio_total && reembolsos < reserva.precio_total) return 'badge-warning';
         const colores = {
             pagado: 'badge-success',
-            parcial: 'badge-warning',
             devuelto: 'badge-info',
             pendiente: 'badge-error',
         };
-        return colores[pago] || 'badge-error';
+        return colores[reserva.pago] || 'badge-error';
     };
 
     const eliminarReserva = (id) => {
@@ -218,7 +220,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             <td>
-                                                <span className={`badge ${obtenerColorPago(reserva.pago)}`}>{reserva.pago}</span>
+                                                <span className={`badge ${obtenerColorPago(reserva)}`}>{(reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total) ? 'Parcialmente reembolsado' : (reserva.pago ? reserva.pago : '')}</span>
                                             </td>
 
                                             <td className="celda-creado font-mono">

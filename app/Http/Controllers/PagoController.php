@@ -181,6 +181,7 @@ class PagoController extends Controller
 
         try {
             $event = \Stripe\Webhook::constructEvent( $payload, $sig_header, $endpointSecret );
+            \Illuminate\Support\Facades\Log::info('Stripe webhook received', ['type' => $event->type, 'id' => $event->id ?? null]);
 
             if ($event->type === 'payment_intent.succeeded') {
                 $paymentIntent = $event->data->object;
@@ -230,17 +231,16 @@ class PagoController extends Controller
         if (isset($resultado['status_code'])) {
             $status = $resultado['status_code'];
         }
-        // Si el usuario pidió cancelar explícitamente, y el reembolso fue exitoso,
-        // forzamos marcar la reserva como cancelada (esto ya ocurre normalmente
-        // cuando la suma de reembolsos >= precio_total, pero aquí respetamos la
-        // intención explícita del usuario cuando `cancelar` viene a true).
+        // si reembolso fue exitoso forzar marcar la reserva como cancelada
         if ($resultado['success'] && $cancelar) {
             try {
+                \Illuminate\Support\Facades\Log::info('reembolsarReserva: forzando cancelación por parametro cancelar=true (pre-update)', ['reserva_id' => $reserva->id, 'monto' => $monto, 'stack' => array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5), 0, 5)]);
                 $ultimoPago = $reserva->pagos()->orderByDesc('pagado_en')->first();
                 if ($ultimoPago) {
                     $ultimoPago->update(['estado' => 'cancelado']);
                 }
                 $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
+                \Illuminate\Support\Facades\Log::info('reembolsarReserva: reserva marcada como devuelto (post-update)', ['reserva_id' => $reserva->id]);
             } catch (\Throwable $e) {
                 // No bloqueamos la respuesta principal si esto falla
                 \Illuminate\Support\Facades\Log::warning('No se pudo forzar cancelación tras reembolso: ' . $e->getMessage());

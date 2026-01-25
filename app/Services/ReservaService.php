@@ -459,6 +459,7 @@ class ReservaService
         $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
         // Permitir imágenes remotas y parser HTML5 para asegurar renderizado de imágenes/data-uris
         try {
+            Log::info("SolicitarReembolso inicio: reserva_id={$reserva->id}, usuario=" . ($usuario?->id ?? 'anon') . ", monto=" . ($monto ?? 'null'));
             $pdf->setOptions([
                 'isRemoteEnabled' => true,
                 'isHtml5ParserEnabled' => true,
@@ -598,6 +599,7 @@ class ReservaService
             if ($refundAmountCents > 0) {
                 $refundParams['amount'] = $refundAmountCents;
             }
+            Log::info('Stripe refund params: ' . json_encode($refundParams));
             $refund = $stripe->refunds->create($refundParams);
 
             $createdRefund = Refund::create([
@@ -610,20 +612,47 @@ class ReservaService
                 'stripe_response' => $refund->toArray(),
             ]);
 
+            Log::info('Refund creado en Stripe: ' . json_encode([ 'id' => $refund->id ?? null, 'amount' => $refund->amount ?? null, 'status' => $refund->status ?? null ]));
             // Calcular reembolsos totales realizados sobre la reserva (suma de amount_cents)
             try {
                 $totalRefundedForReservaCents = Refund::where('reserva_id', $reserva->id)->sum('amount_cents') ?: 0;
                 // El refund que acabamos de crear ya está en BD, así que no es necesario sumarlo manualmente
                 $reservaAmountCents = isset($reserva->precio_total) ? intval(round($reserva->precio_total * 100)) : null;
 
-                if ($reservaAmountCents !== null && $totalRefundedForReservaCents >= $reservaAmountCents) {
+                try {
+                    $totalPaidForReservaCents = intval(round(Pago::where('reserva_id', $reserva->id)->sum('monto') * 100));
+                } catch (\Throwable $e) {
+                    $totalPaidForReservaCents = $reservaAmountCents ?? 0;
+                }
+
+                Log::info('Post-refund totals', [
+                    'reserva_id' => $reserva->id,
+                    'pago_id' => $pago->id,
+                    'payment_intent' => $payment_intent_id,
+                    'refund_id' => $refund->id ?? null,
+                    'refund_amount_cents' => $refund->amount ?? null,
+                    'total_refunded_for_reserva_cents' => $totalRefundedForReservaCents,
+                    'total_paid_for_reserva_cents' => $totalPaidForReservaCents,
+                ]);
+
+                if ($totalPaidForReservaCents > 0 && $totalRefundedForReservaCents >= $totalPaidForReservaCents) {
                     // Reembolso completo sobre la reserva: cancelar reserva
+                    Log::info('solicitarReembolso: marcando reserva como devuelto (pre-update)', [
+                        'reserva_id' => $reserva->id,
+                        'pago_id' => $pago->id,
+                        'payment_intent' => $payment_intent_id,
+                        'total_refunded_for_reserva_cents' => $totalRefundedForReservaCents,
+                        'total_paid_for_reserva_cents' => $totalPaidForReservaCents,
+                        'stack' => array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5), 0, 5),
+                    ]);
                     try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso completo: ' . $e->getMessage()); }
-                    try { $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso completo: ' . $e->getMessage()); }
+                    try {
+                        $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
+                        Log::info('solicitarReembolso: reserva marcada como devuelto (post-update)', ['reserva_id' => $reserva->id]);
+                    } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso completo: ' . $e->getMessage()); }
                 } else {
-                    // Parcial: no cancelar la reserva, sólo marcar pago como reembolsado parcial y marcar reserva pago como devuelto
+                    // Parcial: no cancelar la reserva; mantener `reserva.pago` como pagado y marcar pago como reembolsado parcial
                     try { $pago->update(['estado' => 'reembolsado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso parcial: ' . $e->getMessage()); }
-                    try { $reserva->update(['pago' => 'devuelto']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso parcial: ' . $e->getMessage()); }
                 }
             } catch (\Throwable $e) {
                 Log::warning('No se pudo actualizar estado de pago/reserva tras reembolso: ' . $e->getMessage());
@@ -708,6 +737,7 @@ class ReservaService
                 }
 
                 try {
+                    Log::info('handleRefundEvent: refund received', ['refund' => is_object($refundData) ? (array)$refundData : $refundData]);
                     $refundAmountCents = isset($refundData->amount) ? intval($refundData->amount) : 0;
                     $totalRefundedForReservaCents = Refund::where('reserva_id', $pago->reserva_id)->sum('amount_cents') ?: 0;
                     // Si este refund todavía no existe en BD, sumar su importe (webhooks a veces llegan antes)
@@ -718,12 +748,38 @@ class ReservaService
 
                     $reservaAmountCents = isset($pago->reserva->precio_total) ? intval(round($pago->reserva->precio_total * 100)) : null;
 
-                    if ($reservaAmountCents !== null && $totalRefundedForReservaCents >= $reservaAmountCents) {
+                    try {
+                        $totalPaidForReservaCents = intval(round(Pago::where('reserva_id', $pago->reserva_id)->sum('monto') * 100));
+                    } catch (\Throwable $e) {
+                        $totalPaidForReservaCents = $reservaAmountCents ?? 0;
+                    }
+
+                    Log::info('handleRefundEvent totals', [
+                        'reserva_id' => $pago->reserva_id,
+                        'pago_id' => $pago->id,
+                        'refund_id' => $refundData->id ?? null,
+                        'refund_amount_cents' => $refundAmountCents,
+                        'total_refunded_for_reserva_cents' => $totalRefundedForReservaCents,
+                        'total_paid_for_reserva_cents' => $totalPaidForReservaCents,
+                    ]);
+
+                    if ($totalPaidForReservaCents > 0 && $totalRefundedForReservaCents >= $totalPaidForReservaCents) {
+                        // Reembolso completo sobre la reserva: marcar pago como cancelado y reservar como devuelto/cancelado
+                        Log::info('handleRefundEvent: marcando reserva como devuelto (pre-update)', [
+                            'reserva_id' => $pago->reserva_id,
+                            'pago_id' => $pago->id,
+                            'refund_id' => $refundData->id ?? null,
+                            'total_refunded_for_reserva_cents' => $totalRefundedForReservaCents,
+                            'total_paid_for_reserva_cents' => $totalPaidForReservaCents,
+                            'stack' => array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5), 0, 5),
+                        ]);
                         $pago->update(['estado' => 'cancelado']);
                         $pago->reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
+                        Log::info('handleRefundEvent: reserva marcada como devuelto (post-update)', ['reserva_id' => $pago->reserva_id]);
                     } else {
+                        // Reembolso parcial: sólo marcar el registro de pago como reembolsado parcialmente.
+                        // No cambiar el flag `reserva.pago` para evitar mostrar "devuelto" cuando la reserva sigue pagada.
                         $pago->update(['estado' => 'reembolsado']);
-                        $pago->reserva->update(['pago' => 'devuelto']);
                     }
                 } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago/reserva desde handleRefundEvent: ' . $e->getMessage()); }
             }
@@ -781,7 +837,6 @@ class ReservaService
             $placeholders = HabitacionReserva::where('reserva_id', $reserva->id)->whereNull('habitacion_id')->get();
 
             foreach ($placeholders as $ph) {
-                // Find first candidate room of the requested type and lock it
                 $candidate = Habitacion::where('tipo', $ph->tipo)
                     ->where('estado', 'disponible')
                     ->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut, $reserva) {
@@ -791,7 +846,6 @@ class ReservaService
                     ->first();
 
                 if (! $candidate) {
-                    // failed to assign this placeholder
                     $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => false, 'reason' => 'no_available'];
                     continue;
                 }
@@ -836,6 +890,8 @@ class ReservaService
                 $nombreCliente = $reserva->reservable->name ?? 'Sin cliente';
             }
 
+            $reembolsosTotal = $reserva->reembolsos ? ($reserva->reembolsos->sum('amount_cents') ?: 0) / 100 : 0;
+
             return [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -844,6 +900,7 @@ class ReservaService
                 'precio_total' => $reserva->precio_total,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
+                'reembolsos_total' => $reembolsosTotal,
                 'notas' => $reserva->notas,
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
                 'cliente_name' => $nombreCliente,
@@ -1020,13 +1077,7 @@ class ReservaService
     }
 
     /**
-     * Extiende una reserva: valida, calcula precio y aplica si se confirma.
-     * Retorna información útil para el controlador/cliente.
-     * @param string $localizador
-     * @param int $numeroDias
-     * @param bool $confirmar
-     * @return array
-     * @throws \Exception
+     * Extiende una reserva: valida, calcula precio y aplica si se confirma
      */
     public function extenderReserva(string $localizador, int $numeroDias, bool $confirmar = false): array
     {

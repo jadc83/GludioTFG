@@ -158,11 +158,14 @@ class ReservaController extends Controller
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
         $reservaService = new ReservaService();
         // Preparar lista de reembolsos con tipo (parcial/completo) para la vista
-        $reembolsosList = $reserva->reembolsos->map(function ($r) use ($reserva) {
+        // Calcular tipo de cada reembolso
+        $reservaTotal = $reserva->precio_total ?? 0;
+        $cumulative = 0;
+        $reembolsosList = $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reserva, &$cumulative, $reservaTotal) {
             $amount = ($r->amount_cents ?? 0) / 100;
-            $reservaTotal = $reserva->precio_total ?? 0;
+            $cumulative += $amount;
             $tipo = 'parcial';
-            if ($reservaTotal > 0 && $amount >= $reservaTotal) {
+            if ($reservaTotal > 0 && $cumulative >= $reservaTotal) {
                 $tipo = 'completo';
             }
 
@@ -221,9 +224,30 @@ class ReservaController extends Controller
         try {
             $reservaService = new ReservaService();
 
+            // Detectar cambio de estado a 'cancelado' para enviar correo
+            $originalStatus = $reserva->status;
+            $motivo = $request->input('motivo') ?? null;
+
             DB::transaction(function () use ($reservaService, $validated, $reserva) {
                 $reservaService->actualizarReserva($reserva, $validated);
             });
+
+            // Refrescar la instancia para obtener los cambios
+            $reserva->refresh();
+
+            if ($originalStatus !== 'cancelado' && ($reserva->status === 'cancelado')) {
+                // Cargar relaciones igual que en store
+                $reserva->load(['reservable', 'habitaciones.habitacion']);
+
+                try {
+                    $destino = $reserva->reservable?->email ?? $request->input('email');
+                    if ($destino) {
+                        Mail::to($destino)->send(new \App\Mail\ReservaCancelada($reserva, $motivo));
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo enviar email de reserva cancelada: ' . $e->getMessage());
+                }
+            }
 
             return redirect()->route('panel')->with('success', "Reserva {$reserva->localizador} actualizada correctamente.");
         } catch (\Exception $e) {
@@ -231,10 +255,26 @@ class ReservaController extends Controller
         }
     }
 
-    public function destroy(Reserva $reserva)
+    public function destroy(Request $request, Reserva $reserva)
     {
         try {
             $reservaService = new ReservaService();
+            // Leer motivo opcional enviado desde frontend
+            $motivo = $request->input('motivo') ?? null;
+
+            // Cargar relaciones necesarias antes de enviar el correo (evita lazy-loading tras borrar)
+            $reserva->loadMissing(['reservable', 'habitaciones.habitacion']);
+
+            try {
+                $destino = $reserva->reservable?->email ?? $request->input('email');
+                if ($destino) {
+                    Mail::to($destino)->send(new \App\Mail\ReservaCancelada($reserva, $motivo));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo enviar email de reserva cancelada: ' . $e->getMessage());
+            }
+
+            // Ahora borrar la reserva
             $reservaService->eliminarReserva($reserva);
 
             return redirect()->back()->with('success', 'Reserva eliminada con éxito');
