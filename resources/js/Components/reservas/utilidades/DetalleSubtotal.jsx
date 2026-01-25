@@ -13,16 +13,8 @@ export default function DetalleSubtotal({ habitacionesSeleccionadas = {}, rango 
 		return acc + (cantidad * precioPorNoche * numeroNoches);
 	}, 0);
 
-	// Calcular total tarifas: tarifasSeleccionadas es objeto { id: true }
-	const tarifasMap = Array.isArray(tarifas) ? tarifas.reduce((m, t) => (m[t.id] = t, m), {}) : {};
-	const totalTarifas = Object.keys(tarifasSeleccionadas || {}).reduce((acc, id) => {
-		const tarifa = tarifasMap[id];
-		const mod = Number(tarifa?.modificador_precio || 0);
-		const isMedia = (tarifa?.slug && tarifa.slug.toLowerCase().includes('media')) || (tarifa?.nombre && tarifa.nombre.toLowerCase().includes('media'));
-		return acc + (isMedia ? mod * numeroNoches : mod);
-	}, 0);
-
-	const subtotal = subtotalHabitaciones + totalTarifas;
+	// Mostrar únicamente el subtotal de habitaciones (no incluir tarifas aquí)
+	const subtotal = subtotalHabitaciones;
 
 	// Si el subtotal es 0, no mostrar nada (evita mostrar "€0.00" en la UI)
 	if (subtotal === 0) return null;
@@ -38,16 +30,8 @@ export default function DetalleSubtotal({ habitacionesSeleccionadas = {}, rango 
 	return (
 		<div className="w-full bg-gris rounded p-2">
 			<div className="flex items-center justify-between text-[12px]">
-				<span>Subtotal habitaciones</span>
-				<span className="font-semibold">{formatearMoneda(subtotalHabitaciones)}</span>
-			</div>
-			<div className="flex items-center justify-between text-[12px] mt-1">
-				<span>Tarifas aplicadas</span>
-				<span className="font-semibold">{totalTarifas === 0 ? 'Gratis' : formatearMoneda(totalTarifas)}</span>
-			</div>
-			<div className="border-t mt-2 pt-2 flex items-center justify-between text-[13px] font-bold">
-				<span>Total</span>
-				<span className="text-[#7a0202]">{formatearMoneda(subtotal)}</span>
+				<span className="font-medium text-gray-700">Subtotal</span>
+				<span className="font-semibold text-[#7a0202]">{formatearMoneda(subtotal)}</span>
 			</div>
 		</div>
 	);
