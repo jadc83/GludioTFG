@@ -57,6 +57,17 @@ class ReservaController extends Controller
             $reserva = $reservaService->crearReserva($request->all(), $usuario, $request->status ?? 'pendiente');
             $reserva->load(['reservable', 'habitaciones.habitacion']);
 
+            // Calcular desglose de precios para incluir en la respuesta
+            try {
+                $precioService = new \App\Services\PrecioService();
+                $checkIn = Carbon::parse($request->input('check_in'));
+                $checkOut = Carbon::parse($request->input('check_out'));
+                $resultadoPrecio = $precioService->calcularMontoTotalConTarifas($request->input('habitaciones', []), $checkIn, $checkOut, $request->input('tarifas', []));
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo calcular desglose para respuesta: ' . $e->getMessage());
+                $resultadoPrecio = null;
+            }
+
             try {
                 $destino = $reserva->reservable?->email ?? $request->input('email');
                 if ($destino) {
@@ -69,6 +80,13 @@ class ReservaController extends Controller
             $respuesta = [ 'success' => true,  'localizador' => $reserva->localizador, 'reserva_id' => $reserva->id,
                 'message' => "Reserva {$reserva->localizador} creada (Total: €{$reserva->precio_total})",
             ];
+
+            if ($resultadoPrecio && is_array($resultadoPrecio)) {
+                $respuesta['subtotal_habitaciones'] = $resultadoPrecio['subtotal_habitaciones'] ?? ($resultadoPrecio['total'] ?? null);
+                $respuesta['cargo_tarifas'] = $resultadoPrecio['cargo_tarifas'] ?? 0;
+                $respuesta['numero_noches'] = $resultadoPrecio['numeroNoches'] ?? ($request->check_out ? Carbon::parse($request->check_out)->diffInDays(Carbon::parse($request->check_in)) : null);
+                $respuesta['tarifas_aplicadas'] = $resultadoPrecio['tarifas_aplicadas'] ?? [];
+            }
 
             if ($request->wantsJson()) {
                 return response()->json($respuesta);
@@ -243,28 +261,10 @@ class ReservaController extends Controller
             $checkIn = Carbon::createFromFormat('Y-m-d', $validated['check_in']);
             $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
 
-            $resultado = $precioService->calcularMontoTotal( $validated['habitaciones'], $checkIn, $checkOut);
 
-            // Si vienen tarifas seleccionadas, obtener su suma de modificadores y aplicarla
-            $tarifasAplicadas = [];
-            $cargoTarifas = 0;
-            if (!empty($validated['tarifas']) && is_array($validated['tarifas'])) {
-                $tarifasAplicadas = \App\Models\Tarifa::whereIn('id', $validated['tarifas'])->get()->map(function($t) {
-                    return [ 'id' => $t->id, 'nombre' => $t->nombre, 'modificador_precio' => (float)$t->modificador_precio, 'slug' => $t->slug ];
-                })->toArray();
-
-                $sumaModificadores = array_reduce($tarifasAplicadas, function($carry, $t) { return $carry + ($t['modificador_precio'] ?? 0); }, 0);
-
-                // Aplicar modificador UNA sola vez por reserva (no por noche)
-                $cargoTarifas = round($sumaModificadores, 2);
-
-                // Agregar al total
-                if (isset($resultado['total'])) {
-                    $resultado['total'] = round(($resultado['total'] + $cargoTarifas), 2);
-                }
-                $resultado['tarifas_aplicadas'] = $tarifasAplicadas;
-                $resultado['cargo_tarifas'] = $cargoTarifas;
-            }
+            // Usar método centralizado que aplica las reglas de tarifas en el backend
+            $tarifasSeleccionadas = $validated['tarifas'] ?? [];
+            $resultado = $precioService->calcularMontoTotalConTarifas($validated['habitaciones'], $checkIn, $checkOut, is_array($tarifasSeleccionadas) ? $tarifasSeleccionadas : []);
 
             if (isset($resultado['error'])) {
                 return response()->json([ 'success' => false, 'error' => $resultado['error']], 422);
