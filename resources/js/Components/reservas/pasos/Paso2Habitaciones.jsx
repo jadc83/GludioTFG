@@ -145,31 +145,32 @@ export default function Paso2Habitaciones({
                                             <p className="text-lg font-black text-[#7a0202]">{info.precioMinimo}€<span className="text-xs font-normal text-gray-500">/noche</span></p>
                                         </div>
 
-                                        <div className="w-1/2">
+                                        <div className="w-auto">
                                             {isSelected ? (
-                                                <div className="flex items-center justify-between bg-gray-100 rounded-lg p-1">
+                                                <div className="flex items-center justify-end bg-[#7a0202] rounded-lg p-1">
                                                      <button
                                                         onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 0)}
-                                                        className="text-gray-400 hover:text-red-600 p-1"
+                                                        className="w-9 h-9 flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white"
+                                                        aria-label={`Eliminar selección de ${tipo}`}
                                                     >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                     </button>
-                                                    <span className="font-bold text-[#7a0202]">Elegida</span>
                                                 </div>
-                                            ) : (
+                                                ) : (
                                                 <button
                                                     type="button"
                                                     disabled={!puedeAgregarMas}
                                                     onClick={() => {
                                                         actualizarSeleccionHabitacion(tipo, 'cantidad', 1);
                                                     }}
-                                                    className={`w-full py-1.5 px-3 text-xs font-bold rounded-md transition-all ${
+                                                    className={`h-9 px-3 flex items-center justify-center rounded-md transition-all ${
                                                         puedeAgregarMas
                                                         ? 'bg-black text-white hover:bg-[#7a0202] active:scale-95'
                                                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                                     }`}
+                                                    aria-label={`Seleccionar habitación ${tipo}`}
                                                 >
-                                                    {puedeAgregarMas ? 'Seleccionar' : 'Límite'}
+                                                    <span className="text-lg font-bold">+</span>
                                                 </button>
                                             )}
                                         </div>
