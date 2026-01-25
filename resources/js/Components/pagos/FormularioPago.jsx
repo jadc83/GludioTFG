@@ -124,6 +124,9 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
             const esExtension = Boolean(reservaData?.es_extension || reservaData?.es_edicion_pago);
             let resId = reservaData?.reserva_id;
 
+            let reservaSubtotal = null;
+            let reservaCargoTarifas = null;
+
             if (!esExtension) {
                 // PASO 1: Crear reserva (solo si no es extensión/edición)
                 const datosReservaConDireccion = {
@@ -170,6 +173,9 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
 
                 const dataReserva = await resReserva.json();
                 resId = dataReserva.reserva_id;
+                // Capturar desglose si el backend lo devuelve
+                reservaSubtotal = dataReserva.subtotal_habitaciones ?? null;
+                reservaCargoTarifas = dataReserva.cargo_tarifas ?? null;
                 if (!resId) throw new Error('No se obtuvo ID de reserva');
             }
 
@@ -186,6 +192,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                 body: JSON.stringify({
                     reserva_id: resId,
                     monto: monto,
+                    subtotal_habitaciones: reservaSubtotal,
+                    cargo_tarifas: reservaCargoTarifas,
                 }),
             });
 
@@ -292,35 +300,20 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     </label>
 
                     <div className="mb-1">
-                        <Campo
-                            id="direccion_calle"
-                            name="direccion_calle"
-                            value={direccion.calle}
-                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                            placeholder="Calle y número"
+                        <Campo id="direccion_calle" name="direccion_calle" value={direccion.calle} onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                            required placeholder="Calle y número"
                             className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required
                         />
                     </div>
 
                     <div className="grid grid-cols-3 gap-1">
-                        <Campo
-                            id="direccion_ciudad"
-                            name="direccion_ciudad"
-                            value={direccion.ciudad}
-                            onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
-                            placeholder="Ciudad"
+                        <Campo id="direccion_ciudad" name="direccion_ciudad" value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
+                            required placeholder="Ciudad"
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required
                         />
-                        <Campo
-                            id="direccion_codigo_postal"
-                            name="direccion_codigo_postal"
-                            value={direccion.codigo_postal}
-                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})}
-                            placeholder="Código Postal"
+                        <Campo required id="direccion_codigo_postal" name="direccion_codigo_postal" value={direccion.codigo_postal}
+                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})} placeholder="Código Postal"
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                            required
                         />
                         <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
                             className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">

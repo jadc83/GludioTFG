@@ -27,6 +27,8 @@ class PagoController extends Controller
         $validated = $request->validate([
             'reserva_id' => 'required|integer|exists:reservas,id',
             'monto' => 'required|numeric|min:0.01',
+            'subtotal_habitaciones' => 'nullable|numeric|min:0',
+            'cargo_tarifas' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -50,6 +52,14 @@ class PagoController extends Controller
                 ],
                 'description' => "Pago de reserva {$reserva->localizador}",
             ];
+
+            // Añadir desglose al metadata si viene
+            if (isset($validated['subtotal_habitaciones'])) {
+                $intentData['metadata']['subtotal_habitaciones'] = (string)round($validated['subtotal_habitaciones'], 2);
+            }
+            if (isset($validated['cargo_tarifas'])) {
+                $intentData['metadata']['cargo_tarifas'] = (string)round($validated['cargo_tarifas'], 2);
+            }
 
             if ($receiptEmail) {
                 $intentData['receipt_email'] = $receiptEmail;
