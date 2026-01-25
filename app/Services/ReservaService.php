@@ -497,7 +497,7 @@ class ReservaService
      * Solicita un reembolso para la reserva: busca el pago, aplica fallbacks, crea refund en Stripe y registra en BD.
      * Retorna array con keys: success (bool) y message (string).
      */
-    public function solicitarReembolso(Reserva $reserva, $usuario): array
+    public function solicitarReembolso(Reserva $reserva, $usuario, ?float $monto = null): array
     {
         // Permisos: el usuario debe ser el reservable o el creador
         $esPropietario = false;
@@ -568,16 +568,39 @@ class ReservaService
             return ['success' => false, 'message' => 'No se encontró un pago válido para reembolsar.'];
         }
 
-        // Evitar reembolsos dobles
-        if (Refund::where('pago_id', $pago->id)->exists()) {
-            return ['success' => false, 'message' => 'Este pago ya fue reembolsado.'];
+
+        // Permitir reembolsos parciales: calcular cuánto queda disponible para reembolsar
+        $alreadyRefundedCents = Refund::where('pago_id', $pago->id)->sum('amount_cents') ?: 0;
+        $pagoAmountCents = isset($pago->monto) ? intval(round($pago->monto * 100)) : 0;
+        $remainingCents = max(0, $pagoAmountCents - $alreadyRefundedCents);
+
+        if ($remainingCents <= 0) {
+            return ['success' => false, 'message' => 'Ya no queda importe disponible para reembolsar en este pago.'];
+        }
+
+        // Determinar importe a reembolsar (en céntimos)
+        if ($monto === null) {
+            $refundAmountCents = $remainingCents; // reembolso total del resto pendiente
+        } else {
+            $requestedCents = intval(round($monto * 100));
+            if ($requestedCents <= 0) {
+                return ['success' => false, 'message' => 'Importe de reembolso inválido.'];
+            }
+            if ($requestedCents > $remainingCents) {
+                return ['success' => false, 'message' => 'El importe solicitado excede el disponible para reembolsar.', 'available_cents' => $remainingCents];
+            }
+            $refundAmountCents = $requestedCents;
         }
 
         try {
             $stripe = new StripeClient(config('services.stripe.secret'));
-            $refund = $stripe->refunds->create(['payment_intent' => $payment_intent_id]);
+            $refundParams = ['payment_intent' => $payment_intent_id];
+            if ($refundAmountCents > 0) {
+                $refundParams['amount'] = $refundAmountCents;
+            }
+            $refund = $stripe->refunds->create($refundParams);
 
-            Refund::create([
+            $createdRefund = Refund::create([
                 'pago_id' => $pago->id,
                 'reserva_id' => $reserva->id,
                 'stripe_refund_id' => $refund->id ?? null,
@@ -587,8 +610,24 @@ class ReservaService
                 'stripe_response' => $refund->toArray(),
             ]);
 
-            try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso: ' . $e->getMessage()); }
-            try { $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso: ' . $e->getMessage()); }
+            // Calcular reembolsos totales realizados sobre la reserva (suma de amount_cents)
+            try {
+                $totalRefundedForReservaCents = Refund::where('reserva_id', $reserva->id)->sum('amount_cents') ?: 0;
+                // El refund que acabamos de crear ya está en BD, así que no es necesario sumarlo manualmente
+                $reservaAmountCents = isset($reserva->precio_total) ? intval(round($reserva->precio_total * 100)) : null;
+
+                if ($reservaAmountCents !== null && $totalRefundedForReservaCents >= $reservaAmountCents) {
+                    // Reembolso completo sobre la reserva: cancelar reserva
+                    try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso completo: ' . $e->getMessage()); }
+                    try { $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso completo: ' . $e->getMessage()); }
+                } else {
+                    // Parcial: no cancelar la reserva, sólo marcar pago como reembolsado parcial y marcar reserva pago como devuelto
+                    try { $pago->update(['estado' => 'reembolsado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago tras reembolso parcial: ' . $e->getMessage()); }
+                    try { $reserva->update(['pago' => 'devuelto']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva tras reembolso parcial: ' . $e->getMessage()); }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo actualizar estado de pago/reserva tras reembolso: ' . $e->getMessage());
+            }
 
             return ['success' => true, 'message' => 'Reembolso solicitado correctamente.'];
         } catch (\Stripe\Exception\ApiErrorException $e) {
@@ -668,8 +707,25 @@ class ReservaService
                     ]);
                 }
 
-                try { $pago->update(['estado' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago desde handleRefundEvent: ' . $e->getMessage()); }
-                try { $pago->reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de reserva desde handleRefundEvent: ' . $e->getMessage()); }
+                try {
+                    $refundAmountCents = isset($refundData->amount) ? intval($refundData->amount) : 0;
+                    $totalRefundedForReservaCents = Refund::where('reserva_id', $pago->reserva_id)->sum('amount_cents') ?: 0;
+                    // Si este refund todavía no existe en BD, sumar su importe (webhooks a veces llegan antes)
+                    $refundExists = Refund::where('stripe_refund_id', $refundData->id)->exists();
+                    if (!$refundExists && $refundAmountCents > 0) {
+                        $totalRefundedForReservaCents += $refundAmountCents;
+                    }
+
+                    $reservaAmountCents = isset($pago->reserva->precio_total) ? intval(round($pago->reserva->precio_total * 100)) : null;
+
+                    if ($reservaAmountCents !== null && $totalRefundedForReservaCents >= $reservaAmountCents) {
+                        $pago->update(['estado' => 'cancelado']);
+                        $pago->reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
+                    } else {
+                        $pago->update(['estado' => 'reembolsado']);
+                        $pago->reserva->update(['pago' => 'devuelto']);
+                    }
+                } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de pago/reserva desde handleRefundEvent: ' . $e->getMessage()); }
             }
         } catch (\Throwable $e) {
             Log::error('ReservaService.handleRefundEvent error: ' . $e->getMessage());

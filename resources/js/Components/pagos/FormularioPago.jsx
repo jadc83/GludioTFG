@@ -12,6 +12,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
     const [toast, setToast] = useState(null); // { message, type }
+    const [aceptaTerminosChecked, setAceptaTerminosChecked] = useState(aceptaTerminos || false);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
@@ -110,7 +111,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
         }
 
         // Si no acepta términos, mostrar toast y cancelar
-        if (!aceptaTerminos) {
+        if (!aceptaTerminosChecked) {
             showToast('Debes aceptar los términos y condiciones para continuar.', 'error');
             return;
         }
@@ -255,7 +256,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
 
                 const data = await res.json();
                 setMensaje('¡Pago completado!');
-                onPagoExitoso(data);
+                // Enviamos también el pago_id y payment_intent_id al callback para que el llamador pueda usarlo
+                onPagoExitoso({ ...data, pago_id: newPagoId, payment_intent_id: paymentIntent.id });
             } else {
                 setMensaje('Pago no completado');
                 onError('Pago no completado');
@@ -374,9 +376,14 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     </div>
                 )}
 
+                <div className="flex items-center gap-2 text-xs">
+                    <input id="acepta_terminos" type="checkbox" className="checkbox checkbox-xs" checked={aceptaTerminosChecked} onChange={(e) => setAceptaTerminosChecked(e.target.checked)} />
+                    <label htmlFor="acepta_terminos" className="text-xs text-gray-700">Acepto los <a href="/terminos" target="_blank" className="underline">términos y condiciones</a></label>
+                </div>
+
                 {/* Botón de confirmación */}
                 <button type="submit" disabled={procesando || !stripe}
-                    className={`w-full py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
+                    className={`w-full mt-2 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
                         procesando || !stripe ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
                     }`}>
                     {procesando ? 'Procesando pago...' : 'Confirmar Pago'}

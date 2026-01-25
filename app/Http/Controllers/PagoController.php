@@ -143,7 +143,7 @@ class PagoController extends Controller
                 }
 
                 return response()->json([ 'success' => true, 'message' => 'Pago completado exitosamente',
-                    'reserva_id' => $pago->reserva_id, 'localizador' => $pago->reserva->localizador ]);
+                    'reserva_id' => $pago->reserva_id, 'localizador' => $pago->reserva->localizador, 'pago_id' => $pago->id ]);
 
             } else {
 
@@ -207,12 +207,36 @@ class PagoController extends Controller
      */
     public function reembolsarReserva(Request $request, Reserva $reserva, ReservaService $reservaService)
     {
+        $validated = $request->validate([
+            'monto' => 'nullable|numeric|min:0.01',
+            'cancelar' => 'nullable|boolean',
+        ]);
+
         $user = Auth::user();
-        $resultado = $reservaService->solicitarReembolso($reserva, $user);
+        $monto = $validated['monto'] ?? null;
+        $cancelar = $validated['cancelar'] ?? false;
+        $resultado = $reservaService->solicitarReembolso($reserva, $user, $monto);
         $status = $resultado['success'] ? 200 : 400;
         if (isset($resultado['status_code'])) {
             $status = $resultado['status_code'];
         }
+        // Si el usuario pidió cancelar explícitamente, y el reembolso fue exitoso,
+        // forzamos marcar la reserva como cancelada (esto ya ocurre normalmente
+        // cuando la suma de reembolsos >= precio_total, pero aquí respetamos la
+        // intención explícita del usuario cuando `cancelar` viene a true).
+        if ($resultado['success'] && $cancelar) {
+            try {
+                $ultimoPago = $reserva->pagos()->orderByDesc('pagado_en')->first();
+                if ($ultimoPago) {
+                    $ultimoPago->update(['estado' => 'cancelado']);
+                }
+                $reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
+            } catch (\Throwable $e) {
+                // No bloqueamos la respuesta principal si esto falla
+                \Illuminate\Support\Facades\Log::warning('No se pudo forzar cancelación tras reembolso: ' . $e->getMessage());
+            }
+        }
+
         return response()->json($resultado, $status);
     }
 }

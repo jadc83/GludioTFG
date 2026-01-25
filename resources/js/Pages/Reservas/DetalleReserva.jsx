@@ -3,6 +3,7 @@ import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { useState } from 'react';
+import FormularioPago from '@/Components/pagos/FormularioPago';
 import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
@@ -15,17 +16,21 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     const [previewLoading, setPreviewLoading] = useState(false);
     const [preview, setPreview] = useState(null);
     const [previewError, setPreviewError] = useState(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState(0);
+    const [pendingApplyAfterPayment, setPendingApplyAfterPayment] = useState(false);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 4500);
     };
 
-    const applyDateChange = async (newCheckIn, newCheckOut) => {
+    const applyDateChange = async (newCheckIn, newCheckOut, pagoId = null) => {
         try {
             setIsProcessing(true);
             const axios = (await import('axios')).default;
             const payload = { check_in: newCheckIn.format('YYYY-MM-DD'), check_out: newCheckOut.format('YYYY-MM-DD') };
+            if (pagoId) payload.pago_id = pagoId;
             const res = await axios.post(`/reservas/${reserva.localizador}/modificar-estancia`, payload);
             showToast(res?.data?.message || 'Reserva actualizada', 'success');
             if (res?.data?.reserva) setReserva(prev => ({ ...prev, ...res.data.reserva }));
@@ -42,9 +47,11 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             const axios = (await import('axios')).default;
             const res = await axios.get(`/reservas/${reserva.localizador}/preview-modificar-estancia`, { params: { check_in: checkInStr, check_out: checkOutStr } });
             setPreview(res?.data || null);
+            return res?.data || null;
         } catch (err) {
             setPreview(null);
             setPreviewError(err?.response?.data?.message || err?.message || 'Error calculando vista previa');
+            return null;
         } finally { setPreviewLoading(false); }
     };
 
@@ -66,15 +73,71 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             if (!newCheckOut.isAfter(newCheckIn)) { showToast('Fechas inválidas.', 'error'); return; }
 
             // Refetch preview to ensure availability
-            await fetchPreview(modalCheckIn, modalCheckOut);
-            if (preview && preview.available === false) { showToast('No hay disponibilidad para las fechas seleccionadas.', 'error'); return; }
+            const latestPreview = await fetchPreview(modalCheckIn, modalCheckOut);
+            if (latestPreview && latestPreview.available === false) { showToast('No hay disponibilidad para las fechas seleccionadas.', 'error'); return; }
 
+            // Si hay cargo adicional, abrimos modal de pago y aplicamos el cambio tras el pago
+            if (latestPreview && latestPreview.estimate_charge > 0) {
+                setPaymentAmount(latestPreview.estimate_charge);
+                setPendingApplyAfterPayment(true);
+                setShowPaymentModal(true);
+                return;
+            }
+
+            // Si hay reembolso estimado, aplicamos el cambio y solicitamos reembolso automáticamente
             await applyDateChange(newCheckIn, newCheckOut);
+            if (latestPreview && latestPreview.estimate_refund > 0) {
+                try {
+                    const axios = (await import('axios')).default;
+                    const monto = latestPreview.estimate_refund;
+                    const r = await axios.post(`/reservas/${reserva.id}/reembolsar`, { monto });
+                    showToast(r?.data?.message || 'Reembolso solicitado correctamente.', 'success');
+                    const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
+                    if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
+                } catch (err) {
+                    const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
+                    showToast(msg, 'error');
+                }
+            }
+
             setShowDateModal(false);
         } catch (err) {
             const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
             showToast(msg, 'error');
         } finally { setIsProcessing(false); }
+    };
+
+    const handlePagoExitoso = async (paymentResult) => {
+        setShowPaymentModal(false);
+        if (!pendingApplyAfterPayment) return;
+        try {
+            setIsProcessing(true);
+            const newCheckIn = dayjs(modalCheckIn);
+            const newCheckOut = dayjs(modalCheckOut);
+            const pagoId = paymentResult?.pago_id || null;
+            await applyDateChange(newCheckIn, newCheckOut, pagoId);
+            // Refrescar reserva completa
+            const axios = (await import('axios')).default;
+            const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
+            if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
+            // Cerrar la modal de edición de fechas al completarse el cambio
+            setShowDateModal(false);
+            showToast('Cambio aplicado tras pago.', 'success');
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.message || 'Error aplicando cambio tras pago';
+            showToast(msg, 'error');
+        } finally {
+            setPendingApplyAfterPayment(false);
+            setIsProcessing(false);
+        }
+    };
+
+
+    const handlePagoError = (err) => {
+        setShowPaymentModal(false);
+        setPendingApplyAfterPayment(false);
+        const msg = err?.message || 'Error en pago';
+        showToast(msg, 'error');
     };
 
 
@@ -88,6 +151,31 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         const colors = { 'pendiente': 'badge-warning', 'pagado': 'badge-success', 'fallido': 'badge-error' };
         return colors[pago] || 'badge-gray';
     };
+
+    // Calcular cuánto queda por reembolsar sobre el ÚLTIMO pago completado.
+    // Si no hay pago, o no hay información, fallback al restante sobre la reserva.
+    let refundableAmount = 0;
+    try {
+        const pagos = reserva.pagos || [];
+        let ultimoPago = null;
+        for (let i = pagos.length - 1; i >= 0; i--) {
+            if (pagos[i].estado === 'completado' || pagos[i].estado === 'procesando' || pagos[i].estado === 'pagado') { ultimoPago = pagos[i]; break; }
+        }
+        if (ultimoPago) {
+            const pagosRefunds = reserva.reembolsos || [];
+            // sumar reembolsos que pertenecen a este pago (si el objeto tiene pago_id o similar)
+            let sumRefundsOnPago = 0;
+            pagosRefunds.forEach(r => {
+                // r.pago_id puede no estar presente en la API, intentar comparar por stripe_refund/payment linkage no disponible en cliente
+                if (!r.pago_id || r.pago_id === ultimoPago.id) {
+                    sumRefundsOnPago += (r.monto || 0);
+                }
+            });
+            refundableAmount = Math.max(0, (ultimoPago.monto || 0) - sumRefundsOnPago);
+        } else {
+            refundableAmount = Math.max(0, (reserva.precio_total || 0) - (reserva.reembolsos_total || 0));
+        }
+    } catch (e) { refundableAmount = Math.max(0, (reserva.precio_total || 0) - (reserva.reembolsos_total || 0)); }
 
     return (
         <GuestLayout>
@@ -108,15 +196,31 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 <p className="text-xs font-semibold opacity-90">TOTAL</p>
                                 <p className="text-2xl font-bold">{formatearMoneda(reserva.precio_total)}</p>
                             </div>
+                            {/* reembolsos_total removed per UX request */}
+
+                            {reserva.reembolsos && reserva.reembolsos.length > 0 && (
+                                <div className="ml-4 text-right text-xs">
+                                    <div className="font-semibold">Detalles de reembolso</div>
+                                    {reserva.reembolsos.map((r) => (
+                                        <div key={r.id} className="text-sm text-green-100">{r.tipo.charAt(0).toUpperCase() + r.tipo.slice(1)}: {formatearMoneda(r.monto)} {r.reason ? ` (${r.reason})` : ''}</div>
+                                    ))}
+                                </div>
+                            )}
                             <div className="flex items-center gap-3">
                                 <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="bg-transparent border-0 text-white px-3 py-2 rounded flex items-center gap-2 text-sm hover:opacity-80"><DocumentArrowDownIcon className="h-4 w-4" />PDF</button>
                                 {reserva.pago === 'pagado' && (
-                                    <button disabled={isProcessing} onClick={() => {
-                                        if (isProcessing) return; if (!confirm('Solicitar reembolso para esta reserva?')) return; setIsProcessing(true);
-                                        import('axios').then(({ default: axios }) => {
-                                            axios.post(`/reservas/${reserva.id}/reembolsar`).then((res) => { showToast(res?.data?.message || 'Reembolso solicitado correctamente.', 'success'); return axios.get(`/reservas/buscar/${reserva.localizador}`); }).then((res2) => { if (res2?.data?.reserva) { setReserva(prev => ({ ...prev, ...res2.data.reserva })); } }).catch((err) => { const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.'; showToast(msg, 'error'); console.error('Reembolso error:', err); }).finally(() => setIsProcessing(false));
-                                        });
-                                    }} className={`bg-white text-[#7a0202] font-semibold px-3 py-2 rounded shadow-sm hover:opacity-90 text-sm ${isProcessing ? 'opacity-60 cursor-wait' : ''}`}>{isProcessing ? 'Procesando…' : 'Pedir reembolso'}</button>
+                                    <>
+                                        {refundableAmount > 0 && (
+                                            <button disabled={isProcessing} onClick={() => {
+                                                if (isProcessing) return;
+                                                if (!confirm('Solicitar reembolso completo y cancelar la reserva?')) return;
+                                                    setIsProcessing(true);
+                                                    import('axios').then(({ default: axios }) => {
+                                                        axios.post(`/reservas/${reserva.id}/reembolsar`, { monto: refundableAmount, cancelar: true }).then((res) => { showToast(res?.data?.message || 'Reembolso solicitado correctamente.', 'success'); return axios.get(`/reservas/buscar/${reserva.localizador}`); }).then((res2) => { if (res2?.data?.reserva) { setReserva(prev => ({ ...prev, ...res2.data.reserva })); } }).catch((err) => { const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.'; showToast(msg, 'error'); console.error('Reembolso error:', err); }).finally(() => setIsProcessing(false));
+                                                    });
+                                            }} className={`bg-red-50 text-[#7a0202] font-semibold px-3 py-2 rounded shadow-sm hover:opacity-90 text-sm ${isProcessing ? 'opacity-60 cursor-wait' : ''}`}>Reembolso completo</button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -225,13 +329,40 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         {previewLoading && (<div className="text-sm text-gray-600">Cargando vista previa…</div>)}
                                         {previewError && (<div className="text-sm text-red-600">{previewError}</div>)}
                                         {preview && !previewLoading && (
-                                            <div className="text-sm text-gray-800 space-y-2">
-                                                <div className="flex justify-between"><span>Nueva estancia:</span><strong>{formatearMoneda(preview.nuevo_total)}</strong></div>
-                                                <div className="flex justify-between"><span>Importe actual:</span><span>{formatearMoneda(preview.viejo_total)}</span></div>
-                                                <div className="flex justify-between"><span>Noches actuales:</span><span>{preview.nights_old}</span></div>
-                                                <div className="flex justify-between"><span>Noches nuevas:</span><span>{preview.nights_new}</span></div>
-                                                {preview.estimate_refund > 0 && (<div className="flex justify-between text-green-700"><span>Estimado reembolso (prorrateado - 1n):</span><strong>{formatearMoneda(preview.estimate_refund)}</strong></div>)}
-                                                {preview.estimate_charge > 0 && (<div className="flex justify-between text-red-700"><span>Estimado cargo adicional:</span><strong>{formatearMoneda(preview.estimate_charge)}</strong></div>)}
+                                            <div className="text-sm text-gray-800 space-y-3">
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <div className="text-xs text-gray-500">Primer pago</div>
+                                                            <div className="font-semibold">{formatearMoneda(preview.viejo_total)} <span className="text-xs text-gray-500">({preview.nights_old} noches)</span></div>
+                                                        </div>
+                                                        <div className="text-sm text-gray-700" />
+                                                    </div>
+
+                                                    {(preview.nuevo_total !== preview.viejo_total || preview.nights_new !== preview.nights_old) && (
+                                                        <div className="flex justify-between items-center">
+                                                            <div>
+                                                                <div className="text-xs text-gray-500">Nuevo total</div>
+                                                                <div className="font-semibold">{formatearMoneda(preview.nuevo_total)} <span className="text-xs text-gray-500">({preview.nights_new} noches)</span></div>
+                                                            </div>
+                                                            <div className="text-sm text-gray-700" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {preview.estimate_refund > 0 && (
+                                                    <div>
+                                                        <div className="flex justify-between text-green-700"><span>Reembolso estimado</span><strong>{formatearMoneda(preview.estimate_refund)}</strong></div>
+                                                        <div className="flex justify-between text-gray-700"><span>Penalización aplicada</span><span>{formatearMoneda(preview.penalizacion ?? 0)}</span></div>
+                                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 text-green-800 rounded">
+                                                            <div className="font-semibold">Al confirmar, se solicitará un reembolso de {formatearMoneda(preview.estimate_refund)} a la forma de pago original.</div>
+                                                            <div className="text-xs text-gray-600 mt-1">El importe será devuelto al mismo método de pago y puede tardar varios días según la entidad bancaria. Se te notificará cuando se haya procesado.</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {preview.estimate_charge > 0 && (<div className="flex justify-between text-red-700"><span>Estimado cargo adicional</span><strong>{formatearMoneda(preview.estimate_charge)}</strong></div>)}
+
                                                 <div className="mt-2">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-sm">Disponible para cambio</span>
@@ -245,7 +376,34 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                                     <div className="mt-4 flex justify-end gap-2">
                                         <button onClick={() => setShowDateModal(false)} className="btn btn-ghost">Cancelar</button>
-                                        <button disabled={isProcessing || (preview && preview.available === false)} onClick={confirmDateModal} className="btn btn-primary">{isProcessing ? 'Procesando…' : 'Confirmar'}</button>
+                                        <button
+                                            disabled={previewLoading || (preview && preview.available === false) || isProcessing}
+                                            onClick={async () => { await confirmDateModal(); }}
+                                            className="btn btn-primary"
+                                        >
+                                            {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* Payment modal for additional charges */}
+                        {showPaymentModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold">Pagar importe adicional</h3>
+                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
+                                    </div>
+                                    <div className="mb-4">
+                                        <p className="text-sm text-gray-700">Para aplicar el cambio de fechas es necesario abonar:</p>
+                                        <div className="text-3xl font-bold text-burgundy mt-3">{formatearMoneda(paymentAmount)}</div>
+                                    </div>
+                                    <div className="mt-2">
+                                        <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} />
+                                    </div>
+                                    <div className="mt-4 flex justify-end">
+                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="btn btn-ghost">Cancelar</button>
                                     </div>
                                 </div>
                             </div>

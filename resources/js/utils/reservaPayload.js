@@ -14,9 +14,18 @@ export function mapHabitaciones(habitacionesSeleccionadas = {}) {
 
 export function toIsoDate(date) {
   if (!date) return null;
+  // Si ya viene en formato 'YYYY-MM-DD' devuelvo tal cual (evita reinterpretación)
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+
+  // Normalizar objetos Date evitando toISOString() que convierte a UTC
+  // y puede devolver el día anterior según la zona horaria del navegador.
   const d = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString().slice(0, 10);
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual }) {
