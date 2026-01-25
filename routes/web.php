@@ -64,6 +64,6 @@ Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsa
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
-Route::resource('reservas', ReservaController::class)->except('store')->middleware('auth');
+Route::resource('reservas', ReservaController::class)->parameters(['reservas' => 'reserva'])->where(['reserva' => '[0-9]+'])->except('store')->middleware('auth');
 
 require __DIR__ . '/auth.php';

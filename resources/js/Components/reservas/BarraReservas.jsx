@@ -11,7 +11,7 @@ import '../../../css/estiloMenuLateral.css';
 import React, { useState, useEffect, useRef, useCallback, useMemo, isValidElement, cloneElement } from 'react';
 import useCalendarioPrecios from '../../hooks/useCalendarioPrecios';
 import { usePage } from '@inertiajs/react';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 import CalendarioPicker, { CalendarioStyles } from './CalendarioPicker';
 import ModalPaso from './ModalPaso';
@@ -122,17 +122,20 @@ export default function BarraReservas() {
       {!esPanelControl && (
         <div className="sticky top-16 z-40 bg-gradient-to-r from-gris via-white to-gris border-b border-gray-200 shadow-md">
           <div className="px-4 py-3 relative">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 flex items-center justify-center gap-3">
+            <div className="flex items-center gap-3 justify-center md:justify-center">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
                 <div className="hidden sm:flex items-center gap-1 text-[#7a0202]">
                   <CalendarIcon className="w-5 h-5" />
                 </div>
 
                 {/* INPUT ENTRADA */}
                 <div className="flex items-center gap-2 relative">
-                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Entrada</label>
+                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    <span className="hidden sm:inline">Entrada</span>
+                    <span className="sm:hidden inline-flex"><ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" /></span>
+                  </label>
                   <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
-                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner">
+                    className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
                     {formularioReserva.rango?.from ? formatearFecha(formularioReserva.rango.from, 'corta') : '—'}
                   </button>
                   <CalendarioStyles />
@@ -143,9 +146,12 @@ export default function BarraReservas() {
 
                 {/* INPUT SALIDA */}
                 <div className="flex items-center gap-2 relative">
-                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Salida</label>
+                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    <span className="hidden sm:inline">Salida</span>
+                    <span className="sm:hidden inline-flex"><ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" /></span>
+                  </label>
                   <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')} disabled={!formularioReserva.rango?.from}
-                    className="px-3 py-1.5 min-w-28 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed truncate" aria-label="Seleccionar fecha de salida">
                     {formularioReserva.rango?.to ? formatearFecha(formularioReserva.rango.to, 'corta') : '—'}
                   </button>
                   <CalendarioStyles />
@@ -158,20 +164,20 @@ export default function BarraReservas() {
                 </div>
 
                 <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
-                  <label className="text-xs font-semibold text-gray-600">Huéspedes:</label>
+                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    <span className="hidden sm:inline">Huéspedes:</span>
+                    <span className="sm:hidden inline-flex"><UserGroupIcon className="h-5 w-5 text-gray-700" /></span>
+                  </label>
                   <Campo id="num_huespedes_barra" type="number" min={1} sinEstilosPorDefecto={true}
                     value={formularioReserva.numHuespedes}
                     onChange={(e) => formularioReserva.setNumHuespedes(Math.max(1, Number(e.target.value) || 1))}
-                    clase="w-16 text-sm px-2 py-1 rounded border border-gray-200 bg-white"/>
+                    clase="w-16 text-sm px-2 py-1 rounded border border-gray-300 bg-white text-gray-700"/>
                 </div>
               </div>
 
               {/* TYPING ANIMATION Y BUSCADOR */}
               <div className="hidden lg:flex items-center gap-4 px-2 py-1 absolute right-4">
-                <div className="text-xs flex-1">
-                  <TypingAnimation typeSpeed={60} deleteSpeed={40} pauseDelay={2500} loop={true}
-                    words={['🔒 Tus datos protegidos', 'Gestiona tu reserva desde cualquier lugar', 'Cancelación gratuita hasta 48h antes de la llegada' ]}/>
-                </div>
+
                 <div className="flex-shrink-0 w-80">
                   <BuscadorNavbar />
                 </div>

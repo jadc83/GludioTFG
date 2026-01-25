@@ -41,4 +41,11 @@ class Pago extends Model
             'estado' => 'fallido',
         ]);
     }
+
+    public function marcarComoReembolsado()
+    {
+        $this->update([
+            'estado' => 'reembolsado',
+        ]);
+    }
 }

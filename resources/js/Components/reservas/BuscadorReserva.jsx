@@ -49,13 +49,15 @@ export default function BuscadorReserva() {
         return colors[status] || 'badge-gray';
     };
 
-    const getPagoBadge = (pago) => {
+    const getPagoBadge = (reserva) => {
+        const reembolsos = reserva.reembolsos_total || 0;
+        if (reembolsos > 0 && reserva.precio_total && reembolsos < reserva.precio_total) return 'badge-warning';
         const colors = {
             'pendiente': 'badge-warning',
             'pagado': 'badge-success',
             'fallido': 'badge-error',
         };
-        return colors[pago] || 'badge-gray';
+        return colors[reserva.pago] || 'badge-gray';
     };
 
     return (
@@ -150,8 +152,8 @@ export default function BuscadorReserva() {
                                 </div>
                                 <div>
                                     <p className="mb-1 text-xs font-semibold text-gray-600">Pago</p>
-                                    <span className={`badge ${getPagoBadge(reserva.pago)}`}>
-                                        {reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1)}
+                                    <span className={`badge ${getPagoBadge(reserva)}`}>
+                                        {(reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total) ? 'Parcialmente reembolsado' : (reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1))}
                                     </span>
                                 </div>
                             </div>

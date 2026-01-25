@@ -1,4 +1,4 @@
-import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon, CreditCardIcon, ShieldCheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon, CreditCardIcon, ShieldCheckIcon, PencilIcon, XMarkIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -153,13 +153,37 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
 
     const getStatusBadge = (status) => {
-        const colors = { 'pendiente': 'badge-warning', 'confirmada': 'badge-success', 'completada': 'badge-success', 'cancelada': 'badge-error' };
+        // Map status -> badge class
+        const colors = { 'pendiente': 'badge-info', 'confirmada': 'badge-success', 'completada': 'badge-success', 'cancelada': 'badge-error' };
         return colors[status] || 'badge-gray';
     };
 
-    const getPagoBadge = (pago) => {
+    const displayStatus = (status) => {
+        if (!status) return '';
+        const s = String(status).toLowerCase();
+        const map = {
+            'pendiente': 'Por confirmar',
+            'confirmada': 'Confirmada',
+            'completada': 'Completada',
+            'cancelada': 'Cancelada'
+        };
+        return map[s] || (s.charAt(0).toUpperCase() + s.slice(1));
+    };
+
+    const StatusIcon = ({ status, className = 'h-6 w-6' }) => {
+        const s = String(status || '').toLowerCase();
+        if (s === 'pendiente') return <ClockIcon className={`${className} text-blue-600`} />;
+        if (s === 'cancelada') return <XMarkIcon className={`${className} text-[#7a0202]`} />;
+        return <CheckCircleIcon className={`${className} text-green-500`} />;
+    };
+
+    const getPagoBadge = (reservaPago, reservaObj = null) => {
+        // reservaPago: string value stored in reserva.pago
+        // reservaObj: optional reserva object to detect reembolsos parciales
+        const reembolsos = reservaObj?.reembolsos_total || 0;
+        if (reembolsos > 0 && reservaObj?.precio_total && reembolsos < reservaObj.precio_total) return 'badge-warning';
         const colors = { 'pendiente': 'badge-warning', 'pagado': 'badge-success', 'fallido': 'badge-error' };
-        return colors[pago] || 'badge-gray';
+        return colors[reservaPago] || 'badge-gray';
     };
 
     // Calcular cuánto queda por reembolsar sobre el ÚLTIMO pago completado.
@@ -187,146 +211,153 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         }
     } catch (e) { refundableAmount = Math.max(0, (reserva.precio_total || 0) - (reserva.reembolsos_total || 0)); }
 
+
+
+    const isCancelled = String(reserva.status || '').toLowerCase().includes('cancel');
+
     return (
         <GuestLayout>
             <div className="min-h-screen bg-gris pt-6 pb-6">
-                <div className="mx-auto max-w-5xl px-4">
+                <div className="mx-auto max-w-7xl px-4">
                     <div className="space-y-3">
-                        <div className="relative rounded-lg bg-white p-3 shadow-md flex items-center justify-between">
-                            <div className="flex items-baseline gap-3">
-                                <h1 className="text-2xl font-bold text-gray-800">Reserva</h1>
-                                <span className="font-mono font-bold text-[#7a0202] text-base">{reserva.localizador}</span>
-                            </div>
-                            {!String(reserva.status || '').toLowerCase().includes('cancel') && (<CheckCircleIcon className="h-8 w-8 text-green-500 flex-shrink-0" />)}
-                            {String(reserva.status || '').toLowerCase().includes('cancel') && (<div className="absolute top-3 right-3 bg-[#7a0202] text-white px-3 py-1 text-sm font-bold rounded shadow-lg">CANCELADA</div>)}
-                        </div>
 
-                        <div className="rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] p-3 shadow-md text-white flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-semibold opacity-90">TOTAL</p>
-                                <p className="text-2xl font-bold">{formatearMoneda(reserva.precio_total)}</p>
-                            </div>
-                            {/* reembolsos_total removed per UX request */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                            {/* Left: Main details */}
+                            <div className="md:col-span-3 space-y-4">
+                                <div className="flex items-start justify-between flex-wrap">
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Reserva <span className="font-mono font-normal text-base text-gray-600">{reserva.localizador}</span><span className={`ml-3 text-sm font-semibold ${isCancelled ? 'text-[#7a0202] hidden sm:inline-block' : (String(reserva.status || '').toLowerCase() === 'pendiente' ? 'text-blue-600' : 'text-green-700')}`}>{displayStatus(reserva.status)}</span></h1>
+                                        <div className="mt-2 flex items-center gap-3 text-sm text-gray-600">
+                                            <div className="flex items-center gap-2"><MapPinIcon className="h-4 w-4 text-[#7a0202]" /><span>{reserva.cliente?.nombre}</span></div>
+                                            <div className="flex items-center gap-2">
+                                                <ClockIcon className="h-4 w-4 text-gray-400" />
+                                                <span>{formatearFecha(reserva.check_in)} — {formatearFecha(reserva.check_out)}</span>
+                                                {!isCancelled && (
+                                                    <button onClick={openDateModal} title="Editar fechas" aria-label="Editar fechas" className="ml-3 inline-flex items-center gap-2 bg-[#7a0202] hover:bg-[#6b0101] text-white font-semibold py-1.5 px-3 rounded-md text-sm shadow-sm transition"><PencilIcon className="h-4 w-4" />Editar fechas</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        {String(reserva.status || '').toLowerCase().includes('cancel') ? (
+                                            <div role="status" aria-label="Reserva cancelada" className="inline-block px-3 py-1 text-sm font-bold text-[#7a0202] border-2 border-[#7a0202] rounded-md uppercase tracking-widest transform -rotate-6 shadow-sm">CANCELADA</div>
+                                        ) : null}
+                                    </div>
+                                </div>
 
-                            {reserva.reembolsos && reserva.reembolsos.length > 0 && (
-                                <div className="ml-4 text-right text-xs">
-                                    <div className="font-semibold">Detalles de reembolso</div>
-                                    {reserva.reembolsos.map((r) => (
-                                        <div key={r.id} className="text-sm text-green-100">{r.tipo.charAt(0).toUpperCase() + r.tipo.slice(1)}: {formatearMoneda(r.monto)} {r.reason ? ` (${r.reason})` : ''}</div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {reserva.habitaciones.map((hab, idx) => (
+                                        <div key={idx} className="p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition flex justify-between items-center">
+                                            <div>
+                                                <div className="text-sm font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</div>
+                                                <div className="text-xs text-gray-500">{formatearMoneda(hab.precio)} total</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm font-bold text-[#7a0202]">{formatearMoneda(hab.precio)}</div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-                            )}
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="bg-transparent border-0 text-white px-3 py-2 rounded flex items-center gap-2 text-sm hover:opacity-80"><DocumentArrowDownIcon className="h-4 w-4" />PDF</button>
-                                {reserva.pago === 'pagado' && (
-                                    <>
-                                        {refundableAmount > 0 && (
-                                            <button disabled={isProcessing} onClick={() => {
-                                                if (isProcessing) return;
-                                                if (!confirm('Solicitar reembolso completo y cancelar la reserva?')) return;
+
+                                <div className="rounded-lg bg-white p-4 shadow-sm">
+                                    <h3 className="text-sm font-bold text-gray-800 mb-2">Información del hotel</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                                        <div className="flex items-start gap-2"><MapPinIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Dirección</div><div>Calle Principal 123</div></div></div>
+                                        <div className="flex items-start gap-2"><PhoneIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Teléfono</div><div>+34 91 234 5678</div></div></div>
+                                        <div className="flex items-start gap-2"><EnvelopeIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Email</div><div>info@hotel.com</div></div></div>
+                                        <div className="flex items-start gap-2"><ShieldCheckIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Servicios</div><div>WiFi, Desayuno, Aparcamiento</div></div></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Summary card */}
+                            <aside className="w-full mt-6 md:mt-0 md:col-span-1 md:sticky md:top-24 md:overflow-visible md:z-10">
+                                <div className="rounded-lg bg-white shadow-md p-5">
+                                    <div className="text-xs font-semibold text-gray-500">TOTAL</div>
+                                    <div className="mt-2 text-3xl font-bold text-gray-900">{formatearMoneda(reserva.precio_total)}</div>
+
+                                    <div className="mt-4">
+                                        <div className="flex items-center justify-between text-xs text-gray-600">
+                                            <div>Estado pago</div>
+                                            <div className={`font-semibold ${reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total ? 'bg-[#7a0202] text-white px-2 py-0.5 rounded' : ''}`}>{(reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total) ? 'Parcialmente reembolsado' : (reserva.pago ? reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1) : '')}</div>
+                                        </div>
+
+
+
+                                        {reserva.reembolsos && reserva.reembolsos.length > 0 && (
+                                            <div className="mt-4 text-sm text-gray-700">
+                                                <div className="font-semibold">Últimos reembolsos</div>
+                                                <div className="mt-2 space-y-2">
+                                                    {reserva.reembolsos.slice(-3).map(r => (
+                                                        <div key={r.id} className="flex items-center justify-between text-sm">
+                                                            <div className="text-gray-600">{r.created_at}</div>
+                                                            <div className="font-semibold text-green-600">{formatearMoneda(r.monto)}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="mt-4 flex flex-col gap-2">
+                                            <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="w-full inline-flex items-center justify-center gap-2 bg-transparent border border-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-50"> <DocumentArrowDownIcon className="h-4 w-4"/> PDF</button>
+                                            {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && (
+                                                <button disabled={isProcessing} onClick={() => {
+                                                    if (isProcessing) return;
+                                                    if (!confirm('¿Cancelar reserva y solicitar el reembolso del importe disponible?')) return;
                                                     setIsProcessing(true);
                                                     import('axios').then(({ default: axios }) => {
                                                         axios.post(`/reservas/${reserva.id}/reembolsar`, { monto: refundableAmount, cancelar: true }).then((res) => { showToast(res?.data?.message || 'Reembolso solicitado correctamente.', 'success'); return axios.get(`/reservas/buscar/${reserva.localizador}`); }).then((res2) => { if (res2?.data?.reserva) { setReserva(prev => ({ ...prev, ...res2.data.reserva })); } }).catch((err) => { const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.'; showToast(msg, 'error'); console.error('Reembolso error:', err); }).finally(() => setIsProcessing(false));
                                                     });
-                                            }} className={`bg-red-50 text-[#7a0202] font-semibold px-3 py-2 rounded shadow-sm hover:opacity-90 text-sm ${isProcessing ? 'opacity-60 cursor-wait' : ''}`}>Reembolso completo</button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="rounded-lg bg-white p-3 shadow-md space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                <div><p className="text-xs font-bold text-[#7a0202] uppercase">Huésped</p><p className="text-gray-800 font-semibold">{reserva.cliente.nombre}</p></div>
-                                    <div>
-                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Check-in</p>
-                                        <div className="flex items-center gap-2">
-                                            <>
-                                                <div className="text-gray-800 font-semibold">{formatearFecha(reserva.check_in)}</div>
-                                                <div className="flex items-center gap-1">
-                                                    <button title="Editar fechas" onClick={openDateModal} className="h-7 w-7 flex items-center justify-center rounded-full bg-transparent hover:bg-gray-100">
-                                                        <PencilIcon className="h-4 w-4 text-gray-600" />
-                                                    </button>
-                                                </div>
-                                            </>
+                                                }} className="w-full bg-[#7a0202] text-white px-3 py-2 rounded font-semibold">Cancelar reserva</button>
+                                            )}
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <p className="text-xs font-bold text-[#7a0202] uppercase">Check-out</p>
-                                        <div className="flex items-center gap-2">
-                                            <>
-                                                <div className="text-gray-800 font-semibold">{formatearFecha(reserva.check_out)}</div>
-                                                <div className="flex items-center gap-1">
-                                                    <button title="Editar fechas" onClick={openDateModal} className="h-7 w-7 flex items-center justify-center rounded-full bg-transparent hover:bg-gray-100">
-                                                        <PencilIcon className="h-4 w-4 text-gray-600" />
-                                                    </button>
-                                                </div>
-                                            </>
-                                        </div>
-                                    </div>
-                                <div>
-                                    <div className="mb-1"><p className="text-xs font-bold text-[#7a0202] uppercase">Estado reserva</p><span className={`badge ${getStatusBadge(reserva.status)} text-xs py-0.5 px-2`}>{reserva.status.charAt(0).toUpperCase() + reserva.status.slice(1)}</span></div>
-                                    <div><p className="text-xs font-bold text-[#7a0202] uppercase">Estado pago</p><span className={`badge ${getPagoBadge(reserva.pago)} text-xs py-0.5 px-2`}>{reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1)}</span></div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-800 mb-2">Habitaciones</h3>
-                                <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
-                                    {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={idx} className="border border-gris p-2 rounded text-xs flex justify-between items-center">
-                                            <span className="font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</span>
-                                            <span className="text-[#7a0202] font-bold">{formatearMoneda(hab.precio)}</span>
-                                        </div>
-                                    ))}
+                                <div className="mt-4 grid grid-cols-1 gap-2">
+                                    {!isCancelled && String(reserva.status || '').toLowerCase() === 'pendiente' && (
+                                        <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="w-full mb-0 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-4 rounded-lg text-lg flex items-center justify-center gap-2 transition" aria-label="Hacer check-in"><ArrowDownOnSquareIcon className="h-5 w-5" />Hacer check-in</button>
+                                    )}
+                                    {!isCancelled && String(reserva.status || '').toLowerCase() !== 'checked_out' && (
+                                        <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="w-full mb-0 bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 rounded-lg text-lg flex items-center justify-center gap-2 transition" aria-label="Hacer check-out"><ArrowUpOnSquareIcon className="h-5 w-5" />Hacer check-out</button>
+                                    )}
                                 </div>
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-800 mb-3">Hotel Gludio</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                    <div className="flex gap-2"><MapPinIcon className="h-4 w-4 text-[#7a0202] flex-shrink-0 mt-0.5" /><div><p className="font-semibold text-gray-600">Dirección</p><p className="text-gray-800">Calle Principal 123</p></div></div>
-                                    <div className="flex gap-2"><PhoneIcon className="h-4 w-4 text-[#7a0202] flex-shrink-0 mt-0.5" /><div><p className="font-semibold text-gray-600">Teléfono</p><p className="text-gray-800">+34 91 234 5678</p></div></div>
-                                    <div className="flex gap-2"><EnvelopeIcon className="h-4 w-4 text-[#7a0202] flex-shrink-0 mt-0.5" /><div><p className="font-semibold text-gray-600">Email</p><p className="text-gray-800">info@hotel.com</p></div></div>
-                                    <div className="flex gap-2"><ClockIcon className="h-4 w-4 text-[#7a0202] flex-shrink-0 mt-0.5" /><div><p className="font-semibold text-gray-600">Atención</p><p className="text-gray-800">24h disponible</p></div></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                                    <div><p className="font-bold text-gray-800 mb-2">Horarios</p><div className="space-y-1"><div className="flex justify-between"><span className="text-gray-600">Check-in:</span> <span className="font-semibold">15:00</span></div><div className="flex justify-between"><span className="text-gray-600">Check-out:</span> <span className="font-semibold">11:00</span></div><div className="flex justify-between"><span className="text-gray-600">Conserjería:</span> <span className="font-semibold">24/7</span></div></div></div>
-
-                                    <div><p className="font-bold text-gray-800 mb-2">Políticas</p><div className="space-y-1"><div className="flex justify-between"><span className="text-gray-600">Cancelación:</span> <span className="font-semibold">48h gratis</span></div><div className="flex justify-between"><span className="text-gray-600">Modificación:</span> <span className="font-semibold">Sin costo</span></div><div className="flex justify-between"><span className="text-gray-600">Mascotas:</span> <span className="font-semibold">No</span></div></div></div>
-
-                                    <div><p className="font-bold text-gray-800 mb-2">Servicios</p><div className="space-y-1"><div className="flex items-center gap-1"><ShieldCheckIcon className="h-3 w-3 text-[#7a0202]" /> WiFi gratis</div><div className="flex items-center gap-1"><ShieldCheckIcon className="h-3 w-3 text-[#7a0202]" /> Desayuno</div><div className="flex items-center gap-1"><ShieldCheckIcon className="h-3 w-3 text-[#7a0202]" /> Aparcamiento</div></div></div>
-                                </div>
-                            </div>
+                            </aside>
                         </div>
 
-                        {/* Edición via modal eliminada; permitimos cambios directos con botones */}
+                        {/* Middle sections removed for bisecting */}
 
-                        <div className="grid grid-cols-2 gap-3">
-                            {String(reserva.status || '').toLowerCase() === 'pendiente' && (
-                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="w-full mb-0 bg-green-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">✅ Hacer check-in</button>
-                            )}
-                            {String(reserva.status || '').toLowerCase() !== 'checked_out' && (
-                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="w-full mb-0 bg-yellow-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">🧾 Hacer check-out</button>
-                            )}
-                        </div>
+                        {/* Edición via modal eliminada; botones de checkin/checkout central eliminados porque ya están en el panel lateral (sticky). */}
 
 
 
                         <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm mt-3"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
 
                         {toast && (<div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>{toast.message}</div>)}
+
+                        {/* Mobile quick actions */}
+                        {!isCancelled && (
+                        <div className="sm:hidden fixed bottom-4 left-4 right-4 z-50 flex gap-3">
+                            {String(reserva.status || '').toLowerCase() === 'pendiente' && (
+                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="flex-1 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-2" aria-label="Hacer check-in"><ArrowDownOnSquareIcon className="h-5 w-5" />Hacer check-in</button>
+                            )}
+
+                            {/* Edit dates button for mobile */}
+                            <button onClick={openDateModal} className="w-28 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-3 rounded-md text-lg flex items-center justify-center gap-2" aria-label="Editar fechas"><PencilIcon className="h-5 w-5" />Editar</button>
+
+                            {String(reserva.status || '').toLowerCase() !== 'checked_out' && (
+                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-2" aria-label="Hacer check-out"><ArrowUpOnSquareIcon className="h-5 w-5" />Hacer check-out</button>
+                            )}
+                        </div>
+                        )}
+
                         {/* Date modal */}
                         {showDateModal && (
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                <div ref={dateModalRef} className="bg-white rounded-lg p-6 w-full max-w-md">
+                                <div ref={dateModalRef} className="bg-gris text-black rounded-lg p-6 w-full max-w-md shadow-md">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-bold">Modificar fechas</h3>
-                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
+                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-black"/></button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-3">
                                         <label className="text-xs font-semibold">Check-in</label>
@@ -384,16 +415,18 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         )}
                                     </div>
 
-                                    <div className="mt-4 flex justify-end gap-2">
-                                        <button onClick={() => setShowDateModal(false)} className="btn btn-ghost">Cancelar</button>
-                                        <button
-                                            disabled={previewLoading || (preview && preview.available === false) || isProcessing}
-                                            onClick={async () => { await confirmDateModal(); }}
-                                            className="btn btn-primary"
-                                        >
-                                            {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
-                                        </button>
-                                    </div>
+                                            <div className="mt-4 flex justify-end gap-2">
+                                                <div className="flex">
+                                                    <button onClick={() => setShowDateModal(false)} className="btn btn-ghost">Cerrar</button>
+                                                    <button
+                                                        disabled={previewLoading || (preview && preview.available === false) || isProcessing}
+                                                        onClick={async () => { await confirmDateModal(); }}
+                                                        className="ml-2 bg-[#7a0202] text-white px-4 py-2 rounded font-semibold shadow-sm hover:opacity-90 disabled:opacity-60"
+                                                    >
+                                                        {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
+                                                    </button>
+                                                </div>
+                                            </div>
                                 </div>
                             </div>
                         )}

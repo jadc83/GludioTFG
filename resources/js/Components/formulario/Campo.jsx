@@ -85,7 +85,7 @@ const Campo = forwardRef(({
     const contenido = typeof hijos !== 'undefined' ? hijos : props.children;
 
     const atributos = { ...props };
-    // eliminar props en español para que no lleguen al DOM
+    // eliminar props en español y variantes en inglés para que no lleguen al DOM
     delete atributos.clase;
     delete atributos.claseExtra;
     delete atributos.claseContenedor;
@@ -93,6 +93,9 @@ const Campo = forwardRef(({
     delete atributos.claseError;
     delete atributos.sinEstilosPorDefecto;
     delete atributos.estaFocalizado;
+    delete atributos.isFocused;
+    delete atributos.isfocused;
+    delete atributos.focused;
     delete atributos.hijos;
     delete atributos.children;
 
