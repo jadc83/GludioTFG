@@ -2,7 +2,7 @@ import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, Envel
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import dayjs from 'dayjs';
 
@@ -13,12 +13,15 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     const [showDateModal, setShowDateModal] = useState(false);
     const [modalCheckIn, setModalCheckIn] = useState('');
     const [modalCheckOut, setModalCheckOut] = useState('');
+    const dateModalRef = useRef(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [preview, setPreview] = useState(null);
     const [previewError, setPreviewError] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [pendingApplyAfterPayment, setPendingApplyAfterPayment] = useState(false);
+    const [aceptaTerminosPago, setAceptaTerminosPago] = useState(false);
+    const [paymentModalHeight, setPaymentModalHeight] = useState(null);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
@@ -60,7 +63,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         const co = dayjs(reserva.check_out).format('YYYY-MM-DD');
         setModalCheckIn(ci);
         setModalCheckOut(co);
-        setShowDateModal(true);
+            setShowDateModal(true);
         fetchPreview(ci, co);
     };
 
@@ -80,6 +83,13 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             if (latestPreview && latestPreview.estimate_charge > 0) {
                 setPaymentAmount(latestPreview.estimate_charge);
                 setPendingApplyAfterPayment(true);
+                // medir la altura del modal de fecha y usarla en la modal de pago
+                try {
+                    const h = dateModalRef?.current?.offsetHeight || null;
+                    setPaymentModalHeight(h);
+                } catch (e) {
+                    setPaymentModalHeight(null);
+                }
                 setShowPaymentModal(true);
                 return;
             }
@@ -313,7 +323,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                         {/* Date modal */}
                         {showDateModal && (
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                <div ref={dateModalRef} className="bg-white rounded-lg p-6 w-full max-w-md">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-bold">Modificar fechas</h3>
                                         <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
@@ -390,7 +400,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                         {/* Payment modal for additional charges */}
                         {showPaymentModal && (
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-md" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-bold">Pagar importe adicional</h3>
                                         <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
@@ -400,7 +410,13 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         <div className="text-3xl font-bold text-burgundy mt-3">{formatearMoneda(paymentAmount)}</div>
                                     </div>
                                     <div className="mt-2">
-                                        <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} />
+                                        <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} />
+                                        <div className="mt-3 text-xs text-gray-600">
+                                            <label className="flex items-start gap-3 cursor-pointer">
+                                                <input type="checkbox" id="acepta_terminos_pago" checked={aceptaTerminosPago} onChange={(e) => setAceptaTerminosPago(e.target.checked)} className="mr-2 mt-1" />
+                                                <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a> para procesar este pago.</span>
+                                            </label>
+                                        </div>
                                     </div>
                                     <div className="mt-4 flex justify-end">
                                         <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="btn btn-ghost">Cancelar</button>

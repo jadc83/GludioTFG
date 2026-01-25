@@ -12,7 +12,6 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
     const [toast, setToast] = useState(null); // { message, type }
-    const [aceptaTerminosChecked, setAceptaTerminosChecked] = useState(aceptaTerminos || false);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
@@ -110,8 +109,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
             return;
         }
 
-        // Si no acepta términos, mostrar toast y cancelar
-        if (!aceptaTerminosChecked) {
+        // Si no acepta términos (prop del padre), mostrar toast y cancelar
+        if (!aceptaTerminos) {
             showToast('Debes aceptar los términos y condiciones para continuar.', 'error');
             return;
         }
@@ -369,10 +368,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     </div>
                 )}
 
-                <div className="flex items-center gap-2 text-xs">
-                    <input id="acepta_terminos" type="checkbox" className="checkbox checkbox-xs" checked={aceptaTerminosChecked} onChange={(e) => setAceptaTerminosChecked(e.target.checked)} />
-                    <label htmlFor="acepta_terminos" className="text-xs text-gray-700">Acepto los <a href="/terminos" target="_blank" className="underline">términos y condiciones</a></label>
-                </div>
+                {/* La casilla de aceptación de términos se muestra en el componente padre OpcionesPago. */}
 
                 {/* Botón de confirmación */}
                 <button type="submit" disabled={procesando || !stripe}
