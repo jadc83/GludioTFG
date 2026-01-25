@@ -14,19 +14,8 @@ import { usePage } from '@inertiajs/react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 
 import CalendarioPicker, { CalendarioStyles } from './CalendarioPicker';
-
-// Componente Modal reutilizable
-const ModalPaso = ({ paso, pasoActual, onClose, children, maxWidth = 'max-w-sm' }) => {
-  if (pasoActual !== paso) return null;
-
-  return (
-    <div className={`fixed inset-0 bg-black/50 z-50 flex items-${paso === 2 ? 'center' : 'start'} justify-center p-2 ${paso === 2 ? 'md:pt-[150px] md:items-start' : 'pt-[40px] md:pt-[60px]'}`} onClick={onClose}>
-      <div className={`bg-${paso === 3 ? 'gris' : 'white'} rounded-lg ${maxWidth} md:max-w-4xl w-full max-h-[90vh] overflow-y-auto ${paso === 3 ? 'p-6' : ''}`} onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-};
+import ModalPaso from './ModalPaso';
+import Campo from '@/Components/formulario/Campo';
 
 export default function BarraReservas() {
   const formularioReserva = useReservaForm();
@@ -67,11 +56,7 @@ export default function BarraReservas() {
     consultaPrecios(start, end);
   }, [calendarioAbierto, consultaPrecios, formatearISO]);
 
-  // Memoize precios map to avoid unnecessary recalculations in Day render
   const mapaPrecios = useMemo(() => preciosPorDia || {}, [preciosPorDia]);
-
-  // NOTE: Prefetch por mes movido al backend; el frontend solo solicita rangos completos cuando es necesario.
-
   const noches = formularioReserva.rango?.from && formularioReserva.rango?.to ? calcularNoches(formularioReserva.rango.from, formularioReserva.rango.to) : 0;
 
   const componentesDia = useMemo(() => ({
@@ -79,20 +64,20 @@ export default function BarraReservas() {
       const iso = props?.day?.isoDate || (date ? formatearISO(date) : null);
       const precio = iso ? mapaPrecios[iso] : undefined;
 
-      // Determinar explícitamente si la fecha es anterior a hoy (ignorando horas).
-      let isBeforeToday = false;
+      // Comprobar fecha
+      let ayer = false;
       try {
         if (date instanceof Date && !Number.isNaN(date.getTime())) {
-          const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          const today = new Date();
-          const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          isBeforeToday = dayDate < t;
+          const diaDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          const hoy = new Date();
+          const t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+          ayer = diaDate < t;
         }
       } catch (e) {
-        isBeforeToday = false;
+        ayer = false;
       }
 
-      const atributoPrecio = !isBeforeToday && !disabled && precio ? `€${precio}` : '';
+      const atributoPrecio = !ayer && !disabled && precio ? `€${precio}` : '';
 
       // Si el hijo es un elemento React (el botón del día), clonar para inyectar el precio
       let contenido = props.children;
@@ -121,7 +106,7 @@ export default function BarraReservas() {
   return (
     <>
       {/* MODALES */}
-      <ModalPaso paso={2} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="max-w-sm">
+      <ModalPaso paso={2} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="fit">
         <Paso2Habitaciones {...formularioReserva} />
       </ModalPaso>
 
@@ -172,12 +157,13 @@ export default function BarraReservas() {
                   )}
                 </div>
 
-                {noches > 0 && (
-                  <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
-                    <span className="text-xs font-semibold text-gray-600">Noches:</span>
-                    <span className="text-xs font-bold text-[#7a0202]">{noches}</span>
-                  </div>
-                )}
+                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
+                  <label className="text-xs font-semibold text-gray-600">Huéspedes:</label>
+                  <Campo id="num_huespedes_barra" type="number" min={1} sinEstilosPorDefecto={true}
+                    value={formularioReserva.numHuespedes}
+                    onChange={(e) => formularioReserva.setNumHuespedes(Math.max(1, Number(e.target.value) || 1))}
+                    clase="w-16 text-sm px-2 py-1 rounded border border-gray-200 bg-white"/>
+                </div>
               </div>
 
               {/* TYPING ANIMATION Y BUSCADOR */}

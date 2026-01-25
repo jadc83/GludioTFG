@@ -206,7 +206,6 @@ class ReservaController extends Controller
             DB::transaction(function () use ($reservaService, $validated, $reserva) {
                 $reservaService->actualizarReserva($reserva, $validated);
             });
-            // La emisión del evento ReservaActualizada ahora la maneja ReservaService
 
             return redirect()->route('panel')->with('success', "Reserva {$reserva->localizador} actualizada correctamente.");
         } catch (\Exception $e) {
@@ -235,6 +234,8 @@ class ReservaController extends Controller
             'habitaciones' => 'required|array|min:1',
             'habitaciones.*.tipo' => 'required|string|in:doble,familiar,suite',
             'habitaciones.*.cantidad' => 'required|integer|min:1',
+            'tarifas' => 'sometimes|array',
+            'tarifas.*' => 'integer|exists:tarifas,id',
             ]);
 
             try {
@@ -243,6 +244,27 @@ class ReservaController extends Controller
             $checkOut = Carbon::createFromFormat('Y-m-d', $validated['check_out']);
 
             $resultado = $precioService->calcularMontoTotal( $validated['habitaciones'], $checkIn, $checkOut);
+
+            // Si vienen tarifas seleccionadas, obtener su suma de modificadores y aplicarla
+            $tarifasAplicadas = [];
+            $cargoTarifas = 0;
+            if (!empty($validated['tarifas']) && is_array($validated['tarifas'])) {
+                $tarifasAplicadas = \App\Models\Tarifa::whereIn('id', $validated['tarifas'])->get()->map(function($t) {
+                    return [ 'id' => $t->id, 'nombre' => $t->nombre, 'modificador_precio' => (float)$t->modificador_precio, 'slug' => $t->slug ];
+                })->toArray();
+
+                $sumaModificadores = array_reduce($tarifasAplicadas, function($carry, $t) { return $carry + ($t['modificador_precio'] ?? 0); }, 0);
+
+                // Aplicar modificador UNA sola vez por reserva (no por noche)
+                $cargoTarifas = round($sumaModificadores, 2);
+
+                // Agregar al total
+                if (isset($resultado['total'])) {
+                    $resultado['total'] = round(($resultado['total'] + $cargoTarifas), 2);
+                }
+                $resultado['tarifas_aplicadas'] = $tarifasAplicadas;
+                $resultado['cargo_tarifas'] = $cargoTarifas;
+            }
 
             if (isset($resultado['error'])) {
                 return response()->json([ 'success' => false, 'error' => $resultado['error']], 422);

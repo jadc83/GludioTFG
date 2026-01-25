@@ -60,10 +60,12 @@ export default function useHabitaciones({ paso, rango, setRango }) {
     /**
      * Agrupa habitaciones disponibles por tipo
      */
-    const agruparHabitacionesPorTipo = () => {
+    const agruparHabitacionesPorTipo = (minCapacity = 1) => {
         const habitacionesPorTipo = {};
 
         habitacionesDisponibles.forEach((grupo) => {
+            // Filtrar por capacidad mínima si se proporciona
+            if (grupo.capacidadMaxima < minCapacity) return;
             const tipo = grupo.tipo;
             habitacionesPorTipo[tipo] = {
                 cantidad: grupo.cantidad,

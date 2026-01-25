@@ -25,6 +25,16 @@ export default function useReservaForm() {
     // Estado de fechas
     const [rango, setRango] = useState({ from: undefined, to: undefined });
 
+    // Número de huéspedes (por defecto 1)
+    const [numHuespedes, setNumHuespedes] = useState(1);
+
+    // Tarifas seleccionadas (objeto { id: true }) sincronizado por evento global
+    const [selectedTarifas, setSelectedTarifas] = useState({});
+    // Lookup de tarifas por id (populado por evento desde TarifasSelector)
+    const [tarifasLookup, setTarifasLookup] = useState({});
+    // Resultado de la última consulta de precio
+    const [ultimoResultadoPrecio, setUltimoResultadoPrecio] = useState(null);
+
     // Estado de reserva (desde flash props)
     const [idReserva, setIdReserva] = useState(flashIdReserva);
     const [localizador, setLocalizador] = useState(flashLocalizador);
@@ -40,6 +50,36 @@ export default function useReservaForm() {
             setLocalizador(flashLocalizador);
         }
     }, [flashIdReserva, flashLocalizador]);
+
+    // Escuchar selección de tarifas desde el componente TarifasSelector
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const detail = e?.detail || {};
+                setSelectedTarifas(detail);
+            } catch (err) {
+                // ignore
+            }
+        };
+        if (typeof window !== 'undefined') window.addEventListener('tarifasSeleccionadas', handler);
+        return () => { if (typeof window !== 'undefined') window.removeEventListener('tarifasSeleccionadas', handler); };
+    }, []);
+
+    // Escuchar lista de tarifas para poblar lookup
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const list = e?.detail || [];
+                const map = {};
+                (list || []).forEach(t => { map[t.id] = t; });
+                setTarifasLookup(map);
+            } catch (err) {
+                // ignore
+            }
+        };
+        if (typeof window !== 'undefined') window.addEventListener('tarifasLista', handler);
+        return () => { if (typeof window !== 'undefined') window.removeEventListener('tarifasLista', handler); };
+    }, []);
 
     // React Hook Form - Gestión de formulario con validación Zod
     const {
@@ -157,10 +197,13 @@ export default function useReservaForm() {
         if (habitacionesArray.length === 0) return 0;
 
         try {
+            const tarifasIds = Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(id => Number(id));
+
             const payload = {
                 check_in: formatearFecha(rango.from),
                 check_out: formatearFecha(rango.to),
                 habitaciones: habitacionesArray,
+                tarifas: tarifasIds,
             };
 
             const response = await fetch('/reservas/calcular-precio', {
@@ -176,14 +219,18 @@ export default function useReservaForm() {
             if (!response.ok) {
                 let text = '';
                 try { text = await response.text(); } catch (e) { text = response.statusText; }
-                console.error('Error HTTP al calcular precio:', response.status, response.statusText, text);
+                    console.error('Error HTTP al calcular precio:', response.status, response.statusText, text);
+                    console.debug('calcularMontoTotal payload:', payload, 'response_text:', text);
                 return 0;
             }
 
             const data = await response.json();
+                console.debug('calcularMontoTotal response json:', data);
 
             if (data.success && data.data) {
                 // Devolver el objeto completo con detalles
+                // Guardar el último resultado para que otros componentes puedan consumirlo
+                setUltimoResultadoPrecio(data.data);
                 return data.data;
             } else {
                 console.error('Error en respuesta de precio:', data.error ?? data);
@@ -267,6 +314,7 @@ export default function useReservaForm() {
 
         // Cálculos
         calcularMontoTotal,
+        ultimoResultadoPrecio,
 
         // Envío de reserva
         confirmarReserva,
@@ -277,5 +325,10 @@ export default function useReservaForm() {
         localizador,
         idClienteSeleccionado,
         tipoClienteSeleccionado,
+        numHuespedes,
+        setNumHuespedes,
+        // Tarifas
+        selectedTarifas,
+        tarifasLookup,
     };
 }
