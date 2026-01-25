@@ -45,7 +45,11 @@ export default function ScanQR() {
 
         try {
             const payload = { localizador: localizador };
-            if (action) payload.action = action;
+            if (action) {
+                // Enviar tanto 'action' como 'accion' para compatibilidad con backend en español
+                payload.action = action;
+                payload.accion = action;
+            }
 
             const res = await fetch(route('scan.procesar'), {
                 method: 'POST',
@@ -64,12 +68,20 @@ export default function ScanQR() {
             setReservaInfo(respReserva);
 
             if (action === 'checkin') {
+                if (body?.success === false) {
+                    setError(body?.error || body?.message || 'Error procesando check-in');
+                    return;
+                }
                 setModalType('checkin');
                 setShowModal(true);
                 return;
             }
 
             if (action === 'checkout') {
+                if (body?.success === false) {
+                    setError(body?.error || body?.message || 'Error procesando check-out');
+                    return;
+                }
                 setModalType('checkout');
                 setShowModal(true);
                 return;
