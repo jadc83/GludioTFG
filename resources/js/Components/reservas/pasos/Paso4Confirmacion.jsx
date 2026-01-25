@@ -23,6 +23,9 @@ export default function Paso4Confirmacion({
     setValue,
     actualizarSeleccionHabitacion,
     agruparHabitacionesPorTipo,
+    selectedTarifas = {},
+    tarifasLookup = {},
+    ultimoResultadoPrecio = null,
 }) {
     const formData = watch();
     const {
@@ -36,6 +39,8 @@ export default function Paso4Confirmacion({
     const [pagarAlLlegar, setPagarAlLlegar] = useState(false);
     const [opcionPagoSeleccionada, setOpcionPagoSeleccionada] = useState(true);
     const [monto, setMonto] = useState(0);
+    const [tarifasAplicadas, setTarifasAplicadas] = useState([]);
+    const [cargoTarifas, setCargoTarifas] = useState(0);
     const [precioPromedioPorNoche, setPrecioPromedioPorNoche] = useState(0);
     const [errorPagoLocal, setErrorPagoLocal] = useState(null);
 
@@ -51,9 +56,10 @@ export default function Paso4Confirmacion({
             try {
                 const resultado = await calcularMontoTotal();
 
-                // Si calcularMontoTotal devuelve un objeto con detalles
-                if (typeof resultado === 'object' && resultado.total !== undefined) {
-                    setMonto(resultado.total);
+                    if (typeof resultado === 'object' && resultado.total !== undefined) {
+                        setMonto(resultado.total);
+                        setTarifasAplicadas(resultado.tarifas_aplicadas || []);
+                        setCargoTarifas(resultado.cargo_tarifas || 0);
 
                     // Usar el precio promedio del backend si está disponible
                     if (resultado.habitaciones && resultado.habitaciones.length > 0) {
@@ -116,6 +122,32 @@ export default function Paso4Confirmacion({
         } catch (error) {
             setErrorPagoLocal(error.message || 'Error al crear la reserva');
         }
+    };
+
+    // Fallback: si el backend no devuelve tarifas_aplicadas, construirlas desde selectedTarifas + tarifasLookup
+    const tarifasParaMostrar = () => {
+        // Preferir lo que devolvió el backend en la última consulta
+        if (ultimoResultadoPrecio && Array.isArray(ultimoResultadoPrecio.tarifas_aplicadas) && ultimoResultadoPrecio.tarifas_aplicadas.length > 0) {
+            return ultimoResultadoPrecio.tarifas_aplicadas;
+        }
+
+        if (tarifasAplicadas && tarifasAplicadas.length > 0) return tarifasAplicadas;
+        const ids = Object.keys(selectedTarifas || {}).filter(k => selectedTarifas[k]);
+        return ids.map(id => tarifasLookup[id]).filter(Boolean);
+    };
+
+    const cargoParaMostrar = () => {
+        if (ultimoResultadoPrecio && (ultimoResultadoPrecio.cargo_tarifas || ultimoResultadoPrecio.cargo_tarifas === 0)) {
+            return ultimoResultadoPrecio.cargo_tarifas;
+        }
+        if (cargoTarifas && cargoTarifas > 0) return cargoTarifas;
+        const list = tarifasParaMostrar();
+        const numeroNoches = calcularNoches(rango?.from, rango?.to) || 1;
+        return list.reduce((s, t) => {
+            const mod = Number(t?.modificador_precio || 0);
+            const isMedia = (t?.slug && t.slug.toLowerCase().includes('media')) || (t?.nombre && t.nombre.toLowerCase().includes('media'));
+            return s + (isMedia ? mod * numeroNoches : mod);
+        }, 0);
     };
 
     const handleCerrarDrawer = () => {
@@ -246,7 +278,8 @@ export default function Paso4Confirmacion({
                             {/* Monto a Pagar */}
                             <DesgloseFactura habitacionesSeleccionadas={habitacionesSeleccionadas}
                                 rango={rango} monto={monto} getTotalHabitaciones={getTotalHabitaciones}
-                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}/>
+                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
+                                tarifasAplicadas={tarifasParaMostrar()} cargoTarifas={cargoParaMostrar()} />
                         </div>
                     </div>
                     {/* Opciones de Pago */}

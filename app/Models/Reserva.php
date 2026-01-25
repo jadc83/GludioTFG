@@ -13,7 +13,7 @@ class Reserva extends Model
     protected $table = 'reservas';
 
     protected $fillable = [ 'localizador', 'user_id', 'booked_by_user_id', 'check_in', 'check_out', 'precio_total',
-        'status', 'pago', 'notas', 'reservable_type', 'reservable_id'];
+        'status', 'pago', 'notas', 'reservable_type', 'reservable_id', 'tarifa_id'];
 
     protected $casts = [ 'precio_total' => 'float'];
 
@@ -42,6 +42,11 @@ class Reserva extends Model
         {
             return $this->hasMany(Refund::class, 'reserva_id');
         }
+
+    public function tarifa()
+    {
+        return $this->belongsTo(Tarifa::class, 'tarifa_id');
+    }
 
     /** Scopes **/
 

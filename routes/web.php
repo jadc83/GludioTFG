@@ -7,6 +7,7 @@ use App\Http\Controllers\PanelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\TarifaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -44,6 +45,7 @@ Route::get('/reservas/precios-por-dia', [ReservaController::class, 'preciosPorDi
 // Endpoint público para obtener precios base por tipo desde la base de datos
 use App\Http\Controllers\Api\TipoHabitacionController;
 Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
+Route::get('/api/tarifas', [TarifaController::class, 'index']);
 Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'preciosMes'])->name('reservas.precios-mes');
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->name('reservas.buscar-localizador');
 Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])->name('reservas.descargar-comprobante');
