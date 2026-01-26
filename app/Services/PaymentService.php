@@ -43,9 +43,9 @@ class PaymentService
      * Solicita un reembolso para la reserva: busca el pago, crea refund en Stripe y registra en BD.
      * Retorna array con keys: success (bool) y message (string).
      */
-    public function solicitarReembolso(Reserva $reserva, $usuario, ?float $monto = null): array
+    public function solicitarReembolso(Reserva $reserva, $usuario, ?float $monto = null, bool $forceByAdmin = false): array
     {
-        // Permisos: el usuario debe ser el reservable o el creador
+        // Permisos: el usuario debe ser el reservable o el creador, salvo cuando lo fuerza un admin
         $esPropietario = false;
         try {
             $esPropietario = (
@@ -57,7 +57,7 @@ class PaymentService
             $esPropietario = false;
         }
 
-        if (! $esPropietario) {
+        if (! $esPropietario && ! $forceByAdmin) {
             return ['success' => false, 'message' => 'No autorizado para solicitar este reembolso.'];
         }
 
@@ -158,6 +158,47 @@ class PaymentService
             ]);
 
             Log::info('Refund creado en Stripe: ' . json_encode([ 'id' => $refund->id ?? null, 'amount' => $refund->amount ?? null, 'status' => $refund->status ?? null ]));
+
+            // Ensure there's a RefundRequest record reflecting this processed refund so admins see it in the same table
+            try {
+                $refundCents = isset($refund->amount) ? intval($refund->amount) : $refundAmountCents;
+
+                // Try to find a matching pending request for this reserva and amount
+                $existingRequest = \App\Models\RefundRequest::where('reserva_id', $reserva->id)
+                    ->where(function ($q) use ($refundCents) {
+                        $q->where('requested_amount_cents', $refundCents)
+                          ->orWhereNull('requested_amount_cents');
+                    })->where('status', 'pending')->first();
+
+                if ($existingRequest) {
+                    $existingRequest->update([
+                        'status' => 'approved',
+                        'admin_id' => ($forceByAdmin && $usuario && isset($usuario->id) && $usuario->is_admin) ? $usuario->id : $existingRequest->admin_id,
+                        'admin_reason' => $forceByAdmin ? 'Procesado por admin' : ($existingRequest->admin_reason ?? null),
+                        'processed_at' => now(),
+                        'pago_id' => $pago->id,
+                        'stripe_refund_id' => $refund->id ?? null,
+                        'requested_amount_cents' => $refundCents,
+                    ]);
+                } else {
+                    // Create an approved RefundRequest to reflect this refund
+                    \App\Models\RefundRequest::create([
+                        'reserva_id' => $reserva->id,
+                        'pago_id' => $pago->id,
+                        'requested_amount_cents' => $refundCents,
+                        'reason_code' => $forceByAdmin ? 'admin' : 'automatic',
+                        'notes' => $forceByAdmin ? 'Procesado por admin' : 'Reembolso automático generado por sistema',
+                        'user_id' => $reserva->user_id ?? $pago->user_id ?? null,
+                        'status' => 'approved',
+                        'admin_id' => ($forceByAdmin && $usuario && isset($usuario->id) && $usuario->is_admin) ? $usuario->id : null,
+                        'processed_at' => now(),
+                        'stripe_refund_id' => $refund->id ?? null,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo crear/actualizar RefundRequest para refund: ' . $e->getMessage());
+            }
+
             // Calcular reembolsos totales realizados sobre la reserva (suma de amount_cents)
             try {
                 $totalRefundedForReservaCents = Refund::where('reserva_id', $reserva->id)->sum('amount_cents') ?: 0;
@@ -203,7 +244,9 @@ class PaymentService
                 Log::warning('No se pudo actualizar estado de pago/reserva tras reembolso: ' . $e->getMessage());
             }
 
-            return ['success' => true, 'message' => 'Reembolso solicitado correctamente.'];
+            $refundAmount = isset($refund->amount) ? ($refund->amount / 100) : ($refundAmountCents / 100);
+
+            return ['success' => true, 'message' => 'Reembolso solicitado correctamente.', 'refund_amount' => round($refundAmount, 2), 'refund_id' => $refund->id ?? null];
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe Refund Error: ' . $e->getMessage());
             $msg = $e->getMessage();
@@ -269,7 +312,7 @@ class PaymentService
             if ($pago) {
                 $existing = Refund::where('stripe_refund_id', $refundData->id)->first();
                 if (!$existing) {
-                    Refund::create([
+                    $created = Refund::create([
                         'pago_id' => $pago->id,
                         'reserva_id' => $pago->reserva_id,
                         'stripe_refund_id' => $refundData->id ?? null,
@@ -279,6 +322,59 @@ class PaymentService
                         'reason' => $refundData->reason ?? null,
                         'stripe_response' => is_object($refundData) ? (array)$refundData : $refundData,
                     ]);
+
+                    // Also create or update a RefundRequest reflecting this refund (approved)
+                    try {
+                        $refundCents = isset($refundData->amount) ? intval($refundData->amount) : 0;
+
+                        // If a RefundRequest already exists referencing this stripe refund id, update it
+                        $existingByStripe = null;
+                        if (!empty($refundData->id)) {
+                            $existingByStripe = \App\Models\RefundRequest::where('stripe_refund_id', $refundData->id)->first();
+                        }
+
+                        if ($existingByStripe) {
+                            $existingByStripe->update([
+                                'status' => 'approved',
+                                'admin_reason' => $existingByStripe->admin_reason ?? 'Procesado automáticamente desde webhook',
+                                'processed_at' => now(),
+                                'pago_id' => $pago->id,
+                                'stripe_refund_id' => $refundData->id ?? null,
+                                'requested_amount_cents' => $refundCents,
+                            ]);
+                        } else {
+                            $existingRequest = \App\Models\RefundRequest::where('reserva_id', $pago->reserva_id)
+                                ->where(function ($q) use ($refundCents) {
+                                    $q->where('requested_amount_cents', $refundCents)
+                                      ->orWhereNull('requested_amount_cents');
+                                })->where('status', 'pending')->first();
+
+                            if ($existingRequest) {
+                                $existingRequest->update([
+                                    'status' => 'approved',
+                                    'admin_reason' => $existingRequest->admin_reason ?? 'Procesado automáticamente desde webhook',
+                                    'processed_at' => now(),
+                                    'pago_id' => $pago->id,
+                                    'stripe_refund_id' => $refundData->id ?? null,
+                                    'requested_amount_cents' => $refundCents,
+                                ]);
+                            } else {
+                                \App\Models\RefundRequest::create([
+                                    'reserva_id' => $pago->reserva_id,
+                                    'pago_id' => $pago->id,
+                                    'requested_amount_cents' => $refundCents,
+                                    'reason_code' => 'stripe_webhook',
+                                    'notes' => 'Reembolso procesado vía webhook',
+                                    'user_id' => $pago->user_id ?? null,
+                                    'status' => 'approved',
+                                    'processed_at' => now(),
+                                    'stripe_refund_id' => $refundData->id ?? null,
+                                ]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo crear/actualizar RefundRequest desde webhook: ' . $e->getMessage());
+                    }
                 }
 
                 try {

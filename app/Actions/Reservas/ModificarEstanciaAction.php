@@ -6,6 +6,7 @@ use App\Models\Reserva;
 use App\Models\Pago;
 use App\Services\PrecioService;
 use App\Services\ReservaService;
+use App\Services\PaymentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -13,11 +14,13 @@ class ModificarEstanciaAction
 {
     protected ReservaService $reservaService;
     protected PrecioService $precioService;
+    protected PaymentService $paymentService;
 
-    public function __construct(ReservaService $reservaService, PrecioService $precioService)
+    public function __construct(ReservaService $reservaService, PrecioService $precioService, PaymentService $paymentService)
     {
         $this->reservaService = $reservaService;
         $this->precioService = $precioService;
+        $this->paymentService = $paymentService;
     }
 
     public function handle(string $localizador, array $data): array
@@ -44,9 +47,11 @@ class ModificarEstanciaAction
         }
 
         $viejoTotal = (float) $reserva->precio_total;
-        $diff = round(max(0, $nuevoTotal - $viejoTotal), 2);
+        $diffSigned = round($nuevoTotal - $viejoTotal, 2);
 
-        if ($diff > 0) {
+        // Caso: aumento de importe -> se requiere pago adicional
+        if ($diffSigned > 0) {
+            $diff = round($diffSigned, 2);
             $pagoId = $data['pago_id'] ?? null;
             if (!$pagoId) {
                 return [ 'success' => false, 'error' => 'pago_requerido', 'required_amount' => $diff, 'message' => 'Se requiere un pago adicional para ampliar la estancia.' ];
@@ -56,6 +61,20 @@ class ModificarEstanciaAction
             if (! $pago || $pago->reserva_id != $reserva->id || $pago->estado !== 'completado' || (float)$pago->monto < $diff) {
                 return [ 'success' => false, 'error' => 'pago_invalido', 'required_amount' => $diff, 'message' => 'Pago no válido o insuficiente.' ];
             }
+        }
+
+        // Caso: disminución de importe -> intentar reembolso parcial automático
+        $refundInfo = null;
+        if ($diffSigned < 0) {
+            $refundAmount = round(abs($diffSigned), 2);
+            // Intentar realizar reembolso por el importe de la diferencia
+            // Usar como 'usuario solicitante' el usuario asociado a la reserva (si existe) para pasar la verificación de permisos
+            $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
+            $refundResult = $this->paymentService->solicitarReembolso($reserva, $userForRefund, $refundAmount);
+            if (!($refundResult['success'] ?? false)) {
+                return [ 'success' => false, 'error' => 'reembolso_fallido', 'message' => $refundResult['message'] ?? 'Error solicitando reembolso.' ];
+            }
+            $refundInfo = [ 'amount' => $refundResult['refund_amount'] ?? $refundAmount, 'refund_id' => $refundResult['refund_id'] ?? null, 'message' => $refundResult['message'] ?? null ];
         }
 
         // actualizar precios por habitación
@@ -73,6 +92,13 @@ class ModificarEstanciaAction
 
         try { event(new \App\Events\ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
 
-        return [ 'success' => true, 'message' => 'Estancia modificada correctamente.', 'reserva' => [ 'check_in' => $reserva->check_in, 'check_out' => $reserva->check_out, 'precio_total' => $reserva->precio_total ] ];
+        $response = [ 'success' => true, 'message' => 'Estancia modificada correctamente.', 'reserva' => [ 'check_in' => $reserva->check_in, 'check_out' => $reserva->check_out, 'precio_total' => $reserva->precio_total ] ];
+
+        if ($refundInfo) {
+            $response['refund'] = $refundInfo;
+            $response['message'] = "Estancia modificada. Se ha solicitado un reembolso parcial de €" . number_format($refundInfo['amount'], 2);
+        }
+
+        return $response;
     }
 }

@@ -4,7 +4,7 @@ import { usePage } from '@inertiajs/react';
 import Campo from '@/Components/formulario/Campo';
 import React, { useState, useMemo, useEffect } from 'react';
 
-function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false }) {
+function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
     const page = usePage();
     const csrfToken = page?.props?.csrf_token || document.querySelector('meta[name="csrf-token"]')?.content || '';
     const stripe = useStripe();
@@ -12,6 +12,12 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
     const [toast, setToast] = useState(null); // { message, type }
+
+    // Estado local para la casilla de aceptar términos (inicializado desde prop para compatibilidad)
+    const [acepta, setAcepta] = useState(aceptaTerminos);
+
+    // Sincronizar prop -> estado si cambia externamente
+    useEffect(() => { setAcepta(aceptaTerminos); }, [aceptaTerminos]);
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
@@ -102,8 +108,8 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
             return;
         }
 
-        // Si no acepta términos (prop del padre), mostrar toast y cancelar
-        if (!aceptaTerminos) {
+        // Si no acepta términos, mostrar toast y cancelar
+        if (!acepta) {
             showToast('Debes aceptar los términos y condiciones para continuar.', 'error');
             return;
         }
@@ -361,7 +367,15 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     </div>
                 )}
 
-                {/* La casilla de aceptación de términos se muestra en el componente padre OpcionesPago. */}
+                {/* Casilla de aceptación (opcional) */}
+                {mostrarAceptacion && (
+                    <div className="mt-3 text-xs text-gray-600">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="acepta_terminos_pago" checked={acepta} onChange={(e) => { setAcepta(e.target.checked); if (typeof onAceptaChange === 'function') onAceptaChange(e.target.checked); }} className="mr-2 mt-1" />
+                            <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.</span>
+                        </label>
+                    </div>
+                )}
 
                 {/* Botón de confirmación */}
                 <button type="submit" disabled={procesando || !stripe}
@@ -383,12 +397,12 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     );
 }
 
-export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false }) {
+export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
     const stripePromise = useMemo(() => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY), []);
 
     return (
         <Elements stripe={stripePromise}>
-            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} aceptaTerminos={aceptaTerminos} />
+            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} aceptaTerminos={aceptaTerminos} mostrarAceptacion={mostrarAceptacion} onAceptaChange={onAceptaChange} />
         </Elements>
     );
 }

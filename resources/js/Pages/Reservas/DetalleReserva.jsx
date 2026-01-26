@@ -25,6 +25,16 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     const [pendingApplyAfterPayment, setPendingApplyAfterPayment] = useState(false);
     const [aceptaTerminosPago, setAceptaTerminosPago] = useState(false);
     const [paymentModalHeight, setPaymentModalHeight] = useState(null);
+    const [showRefundModal, setShowRefundModal] = useState(false);
+    const [refundReason, setRefundReason] = useState('change_to_cheaper');
+    const [refundNotes, setRefundNotes] = useState('');
+    const [refundAmountInput, setRefundAmountInput] = useState(null);
+    const refundReasons = [
+        { value: 'billing_error', label: 'Error de facturación' },
+        { value: 'change_to_cheaper', label: 'Cambio a habitación más barata' },
+        { value: 'prefer_credit', label: 'Cliente prefiere crédito' },
+        { value: 'other', label: 'Otra' },
+    ];
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
@@ -103,18 +113,11 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                 return;
             }
 
-            // Si hay reembolso estimado, aplicamos el cambio y solicitamos reembolso automáticamente
-            await applyDateChange(newCheckIn, newCheckOut);
-            if (latestPreview && latestPreview.estimate_refund > 0) {
-                try {
-                    const monto = latestPreview.estimate_refund;
-                    const r = await solicitarReembolso(monto, false);
-                    showToast(r?.message || 'Reembolso solicitado correctamente.', 'success');
-                    await refresh();
-                } catch (err) {
-                    const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
-                    showToast(msg, 'error');
-                }
+            // Si hay reembolso estimado, aplicamos el cambio; el backend intentará solicitar el reembolso parcial automáticamente
+            const res = await applyDateChange(newCheckIn, newCheckOut);
+            if (res?.refund?.amount) {
+                showToast(`Se ha solicitado un reembolso parcial de ${formatearMoneda(res.refund.amount)}`, 'success');
+                await refresh();
             }
 
             setShowDateModal(false);
@@ -307,24 +310,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         <div className="mt-4 flex flex-col gap-2">
                                             <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="w-full inline-flex items-center justify-center gap-2 bg-transparent border border-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-50"> <DocumentArrowDownIcon className="h-4 w-4"/> PDF</button>
                                             {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && String(reserva.status || '').toLowerCase() !== 'checked_in' && (
-                                                <button disabled={isProcessing} onClick={() => {
-                                                    if (isProcessing) return;
-                                                    if (!confirm('¿Cancelar reserva y solicitar el reembolso del importe disponible?')) return;
-                                                    setIsProcessing(true);
-                                                    (async () => {
-                                                        try {
-                                                            const r = await solicitarReembolso(refundableAmount, true);
-                                                            showToast(r?.message || 'Reembolso solicitado correctamente.', 'success');
-                                                            await refresh();
-                                                        } catch (err) {
-                                                            const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
-                                                            showToast(msg, 'error');
-
-                                                        } finally {
-                                                            setIsProcessing(false);
-                                                        }
-                                                    })();
-                                                }} className="w-full bg-[#7a0202] text-white px-3 py-2 rounded font-semibold">Cancelar reserva</button>
+                                                <button disabled={isProcessing} onClick={() => { setRefundAmountInput(refundableAmount); setShowRefundModal(true); }} className="w-full bg-[#7a0202] text-white px-3 py-2 rounded font-semibold">Solicitar reembolso</button>
                                             )}
                                         </div>
                                     </div>
@@ -448,6 +434,60 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 </div>
                             </div>
                         )}
+                        {/* Reembolso request modal */}
+                        {showRefundModal && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-2xl font-bold mb-1">Solicitud de reembolso</h2>
+                                        <button onClick={() => setShowRefundModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
+                                    </div>
+
+                                    <p className="text-gray-600 mb-2">Solicitas un reembolso de:</p>
+                                    <div className="bg-gris p-4 rounded-lg mb-4 text-center">
+                                        <div className="text-3xl font-bold text-burgundy">{formatearMoneda(refundAmountInput ?? refundableAmount)}</div>
+                                    </div>
+
+                                    <div className="mt-2 mb-4">
+                                        <label className="text-sm font-semibold mb-2 block">Motivo</label>
+                                        <div className="space-y-2">
+                                            {refundReasons.map(r => (
+                                                <label key={r.value} className="flex items-center gap-2 text-sm">
+                                                    <input type="radio" name="refund_reason" value={r.value} checked={refundReason === r.value} onChange={() => setRefundReason(r.value)} className="mr-2" />
+                                                    <span>{r.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        {refundReason === 'other' && (
+                                            <textarea value={refundNotes} onChange={(e) => setRefundNotes(e.target.value)} placeholder="Describe el motivo" className="textarea textarea-bordered w-full mt-2" />
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <button onClick={async () => {
+                                            setIsProcessing(true);
+                                            try {
+                                                const payload = { monto: (refundAmountInput ?? refundableAmount), reason_code: refundReason, notes: refundNotes };
+                                                const res = await (await import('@/api/reservas')).crearSolicitudReembolso(reserva.localizador, payload);
+                                                if (res?.success) {
+                                                    showToast(res?.message || 'Solicitud enviada.', 'success');
+                                                    setShowRefundModal(false);
+                                                    await refresh();
+                                                } else {
+                                                    showToast(res?.message || 'Error creando solicitud.', 'error');
+                                                }
+                                            } catch (err) {
+                                                const msg = err?.response?.data?.message || err?.message || 'Error creando solicitud de reembolso.';
+                                                showToast(msg, 'error');
+                                            } finally {
+                                                setIsProcessing(false);
+                                            }
+                                        }} className="ml-2 bg-[#7a0202] text-white px-4 py-3 rounded font-semibold shadow-sm hover:opacity-90 disabled:opacity-60 w-full">{isProcessing ? 'Enviando…' : 'Enviar solicitud'}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Payment modal for additional charges */}
                         {showPaymentModal && (
                             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -462,14 +502,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         <div className="text-3xl font-bold text-burgundy text-center">{formatearMoneda(paymentAmount)}</div>
                                     </div>
 
-                                    <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} />
-
-                                    <div className="mt-3 text-xs text-gray-600">
-                                        <label className="flex items-start gap-3 cursor-pointer">
-                                            <input type="checkbox" id="acepta_terminos_pago" checked={aceptaTerminosPago} onChange={(e) => setAceptaTerminosPago(e.target.checked)} className="mr-2 mt-1" />
-                                            <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.</span>
-                                        </label>
-                                    </div>
+                                    <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} mostrarAceptacion={true} onAceptaChange={(v) => setAceptaTerminosPago(v)} />
 
                                     <div className="mt-4">
                                         <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">Cancelar</button>

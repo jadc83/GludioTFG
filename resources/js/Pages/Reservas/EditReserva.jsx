@@ -197,7 +197,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                                     <div className="text-3xl font-bold text-burgundy text-center">€{montoAdicional.toFixed(2)}</div>
                                 </div>
 
-                                <FormularioPago monto={montoAdicional} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true}} />
+                                <FormularioPago monto={montoAdicional} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true}} mostrarAceptacion={true} />
 
                                 <div className="mt-4">
                                     <button type="button" onClick={() => { setMostrarPago(false); setPendienteGuardar(null);}} className="w-full mt-3 py-3 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">Cancelar</button>

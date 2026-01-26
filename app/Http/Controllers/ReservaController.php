@@ -222,14 +222,19 @@ class ReservaController extends Controller
                 $meta = ['motivo' => $motivo, 'type' => 'cancelado'];
             }
 
-            DB::transaction(function () use ($validated, $reserva, $meta) {
-                $this->reservaService->actualizarReserva($reserva, $validated, $meta);
+            $result = DB::transaction(function () use ($validated, $reserva, $meta) {
+                return $this->reservaService->actualizarReserva($reserva, $validated, $meta);
             });
 
             // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
 
-            return redirect()->route('panel')->with('success', "Reserva {$reserva->localizador} actualizada correctamente.");
+            $msg = "Reserva {$reserva->localizador} actualizada correctamente.";
+            if (!empty($result['refund']) && !empty($result['refund']['amount'])) {
+                $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
+            }
+
+            return redirect()->route('panel')->with('success', $msg);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }

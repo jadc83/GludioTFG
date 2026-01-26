@@ -80,7 +80,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
                         <div className="overflow-x-auto p-2 md:p-4">
-                            <table className="table table-zebra table-compact w-full text-xs md:text-sm">
+                            <table className="table table-zebra table-compact w-full text-xs md:text-sm panel-table">
                                 <thead>
                                     <tr>
                                         <th>Número</th>
@@ -111,7 +111,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                             </td>
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button className="btn btn-primary btn-sm" title="Editar habitación" onClick={() => abrirEdicion( habitacion)}>
+                                                    <button className="btn btn-sm btn-index btn-primary-burgundy" title="Editar habitación" onClick={() => abrirEdicion( habitacion)}>
                                                         <PencilIcon className="h-6 w-6" />
                                                     </button>
                                                 </div>
@@ -125,7 +125,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 )}
 
                 {habitaciones.length > 0 && (
-                    <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 bg-gris px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 sm:flex-row">
+                    <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 bg-gris footer-panel px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 sm:flex-row">
                         <div className="text-xs font-medium text-gray-700 md:text-sm">
                             <span className="font-semibold text-primary">{inicio + 1}</span>
                             <span className="mx-1 text-gray-500">a</span>

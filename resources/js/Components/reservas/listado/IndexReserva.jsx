@@ -164,7 +164,7 @@ export default function IndexReserva({ reservas = [] }) {
                 ) : (
                     <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
                         <div className="overflow-x-auto p-2 md:p-4">
-                            <table className="table table-zebra table-compact w-full text-xs md:text-sm">
+                            <table className="table table-zebra table-compact w-full text-xs md:text-sm panel-table">
                                 <thead>
                                     <tr>
                                         <th>Localizador</th>
@@ -237,11 +237,11 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button className="btn btn-primary btn-sm" title="Editar reserva"
+                                                    <button className="btn btn-sm btn-index btn-primary-burgundy" title="Editar reserva"
                                                         onClick={() => router.visit( `/reservas/${reserva.id}/edit`)}>
                                                         <PencilIcon className="h-4 w-4" />
                                                     </button>
-                                                    <button className="btn btn-error btn-ghost btn-sm hover:btn-error hover:text-white" title="Eliminar reserva"
+                                                    <button className="btn btn-sm btn-index btn-primary-black" title="Eliminar reserva"
                                                         onClick={() => eliminarReserva(reserva.id)}>
                                                         <TrashIcon className="h-4 w-4" />
                                                     </button>

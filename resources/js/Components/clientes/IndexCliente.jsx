@@ -102,7 +102,7 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
             ) : (
             <div className="table-card card overflow-hidden rounded-lg bg-white shadow-lg">
                 <div className="overflow-x-auto p-2 md:p-4">
-                    <table className="table table-zebra table-compact w-full text-xs md:text-sm">
+                    <table className="table table-zebra table-compact w-full text-xs md:text-sm panel-table">
                         <thead>
                             <tr>
                                 <th>Nombre</th>
@@ -159,10 +159,10 @@ if (paginaActual < totalPaginas) { setPaginaActual(paginaActual + 1); } }; const
                                 </td>
                                 <td>
                                     <div className="flex gap-1">
-                                        <button className="btn btn-ghost btn-outline btn-sm">
+                                        <button className="btn btn-ghost btn-outline btn-sm btn-index">
                                             <EyeIcon className="h-4 w-4" />
                                         </button>
-                                        <button className="btn btn-primary btn-sm" onClick={()=> abrirEdicion( cliente ) }>
+                                        <button className="btn btn-sm btn-index btn-primary-burgundy" onClick={()=> abrirEdicion( cliente ) }>
                                             <PencilIcon className="h-4 w-4" />
                                         </button>
                                     </div>

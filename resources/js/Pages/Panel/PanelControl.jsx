@@ -14,6 +14,7 @@ const TABS = [
     { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
     { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
     { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
+    { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
 ];
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
@@ -23,6 +24,8 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
         </button>
     );
 }
+
+import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 
 function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
   switch (tabActiva) {
@@ -36,6 +39,8 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       return (
         <TabReservas clientes={clientes} users={users} reservas={reservas}/>
       );
+    case 'reembolsos':
+      return <TabReembolsos />;
     default:
       return (
         <div className="marcadorLugar">

@@ -595,7 +595,7 @@ class ReservaService
     /**
      * Actualiza una reserva con nuevas habitaciones y fechas
      */
-    public function actualizarReserva(Reserva $reserva, array $validated, ?array $meta = null): void
+    public function actualizarReserva(Reserva $reserva, array $validated, ?array $meta = null): array
     {
         $checkIn = Carbon::parse($validated['check_in']);
         $checkOut = Carbon::parse($validated['check_out']);
@@ -640,6 +640,21 @@ class ReservaService
             $precioTotal += $precioHabitacion;
         }
 
+        // Si el precio disminuye y la reserva está pagada, intentar reembolso parcial automático
+        $viejoTotal = (float) $reserva->precio_total;
+        $diffSigned = round($precioTotal - $viejoTotal, 2);
+
+        $refundInfo = null;
+        if ($diffSigned < 0 && strtolower($reserva->pago) === 'pagado') {
+            $refundAmount = round(abs($diffSigned), 2);
+            $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
+            $refundResult = $this->paymentService->solicitarReembolso($reserva, $userForRefund, $refundAmount);
+            if (!($refundResult['success'] ?? false)) {
+                throw new \Exception('No se pudo procesar el reembolso: ' . ($refundResult['message'] ?? 'Error en reembolso'));
+            }
+            $refundInfo = [ 'amount' => $refundResult['refund_amount'] ?? $refundAmount, 'refund_id' => $refundResult['refund_id'] ?? null, 'message' => $refundResult['message'] ?? null ];
+        }
+
         $reserva->update(['precio_total' => $precioTotal]);
 
         try {
@@ -647,6 +662,8 @@ class ReservaService
         } catch (\Throwable $e) {
             // No detener la lógica en caso de fallo al emitir el evento
         }
+
+        return ['refund' => $refundInfo];
     }
 
     /**

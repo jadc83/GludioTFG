@@ -60,6 +60,96 @@
     border-top-right-radius: 16px;
     overflow: hidden;
     margin-top: 4px;
+
+    /* Tipografía y variables globales para el panel */
+    --panel-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    --panel-font-size: 0.95rem; /* 15px */
+    --panel-font-size-sm: 0.875rem; /* 14px */
+    --panel-line-height: 1.45;
+
+    font-family: var(--panel-font-family);
+    font-size: var(--panel-font-size);
+    line-height: var(--panel-line-height);
+    color: #1f2937;
+}
+
+/* Headings and titles */
+.tituloEncabezado {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #7a0202; /* burgundy */
+    letter-spacing: -0.01em;
+}
+
+/* Panel heading elements */
+.contenedorContenido h2,
+.contenedorContenido .panel-heading {
+    font-family: var(--panel-font-family);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #7a0202;
+    margin-bottom: 0.5rem;
+}
+
+.contenedorContenido h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.4rem;
+}
+
+/* Table typography and spacing */
+.panel-table {
+    font-family: var(--panel-font-family);
+    font-size: var(--panel-font-size-sm);
+}
+
+.panel-table thead th {
+    padding: 0.75rem 0.75rem;
+    font-weight: 700;
+    background: #7a0202; /* burgundy */
+    color: #ffffff;
+    border-bottom: 2px solid rgba(0,0,0,0.06);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+}
+
+.panel-table tbody td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+    color: #374151; /* gray-700 */
+}
+
+.panel-table tbody tr:hover td {
+    background: rgba(122, 2, 2, 0.03);
+}
+
+.panel-table .cell-amount {
+    font-weight: 600;
+}
+
+.badge-burgundy {
+    background: #7a0202;
+    color: #ffffff;
+    border-radius: 9999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.btn-burgundy {
+    background: #7a0202;
+    color: white;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.btn-burgundy:hover {
+    background: #920303;
+}
+
+.footer-panel {
+    border-top: 1px solid rgba(0,0,0,0.05);
+    background: var(--bg-gris, #E2E0DC);
 }
 
 
@@ -147,3 +237,101 @@
 .textoMarcadorLugar {
     color: #6b7280;
 }
+
+/* Panel table and theme */
+.panel-table thead {
+    background: #7a0202; /* burgundy */
+    color: #ffffff;
+}
+
+/* Force consistent typography for all table wrappers inside Panel */
+.table-pro-wrapper, .table-card, .table-pro, .panel-table {
+    font-family: var(--panel-font-family) !important;
+    font-size: var(--panel-font-size-sm) !important;
+    line-height: var(--panel-line-height) !important;
+}
+
+/* Ensure table cells inherit the forced typography */
+.table-card .panel-table td,
+.table-card .panel-table th,
+.table-pro .panel-table td,
+.table-pro .panel-table th {
+    font-family: var(--panel-font-family) !important;
+    font-size: var(--panel-font-size-sm) !important;
+}
+
+.panel-table thead th {
+    color: #ffffff;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 0.75rem;
+}
+
+.panel-table tbody tr:hover td {
+    background: rgba(122, 2, 2, 0.035);
+}
+
+.panel-table .cell-amount {
+    font-weight: 600;
+}
+
+.btn-burgundy {
+    background: #7a0202;
+    color: white;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.btn-burgundy:hover {
+    background: #920303;
+}
+
+/* Primary button variants for panel actions */
+.btn-primary-burgundy {
+    background: #7a0202;
+    color: #ffffff;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 6px rgba(122,2,2,0.12);
+}
+.btn-primary-burgundy:hover {
+    background: #920303;
+    transform: translateY(-1px);
+}
+.btn-primary-burgundy:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none;
+}
+
+.btn-primary-black {
+    background: #111827; /* gray-900 / near-black */
+    color: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.btn-primary-black:hover {
+    background: #0b0f14;
+    transform: translateY(-1px);
+}
+.btn-primary-black:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none;
+}
+
+/* Unified index button */
+.btn-index {
+    padding: 0.375rem 0.6rem;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    line-height: 1;
+    height: 2rem;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.btn-index.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    height: 1.75rem;
+}
+
+.btn-index:active { transform: translateY(0); }

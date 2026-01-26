@@ -5,8 +5,6 @@ namespace App\Actions\Reservas;
 use App\Models\Reserva;
 use App\Services\ReservaService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class MarcarCheckInAction
 {
@@ -20,8 +18,6 @@ class MarcarCheckInAction
     public function handle(string $localizador): array
     {
         $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
-
-        // No permitir hacer check-in antes del día de entrada
         $checkInDate = \Carbon\Carbon::parse($reserva->check_in);
         if (!\Carbon\Carbon::today()->isSameDay($checkInDate)) {
             return [
@@ -30,7 +26,6 @@ class MarcarCheckInAction
             ];
         }
 
-        // Intentar asignar habitaciones concretas en check-in
         $asignaciones = $this->reservaService->asignarHabitacionEnCheckIn($reserva, Auth::id());
 
         $failed = array_filter($asignaciones, function ($a) { return isset($a['assigned']) && $a['assigned'] === false; });

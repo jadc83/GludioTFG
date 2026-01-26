@@ -56,6 +56,12 @@ Route::get('/reservas/calcular-precio', function() {
 Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])->name('reservas.extender');
 Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::class, 'modificarEstancia'])->name('reservas.modificar-estancia');
 Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->name('reservas.preview-modificar-estancia');
+Route::post('/reservas/{reserva}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'store'])->name('reservas.refund-requests.store')->middleware('auth');
+Route::post('/reservas/{localizador}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'storeByLocalizador'])->name('reservas.refund-requests.store.by_localizador')->middleware('auth');
+Route::get('/admin/refund-requests', [\App\Http\Controllers\Admin\RefundRequestController::class, 'index'])->name('admin.refund-requests.index')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
+Route::post('/admin/refund-requests/{refundRequest}/approve', [\App\Http\Controllers\Admin\RefundRequestController::class, 'approve'])->name('admin.refund-requests.approve')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
+Route::post('/admin/refund-requests/{refundRequest}/reject', [\App\Http\Controllers\Admin\RefundRequestController::class, 'reject'])->name('admin.refund-requests.reject')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
+Route::delete('/admin/refund-requests/{refundRequest}', [\App\Http\Controllers\Admin\RefundRequestController::class, 'destroy'])->name('admin.refund-requests.destroy')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');
