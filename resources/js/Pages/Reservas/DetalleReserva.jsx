@@ -300,7 +300,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                                         <div className="mt-4 flex flex-col gap-2">
                                             <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="w-full inline-flex items-center justify-center gap-2 bg-transparent border border-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-50"> <DocumentArrowDownIcon className="h-4 w-4"/> PDF</button>
-                                            {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && (
+                                            {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && String(reserva.status || '').toLowerCase() !== 'checked_in' && (
                                                 <button disabled={isProcessing} onClick={() => {
                                                     if (isProcessing) return;
                                                     if (!confirm('¿Cancelar reserva y solicitar el reembolso del importe disponible?')) return;
@@ -353,25 +353,38 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                         {/* Date modal */}
                         {showDateModal && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                <div ref={dateModalRef} className="bg-gris text-black rounded-lg p-6 w-full max-w-md shadow-md">
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                <div ref={dateModalRef} className="bg-white text-black rounded-lg shadow-xl max-w-2xl w-full p-8" style={{ minHeight: '520px' }}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-bold">Modificar fechas</h3>
-                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-black"/></button>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <label className="text-xs font-semibold">Check-in</label>
-                                        <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" />
-                                        <label className="text-xs font-semibold">Check-out</label>
-                                        <input type="date" value={modalCheckOut} onChange={(e) => { setModalCheckOut(e.target.value); fetchPreview(modalCheckIn, e.target.value); }} className="input input-bordered w-full" />
+                                        <h2 className="text-2xl font-bold mb-1">Modificar fechas</h2>
+                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
                                     </div>
 
-                                    <div className="mt-4 p-3 border rounded bg-gray-50">
+                                    <div className="mt-2 mb-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-semibold">Disponible para cambio</span>
+                                            <span className={`text-sm font-semibold ${preview?.available ? 'text-green-700' : 'text-red-700'}`}>{ preview == null ? '-' : (preview.available ? 'Sí' : 'No') }</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 mb-4">
+                                        <div>
+                                            <label className="text-sm font-semibold">Check-in</label>
+                                            <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-semibold">Check-out</label>
+                                            <input type="date" value={modalCheckOut} onChange={(e) => { setModalCheckOut(e.target.value); fetchPreview(modalCheckIn, e.target.value); }} className="input input-bordered w-full" />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-2 p-4 border rounded bg-gray-50">
                                         {previewLoading && (<div className="text-sm text-gray-600">Cargando vista previa…</div>)}
                                         {previewError && (<div className="text-sm text-red-600">{previewError}</div>)}
                                         {preview && !previewLoading && (
-                                            <div className="text-sm text-gray-800 space-y-3">
-                                                <div className="grid grid-cols-1 gap-2">
+                                            <div className="text-sm text-gray-800 space-y-4">
+                                                <div className="grid grid-cols-1 gap-3">
                                                     <div className="flex justify-between items-center">
                                                         <div>
                                                             <div className="text-xs text-gray-500">Primer pago</div>
@@ -404,55 +417,51 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                                                 {preview.estimate_charge > 0 && (<div className="flex justify-between text-red-700"><span>Estimado cargo adicional</span><strong>{formatearMoneda(preview.estimate_charge)}</strong></div>)}
 
-                                                <div className="mt-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm">Disponible para cambio</span>
-                                                        {preview.available ? (<span className="text-sm text-green-700 font-semibold">Sí</span>) : (<span className="text-sm text-red-700 font-semibold">No</span>)}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 mt-1">"Sí" significa que las habitaciones asignadas están libres en ese rango y se puede aplicar el cambio.</div>
-                                                </div>
+
                                             </div>
                                         )}
                                     </div>
 
-                                            <div className="mt-4 flex justify-end gap-2">
-                                                <div className="flex">
-                                                    <button onClick={() => setShowDateModal(false)} className="btn btn-ghost">Cerrar</button>
-                                                    <button
-                                                        disabled={previewLoading || (preview && preview.available === false) || isProcessing}
-                                                        onClick={async () => { await confirmDateModal(); }}
-                                                        className="ml-2 bg-[#7a0202] text-white px-4 py-2 rounded font-semibold shadow-sm hover:opacity-90 disabled:opacity-60"
-                                                    >
-                                                        {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
-                                                    </button>
-                                                </div>
-                                            </div>
+                                    <div className="mt-6 flex justify-end gap-2">
+                                        <div className="flex w-full max-w-sm">
+                                            <button onClick={() => setShowDateModal(false)} className="btn btn-ghost w-1/2">Cerrar</button>
+                                            <button
+                                                disabled={previewLoading || (preview && preview.available === false) || isProcessing}
+                                                onClick={async () => { await confirmDateModal(); }}
+                                                className="ml-2 bg-[#7a0202] text-white px-4 py-3 rounded font-semibold shadow-sm hover:opacity-90 disabled:opacity-60 w-1/2"
+                                            >
+                                                {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
                         {/* Payment modal for additional charges */}
                         {showPaymentModal && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                <div className="bg-white rounded-lg p-6 w-full max-w-md" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-bold">Pagar importe adicional</h3>
+                                        <h2 className="text-2xl font-bold mb-2">Pago Adicional Requerido</h2>
                                         <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
                                     </div>
-                                    <div className="mb-4">
-                                        <p className="text-sm text-gray-700">Para aplicar el cambio de fechas es necesario abonar:</p>
-                                        <div className="text-3xl font-bold text-burgundy mt-3">{formatearMoneda(paymentAmount)}</div>
+
+                                    <p className="text-gray-600 mb-4">Los cambios en la reserva requieren un pago adicional de:</p>
+                                    <div className="bg-gris p-4 rounded-lg mb-4">
+                                        <div className="text-3xl font-bold text-burgundy text-center">{formatearMoneda(paymentAmount)}</div>
                                     </div>
-                                    <div className="mt-2">
-                                        <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} />
-                                        <div className="mt-3 text-xs text-gray-600">
-                                            <label className="flex items-start gap-3 cursor-pointer">
-                                                <input type="checkbox" id="acepta_terminos_pago" checked={aceptaTerminosPago} onChange={(e) => setAceptaTerminosPago(e.target.checked)} className="mr-2 mt-1" />
-                                                <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a> para procesar este pago.</span>
-                                            </label>
-                                        </div>
+
+                                    <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} />
+
+                                    <div className="mt-3 text-xs text-gray-600">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input type="checkbox" id="acepta_terminos_pago" checked={aceptaTerminosPago} onChange={(e) => setAceptaTerminosPago(e.target.checked)} className="mr-2 mt-1" />
+                                            <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.</span>
+                                        </label>
                                     </div>
-                                    <div className="mt-4 flex justify-end">
-                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="btn btn-ghost">Cancelar</button>
+
+                                    <div className="mt-4">
+                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">Cancelar</button>
                                     </div>
                                 </div>
                             </div>
