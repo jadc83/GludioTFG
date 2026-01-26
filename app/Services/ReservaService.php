@@ -370,27 +370,48 @@ class ReservaService
 
             if ($cantidad <= 0) continue;
 
-            $disponibles = $this->contarHabitacionesDisponibles($tipo, $checkIn, $checkOut);
+            // Bloquear filas de habitaciones de este tipo para evitar condiciones de carrera
+            DB::transaction(function () use ($tipo, $checkIn, $checkOut, $cantidad) {
+                // Poner lock FOR UPDATE en las habitaciones del tipo para serializar comprobaciones concurrentes
+                Habitacion::where('tipo', $tipo)->lockForUpdate()->get();
 
-            if ($disponibles < $cantidad) {
-                throw new \Exception(
-                    "No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas."
-                );
-            }
+                $disponibles = $this->contarHabitacionesDisponibles($tipo, $checkIn, $checkOut);
+
+                if ($disponibles < $cantidad) {
+                    throw new \Exception(
+                        "No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas."
+                    );
+                }
+            });
         }
 
         return true;
     }
 
     /**
-     * Cuenta cuántas habitaciones de un tipo están disponibles
+     * Cuenta cuántas habitaciones de un tipo están disponibles (tiene en cuenta placeholders)
      */
     private function contarHabitacionesDisponibles(string $tipo, Carbon $checkIn, Carbon $checkOut): int
     {
-        return Habitacion::where('tipo', $tipo)
-            ->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                $query->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn);
-            })->count();
+        $total = Habitacion::where('tipo', $tipo)->count();
+
+        // Habitaciones ya asignadas (por habitacion_id)
+        $ocupadasAsignadas = HabitacionReserva::whereNotNull('habitacion_id')
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn)
+            ->distinct('habitacion_id')
+            ->count('habitacion_id');
+
+        // Placeholders (reservas sin habitacion asignada) del mismo tipo
+        $placeholders = HabitacionReserva::whereNull('habitacion_id')
+            ->where('tipo', $tipo)
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn)
+            ->count();
+
+        $ocupadas = $ocupadasAsignadas + $placeholders;
+
+        return max($total - $ocupadas, 0);
     }
 
     /* Calcula el precio promedio por noche para mostrar desglose en la factura */
@@ -461,26 +482,32 @@ class ReservaService
             $tipo = $requerida['tipo'];
             $cantidad = $requerida['cantidad'];
 
-            // Check that there is capacity for the requested type
-            $disponibles = $this->contarHabitacionesDisponibles($tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
-            if ($disponibles < $cantidad) {
-                throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
-            }
+            // Perform an atomic check + placeholder creation under a lock to prevent race conditions
+            DB::transaction(function () use ($reserva, $tipo, $cantidad) {
+                // Lock habitaciones of the type so concurrent processes wait here
+                Habitacion::where('tipo', $tipo)->lockForUpdate()->get();
 
-            // Calcular precio por habitación
-            $precioPorHabitacion = $this->precioService->calcularPrecioEntreFechas(
-                $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+                // Recompute disponibles now that we hold the lock (this sees placeholders created/committed)
+                $disponibles = $this->contarHabitacionesDisponibles($tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+                if ($disponibles < $cantidad) {
+                    throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
+                }
 
-            for ($i = 0; $i < $cantidad; $i++) {
-                HabitacionReserva::create([
-                    'reserva_id' => $reserva->id,
-                    'habitacion_id' => null,
-                    'tipo' => $tipo,
-                    'check_in' => $reserva->check_in,
-                    'check_out' => $reserva->check_out,
-                    'precio' => $precioPorHabitacion,
-                ]);
-            }
+                // Calcular precio por habitación
+                $precioPorHabitacion = $this->precioService->calcularPrecioEntreFechas(
+                    $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+
+                for ($i = 0; $i < $cantidad; $i++) {
+                    HabitacionReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'habitacion_id' => null,
+                        'tipo' => $tipo,
+                        'check_in' => $reserva->check_in,
+                        'check_out' => $reserva->check_out,
+                        'precio' => $precioPorHabitacion,
+                    ]);
+                }
+            });
         }
     }
 
