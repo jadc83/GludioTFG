@@ -27,7 +27,6 @@ export default function useCalendarioPrecios() {
       return false;
 
     } catch (e) {
-      console.error('Error cargando precios por día', e);
       return false;
     }
   }, []);

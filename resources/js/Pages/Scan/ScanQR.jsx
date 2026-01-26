@@ -91,7 +91,6 @@ export default function ScanQR() {
             router.visit(route('reserva.show', { reserva: localizador }));
             return;
         } catch (e) {
-            console.error('Error procesando la reserva:', e);
             setError('Error procesando la reserva');
         }
     }, []);

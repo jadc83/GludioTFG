@@ -84,12 +84,6 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
 
 
     useEffect(() => {
-        try {
-            console.log('FormularioPago - auth.user:', user);
-        } catch (e) {
-            console.error('Error al acceder a user en FormularioPago:', e);
-        }
-
         if (!user) return;
 
         setDireccion((prev) => {
@@ -104,7 +98,6 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const procesarPago = async (e) => {
         e.preventDefault();
         if (!stripe || !elements) {
-            console.error('Stripe o elements no cargados');
             setMensaje('El formulario no está completamente cargado');
             return;
         }
@@ -158,12 +151,10 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                             errorMessage = specific;
                         } else {
                             const err = await resReserva.json().catch(() => null);
-                            console.error('Error de servidor:', err);
                             errorMessage = (err && (err.message || err.error)) || errorMessage;
                         }
                     } else {
                         const text = await resReserva.text();
-                        console.error('Error de texto:', text);
                         errorMessage = `Error ${resReserva.status}`;
                     }
                     showToast(errorMessage, 'error');
@@ -208,7 +199,6 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     }
                 } else {
                     const text = await resPI.text();
-                    console.error('Response error:', text.substring(0, 500));
                 }
                 showToast(errorMessage, 'error');
                 throw new Error(errorMessage);
@@ -278,17 +268,20 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     };
 
     return (
-        <div className="w-full text-xs md:text-[13px]">
+        <div className="w-full text-xs md:text-[13px] relative">
             <form onSubmit={procesarPago} className="space-y-1">
+                {/* Overlay para indicar procesamiento sin cambiar layout */}
                 {procesando && (
-                    <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 text-center">
-                        <div className="flex justify-center mb-2">
-                            <div className="inline-block animate-spin">
-                                <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full"></div>
+                    <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto bg-black/20 transition-opacity duration-200">
+                        <div className="bg-white rounded-xl p-6 shadow-lg w-72 flex flex-col items-center gap-2 pointer-events-auto">
+                            <div className="flex justify-center mb-0">
+                                <div className="inline-block animate-spin">
+                                    <div className="w-7 h-7 border-4 border-blue-300 border-t-blue-600 rounded-full"></div>
+                                </div>
                             </div>
+                            <p className="text-base font-semibold text-blue-900">Procesando pago…</p>
+                            <p className="text-sm text-blue-700 mt-0.5">No cierres esta ventana</p>
                         </div>
-                        <p className="text-xs font-medium text-blue-900">Procesando pago...</p>
-                        <p className="text-xs text-blue-700 mt-0.5">No cierres esta ventana</p>
                     </div>
                 )}
 

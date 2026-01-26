@@ -11,12 +11,16 @@ use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\ReservaService;
+use App\Services\PaymentService;
 
 class PagoController extends Controller
 {
-    public function __construct()
+    private PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService)
     {
         Stripe::setApiKey(config('services.stripe.secret'));
+        $this->paymentService = $paymentService;
     }
 
     /**
@@ -172,7 +176,7 @@ class PagoController extends Controller
     /**
      * Webhook de Stripe
      */
-    public function webhook(Request $request, \App\Services\ReservaService $reservaService)
+    public function webhook(Request $request)
     {
         $endpointSecret = config('services.stripe.webhook_secret');
 
@@ -201,7 +205,7 @@ class PagoController extends Controller
             } elseif (in_array($event->type, ['charge.refunded', 'refund.updated', 'refund.created'])) {
                 try {
                     $refundObj = $event->data->object;
-                    $reservaService->handleRefundEvent($refundObj);
+                    $this->paymentService->manejarEventoReembolso($refundObj);
                 } catch (\Throwable $e) {
                     Log::error('Error delegando evento de reembolso al servicio: ' . $e->getMessage());
                 }
@@ -216,7 +220,7 @@ class PagoController extends Controller
     /**
      * Reembolsar una reserva: busca el último pago completado y crea un reembolso en Stripe.
      */
-    public function reembolsarReserva(Request $request, Reserva $reserva, ReservaService $reservaService)
+    public function reembolsarReserva(Request $request, Reserva $reserva)
     {
         $validated = $request->validate([
             'monto' => 'nullable|numeric|min:0.01',
@@ -226,7 +230,7 @@ class PagoController extends Controller
         $user = Auth::user();
         $monto = $validated['monto'] ?? null;
         $cancelar = $validated['cancelar'] ?? false;
-        $resultado = $reservaService->solicitarReembolso($reserva, $user, $monto);
+        $resultado = $this->paymentService->solicitarReembolso($reserva, $user, $monto);
         $status = $resultado['success'] ? 200 : 400;
         if (isset($resultado['status_code'])) {
             $status = $resultado['status_code'];

@@ -82,7 +82,6 @@ export default function Paso4Confirmacion({
                     setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
                 }
             } catch (error) {
-                console.error('Error al cargar precio:', error);
                 setMonto(0);
                 setPrecioPromedioPorNoche(0);
             }

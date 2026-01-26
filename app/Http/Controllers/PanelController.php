@@ -12,6 +12,13 @@ use Inertia\Inertia;
 
 class PanelController extends Controller
 {
+    protected ReservaService $reservaService;
+
+    public function __construct(ReservaService $reservaService)
+    {
+        $this->reservaService = $reservaService;
+    }
+
     public function index(Request $request)
     {
         $clientes = Cliente::buscar($request->busqueda)
@@ -42,15 +49,13 @@ class PanelController extends Controller
             ->orderBy('numero')
             ->get();
 
-        $reservaService = new ReservaService();
-
         return Inertia::render('Panel/PanelControl', [
             'habitaciones'            => $habitaciones,
             'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
             'clientes'                => Cliente::orderBy('name')->get(),
             'users'                   => User::orderBy('name')->get(),
             'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),
-            'reservas'                => $reservaService->formatearReservas($reservas),
+            'reservas'                => $this->reservaService->formatearReservas($reservas),
         ]);
     }
 }

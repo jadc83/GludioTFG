@@ -25,7 +25,6 @@ export default function ExtenderReserva({ reserva, onClose }) {
                 const data = await response.json();
                 setInfoExtension(data);
             } catch (err) {
-                console.error('Error al obtener info:', err);
                 setError('Error al obtener información');
             } finally {
                 setCargandoInfo(false);
@@ -138,7 +137,6 @@ export default function ExtenderReserva({ reserva, onClose }) {
                 onClose();
             }
         } catch (err) {
-            console.error('Error confirmando extensión:', err);
             onClose();
         }
     };

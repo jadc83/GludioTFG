@@ -217,15 +217,10 @@ export default function useReservaForm() {
             });
 
             if (!response.ok) {
-                let text = '';
-                try { text = await response.text(); } catch (e) { text = response.statusText; }
-                    console.error('Error HTTP al calcular precio:', response.status, response.statusText, text);
-                    console.debug('calcularMontoTotal payload:', payload, 'response_text:', text);
                 return 0;
             }
 
             const data = await response.json();
-                console.debug('calcularMontoTotal response json:', data);
 
             if (data.success && data.data) {
                 // Devolver el objeto completo con detalles
@@ -233,11 +228,9 @@ export default function useReservaForm() {
                 setUltimoResultadoPrecio(data.data);
                 return data.data;
             } else {
-                console.error('Error en respuesta de precio:', data.error ?? data);
                 return 0;
             }
         } catch (error) {
-            console.error('Error en calcularMontoTotal:', error);
             return 0;
         }
     };
@@ -262,7 +255,6 @@ export default function useReservaForm() {
                         drawerCheckbox.checked = false;
                     }
                 } catch (error) {
-                    console.error('Error cerrando drawer:', error);
                 }
 
                 // Recargar la página para refrescar los datos (especialmente habitaciones en panel)

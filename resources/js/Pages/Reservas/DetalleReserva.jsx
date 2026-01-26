@@ -2,12 +2,15 @@ import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, Envel
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import useReserva from '@/hooks/useReserva';
+import usePreview from '@/hooks/usePreview';
+import useReservaEvents from '@/hooks/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
-    const [reserva, setReserva] = useState(initialReserva);
+    const { reserva, setReserva, refresh, aplicarCambioFechas, solicitarReembolso } = useReserva(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState(null);
     const [showDateModal, setShowDateModal] = useState(false);
@@ -28,34 +31,33 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         setTimeout(() => setToast(null), 4500);
     };
 
+    // Eventos y preview externalizados a hooks
+    const { preview: previewFromHook, loading: previewLoadingHook, error: previewErrorHook, fetchPreview: fetchPreviewHook } = usePreview(reserva.localizador);
+
+    // Sincronizar estado de preview del hook con el componente
+    useEffect(() => { if (previewFromHook !== undefined) setPreview(previewFromHook); }, [previewFromHook]);
+    useEffect(() => { if (previewErrorHook) setPreviewError(previewErrorHook); }, [previewErrorHook]);
+    useEffect(() => { setPreviewLoading(previewLoadingHook); }, [previewLoadingHook]);
+
+    useReservaEvents(reserva, { onRefresh: () => { refresh(); } });
+
     const applyDateChange = async (newCheckIn, newCheckOut, pagoId = null) => {
         try {
             setIsProcessing(true);
-            const axios = (await import('axios')).default;
-            const payload = { check_in: newCheckIn.format('YYYY-MM-DD'), check_out: newCheckOut.format('YYYY-MM-DD') };
-            if (pagoId) payload.pago_id = pagoId;
-            const res = await axios.post(`/reservas/${reserva.localizador}/modificar-estancia`, payload);
-            showToast(res?.data?.message || 'Reserva actualizada', 'success');
-            if (res?.data?.reserva) setReserva(prev => ({ ...prev, ...res.data.reserva }));
+            const res = await aplicarCambioFechas(newCheckIn, newCheckOut, pagoId);
+            showToast(res?.message || 'Reserva actualizada', 'success');
+            if (res?.reserva) setReserva(prev => ({ ...prev, ...res.reserva }));
+            return res;
         } catch (err) {
             const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
             showToast(msg, 'error');
+            throw err;
         } finally { setIsProcessing(false); }
     };
 
     const fetchPreview = async (checkInStr, checkOutStr) => {
-        try {
-            setPreviewError(null);
-            setPreviewLoading(true);
-            const axios = (await import('axios')).default;
-            const res = await axios.get(`/reservas/${reserva.localizador}/preview-modificar-estancia`, { params: { check_in: checkInStr, check_out: checkOutStr } });
-            setPreview(res?.data || null);
-            return res?.data || null;
-        } catch (err) {
-            setPreview(null);
-            setPreviewError(err?.response?.data?.message || err?.message || 'Error calculando vista previa');
-            return null;
-        } finally { setPreviewLoading(false); }
+        // Delegar al hook de preview
+        return fetchPreviewHook(checkInStr, checkOutStr);
     };
 
     const openDateModal = () => {
@@ -73,6 +75,13 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             setIsProcessing(true);
             const newCheckIn = dayjs(modalCheckIn);
             const newCheckOut = dayjs(modalCheckOut);
+
+            // Si la reserva ya está en check-in, NO permitir cambiar la fecha de check-in
+            if (isCheckedIn && !newCheckIn.isSame(dayjs(reserva.check_in), 'day')) {
+                showToast('No se puede modificar la fecha de check-in después de haber realizado el check-in.', 'error');
+                return;
+            }
+
             if (!newCheckOut.isAfter(newCheckIn)) { showToast('Fechas inválidas.', 'error'); return; }
 
             // Refetch preview to ensure availability
@@ -98,12 +107,10 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             await applyDateChange(newCheckIn, newCheckOut);
             if (latestPreview && latestPreview.estimate_refund > 0) {
                 try {
-                    const axios = (await import('axios')).default;
                     const monto = latestPreview.estimate_refund;
-                    const r = await axios.post(`/reservas/${reserva.id}/reembolsar`, { monto });
-                    showToast(r?.data?.message || 'Reembolso solicitado correctamente.', 'success');
-                    const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
-                    if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
+                    const r = await solicitarReembolso(monto, false);
+                    showToast(r?.message || 'Reembolso solicitado correctamente.', 'success');
+                    await refresh();
                 } catch (err) {
                     const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
                     showToast(msg, 'error');
@@ -127,9 +134,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             const pagoId = paymentResult?.pago_id || null;
             await applyDateChange(newCheckIn, newCheckOut, pagoId);
             // Refrescar reserva completa
-            const axios = (await import('axios')).default;
-            const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
-            if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
+            await refresh();
             // Cerrar la modal de edición de fechas al completarse el cambio
             setShowDateModal(false);
             showToast('Cambio aplicado tras pago.', 'success');
@@ -214,6 +219,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
 
     const isCancelled = String(reserva.status || '').toLowerCase().includes('cancel');
+    const isCheckedIn = String(reserva.status || '').toLowerCase() === 'checked_in';
 
     return (
         <GuestLayout>
@@ -305,9 +311,19 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                                     if (isProcessing) return;
                                                     if (!confirm('¿Cancelar reserva y solicitar el reembolso del importe disponible?')) return;
                                                     setIsProcessing(true);
-                                                    import('axios').then(({ default: axios }) => {
-                                                        axios.post(`/reservas/${reserva.id}/reembolsar`, { monto: refundableAmount, cancelar: true }).then((res) => { showToast(res?.data?.message || 'Reembolso solicitado correctamente.', 'success'); return axios.get(`/reservas/buscar/${reserva.localizador}`); }).then((res2) => { if (res2?.data?.reserva) { setReserva(prev => ({ ...prev, ...res2.data.reserva })); } }).catch((err) => { const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.'; showToast(msg, 'error'); console.error('Reembolso error:', err); }).finally(() => setIsProcessing(false));
-                                                    });
+                                                    (async () => {
+                                                        try {
+                                                            const r = await solicitarReembolso(refundableAmount, true);
+                                                            showToast(r?.message || 'Reembolso solicitado correctamente.', 'success');
+                                                            await refresh();
+                                                        } catch (err) {
+                                                            const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
+                                                            showToast(msg, 'error');
+
+                                                        } finally {
+                                                            setIsProcessing(false);
+                                                        }
+                                                    })();
                                                 }} className="w-full bg-[#7a0202] text-white px-3 py-2 rounded font-semibold">Cancelar reserva</button>
                                             )}
                                         </div>
@@ -324,12 +340,6 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 </div>
                             </aside>
                         </div>
-
-                        {/* Middle sections removed for bisecting */}
-
-                        {/* Edición via modal eliminada; botones de checkin/checkout central eliminados porque ya están en el panel lateral (sticky). */}
-
-
 
                         <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm mt-3"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
 
@@ -370,7 +380,8 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                     <div className="grid grid-cols-1 gap-4 mb-4">
                                         <div>
                                             <label className="text-sm font-semibold">Check-in</label>
-                                            <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" />
+                                            <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" disabled={isCheckedIn} />
+                                            {isCheckedIn && (<div className="text-xs text-gray-500 mt-1">No se puede modificar la fecha de check-in después de realizar el check-in.</div>)}
                                         </div>
 
                                         <div>
@@ -440,7 +451,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                         {/* Payment modal for additional charges */}
                         {showPaymentModal && (
                             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
+                                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
                                     <div className="flex justify-between items-center mb-4">
                                         <h2 className="text-2xl font-bold mb-2">Pago Adicional Requerido</h2>
                                         <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>

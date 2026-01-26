@@ -99,7 +99,6 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
             const nuevasPrevisualizaciones = await Promise.all(archivos.map(leerArchivoComoDataUrl));
             setPresualizaciones((prev) => [...prev, ...nuevasPrevisualizaciones]);
         } catch (error) {
-            console.error('Error leyendo archivos de foto:', error);
             // Continuar sin fallar si hay error en lectura
         }
 
@@ -163,7 +162,6 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
                     alGuardar?.();
                 },
                 onError: (errores) => {
-                    console.error('Error guardando habitación:', errores);
                 },
             });
         } else {
