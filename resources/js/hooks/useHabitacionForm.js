@@ -106,10 +106,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
         event.target.value = '';
     };
 
-    /**
-     * Elimina una foto por índice
-     * Diferencia entre fotos guardadas y nuevas
-     */
+    /* Elimina una foto por índice */
     const quitarFoto = (indice) => {
         if (indice < fotosGuardadas.length) {
             // Es una foto guardada - marcar para eliminar del servidor
@@ -126,15 +123,10 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
         setPresualizaciones((prev) => prev.filter((_, i) => i !== indice));
     };
 
-    /**
-     * Envía el formulario al servidor (crear o actualizar habitación)
-     */
+    /* Envía el formulario al servidor (crear o actualizar habitación) */
     const enviar = (event) => {
         event.preventDefault();
-
         const datosFormulario = new FormData();
-
-        // Agregar campos de formulario
         Object.entries(formulario).forEach(([clave, valor]) => {
             datosFormulario.append(clave, valor);
         });
@@ -153,9 +145,7 @@ export function useHabitacionForm(habitacionInicial = null, alGuardar = null) {
             // Usar método PUT via _method
             datosFormulario.append('_method', 'PUT');
 
-            router.post(`/habitaciones/${habitacionInicial.id}`, datosFormulario, {
-                preserveState: false,
-                preserveScroll: false,
+            router.post(`/habitaciones/${habitacionInicial.id}`, datosFormulario, { preserveState: false,  preserveScroll: false,
                 onSuccess: () => {
                     router.reload();
                     reset();

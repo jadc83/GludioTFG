@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import '../../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import {BriefcaseIcon, HomeIcon, UsersIcon} from '@heroicons/react/24/outline';
+import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon} from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 import TabClientes from '@/Components/clientes/TabClientes';
 import TabReservas from '@/Components/reservas/listado/TabReservas';
@@ -15,6 +15,7 @@ const TABS = [
     { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
     { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
     { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
+    { id: 'estadisticas', icon: ChartBarIcon, label: 'Estadísticas' },
 ];
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
@@ -26,6 +27,7 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 }
 
 import TabReembolsos from '@/Pages/Panel/TabReembolsos';
+const TabEstadisticas = React.lazy(() => import('@/Pages/Panel/TabEstadisticas'));
 
 function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
   switch (tabActiva) {
@@ -41,6 +43,12 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
     case 'reembolsos':
       return <TabReembolsos />;
+    case 'estadisticas':
+      return (
+        <Suspense fallback={<div className="p-6 text-center">Cargando estadísticas…</div>}>
+          <TabEstadisticas />
+        </Suspense>
+      );
     default:
       return (
         <div className="marcadorLugar">

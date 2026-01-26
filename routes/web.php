@@ -59,6 +59,9 @@ Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaControl
 Route::post('/reservas/{reserva}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'store'])->name('reservas.refund-requests.store')->middleware('auth');
 Route::post('/reservas/{localizador}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'storeByLocalizador'])->name('reservas.refund-requests.store.by_localizador')->middleware('auth');
 Route::get('/admin/refund-requests', [\App\Http\Controllers\Admin\RefundRequestController::class, 'index'])->name('admin.refund-requests.index')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
+
+// Panel statistics (ocupacion)
+Route::get('/panel/estadisticas/ocupacion', [\App\Http\Controllers\Panel\EstadisticasController::class, 'ocupacion'])->name('panel.estadisticas.ocupacion')->middleware(['auth']);
 Route::post('/admin/refund-requests/{refundRequest}/approve', [\App\Http\Controllers\Admin\RefundRequestController::class, 'approve'])->name('admin.refund-requests.approve')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
 Route::post('/admin/refund-requests/{refundRequest}/reject', [\App\Http\Controllers\Admin\RefundRequestController::class, 'reject'])->name('admin.refund-requests.reject')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);
 Route::delete('/admin/refund-requests/{refundRequest}', [\App\Http\Controllers\Admin\RefundRequestController::class, 'destroy'])->name('admin.refund-requests.destroy')->middleware(['auth', \App\Http\Middleware\IsAdmin::class]);

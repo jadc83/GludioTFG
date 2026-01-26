@@ -22,10 +22,5 @@ export default function usePreview(localizador) {
         }
     }, [localizador]);
 
-    return {
-        preview,
-        loading,
-        error,
-        fetchPreview
-    };
+    return { preview, loading, error, fetchPreview };
 }
