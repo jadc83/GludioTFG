@@ -22,7 +22,7 @@ export default function TabEstadisticas() {
     const obtenerDatos = async (desde, hasta, activarGrafico = true) => {
         setCargando(true);
         try {
-            const res = await api.obtenerOcupacion({ date_from: desde, date_to: hasta });
+            const res = await api.obtenerOcupacion({ fecha_desde: desde, fecha_hasta: hasta });
             console.debug('estadisticas.obtenerDatos', { desde, hasta, res });
             if (res?.success) {
                 setDatos(res.data);

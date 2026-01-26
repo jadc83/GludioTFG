@@ -19,14 +19,14 @@ export default function OcupacionChart({ porDia }) {
         return <div className="h-60 flex items-center justify-center text-sm text-gray-500">No hay datos para el gráfico en el rango seleccionado.</div>;
     }
 
-    const categorias = porDia.map(d => d.date);
+    const categorias = porDia.map(d => d.fecha);
 
     const datosGrafico = {
         labels: categorias,
         datasets: [
             {
                 label: 'Ocupación %',
-                data: porDia.map(d => d.occupancy_percent),
+                data: porDia.map(d => d.porcentaje_ocupacion),
                 fill: true,
                 backgroundColor: 'rgba(122,2,2,0.18)',
                 borderColor: '#7a0202',

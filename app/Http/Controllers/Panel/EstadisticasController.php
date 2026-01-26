@@ -10,88 +10,88 @@ class EstadisticasController extends Controller
 {
     /**
      * Retorna estadísticas de ocupación para una fecha o un rango de fechas.
-     * Parámetros: date_from (Y-m-d), date_to (Y-m-d)
+     * Parámetros: fecha_desde (Y-m-d), fecha_hasta (Y-m-d)
      */
     public function ocupacion(Request $request)
     {
-        $validated = $request->validate([
-            'date_from' => 'nullable|date_format:Y-m-d',
-            'date_to' => 'nullable|date_format:Y-m-d',
+        $validados = $request->validate([
+            'fecha_desde' => 'nullable|date_format:Y-m-d',
+            'fecha_hasta' => 'nullable|date_format:Y-m-d',
         ]);
 
-        $dateFrom = $validated['date_from'] ?? null;
-        $dateTo = $validated['date_to'] ?? null;
+        $fechaDesde = $validados['fecha_desde'] ?? null;
+        $fechaHasta = $validados['fecha_hasta'] ?? null;
 
-        if (! $dateFrom && ! $dateTo) {
-            $dateFrom = Carbon::now()->format('Y-m-d');
-            $dateTo = $dateFrom;
-        } elseif ($dateFrom && ! $dateTo) {
-            $dateTo = $dateFrom;
-        } elseif (! $dateFrom && $dateTo) {
-            $dateFrom = $dateTo;
+        if (! $fechaDesde && ! $fechaHasta) {
+            $fechaDesde = Carbon::now()->format('Y-m-d');
+            $fechaHasta = $fechaDesde;
+        } elseif ($fechaDesde && ! $fechaHasta) {
+            $fechaHasta = $fechaDesde;
+        } elseif (! $fechaDesde && $fechaHasta) {
+            $fechaDesde = $fechaHasta;
         }
 
-        $from = Carbon::parse($dateFrom);
-        $to = Carbon::parse($dateTo);
+        $desde = Carbon::parse($fechaDesde);
+        $hasta = Carbon::parse($fechaHasta);
 
-        if ($to->lessThan($from)) {
-            // swap
-            [$from, $to] = [$to, $from];
+        if ($hasta->lessThan($desde)) {
+            // intercambiar
+            [$desde, $hasta] = [$hasta, $desde];
         }
 
-        $totalRooms = \App\Models\Habitacion::count();
+        $totalHabitaciones = \App\Models\Habitacion::count();
 
-        $results = [];
-        $period = new \DatePeriod($from, new \DateInterval('P1D'), $to->copy()->addDay());
+        $resultados = [];
+        $periodo = new \DatePeriod($desde, new \DateInterval('P1D'), $hasta->copy()->addDay());
 
-        foreach ($period as $d) {
-            $date = $d->format('Y-m-d');
+        foreach ($periodo as $dia) {
+            $fecha = $dia->format('Y-m-d');
 
-            // Count distinct habitaciones reserved for this day (assigned room ids)
-            $occupiedFromRooms = \App\Models\HabitacionReserva::whereDate('check_in', '<=', $date)
-                ->whereDate('check_out', '>', $date)
+            // Contar habitaciones distintas reservadas para este día (habitaciones asignadas)
+            $habitacionesOcupadasAsignadas = \App\Models\HabitacionReserva::whereDate('check_in', '<=', $fecha)
+                ->whereDate('check_out', '>', $fecha)
                 ->distinct('habitacion_id')
                 ->whereNotNull('habitacion_id')
                 ->count('habitacion_id');
 
-            // Count reservations that overlap this day but have NO habitaciones assigned or only habitaciones without habitacion_id (Sin asignar)
-            $unassignedReservations = \App\Models\Reserva::whereDate('check_in', '<=', $date)
-                ->whereDate('check_out', '>', $date)
-                ->where(function($q) use ($date) {
+            // Contar reservas que solapan este día pero NO tienen habitaciones asignadas o sólo habitaciones sin habitacion_id (Sin asignar)
+            $reservasSinAsignar = \App\Models\Reserva::whereDate('check_in', '<=', $fecha)
+                ->whereDate('check_out', '>', $fecha)
+                ->where(function($q) use ($fecha) {
                     $q->whereDoesntHave('habitaciones')
-                      ->orWhereHas('habitaciones', function($q2) use ($date) {
-                          $q2->whereDate('check_in', '<=', $date)
-                             ->whereDate('check_out', '>', $date)
+                      ->orWhereHas('habitaciones', function($q2) use ($fecha) {
+                          $q2->whereDate('check_in', '<=', $fecha)
+                             ->whereDate('check_out', '>', $fecha)
                              ->whereNull('habitacion_id');
                       });
                 })
                 ->count();
 
-            $occupied = $occupiedFromRooms + $unassignedReservations;
+            $ocupadas = $habitacionesOcupadasAsignadas + $reservasSinAsignar;
 
-            $percent = $totalRooms > 0 ? round(($occupied / $totalRooms) * 100, 2) : 0;
+            $porcentaje = $totalHabitaciones > 0 ? round(($ocupadas / $totalHabitaciones) * 100, 2) : 0;
 
-            $results[] = [
-                'date' => $date,
-                'occupied' => $occupied,
-                'occupancy_percent' => $percent,
+            $resultados[] = [
+                'fecha' => $fecha,
+                'ocupadas' => $ocupadas,
+                'porcentaje_ocupacion' => $porcentaje,
             ];
         }
 
-        // average occupancy across period
-        $average = 0;
-        if (!empty($results)) {
-            $average = round(array_sum(array_column($results, 'occupancy_percent')) / count($results), 2);
+        // promedio de ocupación en el periodo
+        $promedio = 0;
+        if (!empty($resultados)) {
+            $promedio = round(array_sum(array_column($resultados, 'porcentaje_ocupacion')) / count($resultados), 2);
         }
 
         return response()->json([
             'success' => true,
             'data' => [
-                'total_rooms' => $totalRooms,
-                'per_day' => $results,
-                'average_occupancy_percent' => $average,
-                'date_from' => $from->format('Y-m-d'),
-                'date_to' => $to->format('Y-m-d'),
+                'total_habitaciones' => $totalHabitaciones,
+                'por_dia' => $resultados,
+                'promedio_porcentaje_ocupacion' => $promedio,
+                'fecha_desde' => $desde->format('Y-m-d'),
+                'fecha_hasta' => $hasta->format('Y-m-d'),
             ],
         ]);
     }

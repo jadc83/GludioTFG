@@ -21,16 +21,16 @@ export default function IndexEstadisticas({ cargando = false, datos = null, most
 
     if (!datos) return <div className="p-6 text-center text-sm text-gray-500">No hay datos. Usa el buscador para generar estadísticas.</div>;
 
-    const { total_rooms: habitacionesTotales, per_day: porDia, average_occupancy_percent: ocupacionMedia, date_from: fechaDesde, date_to: fechaHasta } = datos;
+    const { total_habitaciones: habitacionesTotales, por_dia: porDia, promedio_porcentaje_ocupacion: ocupacionMedia, fecha_desde: fechaDesde, fecha_hasta: fechaHasta } = datos;
 
-    const categorias = porDia.map(d => d.date);
+    const categorias = porDia.map(d => d.fecha);
 
     const datosGrafico = {
         labels: categorias,
         datasets: [
             {
                 label: 'Ocupación %',
-                data: porDia.map(d => d.occupancy_percent),
+                data: porDia.map(d => d.porcentaje_ocupacion),
                 fill: true,
                 backgroundColor: 'rgba(122,2,2,0.18)',
                 borderColor: '#7a0202',
@@ -96,13 +96,13 @@ export default function IndexEstadisticas({ cargando = false, datos = null, most
                     </thead>
                     <tbody>
                         {porDia.map((d) => (
-                            <tr key={d.date}>
-                                <td className="font-mono">{d.date}</td>
-                                <td>{d.occupied}</td>
-                                <td>{d.occupancy_percent}%</td>
+                            <tr key={d.fecha}>
+                                <td className="font-mono">{d.fecha}</td>
+                                <td>{d.ocupadas}</td>
+                                <td>{d.porcentaje_ocupacion}%</td>
                                 <td>
                                     <div className="w-full bg-gray-100 h-3 rounded overflow-hidden">
-                                        <div style={{ width: `${d.occupancy_percent}%` }} className="h-3 rounded bg-gradient-to-r from-red-500 to-red-600"></div>
+                                        <div style={{ width: `${d.porcentaje_ocupacion}%` }} className="h-3 rounded bg-gradient-to-r from-red-500 to-red-600"></div>
                                     </div>
                                 </td>
                             </tr>
