@@ -234,7 +234,25 @@ class ReservaController extends Controller
                 $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
             }
 
-            return redirect()->route('panel')->with('success', $msg);
+            // Si la petición espera JSON, devolver información estructurada (incluyendo refund si existe)
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'refund' => $result['refund'] ?? null,
+                    'payment' => $result['payment'] ?? null,
+                ]);
+            }
+
+            $redirect = redirect()->route('panel')->with('success', $msg);
+            if (!empty($result['refund'])) {
+                $redirect = $redirect->with('refund_info', $result['refund']);
+            }
+            if (!empty($result['payment'])) {
+                $redirect = $redirect->with('payment_info', $result['payment']);
+            }
+
+            return $redirect;
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }

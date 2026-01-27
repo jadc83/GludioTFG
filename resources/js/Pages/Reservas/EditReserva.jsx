@@ -88,6 +88,13 @@ export default function EditReserva({ reserva, habitaciones }) {
     const [mostrarPago, setMostrarPago] = useState(false);
     const [montoAdicional, setMontoAdicional] = useState(0);
     const [pendienteGuardar, setPendienteGuardar] = useState(null);
+    const [toast, setToast] = useState(null); // { message, type }
+    const [refundInfo, setRefundInfo] = useState(null);
+
+    const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4500);
+    };
 
     const manejarExtensionExitosa = (nuevoCheckOut) => {
         if (nuevoCheckOut) {
@@ -124,17 +131,116 @@ export default function EditReserva({ reserva, habitaciones }) {
         return total.toFixed(2);
     };
 
-    const enviar = (e) => {
+    const enviar = async (e) => {
         e.preventDefault();
-        const nuevoTotal = parseFloat(calcularPrecioTotal());
-        const diferencia = nuevoTotal - parseFloat(reserva.precio_total);
-        if (reserva.pago === 'pagado' && diferencia > 0) { setMontoAdicional(diferencia); setPendienteGuardar(form); setMostrarPago(true); return; }
-        guardarReserva(form);
+        setGuardando(true);
+
+        // Preparar payload para calcular precio en servidor
+        const payload = {
+            check_in: form.check_in,
+            check_out: form.check_out,
+            habitaciones: form.habitacion_ids.map(id => {
+                const hab = habitaciones.find(h => h.id === id) || {};
+                return { tipo: hab.tipo || 'doble', cantidad: 1 };
+            }),
+            tarifas: [],
+        };
+
+        try {
+            // 1) Pedir al servidor el nuevo total para esta selección
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const precioRes = await fetch('/reservas/calcular-precio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify(payload),
+            });
+            const precioBody = await precioRes.json().catch(() => ({}));
+            if (!precioRes.ok || !precioBody) {
+                const msg = precioBody?.error || 'Error calculando precio en servidor';
+                showToast(msg, 'error');
+                setGuardando(false);
+                return;
+            }
+
+            const nuevoTotal = Number(precioBody.total || precioBody.data?.total || precioBody?.total || 0);
+
+            // 2) Obtener la reserva actual desde el servidor para comparar contra el valor authoritative
+            const buscarRes = await fetch(`/reservas/buscar/${encodeURIComponent(reserva.localizador)}`);
+            const buscarBody = await buscarRes.json().catch(() => ({}));
+            const viejoTotal = buscarBody?.reserva?.precio_total ?? Number(reserva.precio_total || 0);
+            const pagoStatus = buscarBody?.reserva?.pago ?? reserva.pago;
+
+            const rawDiff = nuevoTotal - Number(viejoTotal);
+            const diferencia = Number(rawDiff.toFixed(2));
+
+            // Si la diferencia es esencialmente 0 en servidor, proceder sin coste
+            if (Math.abs(rawDiff) < 0.005) {
+                await guardarReserva(form);
+                setGuardando(false);
+                return;
+            }
+
+            // Si la reserva está pagada (según servidor) y el total sube, solicitar pago adicional
+            if (String(pagoStatus).toLowerCase() === 'pagado' && diferencia > 0) {
+                setMontoAdicional(diferencia);
+                setPendienteGuardar(form);
+                setMostrarPago(true);
+                setGuardando(false);
+                return;
+            }
+
+            // Si baja el precio y hay dinero pagado, el backend procesará el reembolso al guardar
+            await guardarReserva(form);
+            setGuardando(false);
+        } catch (err) {
+            console.error('Error al decidir pago/reembolso:', err);
+            showToast('Error al procesar cambios de reserva', 'error');
+            setGuardando(false);
+        }
     };
 
-    const guardarReserva = (formData) => {
+    const guardarReserva = async (formData) => {
         setGuardando(true);
-        router.put(`/reservas/${reserva.id}`, formData, { preserveScroll: true, onSuccess: () => { router.visit('/panel'); }, onError: (errors) => { setErrores(errors); setGuardando(false); setMostrarPago(false); }, onFinish: () => setGuardando(false) });
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        try {
+            const res = await fetch(`/reservas/${reserva.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify(formData),
+            });
+
+            const body = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                const msg = body?.message || body?.error || 'Error al guardar reserva';
+                setErrores(body?.errors || {});
+                showToast(msg, 'error');
+                setGuardando(false);
+                setMostrarPago(false);
+                throw new Error(msg);
+            }
+
+            // Éxito: manejar refund o mensaje y recargar solo cuando el usuario cierre el modal o tras un pequeño delay
+            if (body?.refund && body.refund.amount) {
+                setRefundInfo(body.refund);
+                showToast(`Se ha solicitado un reembolso parcial de €${Number(body.refund.amount).toFixed(2)}`, 'success');
+                // NO recargamos automáticamente; esperaremos a que el usuario cierre el modal
+            } else {
+                showToast(body?.message || 'Reserva actualizada', 'success');
+                // Pequeño delay para que el usuario vea el toast antes de recargar
+                setTimeout(() => { router.reload(); }, 900);
+            }
+
+            setGuardando(false);
+            setMostrarPago(false);
+
+            return body;
+        } catch (err) {
+            setGuardando(false);
+            setMostrarPago(false);
+            throw err;
+        }
     };
 
     const handlePagoExitoso = () => { setMostrarPago(false); if (pendienteGuardar) guardarReserva(pendienteGuardar); };
@@ -172,6 +278,20 @@ export default function EditReserva({ reserva, habitaciones }) {
                                             <div className="flex items-center justify-between"><span className="text-lg font-bold">Total:</span><span className="font-mono text-2xl font-bold text-success">€{calcularPrecioTotal()}</span></div>
                                             <button type="button" onClick={() => setMostrarExtender(true)} className="w-full py-3 px-4 rounded-lg font-semibold mt-4 btn-accent-1366">Ampliar reserva</button>
                                             {mostrarExtender && (<div className="mt-4"><ExtenderReserva reserva={reserva} onClose={manejarExtensionExitosa}/></div>)}
+
+                    {/* Refund modal (shown when backend returns refund info) */}
+                    {refundInfo && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black opacity-50"></div>
+                            <div className="relative max-w-md w-full bg-white rounded-lg p-6 shadow-lg text-center">
+                                <h2 className="text-xl font-bold mb-2">Reembolso solicitado</h2>
+                                <p className="mb-4">Se ha solicitado un reembolso parcial de <strong>€{Number(refundInfo.amount).toFixed(2)}</strong>. El reembolso se procesará y aparecerá en el estado de pagos.</p>
+                                <div className="flex gap-2 justify-center">
+                                    <button onClick={() => { setRefundInfo(null); router.reload(); }} className="px-4 py-2 bg-[#7a0202] text-white rounded">Cerrar y ver reserva</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                                         </div></div></div>
 
                                 <div className="card bg-white shadow-md border border-gray-200"><div className="card-body p-6"><div className="space-y-4"><div><Campo id="status" label="Estado Reserva" as="select" value={form.status} onChange={cambiar} error={errores.status} sinEstilosPorDefecto={true} clase="select-bordered select w-full border-gray-300 focus:border-burgundy"><option value="pendiente">Pendiente</option><option value="confirmado">Confirmado</option><option value="checked_in">Check-in</option><option value="checked_out">Check-out</option><option value="cancelado">Cancelado</option><option value="no_presentado">No Presentado</option></Campo></div>

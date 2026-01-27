@@ -671,15 +671,42 @@ class ReservaService
         $viejoTotal = (float) $reserva->precio_total;
         $diffSigned = round($precioTotal - $viejoTotal, 2);
 
+        // Logging para depuración de cambios de precio
+        Log::info('ActualizarReserva: precio_total antiguo vs nuevo', ['reserva_id' => $reserva->id, 'viejoTotal' => $viejoTotal, 'nuevoTotal' => $precioTotal, 'diffSigned' => $diffSigned, 'pago' => $reserva->pago]);
+
         $refundInfo = null;
-        if ($diffSigned < 0 && strtolower($reserva->pago) === 'pagado') {
+
+        // Determinar si hay pagos completados asociados a la reserva (para decidir si corresponde reembolso)
+        // Considerar pagos con estados que indican dinero recibido o en proceso (pagado, completado, procesando)
+        $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado', 'procesando'])->get();
+        $montoPagado = $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
+
+        Log::info('Pagos asociados', ['reserva_id' => $reserva->id, 'pagos_count' => $pagosCompletados->count(), 'monto_pagado' => $montoPagado]);
+
+        if ($diffSigned < 0 && $montoPagado > 0) {
             $refundAmount = round(abs($diffSigned), 2);
             $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
-            $refundResult = $this->paymentService->solicitarReembolso($reserva, $userForRefund, $refundAmount);
+
+            Log::info('Intentando reembolso parcial', ['reserva_id' => $reserva->id, 'refund_amount' => $refundAmount, 'user_for_refund' => $userForRefund ? ($userForRefund->id ?? null) : null, 'monto_pagado' => $montoPagado]);
+
+            // Forzar reembolso automático: pasar forceByAdmin=true para evitar bloqueo por política de 48h de manera controlada
+            $refundResult = $this->paymentService->solicitarReembolso($reserva, $userForRefund, $refundAmount, true);
+
+            Log::info('Resultado intento reembolso (forzado)', ['reserva_id' => $reserva->id, 'refundResult' => $refundResult]);
+
             if (!($refundResult['success'] ?? false)) {
                 throw new \Exception('No se pudo procesar el reembolso: ' . ($refundResult['message'] ?? 'Error en reembolso'));
             }
-            $refundInfo = [ 'amount' => $refundResult['refund_amount'] ?? $refundAmount, 'refund_id' => $refundResult['refund_id'] ?? null, 'message' => $refundResult['message'] ?? null ];
+
+            $refundInfo = [
+                'amount' => $refundResult['refund_amount'] ?? $refundAmount,
+                'refund_id' => $refundResult['refund_id'] ?? null,
+                'message' => $refundResult['message'] ?? null
+            ];
+        } else {
+            if ($diffSigned < 0) {
+                Log::info('No se procesó reembolso porque no hay pagos detectados', ['reserva_id' => $reserva->id, 'monto_pagado' => $montoPagado, 'pago' => $reserva->pago]);
+            }
         }
 
         $reserva->update(['precio_total' => $precioTotal]);

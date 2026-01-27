@@ -61,11 +61,11 @@ class PaymentService
             return ['success' => false, 'message' => 'No autorizado para solicitar este reembolso.'];
         }
 
-        if (! $this->puedeReembolsar($reserva)) {
+        if (! $forceByAdmin && ! $this->puedeReembolsar($reserva)) {
             return ['success' => false, 'message' => 'No se puede solicitar reembolso con menos de 48 horas antes del check-in o reserva no pagada.'];
         }
 
-        // Buscar pago preferente: último completado
+        // Buscar pago asociado: último completado
         $pago = $reserva->pagos()->where('estado', 'completado')->orderByDesc('pagado_en')->first();
         if (! $pago) {
             $pago = Pago::where('reserva_id', $reserva->id)->whereNotNull('stripe_payment_intent_id')->orderByDesc('pagado_en')->first();

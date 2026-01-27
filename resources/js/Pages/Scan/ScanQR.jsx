@@ -13,18 +13,24 @@ export default function ScanQR() {
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState(null);
     const [reservaInfo, setReservaInfo] = useState(null);
+    const [assignDetails, setAssignDetails] = useState(null);
 
     const handleCloseModal = () => {
         setShowModal(false);
         if (modalType === 'checkin') {
-            router.visit(route('reserva.show', { reserva: reservaInfo?.localizador || '' }));
+            const loc = reservaInfo?.localizador || '';
+            if (loc) {
+                // Redirigir a la ruta correcta por localizador (ruta singular)
+                router.visit(`/reserva/${encodeURIComponent(loc)}`);
+            }
         } else if (modalType === 'checkout') {
-            router.visit(route('home'));
+            router.visit(`/`);
         }
     };
 
     const handleScanSuccess = useCallback(async (decodedText) => {
         setError(null);
+        setAssignDetails(null);
         let localizador = String(decodedText || '').trim();
         if (!localizador) return;
 
@@ -59,7 +65,8 @@ export default function ScanQR() {
             });
             const body = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setError(body?.error || 'Error procesando escaneo');
+                setError(body?.error || body?.message || 'Error procesando escaneo');
+                setAssignDetails(body?.details || null);
                 return;
             }
 
@@ -70,10 +77,13 @@ export default function ScanQR() {
             if (action === 'checkin') {
                 if (body?.success === false) {
                     setError(body?.error || body?.message || 'Error procesando check-in');
+                    setAssignDetails(body?.details || null);
                     return;
                 }
+                setAssignDetails(null);
                 setModalType('checkin');
                 setShowModal(true);
+                // Dejar que el usuario cierre el modal manualmente; no redirigir automáticamente.
                 return;
             }
 
@@ -103,6 +113,18 @@ export default function ScanQR() {
                         <div className="mb-8 rounded-lg bg-red-100 p-6 shadow-lg">
                             <h2 className="mb-4 text-xl font-semibold text-red-900">Error</h2>
                             <p className="text-red-700">{error}</p>
+                            {assignDetails && assignDetails.length > 0 && (
+                                <div className="mt-4 text-left text-sm text-red-700">
+                                    <h3 className="font-semibold mb-2">Detalles de asignación:</h3>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        {assignDetails.map((d) => (
+                                            <li key={d.placeholder_id}>
+                                                {d.assigned ? `Asignada habitación ${d.habitacion_id} (placeholder ${d.placeholder_id})` : `Placeholder ${d.placeholder_id}: No disponible (${d.reason || 'desconocido'})`}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     )}
 

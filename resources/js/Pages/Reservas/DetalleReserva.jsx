@@ -258,7 +258,12 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                     {reserva.habitaciones.map((hab, idx) => (
                                         <div key={idx} className="p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition flex justify-between items-center">
                                             <div>
-                                                <div className="text-sm font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-sm font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</div>
+                                                    {hab.numero && (
+                                                        <div className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">Nº {hab.numero}</div>
+                                                    )}
+                                                </div>
                                                 <div className="text-xs text-gray-500">{formatearMoneda(hab.precio)} total</div>
                                             </div>
                                             <div className="text-right">

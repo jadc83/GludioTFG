@@ -29,20 +29,51 @@ export default function QRScanner({ onScanSuccess }) {
             const canvas = canvasRef.current;
 
             if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-                const ctx = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                    // Obtener o crear contexto optimizado para lecturas frecuentes
+                let ctx = canvas._ctx;
+                if (!ctx) {
+                    try {
+                        ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    } catch (e) {
+                        // Fallback en navegadores que no soporten la opción
+                        ctx = canvas.getContext('2d');
+                    }
+                    canvas._ctx = ctx;
+                }
+
+                // Actualizar tamaño solo cuando cambie (evitar reflows innecesarios)
+                if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                }
 
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
+                let imageData;
                 try {
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code && code.data && String(code.data).trim().length > 0) {
-                        onScanSuccess(code.data);
-                        return;
+                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                } catch (err) {
+                    // Si por alguna razón getImageData falla en tamaño completo, intentar una región menor para evitar romper el bucle
+                    try {
+                        const w = Math.min(canvas.width, 320);
+                        const h = Math.min(canvas.height, 240);
+                        imageData = ctx.getImageData(0, 0, w, h);
+                    } catch (e) {
+                        imageData = null;
                     }
-                } catch (err) {}
+                }
+
+                if (imageData) {
+                    try {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        if (code && code.data && String(code.data).trim().length > 0) {
+                            onScanSuccess(code.data);
+                            return;
+                        }
+                    } catch (err) {
+                        // Ignorar errores de parsing y continuar
+                    }
+                }
             }
 
             animationIdRef.current = requestAnimationFrame(scan);

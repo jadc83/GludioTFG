@@ -15,7 +15,10 @@ use App\Http\Controllers\Api\TipoHabitacionController;
 
 
 
-Route::pattern('reserva', '[0-9]+');
+// Nota: anteriormente se aplicaba un patrón global a 'reserva' (disponible -> '[0-9]+')
+// Esto causaba que rutas como /reserva/{reserva:localizador} no coincidieran cuando el localizador contiene letras.
+// Se elimina la restricción global en favor de restricciones locales en las rutas que lo requieren.
+// Route::pattern('reserva', '[0-9]+');
 
 Route::get('/', function () {
     return Inertia::render('Home/Home');
