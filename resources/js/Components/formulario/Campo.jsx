@@ -99,6 +99,19 @@ const Campo = forwardRef(({
     delete atributos.hijos;
     delete atributos.children;
 
+    // Asegurar que inputs controlados no cambien de uncontrolled a controlled.
+    // Para inputs (excepto file/checkbox/radio) y para select/textarea, si `value` es undefined o null lo normalizamos a cadena vacía.
+    const inputType = atributos.type;
+    if (typeof InputTag === 'string') {
+        if (InputTag === 'input') {
+            if (!['file', 'checkbox', 'radio'].includes(inputType)) {
+                if (atributos.value === undefined || atributos.value === null) atributos.value = '';
+            }
+        } else if (InputTag === 'select' || InputTag === 'textarea') {
+            if (atributos.value === undefined || atributos.value === null) atributos.value = '';
+        }
+    }
+
     const nombre = (atributos.name || id || '').toString().toLowerCase();
     if (!atributos.pattern) {
         if (nombre.includes('email')) {

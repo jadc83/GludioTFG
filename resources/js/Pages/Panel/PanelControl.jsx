@@ -31,7 +31,7 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 const TabEstadisticas = React.lazy(() => import('@/Pages/Panel/TabEstadisticas'));
 
-function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas }) {
+function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados }) {
   switch (tabActiva) {
     case 'habitaciones':
       return <TabHabitaciones habitaciones={habitaciones} />;
@@ -119,7 +119,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
 
                         <div className="contenedorContenido bg-gris">
                             <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados}
-                                users={users} reservas={reservas}/>
+                                users={users} reservas={reservas} empleados={empleados}/>
                         </div>
                     </div>
                 </div>

@@ -70,7 +70,10 @@ Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsa
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
-Route::resource('empleados', EmpleadoController::class)->only(['create','store'])->middleware('auth');
+Route::resource('empleados', EmpleadoController::class)->only(['create','store','update'])->middleware('auth');
+
+// Ruta index simple que redirige al panel (donde se muestran los empleados en la pestaña) para mantener compatibilidad con las redirecciones actuales
+Route::get('/empleados', function () { return redirect()->route('panel'); })->name('empleados.index')->middleware('auth');
 Route::resource('reservas', ReservaController::class)->parameters(['reservas' => 'reserva'])->where(['reserva' => '[0-9]+'])->except('store')->middleware('auth');
 
 require __DIR__ . '/auth.php';

@@ -1,0 +1,7 @@
+.paso2-habitaciones .sticky.top-6 { top: 1.5rem !important; }
+
+/* Forzar bordes redondeados y sombra del modal dentro del componente para que prevalezcan sobre reglas globales */
+.paso2-habitaciones .paso2-modal { border-radius: 2.5rem !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; }
+
+/* Asegurar que las imágenes no se desborden si hay reglas globales inesperadas */
+.paso2-habitaciones img { max-width: 100% !important; height: auto !important; }

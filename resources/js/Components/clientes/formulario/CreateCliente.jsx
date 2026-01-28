@@ -6,38 +6,22 @@ import { UserIcon, MapPinIcon, IdentificationIcon, XMarkIcon } from '@heroicons/
 import { useState } from 'react';
 
 const INITIAL_DATA = {
-    name: '', email: '', password: '', password_confirmation: '',
-    numero_empleado: '', departamento: '', puesto: '',
+    name: '', email: '',
     tipo_documento: 'dni', numero_documento: '',
-    nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: ''
+    nacionalidad: '', direccion: '', telefono: ''
 };
 
 export default function CreateCliente({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
-    const [tabActiva, setTabActiva] = useState('personal');
 
-    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useClienteForm( null, () => { setAbierto(false); limpiar(); setTabActiva('personal'); } );
+    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useClienteForm( null, () => { setAbierto(false); limpiar(); } );
 
     const handleCerrar = () => {
         setAbierto(false);
         limpiar();
-        setTabActiva('personal');
     };
 
-    const tieneErrores = (campos) => campos.some(campo => !!errores[campo]);
 
-    const getTabClass = (id, campos) => {
-        const esActiva = tabActiva === id;
-        const conError = tieneErrores(campos);
-        let base = "flex-1 flex items-center justify-center gap-2 py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all duration-200 ";
-
-        if (conError) {
-            return base + (esActiva ? "text-red-600 border-red-600 bg-red-50" : "text-red-400 border-transparent hover:text-red-500");
-        }
-        return base + (esActiva
-            ? "text-[#7a0202] border-[#7a0202] bg-red-50/30"
-            : "text-gray-400 border-transparent hover:text-gray-900 hover:bg-gray-50");
-    };
 
     return (
         <>
@@ -78,71 +62,30 @@ export default function CreateCliente({ iconOnly = false }) {
                         </button>
                     </header>
 
-                    {/* Navegación por Pestañas */}
-                    <nav className="flex-none flex border-b border-gray-100 bg-white">
-                        <button type="button" className={getTabClass('personal', ['name', 'email', 'numero_documento'])} onClick={() => setTabActiva('personal')}>
-                            <UserIcon className="h-4 w-4" /> Personal
-                        </button>
-                        <button type="button" className={getTabClass('laboral', ['numero_empleado', 'departamento', 'puesto'])} onClick={() => setTabActiva('laboral')}>
-                            <IdentificationIcon className="h-4 w-4" /> Laboral
-                        </button>
-                        <button type="button" className={getTabClass('contacto', ['telefono', 'direccion', 'ciudad'])} onClick={() => setTabActiva('contacto')}>
-                            <MapPinIcon className="h-4 w-4" /> Contacto
-                        </button>
-                    </nav>
+
 
                     {/* Formulario con scroll independiente */}
                     <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
-                            {/* Pestaña: Datos Personales */}
-                            {tabActiva === 'personal' && (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    <Campo id="name" label="Nombre Completo" value={formulario.name} onChange={cambiar} error={errores.name} required />
-                                    <Campo id="email" label="Email Corporativo" type="email" value={formulario.email} onChange={cambiar} error={errores.email} required />
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <Campo id="name" label="Nombre Completo" value={formulario.name} onChange={cambiar} error={errores.name} required />
+                                <Campo id="email" label="Email" type="email" value={formulario.email} onChange={cambiar} error={errores.email} required />
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Campo id="tipo_documento" label="Tipo Doc." as="select" value={formulario.tipo_documento} onChange={cambiar}>
-                                            {Object.entries(TIPOS_DOCUMENTO).map(([clave, valor]) => (
-                                                <option key={clave} value={valor}>{valor.toUpperCase()}</option>
-                                            ))}
-                                        </Campo>
-                                        <Campo id="numero_documento" label="Documento" value={formulario.numero_documento} onChange={cambiar} error={errores.numero_documento} required />
-                                    </div>
-
-                                    <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 mt-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">
-                                        Acceso al Sistema
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Campo id="password" label="Contraseña" type="password" value={formulario.password} onChange={cambiar} error={errores.password} />
-                                            <Campo id="password_confirmation" label="Repetir" type="password" value={formulario.password_confirmation} onChange={cambiar} />
-                                        </div>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Campo id="tipo_documento" label="Tipo Doc." as="select" value={formulario.tipo_documento} onChange={cambiar}>
+                                        {Object.entries(TIPOS_DOCUMENTO).map(([clave, valor]) => (
+                                            <option key={clave} value={valor}>{valor.toUpperCase()}</option>
+                                        ))}
+                                    </Campo>
+                                    <Campo id="numero_documento" label="Documento" value={formulario.numero_documento} onChange={cambiar} error={errores.numero_documento} required />
                                 </div>
-                            )}
 
-                            {/* Pestaña: Información Laboral */}
-                            {tabActiva === 'laboral' && (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Campo id="numero_empleado" label="ID Empleado" value={formulario.numero_empleado} onChange={cambiar} error={errores.numero_empleado} required />
-                                        <Campo id="departamento" label="Departamento" value={formulario.departamento} onChange={cambiar} error={errores.departamento} />
-                                    </div>
-                                    <Campo id="puesto" label="Puesto / Cargo" value={formulario.puesto} onChange={cambiar} error={errores.puesto} />
-                                    <Campo id="nacionalidad" label="Nacionalidad" value={formulario.nacionalidad} onChange={cambiar} />
-                                </div>
-                            )}
+                                <Campo id="nacionalidad" label="Nacionalidad" value={formulario.nacionalidad} onChange={cambiar} error={errores.nacionalidad} />
 
-                            {/* Pestaña: Contacto y Ubicación */}
-                            {tabActiva === 'contacto' && (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    <Campo id="telefono" label="Teléfono de Contacto" value={formulario.telefono} onChange={cambiar} error={errores.telefono} />
-                                    <Campo id="direccion" label="Dirección Postal" as="textarea" rows={3} value={formulario.direccion} onChange={cambiar} error={errores.direccion} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Campo id="ciudad" label="Ciudad" value={formulario.ciudad} onChange={cambiar} />
-                                        <Campo id="codigo_postal" label="C.P." value={formulario.codigo_postal} onChange={cambiar} />
-                                    </div>
-                                </div>
-                            )}
+                                <Campo id="telefono" label="Teléfono" value={formulario.telefono} onChange={cambiar} error={errores.telefono} />
+                                <Campo id="direccion" label="Dirección" as="textarea" rows={3} value={formulario.direccion} onChange={cambiar} error={errores.direccion} />
+                            </div>
                         </div>
 
                         {/* Footer con botón fijo abajo */}
@@ -152,7 +95,7 @@ export default function CreateCliente({ iconOnly = false }) {
                                 disabled={estaCargando}
                                 className="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] hover:bg-[#7a0202] transition-all shadow-xl disabled:opacity-50"
                             >
-                                {estaCargando ? 'Procesando...' : 'Finalizar Alta de Empleado'}
+                                {estaCargando ? 'Procesando...' : 'Guardar Cliente'}
                             </button>
                         </div>
                     </form>

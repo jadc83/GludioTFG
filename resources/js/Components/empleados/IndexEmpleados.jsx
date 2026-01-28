@@ -1,10 +1,17 @@
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { useState, useMemo, useEffect } from 'react';
+import EditEmpleado from '@/Components/empleados/formulario/EditEmpleado';
 import { MagnifyingGlassIcon, InboxIcon, PencilIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 export default function IndexEmpleados({ empleados = [] }) {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 10;
+
+    const [empleadoEditar, setEmpleadoEditar] = useState(null);
+    const [drawerAbierto, setDrawerAbierto] = useState(false);
+
+    const abrirEdicion = (emp) => { setEmpleadoEditar(emp); setDrawerAbierto(true); };
+    const cerrarEdicion = () => { setDrawerAbierto(false); setEmpleadoEditar(null); };
 
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
         { busqueda: '' }, 'panel', ['empleados']
@@ -97,7 +104,7 @@ export default function IndexEmpleados({ empleados = [] }) {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"><EyeIcon className="h-5 w-5" /></button>
-                                                    <button className="p-2 text-gray-400 hover:text-[#7a0202] hover:bg-red-50 rounded-lg transition"><PencilIcon className="h-5 w-5" /></button>
+                                                    	<button onClick={() => abrirEdicion(e)} className="p-2 text-gray-400 hover:text-[#7a0202] hover:bg-red-50 rounded-lg transition"><PencilIcon className="h-5 w-5" /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -124,6 +131,7 @@ export default function IndexEmpleados({ empleados = [] }) {
                     </>
                 )}
             </div>
+            <EditEmpleado empleado={empleadoEditar} abierto={drawerAbierto} onCerrar={cerrarEdicion} />
         </div>
     );
 }
