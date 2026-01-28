@@ -12,7 +12,7 @@ export default function Paso4Confirmacion({
     habitacionesSeleccionadas,
     getTotalHabitaciones,
     retrocederPaso,
-    calcularMontoTotal,
+    precioSinTarifas,
     usuarioActual,
     getValues,
     idClienteSeleccionado,
@@ -41,7 +41,7 @@ export default function Paso4Confirmacion({
     const [monto, setMonto] = useState(0);
     const [tarifasAplicadas, setTarifasAplicadas] = useState([]);
     const [cargoTarifas, setCargoTarifas] = useState(0);
-    const [precioPromedioPorNoche, setPrecioPromedioPorNoche] = useState(0);
+    const [precioAvg, setprecioAvg] = useState(0);
     const [errorPagoLocal, setErrorPagoLocal] = useState(null);
 
     // Cargar el precio del servidor cuando cambian fechas o habitaciones
@@ -49,24 +49,24 @@ export default function Paso4Confirmacion({
         const cargarPrecio = async () => {
             if (!rango?.from || !rango?.to) {
                 setMonto(0);
-                setPrecioPromedioPorNoche(0);
+                setprecioAvg(0);
                 return;
             }
 
             try {
-                const resultado = await calcularMontoTotal();
+                const resultado = await precioSinTarifas();
 
                     if (typeof resultado === 'object' && resultado.total !== undefined) {
                         setMonto(resultado.total);
                         setTarifasAplicadas(resultado.tarifas_aplicadas || []);
-                        setCargoTarifas(resultado.cargo_tarifas || 0);
+                        setCargoTarifas(resultado.precioTarifas || 0);
 
                     // Usar el precio promedio del backend si está disponible
                     if (resultado.habitaciones && resultado.habitaciones.length > 0) {
-                        const precioPromedio = resultado.habitaciones[0].precioPromedioPorNoche || 0;
-                        setPrecioPromedioPorNoche(precioPromedio);
+                        const precioPromedio = resultado.habitaciones[0].precioAvg || 0;
+                        setprecioAvg(precioPromedio);
                     } else {
-                        setPrecioPromedioPorNoche(0);
+                        setprecioAvg(0);
                     }
                 } else {
                     // Si solo devuelve el total (número)
@@ -79,11 +79,11 @@ export default function Paso4Confirmacion({
                     const precioPorNocheUnaHabitacion = numeroNoches > 0
                         ? (montoCalculado / totalHabitaciones) / numeroNoches
                         : 0;
-                    setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
+                    setprecioAvg(precioPorNocheUnaHabitacion);
                 }
             } catch (error) {
                 setMonto(0);
-                setPrecioPromedioPorNoche(0);
+                setprecioAvg(0);
             }
         };
 
@@ -111,7 +111,8 @@ export default function Paso4Confirmacion({
                 check_in: rango?.from,
                 check_out: rango?.to,
                 cantidad_habitaciones: getTotalHabitaciones(),
-                precio_total: monto,
+                // Preferir el precio calculado por el backend si está disponible
+                precio_total: (data?.reserva?.precio_total !== undefined) ? data.reserva.precio_total : monto,
                 pagoAlLlegar: true,
             };
             setDatosReservaConfirmada(datosConfirmacion);
@@ -136,8 +137,8 @@ export default function Paso4Confirmacion({
     };
 
     const cargoParaMostrar = () => {
-        if (ultimoResultadoPrecio && (ultimoResultadoPrecio.cargo_tarifas || ultimoResultadoPrecio.cargo_tarifas === 0)) {
-            return ultimoResultadoPrecio.cargo_tarifas;
+        if (ultimoResultadoPrecio && (ultimoResultadoPrecio.precioTarifas || ultimoResultadoPrecio.precioTarifas === 0)) {
+            return ultimoResultadoPrecio.precioTarifas;
         }
         if (cargoTarifas && cargoTarifas > 0) return cargoTarifas;
         const list = tarifasParaMostrar();
@@ -257,7 +258,7 @@ export default function Paso4Confirmacion({
                                 <div className="px-1 text-center">
                                     <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Precio/Noche</p>
                                     <p className="text-[12px] font-medium text-gray-900">
-                                        {precioPromedioPorNoche > 0 ? formatearMoneda(precioPromedioPorNoche) : '—'}
+                                        {precioAvg > 0 ? formatearMoneda(precioAvg) : '—'}
                                     </p>
                                 </div>
 

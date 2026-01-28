@@ -20,6 +20,6 @@ class DescargarComprobanteAction
             ->where('localizador', $localizador)
             ->firstOrFail();
 
-        return $this->reservaService->generarComprobantePdf($reserva);
+        return $this->reservaService->generarPdf($reserva);
     }
 }

@@ -24,6 +24,6 @@ class CalcularPrecioAction
 
         $tarifas = is_array($data['tarifas'] ?? []) ? $data['tarifas'] : [];
 
-        return $this->precioService->calcularMontoTotalConTarifas($data['habitaciones'], $checkIn, $checkOut, $tarifas);
+        return $this->precioService->precioConTarifas($data['habitaciones'], $checkIn, $checkOut, $tarifas);
     }
 }

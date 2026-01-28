@@ -11,13 +11,13 @@ class PdfService
 {
     public function __construct()
     {
-        // placeholder for dependencies (config, logger, etc.)
+
     }
 
     /**
      * Genera y devuelve el objeto PDF para una reserva (no lo descarga)
      */
-    public function generarComprobantePdf(Reserva $reserva)
+    public function generarPdf(Reserva $reserva)
     {
         $checkIn = Carbon::parse($reserva->check_in);
         $checkOut = Carbon::parse($reserva->check_out);
@@ -31,7 +31,7 @@ class PdfService
         ];
 
         $pdf = Pdf::loadView('pdf.comprobante-reserva', $data);
-        // Permitir imágenes remotas y parser HTML5 para asegurar renderizado de imágenes/data-uris
+
         try {
             $pdf->setOptions([
                 'isRemoteEnabled' => true,

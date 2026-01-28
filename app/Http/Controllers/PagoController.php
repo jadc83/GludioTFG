@@ -32,7 +32,7 @@ class PagoController extends Controller
             'reserva_id' => 'required|integer|exists:reservas,id',
             'monto' => 'required|numeric|min:0.01',
             'subtotal_habitaciones' => 'nullable|numeric|min:0',
-            'cargo_tarifas' => 'nullable|numeric|min:0',
+            'precioTarifas' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -61,8 +61,8 @@ class PagoController extends Controller
             if (isset($validated['subtotal_habitaciones'])) {
                 $intentData['metadata']['subtotal_habitaciones'] = (string)round($validated['subtotal_habitaciones'], 2);
             }
-            if (isset($validated['cargo_tarifas'])) {
-                $intentData['metadata']['cargo_tarifas'] = (string)round($validated['cargo_tarifas'], 2);
+            if (isset($validated['precioTarifas'])) {
+                $intentData['metadata']['precioTarifas'] = (string)round($validated['precioTarifas'], 2);
             }
 
             if ($receiptEmail) {

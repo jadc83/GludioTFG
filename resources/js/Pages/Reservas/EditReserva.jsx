@@ -19,7 +19,7 @@ export default function EditReserva({ reserva, habitaciones }) {
         return (tiposHabitacion[key] && tiposHabitacion[key].precio_base) ? tiposHabitacion[key].precio_base : 0;
     };
 
-    const calcularPrecioDinamico = (habitacionOPrecio, checkIn, checkOut) => {
+    const precioMod = (habitacionOPrecio, checkIn, checkOut) => {
         let precioBase;
         let tipo = null;
 
@@ -125,7 +125,7 @@ export default function EditReserva({ reserva, habitaciones }) {
         const total = form.habitacion_ids.reduce((sum, habId) => {
             const habitacion = habitaciones.find((h) => h.id === habId);
             if (!habitacion) return sum;
-            const precioDinamico = calcularPrecioDinamico(habitacion, form.check_in, form.check_out);
+            const precioDinamico = precioMod(habitacion, form.check_in, form.check_out);
             return sum + precioDinamico;
         }, 0);
         return total.toFixed(2);
@@ -263,7 +263,7 @@ export default function EditReserva({ reserva, habitaciones }) {
                             <div className="space-y-4 xl:col-span-2">
                                 <div className="card bg-white shadow-md border border-gray-200"><div className="card-body p-6"><div className="mb-4 flex items-center gap-2"><HomeIcon className="h-5 w-5 accent-1366" /><h3 className="font-bold">Habitaciones</h3></div>
                                         {recalculando && (<div className="alert alert-info mb-3"><span className="loading loading-spinner loading-sm"></span><span>Recalculando disponibilidad...</span></div>)}
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{habitaciones.map((habitacion) => { const isSelected = form.habitacion_ids.includes(habitacion.id); const esActual = habitacion.es_actual; return (<div key={habitacion.id} onClick={() => toggleHabitacion(habitacion.id)} className={`card cursor-pointer border-2 transition-all ${ isSelected ? 'border-[#7a0202] bg-red-50' : 'border-transparent bg-gris hover:border-gray-300' }`}><div className="card-body p-2"><div className="mb-1 flex items-center justify-between"><input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-xs accent-checkbox-1366" /><span className="font-mono text-sm font-bold">{ habitacion.numero }</span>{esActual && (<span className="badge badge-info badge-xs">Actual</span>)}</div><div className="space-y-1"><p className="text-[11px] font-semibold capitalize"> { habitacion.tipo } </p>{form.check_in && form.check_out ? (<><div className="flex items-center justify-between"><div className="font-mono text-[11px] font-semibold accent-1366">{ (calcularPrecioDinamico(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche</div><div className="text-[11px] text-gray-500 font-medium">Total: {calcularPrecioDinamico(habitacion, form.check_in, form.check_out)} €</div></div></>) : (<div className="font-mono text-[11px] font-semibold accent-1366">{ obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche</div>)}</div></div></div>); })}</div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{habitaciones.map((habitacion) => { const isSelected = form.habitacion_ids.includes(habitacion.id); const esActual = habitacion.es_actual; return (<div key={habitacion.id} onClick={() => toggleHabitacion(habitacion.id)} className={`card cursor-pointer border-2 transition-all ${ isSelected ? 'border-[#7a0202] bg-red-50' : 'border-transparent bg-gris hover:border-gray-300' }`}><div className="card-body p-2"><div className="mb-1 flex items-center justify-between"><input type="checkbox" checked={isSelected} onChange={() => {}} className="checkbox checkbox-xs accent-checkbox-1366" /><span className="font-mono text-sm font-bold">{ habitacion.numero }</span>{esActual && (<span className="badge badge-info badge-xs">Actual</span>)}</div><div className="space-y-1"><p className="text-[11px] font-semibold capitalize"> { habitacion.tipo } </p>{form.check_in && form.check_out ? (<><div className="flex items-center justify-between"><div className="font-mono text-[11px] font-semibold accent-1366">{ (precioMod(habitacion, form.check_in, form.check_out) / calcularNoches(form.check_in, form.check_out)).toFixed(2) } €/noche</div><div className="text-[11px] text-gray-500 font-medium">Total: {precioMod(habitacion, form.check_in, form.check_out)} €</div></div></>) : (<div className="font-mono text-[11px] font-semibold accent-1366">{ obtenerPrecioBasePorTipo(habitacion.tipo) } €/noche</div>)}</div></div></div>); })}</div>
                                         {form.habitacion_ids.length === 0 && (<div className="alert alert-warning mt-3"><span> Selecciona al menos una habitación </span></div>)}
                                     </div></div>
                             </div>

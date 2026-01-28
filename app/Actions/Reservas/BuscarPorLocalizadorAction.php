@@ -17,8 +17,7 @@ class BuscarPorLocalizadorAction
     public function handle(string $localizador): array
     {
         $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
-            ->where('localizador', $localizador)
-            ->first();
+            ->where('localizador', $localizador)->first();
 
         if (!$reserva) {
             return ['success' => false, 'error' => 'No se encontró reserva con ese localizador'];

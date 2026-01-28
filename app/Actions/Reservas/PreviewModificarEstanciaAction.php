@@ -38,7 +38,7 @@ class PreviewModificarEstanciaAction
         $nuevoTotal = 0;
         foreach ($reserva->habitaciones as $hr) {
             $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
-            $precioHabitacion = $this->precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
+            $precioHabitacion = $this->precioService->precioEntreFechas($tipo, $checkIn, $checkOut);
             $nuevoTotal += $precioHabitacion;
         }
 

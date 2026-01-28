@@ -1,5 +1,7 @@
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { formatearFecha } from '../utils/fecha';
+import IconSvg from '@/components/icons/RoomIcons';
 
 /**
  * Hook para gestionar habitaciones disponibles y seleccionadas
@@ -7,10 +9,13 @@ import { formatearFecha } from '../utils/fecha';
 export default function useHabitaciones({ paso, rango, setRango }) {
     // Estado de habitaciones disponibles
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState([]);
-    const [estaCargandoHabitaciones, setEstaCargandoHabitaciones] = useState(false);
+    const [estaCargandoHabitaciones, setEstaCargandoHabitaciones] =
+        useState(false);
 
     // Estado de habitaciones seleccionadas
-    const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState({});
+    const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState(
+        {},
+    );
 
     /* Carga habitaciones disponibles desde el servidor */
     useEffect(() => {
@@ -34,16 +39,19 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 const fechaEntrada = formatearFecha(rango.from);
                 const fechaSalida = formatearFecha(rango.to);
 
-                const respuesta = await fetch( `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
+                const respuesta = await fetch(
+                    `/reservas/disponibles?check_in=${fechaEntrada}&check_out=${fechaSalida}`,
                     {
                         headers: { Accept: 'application/json' },
-                        credentials: 'include'
-                    }
+                        credentials: 'include',
+                    },
                 );
 
                 if (respuesta.ok) {
                     const datos = await respuesta.json();
-                    setHabitacionesDisponibles(Array.isArray(datos) ? datos : []);
+                    setHabitacionesDisponibles(
+                        Array.isArray(datos) ? datos : [],
+                    );
                 } else {
                     setHabitacionesDisponibles([]);
                 }
@@ -80,12 +88,14 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         return habitacionesPorTipo;
     };
 
-    /**
-     * Obtiene el icono Unicode para un tipo de habitación
-     */
-    const getIcono = (tipo) => {
-        const iconos = { individual: '🛏️', doble: '🛏️🛏️', familiar: '👨‍👩‍👧‍👦',  suite: '👑' };
-        return iconos[tipo?.toLowerCase()] || '🏨';
+    // Icon SVGs moved to component file to avoid JSX in a .js hook
+    // See resources/js/components/icons/RoomIcons.jsx
+
+
+    const getIcono = (tipo, props = {}) => {
+        const key = tipo?.toLowerCase();
+        const name = key === 'individual' ? 'bed-single' : key === 'doble' ? 'bed-double' : key === 'familiar' ? 'family' : key === 'suite' ? 'suite' : 'hotel';
+        return React.createElement(IconSvg, { name, ...props });
     };
 
     /**
@@ -93,13 +103,17 @@ export default function useHabitaciones({ paso, rango, setRango }) {
      */
     const getImagen = (tipo) => {
         const imagenes = {
-            individual: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop',
+            individual:
+                'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop',
             doble: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop',
-            familiar: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop',
+            familiar:
+                'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop',
             suite: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop',
         };
-        return imagenes[tipo?.toLowerCase()] ||
-            'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop';
+        return (
+            imagenes[tipo?.toLowerCase()] ||
+            'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop'
+        );
     };
 
     /**
@@ -116,7 +130,10 @@ export default function useHabitaciones({ paso, rango, setRango }) {
      * Obtiene el total de habitaciones disponibles en el rango seleccionado
      */
     const getTotalDisponibles = () => {
-        return habitacionesDisponibles.reduce((total, grupo) => total + grupo.cantidad, 0);
+        return habitacionesDisponibles.reduce(
+            (total, grupo) => total + grupo.cantidad,
+            0,
+        );
     };
 
     /**
@@ -138,7 +155,8 @@ export default function useHabitaciones({ paso, rango, setRango }) {
             // Asegurar que personas siempre sea > 0
             if (campo === 'personas') {
                 const cantidadPersonas = Number(valor);
-                seleccionActualizada.personas = cantidadPersonas > 0 ? cantidadPersonas : 1;
+                seleccionActualizada.personas =
+                    cantidadPersonas > 0 ? cantidadPersonas : 1;
             }
 
             return {
@@ -198,4 +216,3 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         resetSeleccion,
     };
 }
-

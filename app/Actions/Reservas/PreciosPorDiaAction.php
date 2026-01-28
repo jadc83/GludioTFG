@@ -27,7 +27,7 @@ class PreciosPorDiaAction
                 return ['success' => false, 'error' => 'Rango de fechas inválido'];
             }
 
-            $resultados = $this->precioService->preciosPorRango($fechaInicio, $fechaFin);
+            $resultados = $this->precioService->diaPrecio($fechaInicio, $fechaFin);
             return ['success' => true, 'data' => $resultados];
         } catch (\Exception $e) {
             Log::error('Error en PreciosPorDiaAction: ' . $e->getMessage());

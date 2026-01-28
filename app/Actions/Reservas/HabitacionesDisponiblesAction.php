@@ -23,7 +23,7 @@ class HabitacionesDisponiblesAction
             return ['success' => false, 'error' => 'Fechas inválidas'];
         }
 
-        $disponibles = $this->habitacionService->obtenerDisponibles($entrada, $salida);
+        $disponibles = $this->habitacionService->getDisponibles($entrada, $salida);
         return ['success' => true, 'data' => $disponibles];
     }
 }

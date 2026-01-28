@@ -167,7 +167,7 @@ class HabitacionController extends Controller
      * Obtiene habitaciones disponibles, verificando estado y disponibilidad en fechas
      * Si se pasan fechas, excluye habitaciones con reservas en ese rango
      */
-    public static function obtenerDisponibles(?string $checkIn = null, ?string $checkOut = null)
+    public static function getDisponibles(?string $checkIn = null, ?string $checkOut = null)
     {
         $habitaciones = Habitacion::with('fotos')->where('estado', 'disponible');
 

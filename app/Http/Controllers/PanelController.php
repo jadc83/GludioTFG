@@ -51,7 +51,7 @@ class PanelController extends Controller
 
         return Inertia::render('Panel/PanelControl', [
             'habitaciones'            => $habitaciones,
-            'habitacionesDisponibles' => HabitacionController::obtenerDisponibles($request->check_in, $request->check_out),
+            'habitacionesDisponibles' => HabitacionController::getDisponibles($request->check_in, $request->check_out),
             'clientes'                => Cliente::orderBy('name')->get(),
             'users'                   => User::orderBy('name')->get(),
             'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),

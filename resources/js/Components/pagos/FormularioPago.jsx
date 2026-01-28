@@ -171,7 +171,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                 resId = dataReserva.reserva_id;
                 // Capturar desglose si el backend lo devuelve
                 reservaSubtotal = dataReserva.subtotal_habitaciones ?? null;
-                reservaCargoTarifas = dataReserva.cargo_tarifas ?? null;
+                reservaCargoTarifas = dataReserva.precioTarifas ?? null;
                 if (!resId) throw new Error('No se obtuvo ID de reserva');
             }
 
@@ -189,7 +189,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     reserva_id: resId,
                     monto: monto,
                     subtotal_habitaciones: reservaSubtotal,
-                    cargo_tarifas: reservaCargoTarifas,
+                    precioTarifas: reservaCargoTarifas,
                 }),
             });
 

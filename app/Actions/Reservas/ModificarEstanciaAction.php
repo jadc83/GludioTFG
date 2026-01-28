@@ -42,7 +42,7 @@ class ModificarEstanciaAction
         $nuevoTotal = 0;
         foreach ($reserva->habitaciones as $hr) {
             $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
-            $precioHabitacion = $this->precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
+            $precioHabitacion = $this->precioService->precioEntreFechas($tipo, $checkIn, $checkOut);
             $nuevoTotal += $precioHabitacion;
         }
 
@@ -80,7 +80,7 @@ class ModificarEstanciaAction
         // actualizar precios por habitación
         foreach ($reserva->habitaciones as $hr) {
             $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
-            $precioHabitacion = $this->precioService->calcularPrecioEntreFechas($tipo, $checkIn, $checkOut);
+            $precioHabitacion = $this->precioService->precioEntreFechas($tipo, $checkIn, $checkOut);
             try { $hr->update(['precio' => $precioHabitacion]); } catch (\Throwable $e) { Log::warning('No se pudo actualizar precio habitacionReserva: ' . $e->getMessage()); }
         }
 

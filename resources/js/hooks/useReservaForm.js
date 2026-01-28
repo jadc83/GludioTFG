@@ -183,7 +183,7 @@ export default function useReservaForm() {
     /**
      * Calcula el monto total a pagar basado en las habitaciones seleccionadas
      */
-    const calcularMontoTotal = async () => {
+    const precioSinTarifas = async () => {
         if (!rango?.from || !rango?.to) return 0;
 
         // Preparar datos para enviar al servidor
@@ -305,7 +305,7 @@ export default function useReservaForm() {
         getImagen,
 
         // Cálculos
-        calcularMontoTotal,
+        precioSinTarifas,
         ultimoResultadoPrecio,
 
         // Envío de reserva
