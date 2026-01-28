@@ -222,7 +222,7 @@ class PaymentService
             if ($existingRequest) {
                 $existingRequest->update([
                     'status' => 'approved',
-                    'admin_id' => ($forzarPorAdmin && $usuario && isset($usuario->id) && $usuario->is_admin) ? $usuario->id : $existingRequest->admin_id,
+                    'admin_id' => ($forzarPorAdmin && $usuario && isset($usuario->id)) ? $usuario->id : $existingRequest->admin_id,
                     'admin_reason' => $forzarPorAdmin ? 'Procesado por admin' : ($existingRequest->admin_reason ?? null),
                     'processed_at' => now(),
                     'pago_id' => $pago->id,
@@ -238,7 +238,7 @@ class PaymentService
                     'notes' => $forzarPorAdmin ? 'Procesado por admin' : 'Reembolso automático generado por sistema',
                     'user_id' => $reserva->user_id ?? $pago->user_id ?? null,
                     'status' => 'approved',
-                    'admin_id' => ($forzarPorAdmin && $usuario && isset($usuario->id) && $usuario->is_admin) ? $usuario->id : null,
+                    'admin_id' => ($forzarPorAdmin && $usuario && isset($usuario->id)) ? $usuario->id : null,
                     'processed_at' => now(),
                     'stripe_refund_id' => $reembolso->id ?? null,
                 ]);

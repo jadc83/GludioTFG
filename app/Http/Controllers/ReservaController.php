@@ -202,7 +202,7 @@ class ReservaController extends Controller
         $reservaData = $this->reservaService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $this->reservaService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('Reservas/EditReserva', [
+        return inertia('Reservas/editarReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);

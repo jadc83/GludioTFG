@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use App\Models\Habitacion;
 use App\Models\Reserva;
 use App\Models\User;
+use App\Models\Empleado;
 use App\Services\ReservaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -49,6 +50,23 @@ class PanelController extends Controller
             ->orderBy('numero')
             ->get();
 
+        // Empleados (unimos algunos campos del usuario para simplificar el front)
+        $empleados = Empleado::with('user')->orderBy('id')->get()->map(function ($empleado) {
+            $data = $empleado->toArray();
+            if ($empleado->user) {
+                $data['name'] = $empleado->user->name;
+                $data['email'] = $empleado->user->email;
+                $data['tipo_documento'] = $empleado->user->tipo_documento;
+                $data['numero_documento'] = $empleado->user->numero_documento;
+                $data['nacionalidad'] = $empleado->user->nacionalidad;
+                $data['direccion'] = $empleado->user->direccion;
+                $data['ciudad'] = $empleado->user->ciudad;
+                $data['codigo_postal'] = $empleado->user->codigo_postal;
+                $data['telefono'] = $empleado->user->telefono;
+            }
+            return $data;
+        });
+
         return Inertia::render('Panel/PanelControl', [
             'habitaciones'            => $habitaciones,
             'habitacionesDisponibles' => HabitacionController::getDisponibles($request->check_in, $request->check_out),
@@ -56,6 +74,7 @@ class PanelController extends Controller
             'users'                   => User::orderBy('name')->get(),
             'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),
             'reservas'                => $this->reservaService->formatearReservas($reservas),
+            'empleados'               => $empleados,
         ]);
     }
 }

@@ -16,7 +16,7 @@ class AdminUserSeeder extends Seeder
         // Preferir actualizar el primer usuario existente a admin para evitar duplicados
         $user = User::first();
         if ($user) {
-            $user->update(['is_admin' => true]);
+            // Keep existing user as-is (no admin flag)
             return;
         }
 
@@ -30,7 +30,6 @@ class AdminUserSeeder extends Seeder
             'nacionalidad' => 'Española',
             'direccion' => 'Dirección admin',
             'telefono' => '000000000',
-            'is_admin' => true,
         ]);
     }
 }

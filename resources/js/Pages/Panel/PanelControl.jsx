@@ -2,12 +2,14 @@ import React, { useState, useEffect, Suspense } from 'react';
 import '../../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
+import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon} from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 import TabClientes from '@/Components/clientes/TabClientes';
 import TabReservas from '@/Components/reservas/listado/TabReservas';
+import IndexEmpleados from '@/Components/empleados/IndexEmpleados';
 
 const TABS = [
     { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },
@@ -41,6 +43,8 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       return (
         <TabReservas clientes={clientes} users={users} reservas={reservas}/>
       );
+    case 'empleados':
+      return <IndexEmpleados empleados={empleados} />;
     case 'reembolsos':
       return <TabReembolsos />;
     case 'estadisticas':
@@ -58,7 +62,7 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
   }
 }
-export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = []}) {
+export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = [], empleados = []}) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
 
     // Cargar tab desde localStorage al montar
@@ -96,6 +100,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
                                     </Link>
                                     <CreateCliente iconOnly />
                                     <CreateHabitacion iconOnly />
+                                    <CreateEmpleado iconOnly />
                                 </div>
                             </div>
                         </div>

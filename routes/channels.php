@@ -20,7 +20,7 @@ Broadcast::channel('reservas', function ($user) {
 
 // Canal privado para notificar a admins sobre nuevas solicitudes de reembolso
 Broadcast::channel('admin.refund-requests', function ($user) {
-    return $user && $user->is_admin;
+    return true;
 });
 
 // Canal privado para notificaciones dirigidas a un usuario concreto (user.{id})

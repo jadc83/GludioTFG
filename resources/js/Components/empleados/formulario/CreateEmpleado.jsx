@@ -1,8 +1,8 @@
 import Campo from '@/Components/formulario/Campo';
-import PrimaryButton from '@/Components/UI/PrimaryButton';
-import { useClienteForm } from '@/hooks/useClienteForm';
+
+import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
-import { UserIcon, MapPinIcon, IdentificationIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BriefcaseIcon, UserIcon, MapPinIcon, IdentificationIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
 const INITIAL_DATA = {
@@ -12,11 +12,20 @@ const INITIAL_DATA = {
     nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: ''
 };
 
-export default function CreateCliente({ iconOnly = false }) {
+export default function CreateEmpleado({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
     const [tabActiva, setTabActiva] = useState('personal');
 
-    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useClienteForm( null, () => { setAbierto(false); limpiar(); setTabActiva('personal'); } );
+    const { formulario, cambiar, errores, estaCargando, guardar: enviar, limpiar } = useFormGenerico(
+        INITIAL_DATA,
+        '/empleados',
+        '',
+        () => {
+            setAbierto(false);
+            limpiar();
+            setTabActiva('personal');
+        }
+    );
 
     const handleCerrar = () => {
         setAbierto(false);
@@ -44,14 +53,14 @@ export default function CreateCliente({ iconOnly = false }) {
             <button
                 onClick={() => setAbierto(true)}
                 className={`flex items-center gap-2 bg-[#7a0202] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#5a0101] transition shadow-md ${iconOnly ? 'p-3' : 'px-6 py-3'}`}
-                title="Nuevo Cliente"
-                aria-label="Nuevo Cliente"
+                title="Nuevo Empleado"
+                aria-label="Nuevo Empleado"
             >
-                <UserIcon className="h-5 w-5" /> {!iconOnly && ' Nuevo Cliente'}
+                <BriefcaseIcon className="h-5 w-5" /> {!iconOnly && ' Nuevo Empleado'}
             </button>
 
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
-            <div className={`fixed inset-x-0 top-16 bottom-0 z-[9999] transition-all duration-300 ${abierto ? 'visible' : 'invisible'}`}>
+            <div className={`fixed inset-x-0 top-16 bottom-0 z-[9999] transition-all duration-300 ${abierto ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
 
                 {/* Backdrop (Oscurecimiento del fondo) */}
                 <div
@@ -66,9 +75,9 @@ export default function CreateCliente({ iconOnly = false }) {
                     <header className="flex-none p-6 border-b border-gray-100 bg-white flex items-center justify-between">
                         <div>
                             <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">
-                                Alta de <span className="text-[#7a0202]">Cliente</span>
+                                Alta de <span className="text-[#7a0202]">Empleado</span>
                             </h3>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Gestión de Clientes</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Gestión de Personal</p>
                         </div>
                         <button
                             onClick={handleCerrar}

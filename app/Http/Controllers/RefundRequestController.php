@@ -49,7 +49,7 @@ class RefundRequestController extends Controller
 
             // Notificar a admins por correo y broadcast
             try {
-                $admins = \App\Models\User::where('is_admin', true)->get();
+                $admins = \App\Models\User::all();
                 if ($admins->isNotEmpty()) {
                     \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\RefundRequestCreatedNotification($rr));
                 }

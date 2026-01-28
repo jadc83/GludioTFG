@@ -19,11 +19,6 @@ class RefundRequestController extends Controller
 
     public function index(Request $request)
     {
-        $user = Auth::user();
-        if (! $user || ! $user->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acceso denegado.'], 403);
-        }
-
         // Simple list for admin, with filters later
         $list = RefundRequest::with(['reserva', 'user', 'admin'])->orderByDesc('created_at')->paginate(25);
 
@@ -70,9 +65,6 @@ class RefundRequestController extends Controller
         }
 
         $admin = Auth::user();
-        if (! $admin || ! $admin->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acceso denegado.'], 403);
-        }
         $amount = $refundRequest->requested_amount_cents ? ($refundRequest->requested_amount_cents / 100) : null;
 
         // Ejecutar reembolso mediante PaymentService
@@ -85,7 +77,7 @@ class RefundRequestController extends Controller
         // actualizar solicitud
         $refundRequest->update([
             'status' => 'approved',
-            'admin_id' => $admin->id,
+            'admin_id' => $admin?->id ?? null,
             'admin_reason' => $request->input('admin_reason') ?? null,
             'processed_at' => now(),
             'stripe_refund_id' => $res['refund_id'] ?? null,
@@ -111,14 +103,11 @@ class RefundRequestController extends Controller
         }
 
         $admin = Auth::user();
-        if (! $admin || ! $admin->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acceso denegado.'], 403);
-        }
         $reason = $request->validate(['admin_reason' => 'required|string']);
 
         $refundRequest->update([
             'status' => 'rejected',
-            'admin_id' => $admin->id,
+            'admin_id' => $admin?->id ?? null,
             'admin_reason' => $reason['admin_reason'],
             'processed_at' => now(),
         ]);
@@ -142,9 +131,6 @@ class RefundRequestController extends Controller
     public function destroy(Request $request, RefundRequest $refundRequest)
     {
         $admin = Auth::user();
-        if (! $admin || ! $admin->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acceso denegado.'], 403);
-        }
 
         if ($refundRequest->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Solo se pueden borrar solicitudes pendientes.'], 400);
@@ -154,7 +140,7 @@ class RefundRequestController extends Controller
             // Mark as deleted for auditability
             $refundRequest->update([
                 'status' => 'deleted',
-                'admin_id' => $admin->id,
+                'admin_id' => $admin?->id ?? null,
                 'admin_reason' => $request->input('admin_reason') ?? null,
                 'processed_at' => now(),
             ]);
