@@ -162,7 +162,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                                    Reserva <span className="text-gray-400 font-mono">#{reserva.localizador}</span>
+                                    Reserva <span className="text-gray-400 font-mono">{reserva.localizador}</span>
                                 </h1>
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                                     {reserva.status}
@@ -192,7 +192,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                             {/* Card: Detalles de Habitaciones */}
                             <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Contrato actual</h3>
+                                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Tipo de habitacion reservada</h3>
                                 </div>
                                 <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
@@ -201,11 +201,6 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                                 <span className="block font-black text-gray-900 text-lg uppercase leading-tight">
                                                     {hab.tipo || 'Habitación Estandar'}
                                                 </span>
-                                                <span className="text-xs font-mono text-gray-400 uppercase tracking-tighter">Asignación automática activa</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="block text-xl font-black text-[#7a0202]">{formatearMoneda(hab.precio)}</span>
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase">Tarifa Estancia</span>
                                             </div>
                                         </div>
                                     ))}
@@ -216,24 +211,20 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                             <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
                                     <div>
-                                        <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Asignación de llaves</h3>
-                                        <p className="text-[10px] text-gray-400 mt-1">Selecciona el número de habitación física para el cliente.</p>
+                                        <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Asignación de habitaciones</h3>
+                                        <p className="text-[10px] text-gray-400 mt-1">Selecciona el número de habitación para el cliente.</p>
                                     </div>
                                     <button
                                         onClick={handleUpdateHabitaciones}
                                         disabled={savingHabitaciones}
                                         className="px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black transition disabled:opacity-50"
                                     >
-                                        {savingHabitaciones ? 'Guardando...' : 'Guardar Llaves'}
+                                        {savingHabitaciones ? 'Guardando...' : 'Asignar Habitaciones'}
                                     </button>
                                 </div>
                                 <div className="p-6 space-y-10">
                                     {reserva.habitaciones.map((hSlot, idx) => (
                                         <div key={idx} className="space-y-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-[10px] font-bold">{idx + 1}</span>
-                                                <label className="text-sm font-black text-gray-700 uppercase tracking-tight">Slot para: {hSlot.tipo}</label>
-                                            </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                                 <button
                                                     onClick={() => {
@@ -264,7 +255,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                                                 isUsedElsewhere ? 'opacity-20 cursor-not-allowed grayscale' : 'border-gray-100 hover:border-gray-300'
                                                             }`}
                                                         >
-                                                            <span className="block text-lg font-black leading-none">#{habFisica.numero}</span>
+                                                            <span className="block text-lg font-black leading-none">{habFisica.numero}</span>
                                                             <span className="text-[8px] uppercase font-bold opacity-60">{habFisica.tipo}</span>
                                                         </button>
                                                     );
@@ -429,7 +420,6 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                 />
                             </div>
                             <div className="p-8 bg-gray-50 flex gap-3">
-                                <button onClick={() => setShowRefundModal(false)} className="flex-1 py-4 text-gray-500 font-bold uppercase text-xs tracking-widest">Cerrar</button>
                                 <button onClick={handleRefundSubmit} disabled={isProcessing} className="flex-1 py-4 bg-[#7a0202] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-red-100 transition disabled:opacity-50">
                                     {isProcessing ? 'Enviando...' : 'Confirmar'}
                                 </button>

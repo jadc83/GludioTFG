@@ -15,7 +15,6 @@ export default function IndexReserva({ reservas = [] }) {
         setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '' });
     };
 
-    // --- LÓGICA DE FILTRADO Y REVERB (Sincronización en tiempo real) ---
     useEffect(() => {
         const contador = setTimeout(() => {
             const criterios = {
@@ -256,7 +255,7 @@ export default function IndexReserva({ reservas = [] }) {
             {reservas.length > 0 && (
                 <div className="text-center">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                        Sincronización en vivo activa <span className="mx-2 text-gray-200">|</span> {reservas.length} Reservas Cargadas
+                        <span className="mx-2 text-gray-200">|</span> {reservas.length} Reservas Cargadas
                     </span>
                 </div>
             )}
