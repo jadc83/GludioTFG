@@ -22,7 +22,7 @@ class RefundRequestCreated implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new PrivateChannel('admin.refund-requests');
+        return new PrivateChannel('refund-requests');
     }
 
     public function broadcastWith()

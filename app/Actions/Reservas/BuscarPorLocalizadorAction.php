@@ -16,7 +16,7 @@ class BuscarPorLocalizadorAction
 
     public function handle(string $localizador): array
     {
-        $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
+        $reserva = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos', 'reembolsos'])
             ->where('localizador', $localizador)->first();
 
         if (!$reserva) {
@@ -35,6 +35,28 @@ class BuscarPorLocalizadorAction
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'reembolsos_total' => ($reserva->reembolsos()->sum('amount_cents') ?? 0) / 100,
+                'reembolsos' => $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reserva) {
+                    $amount = ($r->amount_cents ?? 0) / 100;
+                    $tipo = 'parcial';
+                    $cumulative = 0; // compute tipo based on cumulative sum up to this refund
+                    // compute cumulative up to this refund
+                    foreach ($reserva->reembolsos->sortBy('created_at') as $rr) {
+                        $cumulative += (($rr->amount_cents ?? 0) / 100);
+                        if ($rr->id == $r->id) break;
+                    }
+                    if (($reserva->precio_total ?? 0) > 0 && $cumulative >= ($reserva->precio_total ?? 0)) {
+                        $tipo = 'completo';
+                    }
+
+                    return [
+                        'id' => $r->id,
+                        'monto' => round($amount, 2),
+                        'status' => $r->status,
+                        'reason' => $r->reason ?? null,
+                        'created_at' => $r->created_at?->format('Y-m-d H:i:s') ?? null,
+                        'tipo' => $tipo,
+                    ];
+                })->values(),
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                     return [
                         'numero' => $hr->habitacion?->numero ?? null,

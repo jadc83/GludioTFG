@@ -31,7 +31,7 @@ export default function TabReembolsos() {
     useEffect(() => {
         try {
             if (window.Echo) {
-                const channel = window.Echo.private('admin.refund-requests');
+                const channel = window.Echo.private('refund-requests');
                 channel.listen('RefundRequestCreated', () => fetchData(1));
             }
         } catch (e) {

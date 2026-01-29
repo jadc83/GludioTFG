@@ -57,11 +57,11 @@ Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::cl
 Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.preview-modificar-estancia');
 Route::post('/reservas/{reserva}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'store'])->name('reservas.refund-requests.store')->where('reserva', '[0-9]+')->middleware('auth');
 Route::post('/reservas/{localizador}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'storeByLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.refund-requests.store.by_localizador')->middleware('auth');
-Route::get('/admin/refund-requests', [\App\Http\Controllers\Admin\RefundRequestController::class, 'index'])->name('admin.refund-requests.index');
+Route::get('/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'index'])->name('refund-requests.index')->middleware('auth');
 Route::get('/panel/estadisticas/ocupacion', [\App\Http\Controllers\Panel\EstadisticasController::class, 'ocupacion'])->name('panel.estadisticas.ocupacion')->middleware(['auth']);
-Route::post('/admin/refund-requests/{refundRequest}/approve', [\App\Http\Controllers\Admin\RefundRequestController::class, 'approve'])->name('admin.refund-requests.approve');
-Route::post('/admin/refund-requests/{refundRequest}/reject', [\App\Http\Controllers\Admin\RefundRequestController::class, 'reject'])->name('admin.refund-requests.reject');
-Route::delete('/admin/refund-requests/{refundRequest}', [\App\Http\Controllers\Admin\RefundRequestController::class, 'destroy'])->name('admin.refund-requests.destroy');
+Route::post('/refund-requests/{refundRequest}/approve', [\App\Http\Controllers\RefundRequestController::class, 'approve'])->name('refund-requests.approve')->middleware('auth');
+Route::post('/refund-requests/{refundRequest}/reject', [\App\Http\Controllers\RefundRequestController::class, 'reject'])->name('refund-requests.reject')->middleware('auth');
+Route::delete('/refund-requests/{refundRequest}', [\App\Http\Controllers\RefundRequestController::class, 'destroy'])->name('refund-requests.destroy')->middleware('auth');
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');

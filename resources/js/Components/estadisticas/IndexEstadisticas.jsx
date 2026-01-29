@@ -46,10 +46,12 @@ export default function IndexEstadisticas({
         total_por_tipo: totalPorTipo = {},
         promedio_porcentaje_ocupacion: ocupacionMedia,
         promedio_porcentaje_ocupacion_por_tipo: promedioPorTipo = {},
-        por_dia: porDia = [],
+        por_dia: porDiaRaw,
         fecha_desde: fDesdeCargada,
         fecha_hasta: fHastaCargada
     } = datos || {};
+
+    const porDia = porDiaRaw ?? [];
 
     // 1. Eje X: Solo el número del día
     const categoriasDía = useMemo(() => porDia.map(d => dayjs(d.fecha).format('D')), [porDia]);

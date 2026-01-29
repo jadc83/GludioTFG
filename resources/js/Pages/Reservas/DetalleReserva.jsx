@@ -87,7 +87,12 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                 return;
             }
 
-            await aplicarCambioFechas(modalCheckIn, modalCheckOut);
+            const result = await aplicarCambioFechas(modalCheckIn, modalCheckOut);
+            if (!result || result.success === false) {
+                const msg = result?.message || result?.error || 'Error al aplicar cambios en el servidor';
+                showToast(msg, 'error');
+                return;
+            }
             showToast('Activo sincronizado correctamente', 'success');
             setShowDateModal(false);
             refresh();

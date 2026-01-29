@@ -2,27 +2,20 @@
 
 namespace App\Notifications;
 
-use App\Models\RefundRequest;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Models\Reserva;
+use App\Mail\ReservaCompletada;
 
-class RefundRequestProcessedNotification extends Notification implements ShouldQueue
+class ReservaCreadaNotification extends Notification
 {
-    use Queueable;
-
-    protected RefundRequest $refundRequest;
-
-    public function __construct(RefundRequest $refundRequest)
+    public function __construct(public Reserva $reserva)
     {
-        $this->refundRequest = $refundRequest;
     }
 
     public function via($notifiable)
     {
-        $channels = ['broadcast', 'database'];
+        $channels = ['database'];
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
@@ -34,7 +27,9 @@ class RefundRequestProcessedNotification extends Notification implements ShouldQ
 
     public function toMail($notifiable)
     {
-        $mailable = new \App\Mail\RefundRequestProcessed($this->refundRequest);
+        $mailable = new ReservaCompletada($this->reserva);
+
+        // Si el notifiable es anónimo (Notification::route) o tiene email, aseguramos el destinatario
         try {
             if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
                 $to = $notifiable->routeNotificationFor('mail', $this);
@@ -43,24 +38,20 @@ class RefundRequestProcessedNotification extends Notification implements ShouldQ
                 $mailable->to($notifiable->email);
             }
         } catch (\Throwable $e) {
-            // ignore
+            // No bloquear el envío por este ajuste; el canal lo manejará si puede
         }
-        return $mailable;
-    }
 
-    public function toBroadcast($notifiable)
-    {
-        return new BroadcastMessage([
-            'refund_request' => $this->refundRequest->load('reserva', 'user')
-        ]);
+        return $mailable;
     }
 
     public function toArray($notifiable)
     {
         return [
-            'refund_request_id' => $this->refundRequest->id,
-            'status' => $this->refundRequest->status,
-            'processed_at' => $this->refundRequest->processed_at ?? null,
+            'reserva_id' => $this->reserva->id,
+            'localizador' => $this->reserva->localizador ?? null,
+            'check_in' => $this->reserva->check_in ?? null,
+            'check_out' => $this->reserva->check_out ?? null,
+            'precio_total' => $this->reserva->precio_total ?? null,
         ];
     }
 }

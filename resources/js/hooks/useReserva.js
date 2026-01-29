@@ -23,7 +23,13 @@ export default function useReserva(initialReserva) {
     }, [reserva]);
 
     const aplicarCambioFechas = useCallback(async (newCheckIn, newCheckOut, pagoId = null) => {
-        const payload = { check_in: newCheckIn.format('YYYY-MM-DD'), check_out: newCheckOut.format('YYYY-MM-DD') };
+        const fmt = (d) => {
+            if (!d) return null;
+            if (typeof d.format === 'function') return d.format('YYYY-MM-DD');
+            if (typeof d === 'string') return d;
+            return String(d);
+        };
+        const payload = { check_in: fmt(newCheckIn), check_out: fmt(newCheckOut) };
         if (pagoId) payload.pago_id = pagoId;
         return api.modificarEstancia(reserva.localizador, payload);
     }, [reserva]);

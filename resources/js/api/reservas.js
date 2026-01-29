@@ -6,8 +6,12 @@ export async function buscarReserva(localizador) {
 }
 
 export async function modificarEstancia(localizador, payload) {
-    const res = await axios.post(`/reservas/${localizador}/modificar-estancia`, payload);
-    return res?.data ?? null;
+    try {
+        const res = await axios.post(`/reservas/${localizador}/modificar-estancia`, payload);
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err.message };
+    }
 }
 
 export async function previewModificarEstancia(localizador, params) {
@@ -21,27 +25,31 @@ export async function solicitarReembolso(reservaId, payload) {
 }
 
 export async function crearSolicitudReembolso(localizador, payload) {
-    const res = await axios.post(`/reservas/${localizador}/refund-requests`, payload);
-    return res?.data ?? null;
+    try {
+        const res = await axios.post(`/reservas/${localizador}/refund-requests`, payload);
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err.message };
+    }
 }
 
 // Admin
 export async function listarSolicitudesReembolso(params = {}) {
-    const res = await axios.get('/admin/refund-requests', { params });
+    const res = await axios.get('/refund-requests', { params });
     return res?.data ?? null;
 }
 
 export async function aprobarSolicitud(id, payload = {}) {
-    const res = await axios.post(`/admin/refund-requests/${id}/approve`, payload);
+    const res = await axios.post(`/refund-requests/${id}/approve`, payload);
     return res?.data ?? null;
 }
 
 export async function rechazarSolicitud(id, payload = {}) {
-    const res = await axios.post(`/admin/refund-requests/${id}/reject`, payload);
+    const res = await axios.post(`/refund-requests/${id}/reject`, payload);
     return res?.data ?? null;
 }
 
 export async function eliminarSolicitud(id, payload = {}) {
-    const res = await axios.delete(`/admin/refund-requests/${id}`, { data: payload });
+    const res = await axios.delete(`/refund-requests/${id}`, { data: payload });
     return res?.data ?? null;
 }

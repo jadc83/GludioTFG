@@ -124,8 +124,11 @@ class PagoController extends Controller
         $pago = Pago::findOrFail($request->pago_id);
 
         try {
+            Log::info('ConfirmarPago request', ['payment_intent_id' => $request->payment_intent_id, 'pago_id' => $request->pago_id]);
             // Obtener PaymentIntent de Stripe
             $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
+
+            Log::info('Stripe PaymentIntent retrieved', ['id' => $paymentIntent->id ?? null, 'status' => $paymentIntent->status ?? null]);
 
             if ($paymentIntent->status === 'succeeded') {
                 // Marcar pago como completado
@@ -134,26 +137,28 @@ class PagoController extends Controller
                 // Actualizar estado de reserva
                 $pago->reserva->update(['pago' => 'pagado']);
 
-                // Enviar correo de confirmación de pago
+                // Enviar notificación centralizada (evitar duplicados con idempotencia)
                 try {
                     $reserva = $pago->reserva->fresh(['reservable', 'pagos']);
-                    $destino = $reserva->reservable?->email ?? null;
-                    if ($destino) {
-                        $esTarjeta = !empty($pago->stripe_payment_intent_id);
-                        $pagoTexto = $esTarjeta ? 'Abonado (Tarjeta)' : 'Pendiente';
-                        $subject = "Pago recibido - Reserva {$reserva->localizador}";
-                        $body = "Hola {$reserva->reservable?->name},\n\nHemos recibido el pago para la reserva {$reserva->localizador}.\nEstado: {$pagoTexto}\nImporte: €{$pago->monto}\n\nGracias.";
+                    $notifiable = $reserva->reservable;
 
-                        try {
-                            \Illuminate\Support\Facades\Mail::raw($body, function ($msg) use ($destino, $subject) {
-                                $msg->to($destino)->subject($subject);
-                            });
-                        } catch (\Throwable $e) {
-                            Log::warning('No se pudo enviar email de confirmación de pago: ' . $e->getMessage());
+                    // Comprueba si ya existe una notificación de pago para este pago
+                    $exists = \Illuminate\Support\Facades\DB::table('notifications')
+                        ->where('type', '\\App\\Notifications\\PagoConfirmadoNotification')
+                        ->whereRaw("(data->>'pago_id')::int = ?", [$pago->id])
+                        ->exists();
+
+                    if (! $exists) {
+                        if ($notifiable && method_exists($notifiable, 'notify')) {
+                            $notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                        } else {
+                            // Fallback a route mail
+                            \Illuminate\Support\Facades\Notification::route('mail', $reserva->reservable?->email ?? null)
+                                ->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
                         }
                     }
                 } catch (\Throwable $e) {
-                    Log::warning('Error preparando email de confirmación de pago: ' . $e->getMessage());
+                    Log::warning('No se pudo notificar confirmación de pago: ' . $e->getMessage());
                 }
 
                 return response()->json([ 'success' => true, 'message' => 'Pago completado exitosamente',
@@ -165,6 +170,10 @@ class PagoController extends Controller
 
                 return response()->json([ 'success' => false, 'message' => 'El pago no se pudo procesar' ], 400);
             }
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::error('Stripe API error confirming payment: ' . $e->getMessage(), ['exception' => $e]);
+            $pago->marcarComoFallido();
+            return response()->json([ 'success' => false, 'error' => 'Error al confirmar el pago (Stripe API).'], 400);
         } catch (\Exception $e) {
             $pago->marcarComoFallido();
             Log::error('Confirmar Pago Error: ' . $e->getMessage());
@@ -194,6 +203,27 @@ class PagoController extends Controller
                 if ($pago) {
                     $pago->marcarComoPagado();
                     $pago->reserva->update(['pago' => 'pagado']);
+                    // Enviar notificación centralizada desde webhook (evitar duplicados)
+                    try {
+                        $reserva = $pago->reserva->fresh(['reservable', 'pagos']);
+                        $notifiable = $reserva->reservable;
+
+                        $exists = \Illuminate\Support\Facades\DB::table('notifications')
+                            ->where('type', '\\App\\Notifications\\PagoConfirmadoNotification')
+                            ->whereRaw("(data->>'pago_id')::int = ?", [$pago->id])
+                            ->exists();
+
+                        if (! $exists) {
+                            if ($notifiable && method_exists($notifiable, 'notify')) {
+                                $notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                            } else {
+                                \Illuminate\Support\Facades\Notification::route('mail', $reserva->reservable?->email ?? null)
+                                    ->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo notificar confirmación de pago (webhook): ' . $e->getMessage());
+                    }
                 }
             } elseif ($event->type === 'payment_intent.payment_failed') {
                 $paymentIntent = $event->data->object;

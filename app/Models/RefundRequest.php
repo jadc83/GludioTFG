@@ -15,6 +15,9 @@ class RefundRequest extends Model
         'requested_amount_cents',
         'reason_code',
         'notes',
+        'pending_check_in',
+        'pending_check_out',
+        'pending_nuevo_total',
         'user_id',
         'status',
         'admin_id',
@@ -26,6 +29,9 @@ class RefundRequest extends Model
     protected $casts = [
         'requested_amount_cents' => 'integer',
         'processed_at' => 'datetime',
+        'pending_check_in' => 'date',
+        'pending_check_out' => 'date',
+        'pending_nuevo_total' => 'decimal:2',
     ];
 
     public function reserva()

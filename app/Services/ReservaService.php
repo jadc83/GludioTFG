@@ -255,7 +255,7 @@ class ReservaService
             $datosPreparados['tipo_usuario'] = 'cliente';
         }
 
-        return DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
+        $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
             $localizador = $this->generarLocalizador();
 
             $reserva = Reserva::create([
@@ -274,11 +274,18 @@ class ReservaService
             // Asignar habitaciones
             $this->asignarHabitaciones($reserva, $datosPreparados['habitaciones']);
 
-            // Disparar evento
-            event(new ReservaCreada($reserva));
-
             return $reserva;
         });
+
+        // Disparar evento fuera de la transacción para evitar que fallos posteriores
+        // (por ejemplo inserciones en tabla notifications) hagan abortar la transacción.
+        try {
+            event(new ReservaCreada($reserva));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error dispatching ReservaCreada outside transaction: ' . $e->getMessage());
+        }
+
+        return $reserva;
     }
 
     /**
@@ -409,7 +416,20 @@ class ReservaService
         $habitacionService = new \App\Services\HabitacionService();
         $resumen = $habitacionService->contarDisponiblesPorTipo($checkIn, $checkOut, true);
 
-        return $resumen[$tipo]['cantidad'] ?? 0;
+        $cantidad = $resumen[$tipo]['cantidad'] ?? 0;
+        try {
+            \Illuminate\Support\Facades\Log::info('Disponibilidad debug', [
+                'tipo' => $tipo,
+                'check_in' => $checkIn->toDateString(),
+                'check_out' => $checkOut->toDateString(),
+                'resumen' => $resumen,
+                'cantidad' => $cantidad,
+            ]);
+        } catch (\Throwable $e) {
+            // no bloquear por logging
+        }
+
+        return $cantidad;
     }
 
     /**
@@ -424,6 +444,17 @@ class ReservaService
             $disponibles = $this->contarHabitacionesDisponibles($tipo, $checkIn, $checkOut);
 
             if ($disponibles < $cantidad) {
+                try {
+                    \Illuminate\Support\Facades\Log::error('Verificación de disponibilidad fallida', [
+                        'tipo' => $tipo,
+                        'requiere' => $cantidad,
+                        'disponibles' => $disponibles,
+                        'check_in' => $checkIn->toDateString(),
+                        'check_out' => $checkOut->toDateString(),
+                    ]);
+                } catch (\Throwable $e) {
+                    // ignore logging error
+                }
                 throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
             }
 

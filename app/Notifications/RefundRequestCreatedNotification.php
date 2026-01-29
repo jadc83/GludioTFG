@@ -22,17 +22,31 @@ class RefundRequestCreatedNotification extends Notification implements ShouldQue
 
     public function via($notifiable)
     {
-        return ['mail', 'broadcast'];
+        $channels = ['broadcast', 'database'];
+        if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
+            // If using route('mail', ...), only mail is supported for anonymous notifiable
+            return ['mail'];
+        }
+        if (isset($notifiable->email) && !empty($notifiable->email)) {
+            $channels[] = 'mail';
+        }
+        return $channels;
     }
 
     public function toMail($notifiable)
     {
-        $line = "Se ha recibido una nueva solicitud de reembolso (Reserva: {$this->refundRequest->reserva->localizador}).";
-        return (new MailMessage)
-            ->subject('Nueva solicitud de reembolso')
-            ->line($line)
-            ->action('Ver en Panel', url('/panel'))
-            ->line('Revise la solicitud y proceda según corresponda.');
+        $mailable = new \App\Mail\RefundRequestCreated($this->refundRequest);
+        try {
+            if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
+                $to = $notifiable->routeNotificationFor('mail', $this);
+                if ($to) $mailable->to($to);
+            } elseif (isset($notifiable->email) && !empty($notifiable->email)) {
+                $mailable->to($notifiable->email);
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        return $mailable;
     }
 
     public function toBroadcast($notifiable)
@@ -47,6 +61,9 @@ class RefundRequestCreatedNotification extends Notification implements ShouldQue
         return [
             'refund_request_id' => $this->refundRequest->id,
             'reserva_localizador' => $this->refundRequest->reserva->localizador ?? null,
+            'requested_amount_cents' => $this->refundRequest->requested_amount_cents ?? null,
+            'status' => $this->refundRequest->status ?? null,
+            'user_id' => $this->refundRequest->user_id ?? null,
         ];
     }
 }

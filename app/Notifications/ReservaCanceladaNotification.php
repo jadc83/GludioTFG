@@ -2,27 +2,19 @@
 
 namespace App\Notifications;
 
-use App\Models\RefundRequest;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Models\Reserva;
+use App\Mail\ReservaCancelada as ReservaCanceladaMail;
 
-class RefundRequestProcessedNotification extends Notification implements ShouldQueue
+class ReservaCanceladaNotification extends Notification
 {
-    use Queueable;
-
-    protected RefundRequest $refundRequest;
-
-    public function __construct(RefundRequest $refundRequest)
+    public function __construct(public Reserva $reserva, public ?string $motivo = null)
     {
-        $this->refundRequest = $refundRequest;
     }
 
     public function via($notifiable)
     {
-        $channels = ['broadcast', 'database'];
+        $channels = ['database'];
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
@@ -34,7 +26,7 @@ class RefundRequestProcessedNotification extends Notification implements ShouldQ
 
     public function toMail($notifiable)
     {
-        $mailable = new \App\Mail\RefundRequestProcessed($this->refundRequest);
+        $mailable = new ReservaCanceladaMail($this->reserva, $this->motivo);
         try {
             if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
                 $to = $notifiable->routeNotificationFor('mail', $this);
@@ -48,19 +40,12 @@ class RefundRequestProcessedNotification extends Notification implements ShouldQ
         return $mailable;
     }
 
-    public function toBroadcast($notifiable)
-    {
-        return new BroadcastMessage([
-            'refund_request' => $this->refundRequest->load('reserva', 'user')
-        ]);
-    }
-
     public function toArray($notifiable)
     {
         return [
-            'refund_request_id' => $this->refundRequest->id,
-            'status' => $this->refundRequest->status,
-            'processed_at' => $this->refundRequest->processed_at ?? null,
+            'reserva_id' => $this->reserva->id,
+            'localizador' => $this->reserva->localizador ?? null,
+            'motivo' => $this->motivo ?? null,
         ];
     }
 }
