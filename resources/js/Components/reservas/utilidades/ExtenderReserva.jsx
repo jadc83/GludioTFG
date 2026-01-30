@@ -21,8 +21,8 @@ export default function ExtenderReserva({ reserva, onClose }) {
     useEffect(() => {
         const obtenerInfo = async () => {
             try {
-                const response = await fetch(`/reservas/${reserva.localizador}/info-extension`);
-                const data = await response.json();
+                const service = await import('@/hooks/reservas/service');
+                const data = await service.infoExtension(reserva.localizador);
                 setInfoExtension(data);
             } catch (err) {
                 setError('Error al obtener información');
@@ -62,27 +62,15 @@ export default function ExtenderReserva({ reserva, onClose }) {
         setCargando(true);
 
         try {
-            const response = await fetch(
-                `/reservas/${reserva.localizador}/extender`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        numero_dias: dias,
-                    }),
+            try {
+                const service = await import('@/hooks/reservas/service');
+                const data = await service.extenderReserva(reserva.localizador, { numero_dias: dias });
+
+                if (!data) {
+                    setError('Error al calcular la extensión');
+                    setDiasSeleccionados(null);
+                    return;
                 }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error || 'Error al calcular la extensión');
-                setDiasSeleccionados(null);
-                return;
-            }
 
             // Mostrar precio de extensión
             const checkOutActual = dayjs(reserva.check_out);
@@ -114,26 +102,15 @@ export default function ExtenderReserva({ reserva, onClose }) {
 
         // Confirmar la extensión en el backend después del pago
         try {
-            const response = await fetch(
-                `/reservas/${reserva.localizador}/extender`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        numero_dias: diasSeleccionados,
-                        confirmar: true,
-                    }),
+            try {
+                const service = await import('@/hooks/reservas/service');
+                const data = await service.extenderReserva(reserva.localizador, { numero_dias: diasSeleccionados, confirmar: true });
+                if (data && data.nuevo_check_out) {
+                    onClose(data.nuevo_check_out);
+                } else {
+                    onClose();
                 }
-            );
-
-            const data = await response.json();
-
-            if (data.nuevo_check_out) {
-                onClose(data.nuevo_check_out);
-            } else {
+            } catch (err) {
                 onClose();
             }
         } catch (err) {
@@ -145,36 +122,23 @@ export default function ExtenderReserva({ reserva, onClose }) {
         // Si no necesita pago (pago al llegar), confirmar directamente
         setCargando(true);
         try {
-            const response = await fetch(
-                `/reservas/${reserva.localizador}/extender`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        numero_dias: diasSeleccionados,
-                        confirmar: true,
-                    }),
+            try {
+                const service = await import('@/hooks/reservas/service');
+                const data = await service.extenderReserva(reserva.localizador, { numero_dias: diasSeleccionados, confirmar: true });
+                if (!data) {
+                    setError('Error al confirmar la extensión');
+                    setCargando(false);
+                    return;
                 }
-            );
-
-            if (!response.ok) {
-                const data = await response.json();
-                setError(data.error || 'Error al confirmar la extensión');
+                setPagoConfirmado(true);
+                if (data.nuevo_check_out) {
+                    onClose(data.nuevo_check_out);
+                } else {
+                    onClose();
+                }
+            } catch (err) {
+                setError('Error de conexión: ' + (err?.message || JSON.stringify(err)));
                 setCargando(false);
-                return;
-            }
-
-            const data = await response.json();
-            setPagoConfirmado(true);
-
-            // Ejecutar el callback inmediatamente con la nueva fecha
-            if (data.nuevo_check_out) {
-                onClose(data.nuevo_check_out);
-            } else {
-                onClose();
             }
         } catch (err) {
             setError('Error de conexión: ' + err.message);

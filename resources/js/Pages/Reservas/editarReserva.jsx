@@ -2,9 +2,9 @@ import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState, useRef, useEffect, useMemo } from 'react';
-import useReserva from '@/hooks/useReserva';
+import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
-import useReservaEvents from '@/hooks/useReservaEvents';
+import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import dayjs from 'dayjs';
 

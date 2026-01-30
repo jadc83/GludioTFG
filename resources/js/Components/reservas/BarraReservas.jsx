@@ -1,4 +1,4 @@
-import useReservaForm from '../../hooks/useReservaForm';
+import useReservaForm from '../../hooks/reservas/useReservaForm';
 import Paso2Habitaciones from './pasos/Paso2Habitaciones';
 import Paso3Datos from './pasos/Paso3Datos';
 import Paso4Confirmacion from './pasos/Paso4Confirmacion';
@@ -9,7 +9,7 @@ import '../../../css/createHabitacion.css';
 import '../../../css/estiloCalendario.css';
 import '../../../css/estiloMenuLateral.css';
 import React, { useState, useEffect, useRef, useCallback, useMemo, isValidElement, cloneElement } from 'react';
-import useCalendarioPrecios from '../../hooks/useCalendarioPrecios';
+import useCalendarioPrecios from '../../hooks/calendario/useCalendarioPrecios';
 import { usePage } from '@inertiajs/react';
 import { CalendarIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 

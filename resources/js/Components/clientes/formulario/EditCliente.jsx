@@ -1,19 +1,42 @@
 import Campo from '@/Components/formulario/Campo';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
-import { useClienteForm } from '@/hooks/useClienteForm';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
+import { router } from '@inertiajs/react';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
+import { useEffect } from 'react';
 
 export default function EditCliente({ cliente, abierto, onCerrar }) {
-    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useClienteForm(
-        cliente,
-        onCerrar,
+    const datosIniciales = { name: '', email: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', telefono: '' };
+
+    const { formulario, cambiar, errores, estaCargando, cargarDatos, guardar, limpiar } = useFormGenerico(
+        datosIniciales,
+        '',
+        cliente ? `/clientes/${cliente.id}` : '',
+        () => {
+            onCerrar?.();
+            limpiar();
+            router.reload({ only: ['clientes'] });
+        }
     );
 
-    // Si el modal se cierra desde fuera, limpiar estado local
-    const handleCerrar = () => {
-        onCerrar?.();
-        limpiar();
-    };
+    // Pre-fill when cliente changes
+    useEffect(() => {
+        if (cliente) {
+            cargarDatos({
+                name: cliente.name || '',
+                email: cliente.email || '',
+                tipo_documento: cliente.tipo_documento || 'dni',
+                numero_documento: cliente.numero_documento || '',
+                nacionalidad: cliente.nacionalidad || '',
+                direccion: cliente.direccion || '',
+                telefono: cliente.telefono || ''
+            });
+        } else {
+            limpiar();
+        }
+    }, [cliente?.id]);
+
+    const handleCerrar = () => { onCerrar?.(); limpiar(); };
 
     return (
         <div className={`fixed inset-x-0 top-16 bottom-0 z-[9999] transition-all duration-300 ${abierto ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
@@ -36,7 +59,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                 </header>
 
                 {cliente && (
-                    <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
+                    <form onSubmit={guardar} className="flex-1 flex flex-col min-h-0 bg-white">
                         <div className="flex-1 overflow-y-auto p-8 space-y-6">
                             <Campo id="name" label="Nombre Completo" value={formulario.name || ''} onChange={cambiar} error={errores.name} required />
 

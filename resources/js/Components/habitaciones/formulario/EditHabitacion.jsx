@@ -1,7 +1,9 @@
 import '@/../css/createHabitacion.css';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
-import { useHabitacionForm } from '@/hooks/useHabitacionForm';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
+import { useState, useEffect, useMemo } from 'react';
+import { usePage } from '@inertiajs/react';
 import { TIPOS_HABITACION } from '@/utils/constantes';
 import {
     CheckCircleIcon,
@@ -11,26 +13,72 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
-    const {
-        formulario,
-        cambiar,
-        errores,
-        estaCargando,
-        capacidadFija,
-        fotos,
-        previsualizaciones,
-        fotosGuardadas,
-        agregarFotos,
-        quitarFoto,
-        enviar,
-        reset,
-        clearErrors,
-    } = useHabitacionForm(habitacion, onCerrar);
+    const datosIniciales = { numero: '', tipo: 'doble', capacidad: 2, estado: 'disponible', descripcion: '', notas: '' };
+
+    const { formulario, cambiar, errores, estaCargando, setData, guardar, cargarDatos, limpiar } = useFormGenerico(
+        datosIniciales,
+        '',
+        habitacion ? `/habitaciones/${habitacion.id}` : '',
+        () => { onCerrar?.(); limpiar(); }
+    );
+
+    const MAX_FOTOS = 4;
+    const [fotosNuevas, setFotosNuevas] = useState([]);
+    const [fotosGuardadas, setFotosGuardadas] = useState([]);
+    const [fotosAEliminar, setFotosAEliminar] = useState([]);
+
+    useEffect(() => {
+        if (habitacion) {
+            cargarDatos({
+                numero: habitacion.numero || '',
+                tipo: habitacion.tipo || 'doble',
+                capacidad: habitacion.capacidad || 2,
+                estado: habitacion.estado || 'disponible',
+                descripcion: habitacion.descripcion || '',
+                notas: habitacion.notas || '',
+            });
+            setFotosGuardadas(habitacion.fotos?.map(f => ({ id: f.id, url: f.url || `/storage/${f.ruta}` })) || []);
+        }
+    }, [habitacion]);
+
+    const tiposHabitacion = usePage().props.tiposHabitacion || {};
+
+    const capacidadFija = useMemo(() => {
+        const tipo = (formulario.tipo || '').toString().toLowerCase();
+        return Object.prototype.hasOwnProperty.call(tiposHabitacion, tipo);
+    }, [formulario.tipo, tiposHabitacion]);
+
+    const previsualizaciones = useMemo(() => [
+        ...fotosGuardadas.map(f => f.url),
+        ...fotosNuevas.map(f => URL.createObjectURL(f))
+    ], [fotosGuardadas, fotosNuevas]);
+
+    const agregarFotos = (e) => {
+        const cupoDisp = MAX_FOTOS - (fotosGuardadas.length + fotosNuevas.length);
+        const nuevosArchivos = Array.from(e.target.files).slice(0, cupoDisp);
+        setFotosNuevas(prev => [...prev, ...nuevosArchivos]);
+        e.target.value = '';
+    };
+
+    const quitarFoto = (idx) => {
+        if (idx < fotosGuardadas.length) {
+            const foto = fotosGuardadas[idx];
+            if (foto.id) setFotosAEliminar(prev => [...prev, foto.id]);
+            setFotosGuardadas(prev => prev.filter((_, i) => i !== idx));
+        } else {
+            setFotosNuevas(prev => prev.filter((_, i) => i !== (idx - fotosGuardadas.length)));
+        }
+    };
+
+    const enviar = (e) => {
+        setData('fotos[]', fotosNuevas);
+        setData('fotos_eliminar[]', fotosAEliminar);
+        guardar(e);
+    };
 
     const handleCerrar = () => {
         onCerrar?.();
-        reset();
-        clearErrors();
+        limpiar();
     };
 
     return (
@@ -52,7 +100,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                     <button onClick={handleCerrar} className="p-3 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-[#7a0202] rounded-2xl transition-all border border-gray-100 shadow-sm">✕</button>
                 </header>
 
-                {habitacion && (
+                    {habitacion && (
                     <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
@@ -146,7 +194,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 {errores.estado && <span className="campo-error">{Array.isArray(errores.estado) ? errores.estado[0] : errores.estado}</span>}
                             </div>
 
-                            <InputFotos fotos={fotos} previews={previsualizaciones} fotosGuardadas={fotosGuardadas} onAgregar={agregarFotos} onQuitar={quitarFoto} error={errores.fotos} maxFotos={4} />
+                            <InputFotos fotos={fotosNuevas} previews={previsualizaciones} fotosGuardadas={fotosGuardadas} onAgregar={agregarFotos} onQuitar={quitarFoto} error={errores.fotos} maxFotos={MAX_FOTOS} />
 
                             <Campo id="descripcion" label="Descripción" as="textarea" value={formulario.descripcion} onChange={cambiar} placeholder="Detalles públicos..." error={errores.descripcion} sinEstilosPorDefecto={true} claseContenedor="contenedorCampo" claseEtiqueta="campo-label" claseError="campo-error" clase="campo-textarea" />
 

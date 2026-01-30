@@ -67,60 +67,69 @@ export default function Paso2Habitaciones({
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
                     <div className="max-w-5xl mx-auto flex flex-col gap-4 md:gap-6">
                         {estaCargandoHabitaciones ? (
-                            <div className="py-20 text-center"><span className="loading loading-spinner text-[#7a0202]"></span></div>
-                        ) : (
-                            entradasVisibles.map(([tipo, info]) => {
-                                const isSelected = habitacionesSeleccionadas[tipo]?.cantidad > 0;
-                                return (
-                                    <article key={tipo} className={`flex flex-col md:flex-row bg-white rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${isSelected ? 'border-[#7a0202] shadow-xl' : ' hover:shadow-md'}`}>
-                                        <div className="relative w-full md:w-52 h-32 md:h-32 bg-gray-900">
-                                            <img src={getImagen(tipo)} className="h-full w-full object-cover opacity-90" alt={tipo} />
-                                            <button onClick={() => setImagenModalAbierto(tipo)} className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                <InformationCircleIcon className="h-7 w-7 text-white" />
-                                            </button>
-                                        </div>
-                                        <div className="flex-1 p-4 flex flex-col justify-between">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h4 className="text-base font-black text-gray-900 uppercase leading-none">{tipo}</h4>
-                                                    <p className="text-[9px] text-[#7a0202] font-black uppercase mt-2 tracking-widest">{info.precioMinimo}€/noche</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-3 flex justify-between items-center">
-                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                                                    <UsersIcon className="h-3 w-3" /> {info.capacidadMaxima}
-                                                </span>
-
-                                                {/* BOTONES MINIMALISTAS: + y - */}
-                                                <div className="flex items-center gap-2">
-                                                    {isSelected && (
-                                                        <button
-                                                            onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 0)}
-                                                            className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-900 hover:bg-red-700 hover:text-white rounded-lg transition-colors shadow-sm"
-                                                            title="Quitar"
-                                                        >
-                                                            <MinusIcon className="h-4 w-4 stroke-[3]" />
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        disabled={!puedoSeleccionarMas || isSelected}
-                                                        onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 1)}
-                                                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all shadow-sm active:scale-95 ${
-                                                            isSelected
-                                                            ? 'bg-green-100 text-green-700 cursor-default'
-                                                            : 'bg-[#7a0202] text-white hover:bg-black disabled:opacity-30'
-                                                        }`}
-                                                        title="Añadir"
-                                                    >
-                                                        <PlusIcon className="h-4 w-4 stroke-[3]" />
+                                <div className="py-20 text-center"><span className="loading loading-spinner text-[#7a0202]"></span></div>
+                            ) : (
+                                entradasVisibles.length > 0 ? (
+                                    entradasVisibles.map(([tipo, info]) => {
+                                        const isSelected = habitacionesSeleccionadas[tipo]?.cantidad > 0;
+                                        return (
+                                            <article key={tipo} className={`flex flex-col md:flex-row bg-white rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${isSelected ? 'border-[#7a0202] shadow-xl' : ' hover:shadow-md'}`}>
+                                                <div className="relative w-full md:w-52 h-32 md:h-32 bg-gray-900">
+                                                    <img src={getImagen(tipo)} className="h-full w-full object-cover opacity-90" alt={tipo} />
+                                                    <button onClick={() => setImagenModalAbierto(tipo)} className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <InformationCircleIcon className="h-7 w-7 text-white" />
                                                     </button>
                                                 </div>
-                                            </div>
+                                                <div className="flex-1 p-4 flex flex-col justify-between">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="text-base font-black text-gray-900 uppercase leading-none">{tipo}</h4>
+                                                            <p className="text-[9px] text-[#7a0202] font-black uppercase mt-2 tracking-widest">{info.precioMinimo}€/noche</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-3 flex justify-between items-center">
+                                                        <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                            <UsersIcon className="h-3 w-3" /> {info.capacidadMaxima}
+                                                        </span>
+
+                                                        {/* BOTONES MINIMALISTAS: + y - */}
+                                                        <div className="flex items-center gap-2">
+                                                            {isSelected && (
+                                                                <button
+                                                                    onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 0)}
+                                                                    className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-900 hover:bg-red-700 hover:text-white rounded-lg transition-colors shadow-sm"
+                                                                    title="Quitar"
+                                                                >
+                                                                    <MinusIcon className="h-4 w-4 stroke-[3]" />
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                disabled={!puedoSeleccionarMas || isSelected}
+                                                                onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 1)}
+                                                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all shadow-sm active:scale-95 ${
+                                                                    isSelected
+                                                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                                                    : 'bg-[#7a0202] text-white hover:bg-black disabled:opacity-30'
+                                                                }`}
+                                                                title="Añadir"
+                                                            >
+                                                                <PlusIcon className="h-4 w-4 stroke-[3]" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="py-12 text-center text-gray-500">
+                                        <p>No hay habitaciones disponibles para las fechas seleccionadas.</p>
+                                        <div className="mt-3">
+                                            <button onClick={() => { try { if (typeof window !== 'undefined' && window?.formularioReservaRef?.recargarDisponibles) { window.formularioReservaRef.recargarDisponibles(); } } catch (e) {} }} className="px-4 py-2 bg-[#7a0202] text-white rounded">Reintentar</button>
                                         </div>
-                                    </article>
-                                );
-                            })
-                        )}
+                                    </div>
+                                )
+                            )}
                     </div>
                 </div>
 

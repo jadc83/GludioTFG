@@ -119,7 +119,8 @@ const Campo = forwardRef(({
             atributos.title = atributos.title || 'Introduce un email válido';
         }
         if (nombre.includes('tel') || nombre.includes('telefono') || nombre.includes('phone')) {
-            atributos.pattern = atributos.pattern || '^\\+?[0-9\\s\\-()]{7,15}$';
+            // Evitar establecer pattern automático para teléfonos (problemas de compatibilidad
+            // con ciertos motores/flags). Dejar sólo el title para ayudar al usuario.
             atributos.title = atributos.title || 'Teléfono: solo números, espacios, guiones o paréntesis';
         }
         if (nombre.includes('cp') || nombre.includes('codigo_postal') || nombre.includes('postal')) {

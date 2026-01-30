@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import * as api from '@/api/reservas';
+import * as api from './service';
 
 export default function useReserva(initialReserva) {
     const [reserva, setReserva] = useState(initialReserva);

@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
 import OpcionesPago from '../modales/OpcionesPago';
-import useConfirmacionReserva from '@/hooks/useConfirmacionReserva';
+import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
 
 export default function Paso4Confirmacion({

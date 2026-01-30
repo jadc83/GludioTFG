@@ -1,6 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
-import { useHabitacionForm } from '@/hooks/useHabitacionForm';
-import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_HABITACION } from '@/utils/constantes';
 import { HomeIcon, PhotoIcon, DocumentTextIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -9,19 +8,51 @@ export default function CreateHabitacion({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
     const [tabActiva, setTabActiva] = useState('info');
 
-    const {
-        formulario, cambiar, errores, estaCargando, capacidadFija,
-        fotos, previsualizaciones, agregarFotos, quitarFoto,
-        enviar, reset, clearErrors, MAX_FOTOS
-    } = useHabitacionForm(null, () => {
-        setAbierto(false);
-        limpiarFormulario(reset, clearErrors);
-        setTabActiva('info');
-    });
+    const datosIniciales = { numero: '', tipo: 'doble', capacidad: 2, estado: 'disponible', descripcion: '', notas: '' };
+
+    const { formulario, cambiar, errores, estaCargando, setData, guardar, limpiar } = useFormGenerico(
+        datosIniciales,
+        '/habitaciones',
+        '',
+        () => { setAbierto(false); limpiar(); setTabActiva('info'); }
+    );
+
+    const MAX_FOTOS = 4;
+    const [fotosNuevas, setFotosNuevas] = useState([]);
+    const [fotosGuardadas, setFotosGuardadas] = useState([]);
+    const [fotosAEliminar, setFotosAEliminar] = useState([]);
+
+    const previsualizaciones = [
+        ...fotosGuardadas.map(f => f.url),
+        ...fotosNuevas.map(f => URL.createObjectURL(f))
+    ];
+
+    const agregarFotos = (e) => {
+        const cupoDisp = MAX_FOTOS - (fotosGuardadas.length + fotosNuevas.length);
+        const nuevosArchivos = Array.from(e.target.files).slice(0, cupoDisp);
+        setFotosNuevas(prev => [...prev, ...nuevosArchivos]);
+        e.target.value = '';
+    };
+
+    const quitarFoto = (idx) => {
+        if (idx < fotosGuardadas.length) {
+            const foto = fotosGuardadas[idx];
+            if (foto.id) setFotosAEliminar(prev => [...prev, foto.id]);
+            setFotosGuardadas(prev => prev.filter((_, i) => i !== idx));
+        } else {
+            setFotosNuevas(prev => prev.filter((_, i) => i !== (idx - fotosGuardadas.length)));
+        }
+    };
+
+    const enviar = (e) => {
+        // attach files to form data managed by useFormGenerico
+        setData('fotos[]', fotosNuevas);
+        guardar(e);
+    };
 
     const handleCerrar = () => {
         setAbierto(false);
-        limpiarFormulario(reset, clearErrors);
+        limpiar();
         setTabActiva('info');
     };
 
@@ -88,7 +119,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
                     </nav>
 
                     {/* Formulario con scroll independiente */}
-                    <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
+                        <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
                         <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
 
                             {/* Pestaña: Información básica */}
@@ -102,21 +133,14 @@ export default function CreateHabitacion({ iconOnly = false }) {
                                         ))}
                                     </Campo>
 
-                                    {!capacidadFija ? (
-                                        <Campo id="capacidad" label="Capacidad (Personas)" type="number" min="1" value={formulario.capacidad} onChange={cambiar} error={errores.capacidad} required claseExtra="font-mono" />
-                                    ) : (
-                                        <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <p className="text-[10px] font-black uppercase text-gray-400 mb-1 tracking-widest">Capacidad fija según tipo</p>
-                                            <p className="font-mono font-bold text-lg text-gray-700">{formulario.capacidad} Personas</p>
-                                        </div>
-                                    )}
+                                    <Campo id="capacidad" label="Capacidad (Personas)" type="number" min="1" value={formulario.capacidad} onChange={cambiar} error={errores.capacidad} required claseExtra="font-mono" />
                                 </div>
                             )}
 
                             {/* Pestaña: Multimedia y Descripción */}
                             {tabActiva === 'multimedia' && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
-                                    <InputFotos fotos={fotos} previews={previsualizaciones} onAgregar={agregarFotos} onQuitar={quitarFoto} error={errores.fotos} maxFotos={MAX_FOTOS} />
+                                    <InputFotos fotos={fotosNuevas} previews={previsualizaciones} onAgregar={agregarFotos} onQuitar={quitarFoto} error={errores.fotos} maxFotos={MAX_FOTOS} />
 
                                     <Campo id="descripcion" label="Descripción Pública" as="textarea" rows={4} value={formulario.descripcion} onChange={cambiar} error={errores.descripcion} placeholder="Detalles atractivos para la web..." />
                                 </div>

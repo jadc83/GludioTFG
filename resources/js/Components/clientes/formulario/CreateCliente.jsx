@@ -1,6 +1,7 @@
 import Campo from '@/Components/formulario/Campo';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
-import { useClienteForm } from '@/hooks/useClienteForm';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
+import { router } from '@inertiajs/react';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { UserIcon, MapPinIcon, IdentificationIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -14,7 +15,18 @@ const INITIAL_DATA = {
 export default function CreateCliente({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
 
-    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useClienteForm( null, () => { setAbierto(false); limpiar(); } );
+    const datosIniciales = { name: '', email: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', telefono: '' };
+
+    const { formulario, cambiar, errores, estaCargando, guardar, limpiar } = useFormGenerico(
+        datosIniciales,
+        '/clientes',
+        '',
+        () => {
+            setAbierto(false);
+            limpiar();
+            router.reload({ only: ['clientes'] });
+        }
+    );
 
     const handleCerrar = () => {
         setAbierto(false);
@@ -65,7 +77,7 @@ export default function CreateCliente({ iconOnly = false }) {
 
 
                     {/* Formulario con scroll independiente */}
-                    <form onSubmit={enviar} className="flex-1 flex flex-col min-h-0 bg-white">
+                    <form onSubmit={guardar} className="flex-1 flex flex-col min-h-0 bg-white">
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
                             <div className="space-y-6 animate-in fade-in duration-300">

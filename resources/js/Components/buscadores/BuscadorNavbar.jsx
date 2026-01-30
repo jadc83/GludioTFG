@@ -15,9 +15,9 @@ export default function BuscadorNavbar() {
         setBuscando(true);
 
         try {
-            const response = await fetch(`/reservas/buscar/${localizador.trim()}`);
-
-            if (response.ok) {
+            const service = await import('@/hooks/reservas/service');
+            const r = await service.buscarReserva(localizador.trim());
+            if (r) {
                 router.visit(route('reserva.show', localizador.trim()));
             } else {
                 alert('No se encontró la reserva con ese localizador');

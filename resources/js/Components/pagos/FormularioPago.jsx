@@ -138,36 +138,19 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     nacionalidad,
                 };
 
-                const resReserva = await fetch('/reservas', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify(datosReservaConDireccion),
-                });
+                try {
+                    const service = await import('@/hooks/reservas/service');
+                    const dataReserva = await service.crearReserva(datosReservaConDireccion);
 
-                if (!resReserva.ok) {
-                    let errorMessage = `HTTP ${resReserva.status}`;
-                    const contentType = resReserva.headers.get('content-type');
-                    if (contentType?.includes('application/json')) {
-                        const specific = await extraerPrimerError(resReserva);
-                        if (specific) {
-                            errorMessage = specific;
-                        } else {
-                            const err = await resReserva.json().catch(() => null);
-                            errorMessage = (err && (err.message || err.error)) || errorMessage;
-                        }
-                    } else {
-                        const text = await resReserva.text();
-                        errorMessage = `Error ${resReserva.status}`;
+                    // dataReserva should be the backend response (same shape as before)
+                } catch (err) {
+                    let errorMessage = err?.message || 'Error al crear reserva';
+                    if (err && typeof err === 'object') {
+                        errorMessage = err.message || err.error || JSON.stringify(err);
                     }
                     showToast(errorMessage, 'error');
                     throw new Error(errorMessage);
                 }
-
-                const dataReserva = await resReserva.json();
                 resId = dataReserva.reserva_id;
                 // Capturar desglose si el backend lo devuelve
                 reservaSubtotal = dataReserva.subtotal_habitaciones ?? null;

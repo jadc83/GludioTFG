@@ -34,8 +34,18 @@ class EmpleadoController extends Controller
         DB::transaction(function() use ($request) {
             $password = $request->filled('password') ? $request->password : Str::random(24);
 
+            $payload = $request->only(['name','email','tipo_documento','numero_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono']);
+
+            // Asegurar valores no nulos para columnas NOT NULL en la tabla `users`.
+            $nullableDefaults = ['tipo_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono'];
+            foreach ($nullableDefaults as $key) {
+                if (!array_key_exists($key, $payload) || $payload[$key] === null) {
+                    $payload[$key] = '';
+                }
+            }
+
             $user = User::create(array_merge(
-                $request->only(['name','email','tipo_documento','numero_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono']),
+                $payload,
                 ['password' => Hash::make($password)]
             ));
 

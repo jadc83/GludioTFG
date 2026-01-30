@@ -1,11 +1,43 @@
 import Campo from '@/Components/formulario/Campo';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
-import { useEmpleadoForm } from '@/hooks/useEmpleadoForm';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
+import { useEffect } from 'react';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function EditEmpleado({ empleado, abierto, onCerrar }) {
-    const { formulario, cambiar, errores, estaCargando, enviar, limpiar } = useEmpleadoForm(empleado, onCerrar);
+    const INITIAL_DATA = { name: '', email: '', password: '', password_confirmation: '', numero_empleado: '', departamento: '', puesto: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: '' };
+
+    const rutaCrear = '/empleados';
+    const rutaActualizar = empleado ? `/empleados/${empleado.id}` : '';
+
+    const { formulario, cambiar, errores, estaCargando, guardar: enviar, cargarDatos, limpiar } = useFormGenerico(
+        INITIAL_DATA,
+        rutaCrear,
+        rutaActualizar,
+        () => { onCerrar?.(); limpiar(); }
+    );
+
+    useEffect(() => {
+        if (empleado) {
+            cargarDatos({
+                name: empleado.name || '',
+                email: empleado.email || '',
+                numero_empleado: empleado.numero_empleado || '',
+                departamento: empleado.departamento || '',
+                puesto: empleado.puesto || '',
+                tipo_documento: empleado.tipo_documento || 'dni',
+                numero_documento: empleado.numero_documento || '',
+                nacionalidad: empleado.nacionalidad || '',
+                direccion: empleado.direccion || '',
+                ciudad: empleado.ciudad || '',
+                codigo_postal: empleado.codigo_postal || '',
+                telefono: empleado.telefono || '',
+            });
+        } else {
+            limpiar();
+        }
+    }, [empleado?.id]);
 
     const handleCerrar = () => {
         onCerrar?.();

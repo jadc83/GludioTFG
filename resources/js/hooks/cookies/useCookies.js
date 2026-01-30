@@ -1,10 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-/**
- * Manejo simple del consentimiento de cookies en localStorage.
- * Devuelve getters estables para usar en efectos sin recrearlos.
- */
-export function useCookieConsent() {
+export function useCookies() {
   const getCookieConsent = useCallback(() => {
     const cookieConsent = localStorage.getItem('cookieConsent');
 
@@ -26,10 +22,6 @@ export function useCookieConsent() {
   return { getCookieConsent, hasAcceptedAnalytics, hasAcceptedMarketing, hasAcceptedPreferences };
 }
 
-/**
- * Hooks de inicialización de servicios dependientes de consentimiento.
- * Mantienen el código de inicialización centralizado y claro.
- */
 export function useAnalytics() {
   const { hasAcceptedAnalytics } = useCookieConsent();
 

@@ -1,8 +1,8 @@
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { useFormGenerico } from './useFormGenerico';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
 
-export function useEmpleadoForm(empleado = null, alGuardar, options = { reloadOnSave: true }) {
+export function useEmpleado(empleado = null, alGuardar, options = { reloadOnSave: true }) {
     const obtenerRutas = () => {
         const rutaCrear = '/empleados';
         const rutaActualizar = empleado ? `/empleados/${empleado.id}` : '';
@@ -12,7 +12,9 @@ export function useEmpleadoForm(empleado = null, alGuardar, options = { reloadOn
     const { rutaCrear, rutaActualizar } = obtenerRutas();
 
     const form = useFormGenerico(
-        { name: '', email: '', password: '', password_confirmation: '', numero_empleado: '', departamento: '', puesto: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: ''}, rutaCrear, rutaActualizar,
+        { name: '', email: '', password: '', password_confirmation: '', numero_empleado: '', departamento: '', puesto: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: ''},
+        rutaCrear,
+        rutaActualizar,
         () => {
             alGuardar?.();
             if (options.reloadOnSave) {
