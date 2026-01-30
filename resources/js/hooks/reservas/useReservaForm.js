@@ -21,10 +21,19 @@ export default function useReservaForm() {
 	const [selectedTarifas, setSelectedTarifas] = useState({});
 	const [tarifasLookup, setTarifasLookup] = useState({});
 	const [ultimoPrecio, setUltimoPrecio] = useState(null);
+	const [preciosPorTipo, setPreciosPorTipo] = useState({});
 
 	// 3. IDs de reserva (Flash)
 	const [idReserva, setIdReserva] = useState(flash.reserva_id);
 	const [localizador, setLocalizador] = useState(flash.localizador);
+
+	// Debug: log cambios de rango para depuración de cargas
+	useEffect(() => {
+		try {
+			console.log('useReservaForm rango changed:', rango);
+			try { window.__lastRango = rango; window.__lastRangoTime = Date.now(); } catch (e) {}
+		} catch (e) { /* noop */ }
+	}, [rango]);
 
 	useEffect(() => {
 		if (flash.reserva_id) setIdReserva(flash.reserva_id);
@@ -88,7 +97,26 @@ export default function useReservaForm() {
 				return setMensajeError(`Máximo ${CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA} habitaciones.`);
 			if (totalSel > totalDisp)
 				return setMensajeError(`Solo hay ${totalDisp} disponibles.`);
+
+			// Si hay un usuario logueado, rellenar sus datos y saltar directamente al paso 4
+			if (usuarioActual) {
+				try {
+					setValue('name', usuarioActual.name || '');
+					setValue('email', usuarioActual.email || '');
+					setValue('telefono', usuarioActual.telefono || '');
+					setValue('tipo_documento', usuarioActual.tipo_documento || 'dni');
+					setValue('numero_documento', usuarioActual.numero_documento || '');
+					setValue('nacionalidad', usuarioActual.nacionalidad || '');
+					setValue('direccion', usuarioActual.direccion || '');
+				} catch (e) {
+					// noop si setValue falla por cualquier motivo
+				}
+
+				setPasoActual(4);
+				return;
+			}
 		}
+
 		setPasoActual(prev => prev + 1);
 	};
 
@@ -112,6 +140,48 @@ export default function useReservaForm() {
 			return data?.data || 0;
 		} catch { return 0; }
 	};
+
+	// Calcular precios por tipo cuando cambian rango, selección de habitaciones o tarifas
+	useEffect(() => {
+		let mounted = true;
+		const calcular = async () => {
+			if (!rango?.from || !rango?.to) {
+				if (mounted) setPreciosPorTipo({});
+				return;
+			}
+			const habs = Object.entries(habitaciones.habitacionesSeleccionadas)
+				.filter(([_, s]) => s.cantidad > 0)
+				.map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
+			if (!habs.length) {
+				if (mounted) setPreciosPorTipo({});
+				return;
+			}
+			try {
+				const { calcularPrecio } = await import('@/hooks/reservas/service');
+				const data = await calcularPrecio({
+					check_in: formatearFecha(rango.from),
+					check_out: formatearFecha(rango.to),
+					habitaciones: habs,
+					tarifas: Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(Number),
+				});
+				if (mounted) {
+					if (data && Array.isArray(data.habitaciones)) {
+						const map = {};
+						data.habitaciones.forEach(h => {
+							if (h.tipo) map[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? 0);
+						});
+						setPreciosPorTipo(map);
+					} else {
+						setPreciosPorTipo({});
+					}
+				}
+			} catch (e) {
+				if (mounted) setPreciosPorTipo({});
+			}
+		};
+		calcular();
+		return () => { mounted = false; };
+	}, [rango, habitaciones.habitacionesSeleccionadas, selectedTarifas]);
 
 	const confirmarReserva = () => {
 		const payload = getReservaPayload({
@@ -138,6 +208,7 @@ export default function useReservaForm() {
 		mensajeError, setMensajeError,
 		rango, setRango,
 		...habitaciones, // Exporta automáticamente getIcono, getImagen, etc.
+		preciosPorTipo,
 		precioSinTarifas, ultimoResultadoPrecio: ultimoPrecio,
 		confirmarReserva,
 		usuarioActual, idReserva, localizador, numHuespedes, setNumHuespedes,

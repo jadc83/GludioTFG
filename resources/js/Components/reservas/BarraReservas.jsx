@@ -2,7 +2,6 @@ import useReservaForm from '../../hooks/reservas/useReservaForm';
 import Paso2Habitaciones from './pasos/Paso2Habitaciones';
 import Paso3Datos from './pasos/Paso3Datos';
 import Paso4Confirmacion from './pasos/Paso4Confirmacion';
-import TypingAnimation from '@/Components/home/TypingAnimation';
 import BuscadorNavbar from '@/Components/buscadores/BuscadorNavbar';
 import { formatearFecha, calcularNoches } from '../../utils/formatters';
 import '../../../css/createHabitacion.css';
@@ -12,180 +11,212 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, isValidElemen
 import useCalendarioPrecios from '../../hooks/calendario/useCalendarioPrecios';
 import { usePage } from '@inertiajs/react';
 import { CalendarIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-
 import CalendarioPicker, { CalendarioStyles } from './CalendarioPicker';
-import ModalPaso from './ModalPaso';
+import ModalPaso from './pasos/ModalPaso';
 import Campo from '@/Components/formulario/Campo';
+import { ChevronDoubleDownIcon } from '@heroicons/react/24/outline';
+
+function DebugPanel() {
+    const [open, setOpen] = React.useState(false);
+    const [data, setData] = React.useState({ rango: null, habitaciones: null });
+
+    React.useEffect(() => {
+        const id = setInterval(() => {
+            try {
+                const rango = typeof window !== 'undefined' ? window.__lastRango : null;
+                const habs = typeof window !== 'undefined' ? window.__lastHabitacionesPreview : null;
+                setData({ rango, habitaciones: habs });
+            } catch (e) { }
+        }, 600);
+        return () => clearInterval(id);
+    }, []);
+
+    return (
+        <div className="fixed right-4 bottom-4 z-50">
+            <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded shadow-md">
+                <ChevronDoubleDownIcon className="h-4 w-4 text-gray-700" />
+                <span className="text-xs font-bold">Debug</span>
+            </button>
+            {open && (
+                <div className="mt-2 w-80 max-h-64 overflow-auto bg-white border border-gray-200 rounded p-2 text-xs shadow-lg">
+                    <div className="mb-2">
+                        <strong>Rango:</strong>
+                        <pre className="whitespace-pre-wrap">{JSON.stringify(data.rango, null, 2)}</pre>
+                    </div>
+                    <div>
+                        <strong>Habitaciones (preview):</strong>
+                        <pre className="whitespace-pre-wrap">{JSON.stringify(data.habitaciones || null, null, 2)}</pre>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function BarraReservas() {
-  const formularioReserva = useReservaForm();
-  const pagina = usePage();
-  const esPanelControl = pagina.url?.includes('panel') || pagina.component === 'PanelControl';
-  const [calendarioAbierto, setCalendarioAbierto] = useState(null);
-  const { preciosPorDia, consultaPrecios, formatearISO, esMobile } = useCalendarioPrecios();
-  const calendarioRef = useRef(null);
+    const formularioReserva = useReservaForm();
+    const pagina = usePage();
+    const esPanelControl = pagina.url?.includes('panel') || pagina.component === 'PanelControl';
+    const [calendarioAbierto, setCalendarioAbierto] = useState(null);
+    const { preciosPorDia, consultaPrecios, formatearISO, esMobile } = useCalendarioPrecios();
+    const calendarioRef = useRef(null);
 
-  // Cerrar calendario al hacer click fuera
-  useEffect(() => {
-    if (!calendarioAbierto) return;
+    // Cerrar calendario al hacer click fuera
+    useEffect(() => {
+        if (!calendarioAbierto) return;
 
-    const handleClickOutside = (event) => {
-      if (calendarioRef.current && !calendarioRef.current.contains(event.target)) {
-        setCalendarioAbierto(null);
-      }
-    };
+        const handleClickOutside = (event) => {
+            if (calendarioRef.current && !calendarioRef.current.contains(event.target)) {
+                setCalendarioAbierto(null);
+            }
+        };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [calendarioAbierto]);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [calendarioAbierto]);
 
-  // Escuchar evento para abrir calendario desde Paso2
-  useEffect(() => {
-    const handler = (event) => setCalendarioAbierto(event.detail);
-    window.addEventListener('abrirCalendario', handler);
-    return () => window.removeEventListener('abrirCalendario', handler);
-  }, []);
-  // Cargar precios cuando se abre el calendario
-  useEffect(() => {
-    if (!calendarioAbierto) return;
-    const inicio = new Date();
-    const fin = new Date();
-    fin.setDate(fin.getDate() + 365);
-    const start = formatearISO(inicio);
-    const end = formatearISO(fin);
-    consultaPrecios(start, end);
-  }, [calendarioAbierto, consultaPrecios, formatearISO]);
+    useEffect(() => {
+        const handler = (event) => setCalendarioAbierto(event.detail);
+        window.addEventListener('abrirCalendario', handler);
+        return () => window.removeEventListener('abrirCalendario', handler);
+    }, []);
+    // Cargar precios cuando se abre el calendario
+    useEffect(() => {
+        if (!calendarioAbierto) return;
+        const inicio = new Date();
+        const fin = new Date();
+        fin.setDate(fin.getDate() + 365);
+        const start = formatearISO(inicio);
+        const end = formatearISO(fin);
+        consultaPrecios(start, end);
+    }, [calendarioAbierto, consultaPrecios, formatearISO]);
 
-  const mapaPrecios = useMemo(() => preciosPorDia || {}, [preciosPorDia]);
-  const noches = formularioReserva.rango?.from && formularioReserva.rango?.to ? calcularNoches(formularioReserva.rango.from, formularioReserva.rango.to) : 0;
+    const mapaPrecios = useMemo(() => preciosPorDia || {}, [preciosPorDia]);
+    const componentesDia = useMemo(() => ({
+        Day: ({ date, disabled, ...props }) => {
+            const iso = props?.day?.isoDate || (date ? formatearISO(date) : null);
+            const precio = iso ? mapaPrecios[iso] : undefined;
+            let ayer = false;
+            try {
+                if (date instanceof Date && !Number.isNaN(date.getTime())) {
+                    const diaDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    const hoy = new Date();
+                    const t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                    ayer = diaDate < t;
+                }
+            } catch (e) {
+                ayer = false;
+            }
 
-  const componentesDia = useMemo(() => ({
-    Day: ({ date, disabled, ...props }) => {
-      const iso = props?.day?.isoDate || (date ? formatearISO(date) : null);
-      const precio = iso ? mapaPrecios[iso] : undefined;
+            const atributoPrecio = !ayer && !disabled && precio ? `€${precio}` : '';
 
-      // Comprobar fecha
-      let ayer = false;
-      try {
-        if (date instanceof Date && !Number.isNaN(date.getTime())) {
-          const diaDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          const hoy = new Date();
-          const t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-          ayer = diaDate < t;
+            // Si el hijo es un elemento React (el botón del día), clonar para inyectar el precio
+            let contenido = props.children;
+            if (atributoPrecio && React.isValidElement(contenido)) {
+                const hijosOriginales = contenido.props.children;
+                contenido = cloneElement(contenido, {}, [
+                    hijosOriginales,
+                    <span
+                        key="precio"
+                        className="rdp-day_price"
+                        style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}
+                    >
+                        {atributoPrecio}
+                    </span>,
+                ]);
+            }
+
+            return (
+                <td className={props.className}>
+                    {contenido}
+                </td>
+            );
         }
-      } catch (e) {
-        ayer = false;
-      }
+    }), [mapaPrecios, formatearISO]);
 
-      const atributoPrecio = !ayer && !disabled && precio ? `€${precio}` : '';
+    return (
+        <>
+            {/* MODALES */}
+            <ModalPaso paso={2} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="fit">
+                <Paso2Habitaciones {...formularioReserva} />
+            </ModalPaso>
 
-      // Si el hijo es un elemento React (el botón del día), clonar para inyectar el precio
-      let contenido = props.children;
-      if (atributoPrecio && React.isValidElement(contenido)) {
-        const hijosOriginales = contenido.props.children;
-        contenido = cloneElement(contenido, {}, [
-          hijosOriginales,
-          <span
-            key="precio"
-            className="rdp-day_price"
-            style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}
-          >
-            {atributoPrecio}
-          </span>,
-        ]);
-      }
+            <ModalPaso paso={3} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="max-w-2xl">
+                <Paso3Datos {...formularioReserva} />
+            </ModalPaso>
 
-      return (
-        <td className={props.className}>
-          {contenido}
-        </td>
-      );
-    }
-  }), [mapaPrecios, formatearISO]);
+            <ModalPaso paso={4} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="max-w-4xl">
+                <Paso4Confirmacion {...formularioReserva} usuarioActual={formularioReserva.usuarioActual} getValues={formularioReserva.getValues} idClienteSeleccionado={formularioReserva.idClienteSeleccionado} tipoClienteSeleccionado={formularioReserva.tipoClienteSeleccionado} habitacionesDisponibles={formularioReserva.habitacionesDisponibles} />
+            </ModalPaso>
 
-  return (
-    <>
-      {/* MODALES */}
-      <ModalPaso paso={2} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="fit">
-        <Paso2Habitaciones {...formularioReserva} />
-      </ModalPaso>
+            {/* BARRA STICKY */}
+            {!esPanelControl && (
+                <div className="sticky top-16 z-40 bg-gris shadow-md">
+                    <div className="px-4 py-3 relative">
+                        <div className="flex items-center gap-3 justify-center md:justify-center">
+                            <div className="flex items-center justify-center gap-3 flex-wrap">
+                                <div className="hidden sm:flex items-center gap-1 text-[#7a0202]">
+                                    <CalendarIcon className="w-5 h-5" />
+                                </div>
 
-      <ModalPaso paso={3} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="max-w-2xl">
-        <Paso3Datos {...formularioReserva} />
-      </ModalPaso>
+                                {/* INPUT ENTRADA */}
+                                <div className="flex items-center gap-2 relative">
+                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                        <span className="hidden sm:inline">Entrada</span>
+                                        <span className="sm:hidden inline-flex"><ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" /></span>
+                                    </label>
+                                    <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
+                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
+                                        {formularioReserva.rango?.from ? formatearFecha(formularioReserva.rango.from, 'corta') : '—'}
+                                    </button>
+                                    <CalendarioStyles />
+                                    <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto} handleSeleccionRango={(rango) => formularioReserva.setRango(rango)}
+                                        formularioReserva={formularioReserva} preciosPorDia={preciosPorDia} setCalendarioAbierto={setCalendarioAbierto} tipo="entrada" formatearISO={formatearISO}
+                                        calendarioRef={calendarioRef} components={componentesDia} />
+                                </div>
 
-      <ModalPaso paso={4} pasoActual={formularioReserva.pasoActual} onClose={() => formularioReserva.retrocederPaso()} maxWidth="max-w-sm">
-        <Paso4Confirmacion {...formularioReserva} usuarioActual={formularioReserva.usuarioActual} getValues={formularioReserva.getValues} idClienteSeleccionado={formularioReserva.idClienteSeleccionado} tipoClienteSeleccionado={formularioReserva.tipoClienteSeleccionado} habitacionesDisponibles={formularioReserva.habitacionesDisponibles} />
-      </ModalPaso>
+                                {/* INPUT SALIDA */}
+                                <div className="flex items-center gap-2 relative">
+                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                        <span className="hidden sm:inline">Salida</span>
+                                        <span className="sm:hidden inline-flex"><ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" /></span>
+                                    </label>
+                                    <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')} disabled={!formularioReserva.rango?.from}
+                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed truncate" aria-label="Seleccionar fecha de salida">
+                                        {formularioReserva.rango?.to ? formatearFecha(formularioReserva.rango.to, 'corta') : '—'}
+                                    </button>
+                                    <CalendarioStyles />
+                                    {formularioReserva.rango?.from && (
+                                        <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto}
+                                            handleSeleccionRango={(rango) => formularioReserva.setRango(rango)} formularioReserva={formularioReserva} preciosPorDia={preciosPorDia}
+                                            setCalendarioAbierto={setCalendarioAbierto} tipo="salida" formatearISO={formatearISO}
+                                            calendarioRef={calendarioRef} components={componentesDia} />
+                                    )}
+                                </div>
 
-      {/* BARRA STICKY */}
-      {!esPanelControl && (
-        <div className="sticky top-16 z-40 bg-gradient-to-r from-gris via-white to-gris border-b border-gray-200 shadow-md">
-          <div className="px-4 py-3 relative">
-            <div className="flex items-center gap-3 justify-center md:justify-center">
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="hidden sm:flex items-center gap-1 text-[#7a0202]">
-                  <CalendarIcon className="w-5 h-5" />
+                                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
+                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                        <span className="hidden sm:inline">Huéspedes:</span>
+                                        <span className="sm:hidden inline-flex"><UserGroupIcon className="h-5 w-5 text-gray-700" /></span>
+                                    </label>
+                                    <Campo id="num_huespedes_barra" type="number" min={1} sinEstilosPorDefecto={true}
+                                        value={formularioReserva.numHuespedes}
+                                        onChange={(e) => formularioReserva.setNumHuespedes(Math.max(1, Number(e.target.value) || 1))}
+                                        clase="w-16 text-sm px-2 py-1 rounded border border-gray-300 bg-white text-gray-700" />
+                                </div>
+                            </div>
+
+                            {/* TYPING ANIMATION Y BUSCADOR */}
+                            <div className="hidden lg:flex items-center gap-4 px-2 py-1 absolute right-4">
+
+                                <div className="flex-shrink-0 w-80">
+                                    <BuscadorNavbar />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                {/* INPUT ENTRADA */}
-                <div className="flex items-center gap-2 relative">
-                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                    <span className="hidden sm:inline">Entrada</span>
-                    <span className="sm:hidden inline-flex"><ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" /></span>
-                  </label>
-                  <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
-                    className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
-                    {formularioReserva.rango?.from ? formatearFecha(formularioReserva.rango.from, 'corta') : '—'}
-                  </button>
-                  <CalendarioStyles />
-                  <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto} handleSeleccionRango={(rango) => formularioReserva.setRango(rango)}
-                    formularioReserva={formularioReserva} preciosPorDia={preciosPorDia} setCalendarioAbierto={setCalendarioAbierto} tipo="entrada" formatearISO={formatearISO}
-                    calendarioRef={calendarioRef} components={componentesDia} />
-                </div>
-
-                {/* INPUT SALIDA */}
-                <div className="flex items-center gap-2 relative">
-                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                    <span className="hidden sm:inline">Salida</span>
-                    <span className="sm:hidden inline-flex"><ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" /></span>
-                  </label>
-                  <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')} disabled={!formularioReserva.rango?.from}
-                    className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed truncate" aria-label="Seleccionar fecha de salida">
-                    {formularioReserva.rango?.to ? formatearFecha(formularioReserva.rango.to, 'corta') : '—'}
-                  </button>
-                  <CalendarioStyles />
-                  {formularioReserva.rango?.from && (
-                    <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto}
-                      handleSeleccionRango={(rango) => formularioReserva.setRango(rango)} formularioReserva={formularioReserva} preciosPorDia={preciosPorDia}
-                      setCalendarioAbierto={setCalendarioAbierto} tipo="salida" formatearISO={formatearISO}
-                      calendarioRef={calendarioRef} components={componentesDia} />
-                  )}
-                </div>
-
-                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
-                  <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                    <span className="hidden sm:inline">Huéspedes:</span>
-                    <span className="sm:hidden inline-flex"><UserGroupIcon className="h-5 w-5 text-gray-700" /></span>
-                  </label>
-                  <Campo id="num_huespedes_barra" type="number" min={1} sinEstilosPorDefecto={true}
-                    value={formularioReserva.numHuespedes}
-                    onChange={(e) => formularioReserva.setNumHuespedes(Math.max(1, Number(e.target.value) || 1))}
-                    clase="w-16 text-sm px-2 py-1 rounded border border-gray-300 bg-white text-gray-700"/>
-                </div>
-              </div>
-
-              {/* TYPING ANIMATION Y BUSCADOR */}
-              <div className="hidden lg:flex items-center gap-4 px-2 py-1 absolute right-4">
-
-                <div className="flex-shrink-0 w-80">
-                  <BuscadorNavbar />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+            )}
+        </>
+    );
 }

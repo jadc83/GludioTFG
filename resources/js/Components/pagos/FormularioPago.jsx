@@ -3,253 +3,75 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { usePage } from '@inertiajs/react';
 import Campo from '@/Components/formulario/Campo';
 import React, { useState, useMemo, useEffect } from 'react';
+import { CreditCardIcon, MapPinIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
     const page = usePage();
     const csrfToken = page?.props?.csrf_token || document.querySelector('meta[name="csrf-token"]')?.content || '';
     const stripe = useStripe();
     const elements = useElements();
+
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
-    const [toast, setToast] = useState(null); // { message, type }
-
-    // Estado local para la casilla de aceptar términos (inicializado desde prop para compatibilidad)
     const [acepta, setAcepta] = useState(aceptaTerminos);
 
-    // Sincronizar prop -> estado si cambia externamente
     useEffect(() => { setAcepta(aceptaTerminos); }, [aceptaTerminos]);
 
-    const showToast = (message, type = 'info') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4500);
-    };
-
-    const extraerPrimerError = async (response) => {
-        try {
-            const json = await response.json();
-            if (json && json.errors) {
-                const firstField = Object.keys(json.errors)[0];
-                const firstMsg = json.errors[firstField] && json.errors[firstField][0];
-                return firstMsg || json.message || null;
-            }
-            return json.message || null;
-        } catch (err) {
-            return null;
-        }
-    };
-
-    // Obtener datos del usuario logueado
     const user = page?.props?.auth?.user;
-    const [direccion, setDireccion] = useState(() => {
-        const defaults = { calle: '', ciudad: '', codigo_postal: '', pais: 'ES' };
-
-        if (reservaData && reservaData.direccion) {
-            if (typeof reservaData.direccion === 'string') {
-                return { ...defaults, calle: reservaData.direccion };
-            }
-            // Mezclar valores del objeto con los defaults
-            return { ...defaults, ...reservaData.direccion };
-        }
-
-        return {
-            calle: user?.direccion || '',
-            ciudad: user?.ciudad || '',
-            codigo_postal: user?.codigo_postal || '',
-            pais: user?.pais || 'ES',
-        };
+    const [direccion, setDireccion] = useState({
+        calle: reservaData?.direccion?.calle || user?.direccion || '',
+        ciudad: reservaData?.direccion?.ciudad || user?.ciudad || '',
+        codigo_postal: reservaData?.direccion?.codigo_postal || user?.codigo_postal || '',
+        pais: reservaData?.direccion?.pais || 'ES',
     });
 
-    // Si reservaData viene del formulario, queremos mostrar y editar los datos del huésped
-    const [name, setName] = useState(reservaData?.name || user?.name || 'Huésped Hotel');
+    const [name, setName] = useState(reservaData?.name || user?.name || '');
     const [email, setEmail] = useState(reservaData?.email || user?.email || '');
     const [telefono, setTelefono] = useState(reservaData?.telefono || user?.telefono || '');
-    const [tipoDocumento, setTipoDocumento] = useState(reservaData?.tipo_documento || '');
-    const [numeroDocumento, setNumeroDocumento] = useState(reservaData?.numero_documento || '');
-    const [nacionalidad, setNacionalidad] = useState(reservaData?.nacionalidad || '');
 
-    // Sincronizar si reservaData cambia después del montaje
-    useEffect(() => {
-        if (!reservaData) return;
-
-        // Dirección: puede ser string u objeto
-        if (reservaData.direccion) {
-            if (typeof reservaData.direccion === 'string') {
-                setDireccion((d) => ({ ...d, calle: reservaData.direccion }));
-            } else if (typeof reservaData.direccion === 'object') {
-                setDireccion((d) => ({ ...d, ...reservaData.direccion }));
-            }
-        }
-
-        if (reservaData.name) setName(reservaData.name);
-        if (reservaData.email) setEmail(reservaData.email);
-        if (reservaData.telefono) setTelefono(reservaData.telefono);
-        if (reservaData.tipo_documento) setTipoDocumento(reservaData.tipo_documento);
-        if (reservaData.numero_documento) setNumeroDocumento(reservaData.numero_documento);
-        if (reservaData.nacionalidad) setNacionalidad(reservaData.nacionalidad);
-    }, [reservaData]);
-
-
-    useEffect(() => {
-        if (!user) return;
-
-        setDireccion((prev) => {
-            const next = { ...prev };
-            if ((!next.ciudad || next.ciudad === '') && user.ciudad) next.ciudad = user.ciudad;
-            if ((!next.codigo_postal || next.codigo_postal === '') && (user.codigo_postal || user.cp)) next.codigo_postal = user.codigo_postal || user.cp || '';
-            return next;
-        });
-    }, [user]);
-
-    // Procesar pago completo en un submit
     const procesarPago = async (e) => {
         e.preventDefault();
-        if (!stripe || !elements) {
-            setMensaje('El formulario no está completamente cargado');
-            return;
-        }
-
-        // Si no acepta términos, mostrar toast y cancelar
-        if (!acepta) {
-            showToast('Debes aceptar los términos y condiciones para continuar.', 'error');
-            return;
-        }
+        if (!stripe || !elements || !acepta) return;
 
         setProcesando(true);
-
         try {
-            // Crear una reserva nueva o usar una existente.
-            // En caso de edición (es_edicion_pago) o extensión (es_extension) no crear Reserva.
             const esExtension = Boolean(reservaData?.es_extension || reservaData?.es_edicion_pago);
             let resId = reservaData?.reserva_id;
 
-            let reservaSubtotal = null;
-            let reservaCargoTarifas = null;
-
             if (!esExtension) {
-                // PASO 1: Crear reserva (solo si no es extensión/edición)
-                const datosReservaConDireccion = {
-                    ...reservaData,
-                    direccion: direccion,
-                    name,
-                    email,
-                    telefono,
-                    tipo_documento: tipoDocumento,
-                    numero_documento: numeroDocumento,
-                    nacionalidad,
-                };
-
-                try {
-                    const service = await import('@/hooks/reservas/service');
-                    const dataReserva = await service.crearReserva(datosReservaConDireccion);
-
-                    // dataReserva should be the backend response (same shape as before)
-                } catch (err) {
-                    let errorMessage = err?.message || 'Error al crear reserva';
-                    if (err && typeof err === 'object') {
-                        errorMessage = err.message || err.error || JSON.stringify(err);
-                    }
-                    showToast(errorMessage, 'error');
-                    throw new Error(errorMessage);
-                }
+                const service = await import('@/hooks/reservas/service');
+                const dataReserva = await service.crearReserva({ ...reservaData, direccion, name, email, telefono });
                 resId = dataReserva.reserva_id;
-                // Capturar desglose si el backend lo devuelve
-                reservaSubtotal = dataReserva.subtotal_habitaciones ?? null;
-                reservaCargoTarifas = dataReserva.precioTarifas ?? null;
-                if (!resId) throw new Error('No se obtuvo ID de reserva');
             }
 
-            if (!resId) throw new Error('No se obtuvo ID de reserva');
-
-            // PASO 2: Crear PaymentIntent
             const resPI = await fetch('/pagos/crear-payment-intent', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({
-                    reserva_id: resId,
-                    monto: monto,
-                    subtotal_habitaciones: reservaSubtotal,
-                    precioTarifas: reservaCargoTarifas,
-                }),
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ reserva_id: resId, monto }),
             });
-
-            if (!resPI.ok) {
-                let errorMessage = `HTTP ${resPI.status}`;
-                const contentType = resPI.headers.get('content-type');
-                if (contentType?.includes('application/json')) {
-                    const specific = await extraerPrimerError(resPI);
-                    if (specific) errorMessage = specific;
-                    else {
-                        const err = await resPI.json().catch(() => null);
-                        errorMessage = (err && (err.message || err.error)) || errorMessage;
-                    }
-                } else {
-                    const text = await resPI.text();
-                }
-                showToast(errorMessage, 'error');
-                throw new Error(errorMessage);
-            }
 
             const dataPI = await resPI.json();
-            if (!dataPI.success) throw new Error(dataPI.error || 'Error al crear PaymentIntent');
+            if (!dataPI.success) throw new Error(dataPI.error || 'Error en comunicación');
 
-            const newClientSecret = dataPI.clientSecret;
-            const newPagoId = dataPI.pago_id;
-
-            // PASO 3: Procesar pago con Stripe
-            const { paymentIntent, error } = await stripe.confirmCardPayment(newClientSecret, {
-                    payment_method: {
+            const { paymentIntent, error } = await stripe.confirmCardPayment(dataPI.clientSecret, {
+                payment_method: {
                     card: elements.getElement(CardElement),
-                    billing_details: {
-                        name: name || reservaData.name || 'Huésped Hotel',
-                        email: email || reservaData.email || undefined,
-                        phone: telefono || reservaData.telefono || undefined,
-                        address: {
-                            line1: direccion.calle,
-                            city: direccion.ciudad,
-                            postal_code: direccion.codigo_postal,
-                            country: direccion.pais,
-                        },
-                    },
+                    billing_details: { name, email, address: { line1: direccion.calle, city: direccion.ciudad, postal_code: direccion.codigo_postal, country: direccion.pais } },
                 },
             });
 
-            if (error) {
-                setMensaje(`Error: ${error.message}`);
-                onError(error.message);
-                setProcesando(false);
-                return;
-            }
+            if (error) throw new Error(error.message);
 
             if (paymentIntent.status === 'succeeded') {
-                const res = await fetch('/pagos/confirmar', {
+                await fetch('/pagos/confirmar', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        payment_intent_id: paymentIntent.id,
-                        pago_id: newPagoId,
-                    }),
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ payment_intent_id: paymentIntent.id, pago_id: dataPI.pago_id }),
                 });
-
-                if (!res.ok) throw new Error('Error al confirmar');
-
-                const data = await res.json();
-                setMensaje('¡Pago completado!');
-                // Enviamos también el pago_id y payment_intent_id al callback para que el llamador pueda usarlo
-                onPagoExitoso({ ...data, pago_id: newPagoId, payment_intent_id: paymentIntent.id });
-            } else {
-                setMensaje('Pago no completado');
-                onError('Pago no completado');
+                onPagoExitoso({ pago_id: dataPI.pago_id });
             }
         } catch (err) {
-            setMensaje(`Error: ${err.message}`);
+            setMensaje(err.message);
             onError(err.message);
         } finally {
             setProcesando(false);
@@ -257,135 +79,90 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     };
 
     return (
-        <div className="w-full text-xs md:text-[13px] relative">
-            <form onSubmit={procesarPago} className="space-y-1">
-                {/* Overlay para indicar procesamiento sin cambiar layout */}
-                {procesando && (
-                    <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-auto bg-black/20 transition-opacity duration-200">
-                        <div className="bg-white rounded-xl p-6 shadow-lg w-72 flex flex-col items-center gap-2 pointer-events-auto">
-                            <div className="flex justify-center mb-0">
-                                <div className="inline-block animate-spin">
-                                    <div className="w-7 h-7 border-4 border-blue-300 border-t-blue-600 rounded-full"></div>
-                                </div>
-                            </div>
-                            <p className="text-base font-semibold text-blue-900">Procesando pago…</p>
-                            <p className="text-sm text-blue-700 mt-0.5">No cierres esta ventana</p>
+        <div className="w-full mx-auto relative px-2 bg-gris">
+            <form onSubmit={procesarPago} className="space-y-10 w-full">
+
+                {/* SECCIÓN: DIRECCIÓN */}
+                <div className="px-6">
+                    <div className="flex items-center gap-4 mb-6">
+                        <MapPinIcon className="h-5 w-5 text-gray-400" />
+                        <h2 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.25em]">Detalles de Facturación</h2>
+                    </div>
+
+                    <div className="space-y-4">
+                        <Campo
+                            value={direccion.calle}
+                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
+                            placeholder="DIRECCIÓN COMPLETA (CALLE, NÚMERO, PISO)"
+                            className="w-full border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold placeholder:text-gray-300 focus:ring-[#7a0202] focus:border-[#7a0202]"
+                        />
+                        {/* Grid responsivo: 1 columna en móvil, 3 en tablets/desktop */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <Campo value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})} placeholder="CIUDAD" className="border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold" />
+                            <Campo value={direccion.codigo_postal} onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})} placeholder="CÓDIGO POSTAL" className="border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold" />
+                            <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})} className="border-gray-200 rounded-lg text-[11px] font-black uppercase bg-white px-3 h-[46px] focus:ring-[#7a0202]">
+                                <option value="ES">España (ES)</option>
+                                <option value="FR">Francia (FR)</option>
+                                <option value="PT">Portugal (PT)</option>
+                            </select>
                         </div>
                     </div>
-                )}
-
-                {/* Dirección de Facturación */}
-                <div>
-                    <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
-                        Dirección de Facturación
-                    </label>
-
-                    <div className="mb-1">
-                        <Campo id="direccion_calle" name="direccion_calle" value={direccion.calle} onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                            required placeholder="Calle y número"
-                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1">
-                        <Campo id="direccion_ciudad" name="direccion_ciudad" value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})}
-                            required placeholder="Ciudad"
-                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                        />
-                        <Campo required id="direccion_codigo_postal" name="direccion_codigo_postal" value={direccion.codigo_postal}
-                            onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})} placeholder="Código Postal"
-                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition"
-                        />
-                        <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})}
-                            className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition bg-white">
-                            <option value="ES">España</option>
-                            <option value="FR">Francia</option>
-                            <option value="PT">Portugal</option>
-                            <option value="IT">Italia</option>
-                            <option value="DE">Alemania</option>
-                            <option value="GB">Reino Unido</option>
-                        </select>
-                    </div>
-
-                    {/* Datos del huésped ocultos: se usan los datos del usuario autenticado */}
                 </div>
 
-
-
-                {/* Datos de la tarjeta */}
-                <div>
-                    <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
-                        Datos de la Tarjeta
-                    </label>
-                    <div className="border border-gray-300 rounded-lg p-2 bg-white">
-                        <CardElement
-                            options={{
-                                hidePostalCode: true,
-                                style: {
-                                    base: {
-                                        fontSize: '12px',
-                                        color: '#1f2937',
-                                        fontFamily: '"Inter", sans-serif',
-                                        '::placeholder': {
-                                            color: '#9ca3af',
-                                        },
-                                    },
-                                    invalid: {
-                                        color: '#dc2626',
-                                    },
-                                },
-                            }}
-                        />
+                {/* SECCIÓN: TARJETA */}
+                <div className="px-6">
+                    <div className="border border-gray-200 rounded-lg p-5 bg-white shadow-sm">
+                        <CardElement options={{
+                            style: { base: { fontSize: '14px', color: '#111827', letterSpacing: '0.05em', fontSmoothing: 'antialiased', '::placeholder': { color: '#d1d5db' } } }
+                        }} />
                     </div>
                 </div>
 
-                {/* Mensaje de estado */}
-                {mensaje && (
-                    <div className={`rounded-lg p-3 text-xs border ${
-                        mensaje.includes('Error') ? 'bg-red-100 border-red-300 text-red-800' : 'bg-green-100 border-green-300 text-green-800'  }`}>
-                        <p className="font-medium mb-0.5">
-                            {mensaje.includes('Error') ? 'Error' : 'Éxito'}
-                        </p>
-                        <p className="opacity-90">{mensaje}</p>
-                    </div>
-                )}
-
-                {/* Casilla de aceptación (opcional) */}
-                {mostrarAceptacion && (
-                    <div className="mt-3 text-xs text-gray-600">
-                        <label className="flex items-start gap-3 cursor-pointer">
-                            <input type="checkbox" id="acepta_terminos_pago" checked={acepta} onChange={(e) => { setAcepta(e.target.checked); if (typeof onAceptaChange === 'function') onAceptaChange(e.target.checked); }} className="mr-2 mt-1" />
-                            <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.</span>
+                {/* ACEPTACIÓN Y ACCIÓN */}
+                <div className="space-y-4">
+                    {mostrarAceptacion && (
+                        <label className="flex items-center justify-center gap-4 cursor-pointer group px-2 text-center">
+                            <input type="checkbox" checked={acepta}
+                                onChange={(e) => { setAcepta(e.target.checked); onAceptaChange?.(e.target.checked); }}
+                                className="h-5 w-5 rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202] cursor-pointer"
+                            />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight leading-relaxed group-hover:text-gray-700 transition-colors text-center">
+                                Acepto los <span className="text-gray-900 underline decoration-[#7a0202] decoration-2 underline-offset-4">términos y condiciones</span>.
+                            </span>
                         </label>
+                    )}
+
+                    <button type="submit" disabled={procesando || !stripe || !acepta} className="w-full py-6 mt-4 rounded-xl bg-[#7a0202] text-white font-black text-[12px] uppercase tracking-[0.35em] shadow-2xl shadow-red-900/20 hover:bg-black hover:shadow-none transition-all active:scale-[0.97] disabled:opacity-20 disabled:grayscale">
+                        {procesando ? 'Procesando...' : 'Pagar'}
+                    </button>
+                </div>
+
+                {/* ERRORES */}
+                {mensaje && (
+                    <div className="p-5 bg-red-50 border-l-4 border-red-600 rounded-r-xl flex items-center gap-4 animate-pulse">
+                        <span className="text-[11px] font-black text-red-800 uppercase tracking-widest">{mensaje}</span>
                     </div>
                 )}
-
-                {/* Botón de confirmación */}
-                <button type="submit" disabled={procesando || !stripe}
-                    className={`w-full mt-2 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-200 ${
-                        procesando || !stripe ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-[#7a0202] focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2'
-                    }`}>
-                    {procesando ? 'Procesando pago...' : 'Confirmar Pago'}
-                </button>
-
-                {/* Mensaje de términos mostrado ahora solo vía toast */}
             </form>
-            {/* Toast simple */}
-            {toast && (
-                <div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>
-                    {toast.message}
+
+            {/* OVERLAY DE CARGA */}
+            {procesando && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-[3px] rounded-2xl">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-10 h-10 border-[4px] border-gray-100 border-t-[#7a0202] rounded-full animate-spin"></div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-900">Sincronizando...</p>
+                    </div>
                 </div>
             )}
         </div>
     );
 }
 
-export default function FormularioPago({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
+export default function FormularioPago(props) {
     const stripePromise = useMemo(() => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY), []);
-
     return (
         <Elements stripe={stripePromise}>
-            <FormularioPagoInterno reservaData={reservaData} monto={monto} onPagoExitoso={onPagoExitoso} onError={onError} aceptaTerminos={aceptaTerminos} mostrarAceptacion={mostrarAceptacion} onAceptaChange={onAceptaChange} />
+            <FormularioPagoInterno {...props} />
         </Elements>
     );
 }

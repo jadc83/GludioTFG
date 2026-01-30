@@ -18,7 +18,7 @@ export default function DesgloseFactura({ habitacionesSeleccionadas, rango, mont
     };
 
     return (
-        <div className="w-full rounded-lg bg-gris p-2">
+        <div className="w-full max-w-sm mx-auto rounded-lg bg-gris p-2">
 
             <h3 className="text-sm font-bold text-gray-900 text-center p-2 rounded-lg bg-white">
                 Desglose de tu reserva

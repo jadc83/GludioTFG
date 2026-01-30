@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import Campo from '@/Components/formulario/Campo';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import {
     PhoneIcon,
     EnvelopeIcon,
@@ -16,7 +17,7 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } =
+    const { data, setData, patch, errors, processing, recentlySuccessful, reset, clearErrors } =
         useForm({
             name: user.name || '',
             email: user.email || '',
@@ -32,7 +33,8 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
         patch(route('profile.update'), {
-            preserveScroll: true
+            preserveScroll: true,
+            onSuccess: () => limpiarFormulario(reset, clearErrors),
         });
     };
 

@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 import { IdentificationIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
 
 export default function Paso3Datos({
     watch,
@@ -11,32 +12,17 @@ export default function Paso3Datos({
 }) {
     const formData = watch();
 
-    const Migitas = () => (
-        <nav aria-label="Progreso" className="flex items-center gap-3">
-            {['Fechas', 'Habitación', 'Datos', 'Confirmar'].map((etiqueta, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
-                        i === 2 ? 'text-[#7a0202]' : i < 2 ? 'text-gray-900' : 'text-gray-400'
-                    }`}>
-                        {etiqueta}
-                    </span>
-                    {i < 3 && <ChevronRightIcon className="h-3 w-3 text-gray-300" />}
-                </div>
-            ))}
-        </nav>
-    );
-
     return (
-        /* - Eliminado bg-gris. Ahora es bg-white.
-           - Ajustado el margen superior (-mt-10) para no ocultar el header.
-           - Altura máxima controlada para evitar cortes.
+        /* - Eliminado -mt-10 para evitar que se pegue o oculte bajo el header.
+           - Redondeo ajustado de 2.5rem a xl para un look más industrial/limpio.
+           - Altura ajustada para asegurar visibilidad total.
         */
-        <div className="relative z-10 mx-auto flex h-full max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl -mt-10">
+        <div className="relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
 
-            {/* HEADER: Limpio y visible */}
-            <header className="flex-none border-b border-gray-100 bg-white px-8 py-5 md:px-12">
+            {/* HEADER: Sin margen negativo, alineación corregida */}
+            <header className="flex-none border-b border-gray-100 bg-white px-8 py-6 md:px-12">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
-                    <div>
+                    <div className="text-center md:text-left">
                         <h1 className="text-2xl font-black leading-none text-gray-900 uppercase tracking-tighter">
                             DATOS DEL <span className="text-[#7a0202]">TITULAR</span>
                         </h1>
@@ -44,20 +30,20 @@ export default function Paso3Datos({
                             Registro de Identidad / Step 03
                         </p>
                     </div>
-                    <Migitas />
+                    <ReservaBreadcrumbs activeIndex={2} separator="chevron" className="flex items-center gap-3" textClass="text-[10px]" />
                 </div>
             </header>
 
-            {/* CUERPO: Fondo transparente/limpio */}
-            <main className="flex-1 overflow-hidden bg-white flex flex-col items-center justify-start pt-6">
-                <div className="custom-scrollbar w-full max-w-4xl overflow-y-auto px-6 pb-12">
+            {/* CUERPO: Scroll optimizado y padding superior corregido */}
+            <main className="flex-1 overflow-hidden bg-white flex flex-col items-center justify-start">
+                <div className="custom-scrollbar w-full max-w-4xl overflow-y-auto px-6 py-8">
 
-                    {/* Contenedor del Formulario sin bg-gris y transparente */}
-                    <div className="rounded-[2.5rem] bg-transparent p-4 md:p-8">
+                    {/* Contenedor del Formulario con redondeo reducido */}
+                    <div className="rounded-lg bg-transparent p-2 md:p-4">
 
-                        {/* Indicador Industrial */}
-                        <div className="mb-10 flex items-center gap-5 border-l-4 border-[#7a0202] pl-6">
-                            <IdentificationIcon className="h-6 w-6 text-gray-900 opacity-30" />
+                        {/* Indicador Industrial: Más sobrio */}
+                        <div className="mb-8 flex items-center gap-5 border-l-4 border-[#7a0202] pl-6">
+                            <IdentificationIcon className="h-6 w-6 text-gray-900 opacity-20" />
                             <div>
                                 <h2 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">
                                     Información de Registro
@@ -68,7 +54,7 @@ export default function Paso3Datos({
                             </div>
                         </div>
 
-                        {/* Inyección del formulario (asegurarse que por dentro no tenga bg-gris tampoco) */}
+                        {/* Inyección del formulario */}
                         <div className="bg-transparent">
                             <FormularioDatosCliente
                                 form={formData}
@@ -86,12 +72,12 @@ export default function Paso3Datos({
                 </div>
             </main>
 
-            {/* FOOTER: Fijo y consistente */}
+            {/* FOOTER: Botones con radio industrial corregido */}
             <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
                     <button
                         onClick={retrocederPaso}
-                        className="text-[10px] font-black text-gray-400 transition-colors uppercase tracking-[0.2em] hover:text-gray-900"
+                        className="text-[10px] font-black text-gray-400 transition-colors uppercase tracking-[0.2em] hover:text-[#7a0202]"
                     >
                         ← Volver a Unidades
                     </button>
@@ -107,7 +93,7 @@ export default function Paso3Datos({
                             !formData.nacionalidad ||
                             !formData.direccion
                         }
-                        className="rounded-2xl bg-[#7a0202] px-14 py-5 text-[11px] font-black text-white transition-all uppercase tracking-[0.3em] shadow-xl shadow-red-900/20 active:scale-95 disabled:grayscale disabled:opacity-20 hover:bg-black"
+                        className="rounded-lg bg-[#7a0202] px-12 py-4 text-[11px] font-black text-white transition-all uppercase tracking-[0.3em] shadow-lg active:scale-95 disabled:opacity-20 hover:bg-black"
                     >
                         Revisar Reserva →
                     </button>

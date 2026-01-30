@@ -1,16 +1,9 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useState, useCallback } from 'react';
 
-/**
- * Hook para gestionar filtros en paneles con sincronización a servidor
- * Mantiene los filtros en estado local pero sincroniza con URL/servidor con Inertia
- */
 export function useFiltrosPanel(filtrosIniciales = {}, ruta = 'panel', propsActualizar = []) {
     const [filtros, setFiltros] = useState(filtrosIniciales);
 
-    /**
-     * Actualiza un filtro individual y sincroniza con servidor
-     */
     const actualizarFiltro = useCallback((campo, valor) => {
         setFiltros((anterior) => {
             const nuevosFiltros = { ...anterior, [campo]: valor };
@@ -28,9 +21,6 @@ export function useFiltrosPanel(filtrosIniciales = {}, ruta = 'panel', propsActu
         });
     }, [ruta, propsActualizar]);
 
-    /**
-     * Limpia todos los filtros y sincroniza
-     */
     const limpiarFiltros = useCallback(() => {
         setFiltros(filtrosIniciales);
         router.get(ruta, {}, { preserveState: true, preserveScroll: true, only: propsActualizar, replace: true });

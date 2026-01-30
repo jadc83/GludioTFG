@@ -1,14 +1,17 @@
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 
 export default function VerifyEmail({ status }) {
-    const { post, processing } = useForm({});
+    const { post, processing, reset, clearErrors } = useForm({});
 
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('verification.send'));
+        post(route('verification.send'), {
+            onSuccess: () => limpiarFormulario(reset, clearErrors),
+        });
     };
 
     return (

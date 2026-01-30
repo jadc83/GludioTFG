@@ -5,6 +5,14 @@ import DesgloseFactura from '../utilidades/DesgloseFactura';
 import OpcionesPago from '../modales/OpcionesPago';
 import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
+import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import {
+    CheckBadgeIcon,
+    CalendarDaysIcon,
+    UserIcon,
+    HomeModernIcon,
+    ArrowLeftIcon
+} from '@heroicons/react/24/outline';
 
 export default function Paso4Confirmacion({
     rango,
@@ -44,7 +52,7 @@ export default function Paso4Confirmacion({
     const [precioAvg, setprecioAvg] = useState(0);
     const [errorPagoLocal, setErrorPagoLocal] = useState(null);
 
-    // Cargar el precio del servidor cuando cambian fechas o habitaciones
+    // Lógica de carga de precios sincronizada con la selección
     useEffect(() => {
         const cargarPrecio = async () => {
             if (!rango?.from || !rango?.to) {
@@ -52,88 +60,64 @@ export default function Paso4Confirmacion({
                 setprecioAvg(0);
                 return;
             }
-
             try {
                 const resultado = await precioSinTarifas();
-
-                    if (typeof resultado === 'object' && resultado.total !== undefined) {
-                        setMonto(resultado.total);
-                        setTarifasAplicadas(resultado.tarifas_aplicadas || []);
-                        setCargoTarifas(resultado.precioTarifas || 0);
-
-                    // Usar el precio promedio del backend si está disponible
+                if (typeof resultado === 'object' && resultado.total !== undefined) {
+                    setMonto(resultado.total);
+                    setTarifasAplicadas(resultado.tarifas_aplicadas || []);
+                    setCargoTarifas(resultado.precioTarifas || 0);
                     if (resultado.habitaciones && resultado.habitaciones.length > 0) {
-                        const precioPromedio = resultado.habitaciones[0].precioAvg || 0;
-                        setprecioAvg(precioPromedio);
-                    } else {
-                        setprecioAvg(0);
+                        setprecioAvg(resultado.habitaciones[0].precioAvg || 0);
                     }
                 } else {
-                    // Si solo devuelve el total (número)
                     const montoCalculado = resultado;
                     setMonto(montoCalculado);
-
-                    // Calcular precio promedio sin redondear a entero
                     const numeroNoches = calcularNoches(rango.from, rango.to);
-                    const totalHabitaciones = getTotalHabitaciones() || 1;
-                    const precioPorNocheUnaHabitacion = numeroNoches > 0
-                        ? (montoCalculado / totalHabitaciones) / numeroNoches
-                        : 0;
-                    setprecioAvg(precioPorNocheUnaHabitacion);
+                    const totalHab = getTotalHabitaciones() || 1;
+                    setprecioAvg(numeroNoches > 0 ? (montoCalculado / totalHab) / numeroNoches : 0);
                 }
             } catch (error) {
                 setMonto(0);
                 setprecioAvg(0);
             }
         };
-
         cargarPrecio();
     }, [rango, Object.values(habitacionesSeleccionadas).map(h => h.cantidad).join()]);
 
-    // Crear reserva para pago al llegar
     const crearReservaAlLlegar = async () => {
         try {
-            const datosReserva = prepararDatosReserva(
-                getValues,
-                rango,
-                habitacionesSeleccionadas,
-                idClienteSeleccionado,
-                tipoClienteSeleccionado,
-                usuarioActual
-            );
-
+            const datosReserva = prepararDatosReserva(getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual);
             const data = await crearReservaHook(datosReserva);
-
-            // Mostrar modal de confirmación
             const datosConfirmacion = {
                 localizador: data.localizador,
                 nombre: formData.name,
                 check_in: rango?.from,
                 check_out: rango?.to,
                 cantidad_habitaciones: getTotalHabitaciones(),
-                // Preferir el precio calculado por el backend si está disponible
                 precio_total: (data?.reserva?.precio_total !== undefined) ? data.reserva.precio_total : monto,
                 pagoAlLlegar: true,
             };
             setDatosReservaConfirmada(datosConfirmacion);
-            setTimeout(() => {
-                setMostrarModalConfirmacion(true);
-            }, 100);
+            setTimeout(() => setMostrarModalConfirmacion(true), 100);
         } catch (error) {
             setErrorPagoLocal(error.message || 'Error al crear la reserva');
         }
     };
 
-    // Fallback: si el backend no devuelve tarifas_aplicadas, construirlas desde selectedTarifas + tarifasLookup
-    const tarifasParaMostrar = () => {
-        // Preferir lo que devolvió el backend en la última consulta
-        if (ultimoResultadoPrecio && Array.isArray(ultimoResultadoPrecio.tarifas_aplicadas) && ultimoResultadoPrecio.tarifas_aplicadas.length > 0) {
-            return ultimoResultadoPrecio.tarifas_aplicadas;
-        }
+    const handleResetearReserva = () => {
+        setMostrarModalConfirmacion(false);
+        setDatosReservaConfirmada(null);
+        setValue('name', '');
+        limpiarRango();
+        Object.keys(habitacionesSeleccionadas).forEach(tipo => actualizarSeleccionHabitacion(tipo, 0, 0));
+        setPasoActual(1);
+        setTimeout(() => window.location.reload(), 500);
+    };
 
-        if (tarifasAplicadas && tarifasAplicadas.length > 0) return tarifasAplicadas;
-        const ids = Object.keys(selectedTarifas || {}).filter(k => selectedTarifas[k]);
-        return ids.map(id => tarifasLookup[id]).filter(Boolean);
+    const tarifasParaMostrar = () => {
+        if (ultimoResultadoPrecio?.tarifas_aplicadas?.length > 0) return ultimoResultadoPrecio.tarifas_aplicadas;
+        if (tarifasAplicadas?.length > 0) return tarifasAplicadas;
+        return Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(id => tarifasLookup[id]).filter(Boolean);
     };
 
     const cargoParaMostrar = () => {
@@ -142,186 +126,124 @@ export default function Paso4Confirmacion({
         }
         if (cargoTarifas && cargoTarifas > 0) return cargoTarifas;
         const list = tarifasParaMostrar();
-        const numeroNoches = calcularNoches(rango?.from, rango?.to) || 1;
+        const nNoches = calcularNoches(rango?.from, rango?.to) || 1;
         return list.reduce((s, t) => {
             const mod = Number(t?.modificador_precio || 0);
-            const isMedia = (t?.slug && t.slug.toLowerCase().includes('media')) || (t?.nombre && t.nombre.toLowerCase().includes('media'));
-            return s + (isMedia ? mod * numeroNoches : mod);
+            const isMedia = (t?.slug?.toLowerCase().includes('media')) || (t?.nombre?.toLowerCase().includes('media'));
+            return s + (isMedia ? mod * nNoches : mod);
         }, 0);
     };
 
-    const handleCerrarDrawer = () => {
-        const checkbox = document.getElementById('drawer-toggle');
-        if (checkbox) {
-            checkbox.checked = false;
-        }
-    };
-
-    const handleResetearReserva = () => {
-        // debug log removed
-        // Cerrar el modal
-        setMostrarModalConfirmacion(false);
-        setDatosReservaConfirmada(null);
-
-        // Resetear formulario
-        setValue('name', '');
-        setValue('email', '');
-        setValue('telefono', '');
-        setValue('tipo_documento', 'dni');
-        setValue('numero_documento', '');
-        setValue('nacionalidad', '');
-        setValue('direccion', '');
-
-        // Resetear fechas
-        limpiarRango();
-
-        // Resetear selección de habitaciones (iterar y limpiar)
-        Object.keys(habitacionesSeleccionadas).forEach(tipo => {
-            if (actualizarSeleccionHabitacion) {
-                actualizarSeleccionHabitacion(tipo, 0, 0);
-            }
-        });
-
-        // Resetear errores
-        setErrorPagoLocal(null);
-
-        // Volver al paso 1
-        setPasoActual(1);
-
-        // Cerrar el drawer
-        handleCerrarDrawer();
-
-        // Recargar la tabla de reservas
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
-    };
-
-    const Migitas = () => (
-        <nav aria-label="Progreso de reserva" className="mx-auto flex max-w-xs justify-center items-center gap-2 text-xs">
-            {['Fechas', 'Habitación', 'Datos', 'Confirmar'].map((etiqueta, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    {i === 3 && <span className="text-[#7a0202] font-bold">›</span>}
-                    <span className={`${i === 3 ? 'font-bold text-[#7a0202]' : 'text-gray-400'} text-[11px]`}>{etiqueta}</span>
-                    {i < 3 && <span className="text-gray-300 text-xs">›</span>}
-                </div>
-            ))}
-        </nav>
-    );
-
     return (
-        <main className="flex h-full flex-col bg-gris p-1 md:p-1.5 text-[12px] md:text-[13px]">
-            <header className="mb-0 border-b border-gray-200 pb-0 pt-1">
-                <h3 className="mb-0 text-center text-[13px] font-bold text-gray-900">Confirmación de Reserva</h3>
-                <Migitas />
+        /* Contenedor principal ensanchado a 6xl para evitar el apelotonamiento */
+        <div className="relative z-10 mx-auto flex bg-gris h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 sishadow-2xl">
+
+            {/* HEADER: Estilo Industrial Step 04 */}
+            <header className="flex-none border-b border-gray-100 bg-gris px-8 py-6 md:px-12">
+                <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
+                    <div className="text-center md:text-left">
+                        <h1 className="text-2xl font-black leading-none text-gray-900 uppercase tracking-tighter">
+                            RESUMEN DE <span className="text-[#7a0202]">RESERVA</span>
+                        </h1>
+                        <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
+                            Verificación y Pago / Step 04
+                        </p>
+                    </div>
+                    <ReservaBreadcrumbs activeIndex={3} separator="chevron" className="flex items-center gap-3" textClass="text-[10px]" />
+                </div>
             </header>
 
-            <section className="flex-1 overflow-hidden">
-                <div className="space-y-1">
-                    {/* Resumen */}
-                    <div className="bg-gris rounded-lg p-3 mt-3 md:p-2">
-                        <div className="space-y-1">
-                            {/* Número de reserva */}
+            {/* CUERPO: Grid de 12 columnas para maximizar el espacio */}
+            <main className="flex-1 overflow-hidden bg-gris flex flex-col items-center justify-start">
+                <div className="custom-scrollbar w-full max-w-full overflow-y-auto px-6 md:px-12 py-8">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+                        {/* COLUMNA DETALLES: 5/12 del ancho total */}
+                        <div className="lg:col-span-5 space-y-8">
+
                             {localizador && (
-                                <div className="pb-0.5">
-                                    <p className="text-[11px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
-                                    <p className="font-mono font-bold text-[#7a0202] text-sm md:text-base tracking-wide">{localizador}</p>
+                                <div className="bg-gris p-5 rounded-lg flex justify-between items-center shadow-sm">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Localizador</span>
+                                    <span className="font-mono font-bold text-[#7a0202] text-xl tracking-wider">{localizador}</span>
                                 </div>
                             )}
 
-                            {/* Información de la reserva */}
-                            <div className="grid grid-cols-3 md:grid-cols-5 gap-0.5 w-full">
-                                {/* Huésped */}
-                                <div className="px-0.5 md:px-1 text-center">
-                                    <p className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
-                                    <p className="text-[11px] md:text-[12px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
+                            {/* Fichas de Información con acento lateral */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-2">
+                                    <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{formData.name || '—'}</p>
+                                    <p className="text-[11px] text-gray-500 mt-1 font-medium">{formData.email}</p>
                                 </div>
 
-                                {/* Fechas */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
-                                    <p className="text-[12px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
-                                </div>
-
-                                {/* Estancia */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Estancia</p>
-                                    <p className="text-[12px] font-medium text-gray-900">
-                                        {(() => {
-                                            const numeroNoches = calcularNoches(rango?.from, rango?.to);
-                                            return `${numeroNoches} noche${numeroNoches !== 1 ? 's' : ''}`;
-                                        })()}
+                                <div className="bg-gris p-2">
+                                    <p className="text-sm font-black text-gray-900">
+                                        FECHAS: {rango?.from?.toLocaleDateString('es-ES')} — {rango?.to?.toLocaleDateString('es-ES')}
                                     </p>
-                                </div>
-
-                                {/* Precio por Noche */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Precio/Noche</p>
-                                    <p className="text-[12px] font-medium text-gray-900">
-                                        {precioAvg > 0 ? formatearMoneda(precioAvg) : '—'}
-                                    </p>
-                                </div>
-
-                                {/* Habitaciones */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Habitaciones</p>
-                                    <div className="space-y-0.5">
-                                        {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
-                                                <div key={tipo} className="text-[11px]">
-                                                <p className="font-medium text-gray-900 leading-none">{r.cantidad}x {tipo.charAt(0).toUpperCase() + tipo.slice(1)}</p>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
                             </div>
-
-                            {/* Monto a Pagar */}
-                            <DesgloseFactura habitacionesSeleccionadas={habitacionesSeleccionadas}
-                                rango={rango} monto={monto} getTotalHabitaciones={getTotalHabitaciones}
-                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
-                                tarifasAplicadas={tarifasParaMostrar()} cargoTarifas={cargoParaMostrar()} />
+                            {/* Detalle de Unidades */}
+                            <div className="p-4 bg-gris shadow-sm w-full max-w-sm mx-auto">
+                                <DesgloseFactura
+                                    habitacionesSeleccionadas={habitacionesSeleccionadas}
+                                    rango={rango}
+                                    monto={monto}
+                                    getTotalHabitaciones={getTotalHabitaciones}
+                                    agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
+                                    tarifasAplicadas={tarifasParaMostrar()}
+                                    cargoTarifas={cargoParaMostrar()}
+                                    theme="dark"
+                                />
+                                <div className="space-y-4">
+                                    {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
+                                        <div key={tipo} className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+                                            <div className="flex flex-col">
+                                                <span className="text-[12px] font-black uppercase text-gray-900 tracking-tight">
+                                                    <span className="text-[#7a0202] mr-3">{r.cantidad}x</span> {tipo}
+                                                </span>
+                                            </div>
+                                            <span className="text-[12px] font-mono font-bold text-gray-400">
+                                                {formatearMoneda(precioAvg)} / noche
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    {/* Opciones de Pago */}
-                    <OpcionesPago
-                        pagarAlLlegar={pagarAlLlegar}
-                        setPagarAlLlegar={setPagarAlLlegar}
-                        opcionPagoSeleccionada={opcionPagoSeleccionada}
-                        setOpcionPagoSeleccionada={setOpcionPagoSeleccionada}
-                        procesando={procesando}
-                        crearReservaAlLlegar={crearReservaAlLlegar}
-                        prepararDatosReserva={() =>
-                            prepararDatosReserva(
-                                getValues,
-                                rango,
-                                habitacionesSeleccionadas,
-                                idClienteSeleccionado,
-                                tipoClienteSeleccionado,
-                                usuarioActual
-                            )
-                        }
-                        monto={monto}
-                        rango={rango}
-                        getTotalHabitaciones={getTotalHabitaciones}
-                        formData={formData}
-                        localizador={localizador}
-                        setDatosReservaConfirmada={setDatosReservaConfirmada}
-                        setMostrarModalConfirmacion={setMostrarModalConfirmacion}
-                        setErrorPago={setErrorPagoLocal}
-                        errorPago={errorPagoLocal}
-                    />
-                </div>
-            </section>
 
-            <footer className="border-t border-gray-200 mt-0.5 pt-0.5 bg-gris px-1.5 md:px-2">
-                <div className="flex items-center justify-between gap-1">
-                    <button onClick={retrocederPaso} className="px-1.5 py-0.5 text-xs font-semibold text-gray-700 bg-gris rounded hover:bg-gray-300 transition">
-                        Atrás
+                        {/* COLUMNA PAGO: 7/12 del ancho total */}
+                        <div className="lg:col-span-7 space-y-8">
+                            {/* Componente de Opciones de Pago con el formulario corregido */}
+                            <div className="px-2">
+                                <OpcionesPago
+                                    pagarAlLlegar={pagarAlLlegar}
+                                    setPagarAlLlegar={setPagarAlLlegar}
+                                    opcionPagoSeleccionada={opcionPagoSeleccionada}
+                                    setOpcionPagoSeleccionada={setOpcionPagoSeleccionada}
+                                    procesando={procesando}
+                                    crearReservaAlLlegar={crearReservaAlLlegar}
+                                    prepararDatosReserva={() => prepararDatosReserva(getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual)}
+                                    monto={monto}
+                                    errorPago={errorPagoLocal}
+                                    formData={formData}
+                                />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+
+            {/* FOOTER: Navegación final */}
+            <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
+                <div className="mx-auto flex max-w-7xl items-center justify-between">
+                    <button onClick={retrocederPaso} className="flex items-center gap-2 text-[10px] font-black text-gray-400 transition-colors uppercase tracking-[0.2em] hover:text-[#7a0202]">
+                        <ArrowLeftIcon className="h-3 w-3" /> Editar Datos del Titular
                     </button>
                 </div>
             </footer>
 
-            <ModalConfirmacionReserva reserva={datosReservaConfirmada} isOpen={mostrarModalConfirmacion} onClose={handleResetearReserva} />
-        </main>
+            <ModalConfirmacionReserva reserva={datosReservaConfirmada} isOpen={mostrarModalConfirmacion} onClose={handleResetearReserva}/>
+        </div>
     );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { fetchHabitacionesDisponibles } from './service';
+import { calcularPrecio } from '../reservas/service';
 import { formatearFecha } from '@/utils/fecha';
 import IconSvg from '@/components/icons/RoomIcons';
 
@@ -23,11 +24,14 @@ const UI_ASSETS = {
 export default function useHabitaciones({ paso, rango, setRango }) {
 	const [habitaciones, setHabitaciones] = useState([]);
 	const [cargando, setCargando] = useState(false);
+
 	const [seleccion, setSeleccion] = useState({});
 
 	// Carga de datos con limpieza automática
 	// Encapsular la carga en una función para permitir recarga manual
 	const cargarHabitaciones = async (signal) => {
+		console.log('cargarHabitaciones invoked, rango:', rango);
+		try { window.__cargarHabitacionesInvoked = Date.now(); } catch (e) { /* noop */ }
 		const rangoValido = rango?.from && rango?.to;
 		if (!rangoValido) {
 			setHabitaciones([]);
@@ -42,7 +46,30 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 				formatearFecha(rango.to),
 				{ signal }
 			);
+			// Debug: loguear respuesta para verificar formato y claves de precio
+			try {
+				console.log('fetchHabitacionesDisponibles result (preview):', Array.isArray(datos) ? datos.slice(0,5) : datos);
+				try { window.__lastHabitacionesPreview = Array.isArray(datos) ? datos.slice(0,5) : datos; window.__lastHabitacionesFetchTime = Date.now(); } catch (e) {}
+			} catch (e) { /* noop */ }
 			setHabitaciones(Array.isArray(datos) ? datos : []);
+
+			// Intentar obtener precios por tipo mediante la API de cálculo de precios
+			try {
+				const tiposUnicos = Array.from(new Set((Array.isArray(datos) ? datos : []).map(d => d.tipo)));
+				if (tiposUnicos.length > 0 && rango?.from && rango?.to) {
+					const payload = {
+						check_in: formatearFecha(rango.from),
+						check_out: formatearFecha(rango.to),
+						habitaciones: tiposUnicos.map(t => ({ tipo: t, cantidad: 1 })),
+						tarifas: [],
+					};
+					// No almacenar mapa de precios aquí; dejamos el cálculo a las funciones
+					// específicas (por ejemplo `precioSinTarifas` en useReservaForm) que ya
+					// llaman a `calcularPrecio` cuando sea necesario.
+				}
+			} catch (err) {
+				// noop: precios pueden no estar disponibles
+			}
 		} catch (err) {
 			if (err?.name !== 'AbortError') setHabitaciones([]);
 		} finally {
@@ -51,9 +78,11 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 	};
 
 	useEffect(() => {
-		if (paso !== 2) return;
+		// Cargar habitaciones cuando el rango cambia (así están listas antes de abrir el modal)
 		const controller = new AbortController();
-		cargarHabitaciones(controller.signal);
+		if (rango?.from && rango?.to) {
+			cargarHabitaciones(controller.signal);
+		}
 		return () => controller.abort();
 	}, [paso, rango]);
 
@@ -69,18 +98,78 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 		const acc = {};
 		(habitaciones || []).forEach(h => {
 			const tipo = h.tipo || 'unknown';
-			if (!acc[tipo]) {
-				acc[tipo] = {
-					precioMinimo: h.precio || h.precioMinimo || 0,
-					capacidadMaxima: Number(h.capacidad || 0),
-					cantidad: 1,
-					descripcion: h.descripcion || '',
-					fotos: h.fotos || [],
+				// Obtener precio: comprobación por claves conocidas + búsqueda recursiva
+				const parseNumber = (val) => {
+					if (val === null || val === undefined) return NaN;
+					if (typeof val === 'number') return val;
+					if (typeof val === 'string') {
+						// Quitar símbolos no numéricos excepto coma/punto
+						const cleaned = val.replace(/[^0-9,.-]/g, '').replace(/,/g, '.');
+						const n = Number(cleaned);
+						return Number.isFinite(n) ? n : NaN;
+					}
+					return NaN;
 				};
+
+				const obtenerPrecio = (room) => {
+					// 1) claves frecuentes (rápido)
+					const keys = ['precio', 'precioMinimo', 'precio_minimo', 'precio_noche', 'precio_por_noche', 'precio_base', 'price', 'price_min', 'precio_total'];
+					for (const k of keys) {
+						if (room && Object.prototype.hasOwnProperty.call(room, k)) {
+							const v = parseNumber(room[k]);
+							if (!Number.isNaN(v)) return v;
+						}
+					}
+
+					// 2) búsqueda recursiva por claves que contengan 'precio' o 'price'
+					const seen = new Set();
+					const walk = (obj) => {
+						if (!obj || typeof obj !== 'object') return NaN;
+						if (seen.has(obj)) return NaN;
+						seen.add(obj);
+						if (Array.isArray(obj)) {
+							for (const item of obj) {
+								const r = walk(item);
+								if (!Number.isNaN(r)) return r;
+							}
+							return NaN;
+						}
+						for (const [k, v] of Object.entries(obj)) {
+							try {
+								const lk = String(k).toLowerCase();
+								if (lk.includes('precio') || lk.includes('price')) {
+									const n = parseNumber(v);
+									if (!Number.isNaN(n)) return n;
+								}
+							} catch (e) {}
+						}
+						// Recurse into children
+						for (const v of Object.values(obj)) {
+							try {
+								const r = walk(v);
+								if (!Number.isNaN(r)) return r;
+							} catch (e) {}
+						}
+						return NaN;
+					};
+
+					const res = walk(room);
+					return Number.isFinite(res) ? res : 0;
+				};
+
+				const precioRoom = obtenerPrecio(h);
+			if (!acc[tipo]) {
+					acc[tipo] = {
+						precioMinimo: precioRoom,
+						capacidadMaxima: Number(h.capacidad || 0),
+						cantidad: 1,
+						descripcion: h.descripcion || '',
+						fotos: h.fotos || [],
+					};
 			} else {
-				acc[tipo].cantidad += 1;
-				acc[tipo].capacidadMaxima = Math.max(acc[tipo].capacidadMaxima, Number(h.capacidad || 0));
-				acc[tipo].precioMinimo = Math.min(acc[tipo].precioMinimo || 0, h.precio || h.precioMinimo || 0) || acc[tipo].precioMinimo;
+					acc[tipo].cantidad += 1;
+					acc[tipo].capacidadMaxima = Math.max(acc[tipo].capacidadMaxima, Number(h.capacidad || 0));
+					acc[tipo].precioMinimo = Math.min(acc[tipo].precioMinimo || 0, precioRoom) || acc[tipo].precioMinimo;
 			}
 		});
 		return acc;
