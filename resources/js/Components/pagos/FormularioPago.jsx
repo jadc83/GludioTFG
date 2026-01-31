@@ -59,6 +59,24 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError = ()
         dataPI = await resPI.json();
         if (!dataPI.success) throw new Error(dataPI.error || 'Error en comunicación');
 
+        // If server already confirmed the PaymentIntent (e.g. local test confirm),
+        // skip calling stripe.confirmCardPayment to avoid "already confirmed" errors
+        if (dataPI.paymentIntentStatus === 'succeeded' || dataPI.paymentIntentStatus === 'succeeded') {
+            // Inform app that payment is confirmed
+            const resConfirm = await fetch('/pagos/confirmar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ payment_intent_id: dataPI.paymentIntentId, pago_id: dataPI.pago_id }),
+            });
+            if (!resConfirm.ok) {
+                let errText = `Error confirmando pago (${resConfirm.status})`;
+                try { const jd = await resConfirm.json(); errText = jd?.message || jd?.error || errText; } catch(e){}
+                throw new Error(errText);
+            }
+            onPagoExitoso({ pago_id: dataPI.pago_id });
+            return;
+        }
+
         const { paymentIntent, error } = await stripe.confirmCardPayment(dataPI.clientSecret, {
             payment_method: {
                 card: elements.getElement(CardElement),

@@ -50,8 +50,8 @@ class PagoController extends Controller
             $intentData = [
                 'amount' => (int)round($validated['monto'] * 100), // Stripe usa centavos
                 'currency' => 'eur',
-                // Forzar sólo métodos de pago por tarjeta para evitar pagos que requieran redirect/return_url
-                'payment_method_types' => ['card'],
+                // Usar automatic_payment_methods y deshabilitar redirects para evitar métodos que requieran return_url
+                'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
                 'metadata' => [
                     'reserva_id' => $reserva->id,
                     'localizador' => $reserva->localizador,
@@ -105,6 +105,10 @@ class PagoController extends Controller
                 'clientSecret' => $paymentIntent->client_secret,
                 'pago_id' => $pago->id,
                 'reserva_id' => $reserva->id,
+                // Exponer estado/id del PaymentIntent para que el cliente pueda
+                // decidir si debe intentar confirmar con Stripe o delegar
+                'paymentIntentId' => $paymentIntent->id ?? null,
+                'paymentIntentStatus' => $paymentIntent->status ?? null,
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe API Error: ' . $e->getMessage());
