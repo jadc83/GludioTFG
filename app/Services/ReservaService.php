@@ -514,25 +514,18 @@ class ReservaService
      */
     public function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
     {
-        // Instead of assigning concrete room numbers at booking time, create placeholder records
-        // with habitacion_id = null and store the requested `tipo`. Actual assignment will happen at check-in.
         foreach ($habitacionesRequeridas as $requerida) {
             $tipo = $requerida['tipo'];
             $cantidad = $requerida['cantidad'];
 
-            // Reusar helper que hace lock y verifica disponibilidad; pasamos la creación de placeholders como callback
             $this->verificarDisponibilidad($tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out), $cantidad, function () use ($reserva, $tipo, $cantidad) {
-                // Calcular precio por habitación
                 $precioPorHabitacion = $this->servicioPrecio->precioEntreFechas(
                     $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
 
-                // Asegurarse de que precio sea numérico y no nulo (fallback a 0)
                 if (!is_numeric($precioPorHabitacion)) {
-                    Log::warning('Precio por habitación no es numérico, aplicando fallback 0', ['tipo' => $tipo, 'valor' => $precioPorHabitacion]);
+
                     $precioPorHabitacion = 0;
                 }
-
-                Log::debug('AsignarHabitaciones: creando placeholders', ['reserva_id' => $reserva->id, 'tipo' => $tipo, 'cantidad' => $cantidad, 'precioPorHabitacion' => $precioPorHabitacion]);
 
                 for ($i = 0; $i < $cantidad; $i++) {
                     try {
@@ -579,14 +572,11 @@ class ReservaService
                 }
 
                 $ph->habitacion_id = $candidate->id;
-                // Asegurar que precio no sea nulo antes de guardar (fallback calculado o 0)
                 if (!is_numeric($ph->precio) || $ph->precio === null) {
                     $precioFallback = $this->servicioPrecio->precioEntreFechas($candidate->tipo ?? ($ph->tipo ?? ''), Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
                     $ph->precio = is_numeric($precioFallback) ? $precioFallback : 0;
                 }
                 $ph->save();
-
-                try { $candidate->update(['estado' => 'ocupada']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de habitacion tras asignacion: ' . $e->getMessage()); }
 
                 $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => true, 'habitacion_id' => $candidate->id, 'numero' => $candidate->numero];
             }

@@ -38,16 +38,18 @@ class HabitacionService
 
         foreach ($grupos as $tipo => &$grupo) {
 
-            $precio = $this->precioService->precioMod($tipo, $checkIn, $checkOut, 1);
-
-            if (isset($precio['error'])) {
+            // Calcular precios usando la Action dedicada
+            try {
+                $action = app(\App\Actions\Habitaciones\CalcularPreciosPorTipoAction::class);
+                $preciosMap = $action->handle([$tipo], $checkIn, $checkOut);
+                $precioData = $preciosMap[$tipo] ?? null;
+                $grupo['precioTotal'] = $precioData['total'] ?? 0;
+                $grupo['precioNoche'] = $precioData['por_noche'] ?? 0;
+                $grupo['precioMinimo'] = $grupo['precioNoche'];
+            } catch (\Throwable $e) {
                 $grupo['precioNoche'] = 0;
                 $grupo['precioTotal'] = 0;
                 $grupo['precioMinimo'] = null;
-            } else {
-                $grupo['precioTotal'] = $precio['total'] ?? 0;
-                $grupo['precioNoche'] = $precio['precioAvg'] ?? 0;
-                $grupo['precioMinimo'] = $grupo['precioNoche'];
             }
         }
 
@@ -56,10 +58,52 @@ class HabitacionService
 
     public function getDisponibles(Carbon $checkIn, Carbon $checkOut, bool $summary = false): array
     {
-        $disponibles = Habitacion::whereDoesntHave('reservas', function ($consulta) use ($checkIn, $checkOut) {
-            $consulta->where('check_in', '<', $checkOut)
-                  ->where('check_out', '>', $checkIn);
-                })->where('estado', '!=', 'mantenimiento')->get();
+        // Obtener todas las habitaciones no en mantenimiento
+        $habitacionesBase = Habitacion::where('estado', '!=', 'mantenimiento')->orderBy('numero')->get();
+
+        // Agrupar por tipo y calcular slots disponibles considerando reservas asignadas y placeholders
+        $tipos = $habitacionesBase->pluck('tipo')->unique()->filter()->values();
+
+        $seleccionadas = collect();
+
+        foreach ($tipos as $tipo) {
+            $roomsOfTipo = $habitacionesBase->where('tipo', $tipo);
+            $roomIds = $roomsOfTipo->pluck('id')->all();
+
+            // Contar habitaciones asignadas (distinct habitacion_id) que solapan
+            $assignedCount = \App\Models\HabitacionReserva::whereNotNull('habitacion_id')
+                ->whereIn('habitacion_id', $roomIds)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->distinct('habitacion_id')
+                ->count('habitacion_id');
+
+            // Contar placeholders por tipo que solapan
+            $placeholdersCount = \App\Models\HabitacionReserva::whereNull('habitacion_id')
+                ->where('tipo', $tipo)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->count();
+
+            $totalRooms = count($roomIds);
+            $availableSlots = max(0, $totalRooms - ($assignedCount + $placeholdersCount));
+
+            if ($availableSlots <= 0) {
+                continue;
+            }
+
+            // Seleccionar habitaciones del tipo que no tienen reservas asignadas que solapen
+            $candidateRooms = $roomsOfTipo->filter(function ($h) use ($checkIn, $checkOut) {
+                return !$h->reservas()->where('check_in', '<', $checkOut->format('Y-m-d'))
+                    ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                    ->exists();
+            })->values();
+
+            $toAdd = $candidateRooms->slice(0, $availableSlots);
+            $seleccionadas = $seleccionadas->concat($toAdd);
+        }
+
+        $disponibles = $seleccionadas->sortBy('numero')->values();
 
         $formateadas = $this->formatearHabitaciones($disponibles, $checkIn, $checkOut);
 
