@@ -1,165 +1,43 @@
 import React, { forwardRef, useEffect, useRef, useImperativeHandle } from 'react';
+import { obtenerPatronValidacion, validarDniNIE, validarPasaporteMRZ, obtenerMensajeValidacion } from '../utils/validaciones';
 
-const Campo = forwardRef(({
-    id,
-    label,
-    as = 'input',
-    error,
-    claseExtra = '',
-    clase = '',
-    hijos,
-    claseContenedor = 'flex flex-col gap-1',
-    claseEtiqueta = 'text-xs font-semibold text-gray-700',
-    claseError = 'text-xs text-red-500',
-    sinEstilosPorDefecto = false,
-    estaFocalizado = false,
-    ...props
-}, ref) => {
+const Campo = forwardRef(({ id, label, as = 'input', error, className = '', containerClassName = 'flex flex-col gap-1', labelClassName = 'text-xs font-semibold text-gray-700',
+    errorClassName = 'text-xs text-red-500', unstyled = false, autoFocus = false, children, ...props}, ref) => {
 
     const InputTag = as;
     const defaultInputClasses = `w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 ${error ? 'border-red-500' : ''}`;
-    const clasesCombinadas = sinEstilosPorDefecto ? `${clase} ${claseExtra}`.trim() : `${defaultInputClasses} ${clase} ${claseExtra}`.trim();
+    const inputClassName = unstyled ? className : `${defaultInputClasses} ${className}`.trim();
     const voidElements = new Set(['input', 'img', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'param', 'source', 'track', 'wbr']);
     const esVoid = typeof InputTag === 'string' && voidElements.has(InputTag);
     const descritoPor = error ? `${id}-error` : undefined;
 
-    // Validador DNI/NIE
-    const validarDniNIE = (value) => {
-        if (!value) return false;
-        const v = value.toString().toUpperCase().replace(/[\s-]/g, '');
-        const nieMap = { X: '0', Y: '1', Z: '2' };
-        let numero = null;
-        if (/^[XYZ]\d{7}[A-Z]$/.test(v)) {
-            numero = (nieMap[v[0]] || v[0]) + v.slice(1, 8);
-        } else if (/^\d{8}[A-Z]$/.test(v)) {
-            numero = v.slice(0, 8);
-        } else {
-            return false;
-        }
-        const letra = v.slice(-1);
-        const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
-        const idx = parseInt(numero, 10) % 23;
-        return letras.charAt(idx) === letra;
-    };
-
-    // Validador MRZ (pasaporte)
-    const valorCaracter = (ch) => {
-        if (ch === '<') return 0;
-        if (/[0-9]/.test(ch)) return parseInt(ch, 10);
-        const code = ch.toUpperCase().charCodeAt(0);
-        if (code >= 65 && code <= 90) return code - 55; // A=10 ... Z=35
-        return 0;
-    };
-
-    const calcularDigitoControl = (s) => {
-        const pesos = [7, 3, 1];
-        let suma = 0;
-        for (let i = 0; i < s.length; i++) {
-            const v = valorCaracter(s[i]);
-            suma += v * pesos[i % 3];
-        }
-        return (suma % 10).toString();
-    };
-
-    const validarPasaporteMRZ = (value) => {
-        if (!value) return false;
-        const v = value.toString().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
-        if (/^[A-Z0-9<]+\d$/.test(v)) {
-            const cuerpo = v.slice(0, -1);
-            const cheque = v.slice(-1);
-            const cd = calcularDigitoControl(cuerpo);
-            return cd === cheque;
-        }
-        if (/^[A-Z0-9]{5,20}$/.test(v)) return true;
-        if (/^[A-Z]{3}\d{6}$/.test(v)) return true;
-        return false;
-    };
-
     const referenciaLocal = useRef(null);
     useImperativeHandle(ref, () => ({ focus: () => referenciaLocal.current?.focus() }));
     useEffect(() => {
-        if (estaFocalizado) referenciaLocal.current?.focus();
-    }, [estaFocalizado]);
+        if (autoFocus) referenciaLocal.current?.focus();
+    }, [autoFocus]);
 
-    // children real (soporta pasar hijos por JSX o por prop `hijos`)
-    const contenido = typeof hijos !== 'undefined' ? hijos : props.children;
+    // children real (soporta pasar hijos por JSX o por prop `children`)
+    const contenido = children;
 
-    const atributos = { ...props };
-    // eliminar props en español para que no lleguen al DOM
-    delete atributos.clase;
-    delete atributos.claseExtra;
-    delete atributos.claseContenedor;
-    delete atributos.claseEtiqueta;
-    delete atributos.claseError;
-    delete atributos.sinEstilosPorDefecto;
-    delete atributos.estaFocalizado;
-    delete atributos.hijos;
-    delete atributos.children;
-
-    const nombre = (atributos.name || id || '').toString().toLowerCase();
-    if (!atributos.pattern) {
-        if (nombre.includes('email')) {
-            atributos.pattern = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
-            atributos.title = atributos.title || 'Introduce un email válido';
-        }
-        if (nombre.includes('tel') || nombre.includes('telefono') || nombre.includes('phone')) {
-            atributos.pattern = atributos.pattern || '^\\+?[0-9\\s\\-()]{7,15}$';
-            atributos.title = atributos.title || 'Teléfono: solo números, espacios, guiones o paréntesis';
-        }
-        if (nombre.includes('cp') || nombre.includes('codigo_postal') || nombre.includes('postal')) {
-            atributos.pattern = atributos.pattern || '^\\d{4,6}$';
-            atributos.title = atributos.title || 'Código postal: 4 a 6 dígitos';
-        }
-        if (nombre.includes('numero_documento') || nombre === 'dni' || nombre.includes('nif') || nombre.includes('nie')) {
-            atributos.pattern = atributos.pattern || '([XxYyZz]\\d{7}[A-Za-z]|\\d{8}[A-Za-z])';
-            atributos.title = atributos.title || 'DNI/NIE: formato 8 dígitos + letra o NIE (X/Y/Z + 7 dígitos + letra)';
-        }
-        if (nombre.includes('pasaporte') || nombre.includes('passport')) {
-            atributos.pattern = atributos.pattern || '^[A-Za-z0-9\\-\\s]{5,20}$';
-            atributos.title = atributos.title || 'Pasaporte: letras y números (5-20 caracteres)';
-        }
-        if (nombre === 'name' || nombre.includes('nombre')) {
-            atributos.pattern = atributos.pattern || "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$";
-            atributos.title = atributos.title || 'Nombre: solo letras, espacios y guiones';
-        }
-        if (nombre.includes('ciudad') || nombre.includes('city')) {
-            atributos.pattern = atributos.pattern || "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$";
-            atributos.title = atributos.title || 'Ciudad: solo letras y espacios';
-        }
-        if (nombre.includes('pais') || nombre.includes('nacionalidad')) {
-            atributos.pattern = atributos.pattern || "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$";
-            atributos.title = atributos.title || 'Introduce un país válido';
-        }
-        if (nombre === 'numero' || nombre.includes('numero_') || nombre.endsWith('_num')) {
-            atributos.pattern = atributos.pattern || '^\\d+$';
-            atributos.title = atributos.title || 'Solo números';
-        }
-        if (nombre.includes('localizador') || nombre.includes('localizador_reserva') || nombre === 'localizador') {
-            atributos.pattern = atributos.pattern || '^[A-Z0-9\-]{4,20}$';
-            atributos.title = atributos.title || 'Localizador: letras mayúsculas, números o guión';
-        }
-        if (nombre.includes('precio') || nombre.includes('importe') || nombre.includes('monto') || nombre.includes('tarifa') || nombre.includes('total')) {
-            atributos.pattern = atributos.pattern || '^\\d{1,9}(?:[\\.,]\\d{1,2})?$';
-            atributos.title = atributos.title || 'Número: opcional decimales (ej. 123.45)';
-        }
-        if (nombre.includes('capacidad') || nombre.includes('cantidad') || nombre.includes('personas') || nombre.includes('adult') || nombre.includes('nino') || nombre.includes('niños')) {
-            atributos.pattern = atributos.pattern || '^\\d+$';
-            atributos.title = atributos.title || 'Introduce un número entero';
-        }
-        if (nombre.includes('fecha') || nombre.includes('date')) {
-            atributos.pattern = atributos.pattern || '^\\d{4}-\\d{2}-\\d{2}$';
-            atributos.title = atributos.title || 'Fecha: YYYY-MM-DD';
+    const nombre = (props.name || id || '').toString().toLowerCase();
+    if (!props.pattern) {
+        const patronValidacion = obtenerPatronValidacion(nombre);
+        if (patronValidacion) {
+            props.pattern = patronValidacion.patron;
+            props.title = props.title || patronValidacion.titulo;
         }
     }
 
     // Handlers para mensajes de validación personalizados
-    const onInvalidOrigen = atributos.onInvalid;
-    const onInputOrigen = atributos.onInput;
-    const onBlurOrigen = atributos.onBlur;
-    const mensaje = atributos.title || 'Valor no válido';
+    const onInvalidOrigen = props.onInvalid;
+    const onInputOrigen = props.onInput;
+    const onBlurOrigen = props.onBlur;
+    const mensaje = obtenerMensajeValidacion(nombre, props.title);
     const esCampoDNI = nombre.includes('numero_documento') || nombre === 'dni' || nombre.includes('nif') || nombre.includes('nie');
+    const esCampoPasaporte = nombre.includes('pasaporte') || nombre.includes('passport');
 
-    atributos.onInvalid = (e) => {
+    props.onInvalid = (e) => {
         try { if (typeof onInvalidOrigen === 'function') onInvalidOrigen(e); } catch (err) {}
         try {
             if (esCampoDNI) {
@@ -171,19 +49,19 @@ const Campo = forwardRef(({
         } catch (err) {}
     };
 
-    atributos.onInput = (e) => {
+    props.onInput = (e) => {
         try { if (typeof onInputOrigen === 'function') onInputOrigen(e); } catch (err) {}
         try { e.target.setCustomValidity(''); } catch (err) {}
     };
 
-    atributos.onBlur = (e) => {
+    props.onBlur = (e) => {
         try { if (typeof onBlurOrigen === 'function') onBlurOrigen(e); } catch (err) {}
         try {
             if (esCampoDNI) {
                 const ok = validarDniNIE(e.target.value);
                 e.target.setCustomValidity(ok ? '' : 'DNI/NIE no válido');
             }
-            if (nombre.includes('pasaporte') || nombre.includes('passport')) {
+            if (esCampoPasaporte) {
                 const ok = validarPasaporteMRZ(e.target.value);
                 e.target.setCustomValidity(ok ? '' : 'Pasaporte no válido');
             }
@@ -191,21 +69,21 @@ const Campo = forwardRef(({
     };
 
     return (
-        <div className={claseContenedor}>
+        <div className={containerClassName}>
             {label && (
-                <label className={claseEtiqueta} htmlFor={id}>
+                <label className={labelClassName} htmlFor={id}>
                     {label}
                 </label>
             )}
             {esVoid ? (
-                <InputTag id={id} name={atributos.name || id} ref={referenciaLocal} className={clasesCombinadas} aria-invalid={!!error} aria-describedby={descritoPor} {...atributos} />
+                <InputTag id={id} name={props.name || id} ref={referenciaLocal} className={inputClassName} aria-invalid={!!error} aria-describedby={descritoPor} {...props} />
             ) : (
-                <InputTag id={id} name={atributos.name || id} ref={referenciaLocal} className={clasesCombinadas} aria-invalid={!!error} aria-describedby={descritoPor} {...atributos}>
+                <InputTag id={id} name={props.name || id} ref={referenciaLocal} className={inputClassName} aria-invalid={!!error} aria-describedby={descritoPor} {...props}>
                     {contenido}
                 </InputTag>
             )}
             {error && (
-                <span id={descritoPor} className={claseError}>
+                <span id={descritoPor} className={errorClassName}>
                     {Array.isArray(error) ? error[0] : error}
                 </span>
             )}

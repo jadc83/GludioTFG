@@ -1,111 +1,23 @@
-import { useCallback, useState } from 'react';
-import { router } from '@inertiajs/react';
+import { useCallback } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import QRScanner from '@/Components/utilidades/QRScanner';
 import { CheckCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useQRScanner } from '@/hooks/scanner/useQRScanner';
+import { useQRModal } from '@/hooks/scanner/useQRModal';
 
 export default function ScanQR() {
-    const [scannedData, setScannedData] = useState(null);
-    const [error, setError] = useState(null);
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const action = params.get('action') || null;
 
-    const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState(null);
-    const [reservaInfo, setReservaInfo] = useState(null);
-    const [assignDetails, setAssignDetails] = useState(null);
+    const { scannedData, error, assignDetails, isProcessing, handleScanSuccess } = useQRScanner(action);
+    const { showModal, modalType, reservaInfo, openModal, closeModal } = useQRModal();
 
-    const handleCloseModal = () => {
-        setShowModal(false);
-        if (modalType === 'checkin') {
-            const loc = reservaInfo?.localizador || '';
-            if (loc) {
-                // Redirigir a la ruta correcta por localizador (ruta singular)
-                router.visit(`/reserva/${encodeURIComponent(loc)}`);
-            }
-        } else if (modalType === 'checkout') {
-            router.visit(`/`);
+    const handleScanSuccessWithModal = useCallback(async (decodedText) => {
+        const result = await handleScanSuccess(decodedText);
+        if (result?.type === 'modal') {
+            openModal(result.modalType, result.reservaInfo);
         }
-    };
-
-    const handleScanSuccess = useCallback(async (decodedText) => {
-        setError(null);
-        setAssignDetails(null);
-        let localizador = String(decodedText || '').trim();
-        if (!localizador) return;
-
-        setScannedData(localizador);
-
-        try {
-            if (localizador.startsWith('http')) {
-                const url = new URL(localizador);
-                const parts = url.pathname.split('/').filter(Boolean);
-                if (parts.length > 0) {
-                    localizador = parts[parts.length - 1];
-                }
-            }
-        } catch (e) {}
-
-        // Obtener CSRF token para los POST (si está presente)
-        const csrf = typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') : null;
-
-        try {
-            const payload = { localizador: localizador };
-            if (action) {
-                // Enviar tanto 'action' como 'accion' para compatibilidad con backend en español
-                payload.action = action;
-                payload.accion = action;
-            }
-
-            const res = await fetch(route('scan.procesar'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf || '', 'Accept': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify(payload),
-            });
-            const body = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setError(body?.error || body?.message || 'Error procesando escaneo');
-                setAssignDetails(body?.details || null);
-                return;
-            }
-
-            // Si la respuesta incluye 'reserva' con status, mostrar modal o redirigir según action
-            const respReserva = body?.reserva || null;
-            setReservaInfo(respReserva);
-
-            if (action === 'checkin') {
-                if (body?.success === false) {
-                    setError(body?.error || body?.message || 'Error procesando check-in');
-                    setAssignDetails(body?.details || null);
-                    return;
-                }
-                setAssignDetails(null);
-                // Redirigir directamente a la página de detalle después del check-in exitoso
-                const loc = respReserva?.localizador || '';
-                if (loc) {
-                    router.visit(`/reserva/${encodeURIComponent(loc)}`);
-                }
-                return;
-            }
-
-            if (action === 'checkout') {
-                if (body?.success === false) {
-                    setError(body?.error || body?.message || 'Error procesando check-out');
-                    return;
-                }
-                setModalType('checkout');
-                setShowModal(true);
-                return;
-            }
-
-            // Sin acción: ir al detalle
-            router.visit(route('reserva.show', { reserva: localizador }));
-            return;
-        } catch (e) {
-            setError('Error procesando la reserva');
-        }
-    }, []);
+    }, [handleScanSuccess, openModal]);
 
     return (
         <GuestLayout>
@@ -131,7 +43,7 @@ export default function ScanQR() {
                     )}
 
                     <div className="mb-8 rounded-lg bg-white p-6 shadow-lg">
-                        <QRScanner onScanSuccess={handleScanSuccess} />
+                        <QRScanner onScanSuccess={handleScanSuccessWithModal} />
                     </div>
 
                     {showModal && (
@@ -157,13 +69,11 @@ export default function ScanQR() {
                                 )}
 
                                 <div className="mt-6">
-                                    <button onClick={handleCloseModal} className="px-4 py-2 bg-[#7a0202] text-white rounded">Cerrar</button>
+                                    <button onClick={closeModal} className="px-4 py-2 bg-[#7a0202] text-white rounded">Cerrar</button>
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    {/* Se ha eliminado la visualización del contenido del QR: solo se muestra la cámara */}
                 </div>
             </div>
         </GuestLayout>
