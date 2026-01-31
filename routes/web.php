@@ -77,5 +77,7 @@ Route::resource('empleados', EmpleadoController::class)->only(['create','store',
 // Ruta index simple que redirige al panel (donde se muestran los empleados en la pestaña) para mantener compatibilidad con las redirecciones actuales
 Route::get('/empleados', function () { return redirect()->route('panel'); })->name('empleados.index')->middleware('auth');
 Route::resource('reservas', ReservaController::class)->parameters(['reservas' => 'reserva'])->where(['reserva' => '[0-9]+'])->except('store')->middleware('auth');
+Route::post('/reservas/{reserva}/asignar-habitaciones', [ReservaController::class, 'asignarHabitaciones'])->name('reservas.asignar-habitaciones')->middleware('auth');
+Route::post('/reservas/{reserva}/desasignar-habitaciones', [ReservaController::class, 'desasignarHabitaciones'])->name('reservas.desasignar-habitaciones')->middleware('auth');
 
 require __DIR__ . '/auth.php';

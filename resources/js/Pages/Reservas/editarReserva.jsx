@@ -1,7 +1,7 @@
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
@@ -11,16 +11,12 @@ import dayjs from 'dayjs';
 
 export default function EditarReserva({ reserva: initialReserva, habitaciones = [] }) {
     // --- HOOKS Y ESTADOS ---
-    const { reserva, setReserva, refresh, aplicarCambioFechas, solicitarReembolso } = useReserva(initialReserva);
+    const { reserva, setReserva, refresh, aplicarCambioFechas } = useReserva(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState(null);
     const [showDateModal, setShowDateModal] = useState(false);
     const [modalCheckIn, setModalCheckIn] = useState('');
     const [modalCheckOut, setModalCheckOut] = useState('');
-    const dateModalRef = useRef(null);
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [preview, setPreview] = useState(null);
-    const [previewError, setPreviewError] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [pendingApplyAfterPayment, setPendingApplyAfterPayment] = useState(false);
@@ -32,7 +28,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
 
     const [selectedHabitacionIds, setSelectedHabitacionIds] = useState([]);
     const [savingHabitaciones, setSavingHabitaciones] = useState(false);
-    const [availableHabitaciones, setAvailableHabitaciones] = useState([]);
+    const [availableHabitaciones, setAvailableHabitaciones] = useState(habitaciones || []);
 
     const refundReasons = [
         { value: 'billing_error', label: 'Error de facturación' },
@@ -42,28 +38,29 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
     ];
 
     // --- LÓGICA DE DATOS ---
-    const fetchAvailableHabitaciones = async () => {
-        try {
-            if (!reserva?.check_in || !reserva?.check_out) return;
-            const resp = await fetch(`/habitaciones/disponibles?check_in=${encodeURIComponent(reserva.check_in)}&check_out=${encodeURIComponent(reserva.check_out)}`);
-            const data = await resp.json();
-            setAvailableHabitaciones(Array.isArray(data) ? data : []);
-        } catch (e) { console.error(e); }
-    };
-
-    useEffect(() => { fetchAvailableHabitaciones(); }, [reserva.check_in, reserva.check_out]);
+    // Función eliminada: fetchAvailableHabitaciones nunca se llamaba
 
     useEffect(() => {
         if (reserva?.habitaciones) {
-            setSelectedHabitacionIds(reserva.habitaciones.map(h => h.id || h.habitacion_id));
+            const currentIds = reserva.habitaciones.map(h => h.id || h.habitacion_id);
+            setSelectedHabitacionIds(prev => {
+                // Mantener la longitud correcta y preservar selecciones existentes
+                const newIds = [...prev];
+                newIds.length = currentIds.length;
+                return newIds;
+            });
         }
-    }, [reserva]);
+        if (habitaciones) {
+            setAvailableHabitaciones(habitaciones);
+        }
+    }, [reserva, habitaciones]);
 
     const { preview: pFromHook, loading: pLoadingHook, error: pErrorHook, fetchPreview: fetchPreviewHook } = usePreview(reserva.localizador);
 
-    useEffect(() => { setPreview(pFromHook); }, [pFromHook]);
-    useEffect(() => { setPreviewError(pErrorHook); }, [pErrorHook]);
-    useEffect(() => { setPreviewLoading(pLoadingHook); }, [pLoadingHook]);
+    // Usar directamente las props del hook en lugar de estado duplicado
+    const preview = pFromHook;
+    const previewLoading = pLoadingHook;
+    const previewError = pErrorHook;
 
     useReservaEvents(reserva, { onRefresh: refresh });
 
@@ -73,16 +70,46 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
         setTimeout(() => setToast(null), 4500);
     };
 
+    const handleDesasignarHabitacion = async (habitacionId) => {
+        setSavingHabitaciones(true);
+        try {
+            await router.post(`/reservas/${reserva.id}/desasignar-habitaciones`, {
+                habitacion_ids: [habitacionId]
+            }, {
+                preserveScroll: true
+            });
+
+            showToast('Habitación desasignada con éxito', 'success');
+            refresh(); // Refrescar para obtener los cambios
+        } catch (error) {
+            showToast('Error al desasignar habitación', 'error');
+        } finally {
+            setSavingHabitaciones(false);
+        }
+    };
+
     const handleUpdateHabitaciones = async () => {
         setSavingHabitaciones(true);
-        router.put(`/reservas/${reserva.id}`, {
-            ...reserva,
-            habitacion_ids: selectedHabitacionIds.filter(Boolean)
-        }, {
-            onSuccess: () => showToast('Habitaciones actualizadas con éxito', 'success'),
-            onFinish: () => setSavingHabitaciones(false),
-            preserveScroll: true
-        });
+
+        try {
+            // Solo asignar habitaciones (las desasignaciones se hacen individualmente)
+            const asignarIds = selectedHabitacionIds.filter(id => id !== null && id !== undefined);
+
+            if (asignarIds.length > 0) {
+                await router.post(`/reservas/${reserva.id}/asignar-habitaciones`, {
+                    habitacion_ids: asignarIds
+                }, {
+                    preserveScroll: true
+                });
+            }
+
+            showToast('Habitaciones asignadas con éxito', 'success');
+            refresh(); // Refrescar para obtener los cambios
+        } catch (error) {
+            showToast('Error al asignar habitaciones', 'error');
+        } finally {
+            setSavingHabitaciones(false);
+        }
     };
 
     const openDateModal = () => {
@@ -193,16 +220,34 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                             {/* Card: Detalles de Habitaciones */}
                             <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Tipo de habitacion reservada</h3>
+                                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Habitaciones asignadas</h3>
                                 </div>
                                 <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={idx} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
+                                        <div key={hab.id || `hab-${idx}`} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
                                             <div>
                                                 <span className="block font-black text-gray-900 text-lg uppercase leading-tight">
-                                                    {hab.tipo || 'Habitación Estandar'}
+                                                    {hab.numero ? `Habitación ${hab.numero}` : (hab.tipo || 'Habitación Estándar')}
+                                                </span>
+                                                <span className="text-xs text-gray-500 uppercase tracking-widest mt-1 block">
+                                                    {hab.numero ? hab.tipo : 'Sin asignar'}
                                                 </span>
                                             </div>
+                                            {hab.numero && (
+                                                <div className="text-right flex items-center gap-2">
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                                        ✓ Asignada
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleDesasignarHabitacion(hab.id)}
+                                                        disabled={savingHabitaciones}
+                                                        className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition disabled:opacity-50"
+                                                        title="Quitar asignación de habitación"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -213,19 +258,19 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                 <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
                                     <div>
                                         <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Asignación de habitaciones</h3>
-                                        <p className="text-[10px] text-gray-400 mt-1">Selecciona el número de habitación para el cliente.</p>
+                                        <p className="text-[10px] text-gray-400 mt-1">Selecciona habitaciones disponibles para asignar. Usa el botón ✕ para desasignar.</p>
                                     </div>
                                     <button
                                         onClick={handleUpdateHabitaciones}
                                         disabled={savingHabitaciones}
                                         className="px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black transition disabled:opacity-50"
                                     >
-                                        {savingHabitaciones ? 'Guardando...' : 'Asignar Habitaciones'}
+                                        {savingHabitaciones ? 'Asignando...' : 'Asignar Seleccionadas'}
                                     </button>
                                 </div>
                                 <div className="p-6 space-y-10">
                                     {reserva.habitaciones.map((hSlot, idx) => (
-                                        <div key={idx} className="space-y-4">
+                                        <div key={hSlot.id || `slot-${idx}`} className="space-y-4">
                                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                                 <button
                                                     onClick={() => {

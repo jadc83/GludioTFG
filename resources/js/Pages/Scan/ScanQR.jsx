@@ -81,9 +81,11 @@ export default function ScanQR() {
                     return;
                 }
                 setAssignDetails(null);
-                setModalType('checkin');
-                setShowModal(true);
-                // Dejar que el usuario cierre el modal manualmente; no redirigir automáticamente.
+                // Redirigir directamente a la página de detalle después del check-in exitoso
+                const loc = respReserva?.localizador || '';
+                if (loc) {
+                    router.visit(`/reserva/${encodeURIComponent(loc)}`);
+                }
                 return;
             }
 

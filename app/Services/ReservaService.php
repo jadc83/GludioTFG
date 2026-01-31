@@ -164,24 +164,21 @@ class ReservaService
         $checkInStr = $checkIn->toDateString();
         $checkOutStr = $checkOut->toDateString();
 
+        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas
         $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
-            ->where(function ($query) use ($reserva, $habitacionesActualesIds, $checkInStr, $checkOutStr) {
-                $query->whereIn('id', $habitacionesActualesIds)
-                    ->orWhere(function ($q) use ($reserva, $checkInStr, $checkOutStr) {
-                        $q->where('estado', 'disponible')
-                            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
-                                $subQ->where('reserva_id', '!=', $reserva->id)
-                                    ->where('check_in', '<', $checkOutStr)
-                                    ->where('check_out', '>', $checkInStr);
-                            });
-                    });
+            ->where('estado', 'disponible')
+            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
+                $subQ->where('reserva_id', '!=', $reserva->id)
+                    ->where('check_in', '<', $checkOutStr)
+                    ->where('check_out', '>', $checkInStr);
             })
+            ->whereNotIn('id', $habitacionesActualesIds) // Excluir habitaciones ya asignadas a esta reserva
             ->orderBy('numero')
             ->get();
 
         $noches = max(1, $checkIn->diffInDays($checkOut));
 
-        return $habitaciones->map(function ($hab) use ($habitacionesActualesIds, $checkIn, $checkOut, $noches) {
+        return $habitaciones->map(function ($hab) use ($checkIn, $checkOut, $noches) {
             $precioDinamico = $this->servicioPrecio->precioEntreFechas($hab->tipo, $checkIn, $checkOut);
 
             return [
@@ -192,7 +189,6 @@ class ReservaService
                 'precio_total' => $precioDinamico,
                 'capacidad' => $hab->capacidad,
                 'estado' => $hab->estado,
-                'es_actual' => in_array($hab->id, $habitacionesActualesIds),
             ];
         });
     }
@@ -679,6 +675,108 @@ class ReservaService
     }
 
     /**
+     * Asigna habitaciones específicas manualmente a una reserva existente
+     * Verifica disponibilidad, elimina asignaciones anteriores y crea nuevas
+     * Usado por: edición manual de reservas desde panel de control
+     * Parámetros: reserva existente, array de IDs de habitaciones
+     * Retorna: array con resultado de la operación
+     */
+    public function asignarHabitacionManual(Reserva $reserva, array $habitacionIds): array
+    {
+        $checkIn = Carbon::parse($reserva->check_in);
+        $checkOut = Carbon::parse($reserva->check_out);
+
+        // Verificar disponibilidad de todas las habitaciones
+        foreach ($habitacionIds as $habitacionId) {
+            if (!$this->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
+                $habitacion = Habitacion::find($habitacionId);
+                $numero = $habitacion ? $habitacion->numero : $habitacionId;
+                throw new \Exception("La habitación {$numero} no está disponible en las fechas seleccionadas.");
+            }
+        }
+
+        $precioTotal = 0;
+
+        DB::transaction(function () use ($reserva, $habitacionIds, $checkIn, $checkOut, &$precioTotal) {
+            // Eliminar asignaciones anteriores
+            $reserva->habitaciones()->delete();
+
+            // Crear nuevas asignaciones con habitaciones específicas
+            foreach ($habitacionIds as $habitacionId) {
+                $habitacion = Habitacion::findOrFail($habitacionId);
+
+                // Calcular precio para esta habitación específica
+                $precioHabitacion = $this->servicioPrecio->precioEntreFechas(
+                    $habitacion->tipo,
+                    $checkIn,
+                    $checkOut
+                );
+
+                HabitacionReserva::create([
+                    'reserva_id' => $reserva->id,
+                    'habitacion_id' => $habitacionId,
+                    'precio' => $precioHabitacion,
+                    'check_in' => $checkIn,
+                    'check_out' => $checkOut,
+                ]);
+
+                $precioTotal += $precioHabitacion;
+            }
+
+            // Actualizar precio total de la reserva
+            $reserva->update(['precio_total' => $precioTotal]);
+        });
+
+        return [
+            'success' => true,
+            'message' => 'Habitaciones asignadas correctamente',
+            'precio_total' => $precioTotal,
+            'habitaciones_asignadas' => count($habitacionIds)
+        ];
+    }
+
+    /**
+     * Desasigna habitaciones específicas de una reserva existente
+     * Elimina asignaciones de habitaciones físicas pero mantiene el registro de habitación requerida
+     * Usado por: edición manual de reservas desde panel de control
+     * Parámetros: reserva existente, array de IDs de habitaciones a desasignar
+     * Retorna: array con resultado de la operación
+     */
+    public function desasignarHabitaciones(Reserva $reserva, array $habitacionIds): array
+    {
+        $desasignadas = 0;
+
+        DB::transaction(function () use ($reserva, $habitacionIds, &$desasignadas) {
+            foreach ($habitacionIds as $habitacionId) {
+                // Buscar la asignación específica de esta habitación
+                $asignacion = HabitacionReserva::where('reserva_id', $reserva->id)
+                    ->where('habitacion_id', $habitacionId)
+                    ->first();
+
+                if ($asignacion) {
+                    // Solo desasignar la habitación física, mantener el registro con habitacion_id = null
+                    $asignacion->update(['habitacion_id' => null]);
+                    $desasignadas++;
+                }
+            }
+
+            // Recalcular precio total basado en habitaciones aún asignadas
+            $precioTotal = HabitacionReserva::where('reserva_id', $reserva->id)
+                ->whereNotNull('habitacion_id')
+                ->sum('precio');
+
+            $reserva->update(['precio_total' => $precioTotal]);
+        });
+
+        return [
+            'success' => true,
+            'message' => 'Habitaciones desasignadas correctamente',
+            'habitaciones_desasignadas' => $desasignadas,
+            'precio_total' => $reserva->fresh()->precio_total
+        ];
+    }
+
+    /**
      * Formatea una colección de reservas para respuesta API
      * Incluye cliente, habitaciones, precios y estadísticas
      * Usado por: controladores de listado de reservas
@@ -762,26 +860,9 @@ class ReservaService
             'notas' => $validated['notas'] ?? null,
         ]);
 
-        $reserva->habitaciones()->delete();
-
-        $precioTotal = 0;
-        foreach ($habitacionIds as $habitacionId) {
-            $habitacion = Habitacion::findOrFail($habitacionId);
-            $precioHabitacion = $this->servicioPrecio->precioEntreFechas(
-                $habitacion->tipo,
-                $checkIn,
-                $checkOut
-            );
-
-            HabitacionReserva::create([
-                'reserva_id' => $reserva->id,
-                'habitacion_id' => $habitacionId,
-                'precio' => $precioHabitacion,
-                'check_in' => $checkIn,
-                'check_out' => $checkOut,
-            ]);
-            $precioTotal += $precioHabitacion;
-        }
+        // Usar el método de asignación manual para habitaciones específicas
+        $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
+        $precioTotal = $asignacionResult['precio_total'];
 
         $totalViejo = (float) $reserva->precio_total;
         $diffSigned = round($precioTotal - $totalViejo, 2);

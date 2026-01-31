@@ -1,8 +1,6 @@
 import {
-    CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon,
-    MapPinIcon, ClockIcon, ShieldCheckIcon, PencilIcon, XMarkIcon,
-    ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, CurrencyEuroIcon, UserIcon,
-    ExclamationTriangleIcon, CalendarIcon
+    CheckCircleIcon, DocumentArrowDownIcon, PhoneIcon,
+    MapPinIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon
 } from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
@@ -175,16 +173,18 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 </div>
                                 <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={idx} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
+                                        <div key={hab.id || idx} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-12 w-12 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs uppercase">
                                                     {hab.tipo?.charAt(0) || 'H'}
                                                 </div>
                                                 <div>
                                                     <span className="block font-black text-gray-900 text-lg uppercase leading-tight">
-                                                        {hab.tipo}
+                                                        {hab.numero ? `Habitación ${hab.numero}` : hab.tipo}
                                                     </span>
-                                                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">ID: {reserva.localizador}-{idx+1}</span>
+                                                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">
+                                                        {hab.numero ? hab.tipo : `ID: ${reserva.localizador}-${idx+1}`}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

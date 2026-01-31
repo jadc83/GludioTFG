@@ -129,9 +129,7 @@ export default function BarraReservas() {
                                 </div>
                             </div>
 
-                            {/* TYPING ANIMATION Y BUSCADOR */}
                             <div className="hidden lg:flex items-center gap-4 px-2 py-1 absolute right-4">
-
                                 <div className="flex-shrink-0 w-80">
                                     <BuscadorNavbar />
                                 </div>

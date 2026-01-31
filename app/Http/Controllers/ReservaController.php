@@ -225,6 +225,7 @@ class ReservaController extends Controller
                 'reembolsos' => $reembolsosList,
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                     return [
+                        'id' => $hr->id,
                         'numero' => $hr->habitacion?->numero ?? null,
                         'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
                         'precio' => $hr->precio,
@@ -313,6 +314,82 @@ class ReservaController extends Controller
             return redirect()->back()->with('success', 'Reserva eliminada con éxito');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'No se pudo eliminar la reserva: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Asigna habitaciones específicas manualmente a una reserva existente
+     * Usado para edición manual desde panel de control
+     */
+    public function asignarHabitaciones(Request $request, Reserva $reserva)
+    {
+        $request->validate([
+            'habitacion_ids' => 'required|array|min:1',
+            'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
+        ]);
+
+        try {
+            $result = $this->reservaService->asignarHabitacionManual($reserva, $request->habitacion_ids);
+
+            // Refrescar la instancia para obtener los cambios
+            $reserva->refresh();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result
+                ]);
+            }
+
+            return redirect()->back()->with('success', $result['message']);
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ], 422);
+            }
+
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Desasigna habitaciones específicas de una reserva existente
+     * Usado para quitar asignaciones manuales desde panel de control
+     */
+    public function desasignarHabitaciones(Request $request, Reserva $reserva)
+    {
+        $request->validate([
+            'habitacion_ids' => 'required|array|min:1',
+            'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
+        ]);
+
+        try {
+            $result = $this->reservaService->desasignarHabitaciones($reserva, $request->habitacion_ids);
+
+            // Refrescar la instancia para obtener los cambios
+            $reserva->refresh();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result
+                ]);
+            }
+
+            return redirect()->back()->with('success', $result['message']);
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ], 422);
+            }
+
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
@@ -500,22 +577,6 @@ class ReservaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en marcarCheckIn: ' . $e->getMessage());
             return $this->jsonError('No se pudo marcar check-in: ' . $e->getMessage(), 400);
-        }
-    }
-
-    /**
-     * Marca una reserva como check-out (se usa desde el escáner)
-     */
-    public function marcarCheckOut(Request $request, $localizador)
-    {
-        try {
-            $action = app(\App\Actions\Reservas\MarcarCheckOutAction::class);
-            $resultado = $action->handle($localizador);
-            $code = ($resultado['success'] ?? false) ? 200 : 400;
-            return response()->json($resultado, $code);
-        } catch (\Exception $e) {
-            Log::error('Error en marcarCheckOut: ' . $e->getMessage());
-            return $this->jsonError('No se pudo marcar check-out: ' . $e->getMessage(), 400);
         }
     }
 
