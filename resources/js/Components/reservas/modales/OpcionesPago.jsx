@@ -1,5 +1,6 @@
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import { useState } from 'react';
 import {
     CreditCardIcon,
@@ -84,26 +85,28 @@ export default function OpcionesPago({
                                             </div>
                                         </div>
                                     ) : (
-                                        <FormularioPago
-                                            reservaData={reservaData}
-                                            monto={monto}
-                                            aceptaTerminos={aceptaTerminos}
-                                            mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
-                                            onAceptaChange={setAceptaTerminos}
-                                            onPagoExitoso={(data) => {
-                                                setDatosReservaConfirmada({
-                                                    localizador: data?.localizador || localizador,
-                                                    nombre: formData.name,
-                                                    check_in: rango?.from,
-                                                    check_out: rango?.to,
-                                                    cantidad_habitaciones: getTotalHabitaciones(),
-                                                    precio_total: monto,
-                                                    pagoAlLlegar: false
-                                                });
-                                                setMostrarModalConfirmacion(true);
-                                            }}
-                                            onError={setErrorPago}
-                                        />
+                                        <ErrorBoundary>
+                                            <FormularioPago
+                                                reservaData={reservaData}
+                                                monto={monto}
+                                                aceptaTerminos={aceptaTerminos}
+                                                mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
+                                                onAceptaChange={setAceptaTerminos}
+                                                onPagoExitoso={(data) => {
+                                                    setDatosReservaConfirmada({
+                                                        localizador: data?.localizador || localizador,
+                                                        nombre: formData.name,
+                                                        check_in: rango?.from,
+                                                        check_out: rango?.to,
+                                                        cantidad_habitaciones: getTotalHabitaciones(),
+                                                        precio_total: monto,
+                                                        pagoAlLlegar: false
+                                                    });
+                                                    setMostrarModalConfirmacion(true);
+                                                }}
+                                                onError={setErrorPago}
+                                            />
+                                        </ErrorBoundary>
                                     ) }
                                 </div>
                             </div>

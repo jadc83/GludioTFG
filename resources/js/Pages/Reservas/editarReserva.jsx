@@ -6,6 +6,7 @@ import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import dayjs from 'dayjs';
 
 export default function EditarReserva({ reserva: initialReserva, habitaciones = [] }) {
@@ -445,15 +446,17 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                 <div className="text-4xl font-black text-[#7a0202] mt-1">{formatearMoneda(paymentAmount)}</div>
                             </div>
 
-                            <FormularioPago
-                                monto={paymentAmount}
-                                onPagoExitoso={handlePagoExitoso}
-                                onError={(e) => showToast(e?.message, 'error')}
-                                reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }}
-                                aceptaTerminos={aceptaTerminosPago}
-                                mostrarAceptacion={true}
-                                onAceptaChange={setAceptaTerminosPago}
-                            />
+                            <ErrorBoundary>
+                                <FormularioPago
+                                    monto={paymentAmount}
+                                    onPagoExitoso={handlePagoExitoso}
+                                    onError={(e) => showToast(e?.message, 'error')}
+                                    reservaData={{ reserva_id: reserva.id, es_edicion_pago: true, check_in: modalCheckIn || reserva.check_in, check_out: modalCheckOut || reserva.check_out, habitaciones: reserva.habitaciones }}
+                                    aceptaTerminos={aceptaTerminosPago}
+                                    mostrarAceptacion={true}
+                                    onAceptaChange={setAceptaTerminosPago}
+                                />
+                            </ErrorBoundary>
 
                             <button onClick={() => setShowPaymentModal(false)} className="w-full mt-6 py-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition">Cancelar operación</button>
                         </div>

@@ -12,6 +12,7 @@ import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
@@ -78,6 +79,10 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             if (latestPreview?.estimate_charge > 0) {
                 setPaymentAmount(latestPreview.estimate_charge);
                 setPendingApplyAfterPayment(true);
+                // Pre-aceptar términos para facilitar el flujo (el usuario sigue pudiendo desmarcar)
+                setAceptaTerminosPago(true);
+                // Cerrar el modal de fechas para evitar solapamiento visual
+                setShowDateModal(false);
                 setShowPaymentModal(true);
                 return;
             }
@@ -338,6 +343,40 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                     {isProcessing ? 'Sincronizando...' : 'Confirmar'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- MODAL: PAGO ADICIONAL --- */}
+                {showPaymentModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-200">
+                            <div className="flex justify-between items-start mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 uppercase leading-tight">Pago Adicional</h2>
+                                    <p className="text-sm text-gray-400 mt-1 font-medium">Se requiere saldar la diferencia para aplicar cambios.</p>
+                                </div>
+                                <button onClick={() => setShowPaymentModal(false)} className="text-gray-300 hover:text-gray-500 font-bold">✕</button>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-2xl p-6 text-center mb-8 border border-gray-100">
+                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total a pagar ahora</span>
+                                <div className="text-4xl font-black text-[#7a0202] mt-1">{formatearMoneda(paymentAmount)}</div>
+                            </div>
+
+                            <ErrorBoundary>
+                                <FormularioPago
+                                    monto={paymentAmount}
+                                    onPagoExitoso={handlePagoExitoso}
+                                    onError={(e) => showToast(e?.message, 'error')}
+                                    reservaData={{ reserva_id: reserva.id, es_edicion_pago: true, check_in: modalCheckIn || reserva.check_in, check_out: modalCheckOut || reserva.check_out, habitaciones: reserva.habitaciones }}
+                                    aceptaTerminos={aceptaTerminosPago}
+                                    mostrarAceptacion={true}
+                                    onAceptaChange={setAceptaTerminosPago}
+                                />
+                            </ErrorBoundary>
+
+                            <button onClick={() => setShowPaymentModal(false)} className="w-full mt-6 py-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition">Cancelar operación</button>
                         </div>
                     </div>
                 )}
