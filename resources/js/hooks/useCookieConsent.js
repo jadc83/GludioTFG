@@ -1,1 +1,0 @@
-export { useCookieConsent } from './useCookies';

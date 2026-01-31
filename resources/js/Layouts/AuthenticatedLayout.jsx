@@ -22,7 +22,14 @@ export default function AuthenticatedLayout({ children }) {
             const msg = errors[first] && errors[first][0];
             if (msg) setToastMsg(msg);
         }
-    }, [page.props.errors]);
+
+        // Mostrar notificación si el backend puso refund_info en flash
+        const refund = page?.props?.flash?.refund_info;
+        if (refund && refund.amount) {
+            const amt = Number(refund.amount || 0).toFixed(2);
+            setToastMsg(`Se ha solicitado un reembolso parcial de €${amt}`);
+        }
+    }, [page.props.errors, page.props.flash]);
 
     return (
         <div className="flex min-h-screen flex-col bg-gris">

@@ -13,4 +13,12 @@ export default defineConfig({
         }),
         react(),
     ],
+    server: {
+        host: 'localhost', // avoid IPv6 ::1 mismatches
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: 'localhost'
+        }
+    }
 });

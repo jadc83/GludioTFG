@@ -22,14 +22,13 @@ export default function BuscadorReserva() {
         setReserva(null);
 
         try {
-            const response = await fetch(`/reservas/buscar/${localizador.trim()}`);
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error || 'No se encontró la reserva');
+            const service = await import('@/hooks/reservas/service');
+            const r = await service.buscarReserva(localizador.trim());
+            if (!r) {
+                setError('No se encontró la reserva');
                 setReserva(null);
             } else {
-                setReserva(data.reserva);
+                setReserva(r);
             }
         } catch (err) {
             setError('Error al buscar la reserva');

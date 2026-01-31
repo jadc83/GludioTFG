@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
-import { FunnelIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
 import IndexHabitacion from './IndexHabitacion';
 import Campo from '@/Components/formulario/Campo';
 
@@ -26,6 +26,17 @@ export default function TabHabitaciones({ habitaciones = [] }) {
 
     return (
         <div className="p-3 md:p-6">
+            {/* --- CABECERA --- */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Gestión de <span className="text-[#7a0202]">Habitaciones</span></h1>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Inventario y gestión de habitaciones</p>
+                </div>
+                <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
+                    <InboxIcon className="h-6 w-6 text-gray-400" />
+                </div>
+            </div>
+
             <div className="mb-4">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:gap-3 lg:grid-cols-5">
                     <div className="form-control w-full">

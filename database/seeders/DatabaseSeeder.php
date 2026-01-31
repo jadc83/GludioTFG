@@ -26,5 +26,8 @@ class DatabaseSeeder extends Seeder
             'direccion' => 'Dirección de prueba',
             'telefono' => '600000000'
         ]);
+
+        // Asegurar que al menos un admin exista para pruebas
+        $this->call(\Database\Seeders\AdminUserSeeder::class);
     }
 }

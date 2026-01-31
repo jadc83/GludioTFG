@@ -1,6 +1,13 @@
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import { useState } from 'react';
+import {
+    CreditCardIcon,
+    BuildingLibraryIcon,
+    CheckCircleIcon,
+    ShieldCheckIcon
+} from '@heroicons/react/24/outline';
 
 export default function OpcionesPago({
     pagarAlLlegar,
@@ -19,115 +26,135 @@ export default function OpcionesPago({
     setMostrarModalConfirmacion,
     setErrorPago,
     errorPago,
+    setPasoActual,
 }) {
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
-    return (
-        <div className="bg-gris rounded-lg p-2 space-y-1 text-xs md:text-sm">
-            {/* Opción de pago */}
-            <div>
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 mb-1 text-center">Forma de Pago</h4>
-                <div className="flex flex-col md:flex-row justify-center gap-3">
-                    <label
-                        className={`flex w-full md:w-auto items-center gap-3 p-3 rounded-xl border transition-transform hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${!pagarAlLlegar ? 'border-[#7a0202] bg-white' : 'border-gray-200 bg-gris'}`}
-                        onClick={() => { setPagarAlLlegar(false); setOpcionPagoSeleccionada(true); }}
-                    >
-                        <input type="radio" name="metodoPago" checked={!pagarAlLlegar} readOnly className="sr-only" />
-                        <div className="flex-1 text-left">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-semibold text-sm text-gray-900">Tarjeta</div>
-                                    <div className="text-xs text-gray-500">Pago seguro con tarjeta (Stripe)</div>
-                                </div>
-                                { !pagarAlLlegar && (
-                                    <div className="ml-3 h-6 w-6 rounded-full bg-[#7a0202] flex items-center justify-center text-white text-xs">✓</div>
-                                ) }
-                            </div>
-                        </div>
-                    </label>
+    const reservaData = (typeof prepararDatosReserva === 'function') ? prepararDatosReserva() : null;
 
-                    <label
-                        className={`flex w-full md:w-auto items-center gap-3 p-3 rounded-xl border transition-transform hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${pagarAlLlegar ? 'border-[#7a0202] bg-white' : 'border-gray-200 bg-gris'}`}
-                        onClick={() => { setPagarAlLlegar(true); setOpcionPagoSeleccionada(true); }}
-                    >
-                        <input type="radio" name="metodoPago" checked={pagarAlLlegar} readOnly className="sr-only" />
-                        <div className="flex-1 text-left">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-semibold text-sm text-gray-900">En recepción</div>
-                                    <div className="text-xs text-gray-500">Paga en el hotel al hacer check-in</div>
-                                </div>
-                                { pagarAlLlegar && (
-                                    <div className="ml-3 h-6 w-6 rounded-full bg-[#7a0202] flex items-center justify-center text-white text-xs">✓</div>
-                                ) }
-                            </div>
-                        </div>
-                    </label>
+    const cardBaseClass = "relative flex flex-col p-5 border-2 transition-all duration-300 cursor-pointer rounded-xl group";
+    const activeClass = "border-[#7a0202] bg-white shadow-md";
+    const inactiveClass = "border-gray-100 bg-gris hover:border-gray-300";
+
+    return (
+        <div className="space-y-8">
+            {/* SELECTORES DE MODO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* OPCIÓN: TARJETA (STRIPE) */}
+                <div
+                    onClick={() => { setPagarAlLlegar(false); setOpcionPagoSeleccionada(true); }}
+                    className={`${cardBaseClass} ${!pagarAlLlegar ? activeClass : inactiveClass}`}
+                >
+                    <div className="flex items-center justify-between mb-3">
+                        <CreditCardIcon className={`h-6 w-6 ${!pagarAlLlegar ? 'text-[#7a0202]' : 'text-gray-400'}`} />
+                        {!pagarAlLlegar && <CheckCircleIcon className="h-5 w-5 text-[#7a0202]" />}
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-900">Pago con Tarjeta</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">Pasarela Stripe SSL</span>
+                </div>
+
+                {/* OPCIÓN: RECEPCIÓN */}
+                <div
+                    onClick={() => { setPagarAlLlegar(true); setOpcionPagoSeleccionada(true); }}
+                    className={`${cardBaseClass} ${pagarAlLlegar ? activeClass : inactiveClass}`}
+                >
+                    <div className="flex items-center justify-between mb-3">
+                        <BuildingLibraryIcon className={`h-6 w-6 ${pagarAlLlegar ? 'text-[#7a0202]' : 'text-gray-400'}`} />
+                        {pagarAlLlegar && <CheckCircleIcon className="h-5 w-5 text-[#7a0202]" />}
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-900">En Recepción</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">Pago durante el check-in</span>
                 </div>
             </div>
-                {!opcionPagoSeleccionada && (
-                    <div className="text-center py-2 text-xs text-gray-500">
-                        <p>Selecciona una forma de pago</p>
+
+            {/* ÁREA DINÁMICA DE PAGO */}
+            <div className="min-h-[100px] transition-all duration-500">
+                {opcionPagoSeleccionada && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+                        {!pagarAlLlegar ? (
+                            /* FLOW: STRIPE */
+                            <div className="bg-gris rounded-xl p-2">
+                                <div className="flex justify-center">
+                                    { (!reservaData || !reservaData.check_in || !reservaData.check_out || !(Array.isArray(reservaData.habitaciones) && reservaData.habitaciones.length > 0)) ? (
+                                        <div className="p-6 bg-yellow-50 border border-yellow-300 rounded-xl text-center">
+                                            <p className="text-[11px] font-bold text-yellow-800 mb-3">Faltan fechas o habitaciones</p>
+                                            <p className="text-[10px] text-yellow-700 mb-4">Selecciona fechas y al menos una habitación antes de continuar con el pago.</p>
+                                            <div className="flex justify-center gap-3">
+                                                <button type="button" onClick={() => { try { window.dispatchEvent(new CustomEvent('faltanFechas')); } catch (e){}; if (typeof setPasoActual === 'function') setPasoActual(1); }} className="py-2 px-4 rounded bg-[#7a0202] text-white font-bold">Seleccionar fechas</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <ErrorBoundary>
+                                            <FormularioPago
+                                                reservaData={reservaData}
+                                                monto={monto}
+                                                aceptaTerminos={aceptaTerminos}
+                                                mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
+                                                onAceptaChange={setAceptaTerminos}
+                                                onPagoExitoso={(data) => {
+                                                    setDatosReservaConfirmada({
+                                                        localizador: data?.localizador || localizador,
+                                                        nombre: formData.name,
+                                                        check_in: rango?.from,
+                                                        check_out: rango?.to,
+                                                        cantidad_habitaciones: getTotalHabitaciones(),
+                                                        precio_total: monto,
+                                                        pagoAlLlegar: false
+                                                    });
+                                                    setMostrarModalConfirmacion(true);
+                                                }}
+                                                onError={setErrorPago}
+                                            />
+                                        </ErrorBoundary>
+                                    ) }
+                                </div>
+                            </div>
+                        ) : (
+                            /* FLOW: RECEPCIÓN */
+                            <div className="space-y-6">
+                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl border-dashed flex flex-col items-center text-center">
+                                    <ShieldCheckIcon className="h-8 w-8 text-gray-300 mb-3" />
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Garantía de Reserva</p>
+                                    <p className="text-[11px] font-bold text-gray-600 mt-2">No se realizará ningún cargo ahora. <br/> La confirmación es inmediata.</p>
+                                </div>
+
+                                {/* Términos y botón en la misma línea cuando hay espacio */}
+                                <div className="px-2">
+                                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={aceptaTerminos}
+                                                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                                className="rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202]"
+                                            />
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-normal">
+                                                Acepto las <span className="text-gray-900 underline">condiciones de cancelación</span> y los términos del hotel.
+                                            </span>
+                                        </label>
+
+                                        <div className="w-full sm:w-1/2 md:w-1/3 mt-2">
+                                            <button
+                                                onClick={crearReservaAlLlegar}
+                                                disabled={procesando || !aceptaTerminos}
+                                                className="w-full py-7 rounded-xl  bg-[#7a0202] text-white font-black text-[12px] uppercase tracking-[0.3em] shadow-xl hover:bg-black transition-all active:scale-[0.97] disabled:opacity-20 disabled:grayscale"
+                                            >
+                                                {procesando ? 'Confirmando...' : 'Finalizar Reserva'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
+            </div>
 
-                {opcionPagoSeleccionada && !pagarAlLlegar && (
-                    <>
-                        <FormularioPago
-                            reservaData={prepararDatosReserva()}
-                            monto={monto}
-                            pagarAlLlegar={false}
-                            aceptaTerminos={aceptaTerminos}
-                            onPagoExitoso={(data) => {
-                                const localizadorDelPago = data?.localizador || localizador;
-                                setDatosReservaConfirmada({
-                                    localizador: localizadorDelPago,
-                                    nombre: formData.name,
-                                    check_in: rango?.from,
-                                    check_out: rango?.to,
-                                    cantidad_habitaciones: getTotalHabitaciones(),
-                                    precio_total: monto,
-                                    pagoAlLlegar: false
-                                });
-                                setMostrarModalConfirmacion(true);
-                            }}
-                            onError={(mensaje) => {
-                                setErrorPago(mensaje);
-                            }}
-                        />
-                    </>
-                )}
-
-                {opcionPagoSeleccionada && pagarAlLlegar && (
-                    <div className="text-center py-2">
-                        <p className="text-gray-600 mb-2 text-xs">Pago en recepción</p>
-                        <PrimaryButton onClick={crearReservaAlLlegar} disabled={procesando || !aceptaTerminos} className="w-full justify-center">
-                            {procesando ? 'Creando...' : 'Confirmar Reserva'}
-                        </PrimaryButton>
-                    </div>
-                )}
-
-            {/* Términos y condiciones */}
-            {opcionPagoSeleccionada && (
-                <div className="border-t border-gray-300 pt-2 mt-2">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} className="sr-only" />
-                        <div className={`h-4 w-4 rounded-sm flex items-center justify-center transition ${aceptaTerminos ? 'bg-[#7a0202] border-[#7a0202]' : 'bg-white border border-gray-300'}`}>
-                            {aceptaTerminos && (
-                                <svg className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clipRule="evenodd" />
-                                </svg>
-                            )}
-                        </div>
-                        <span className="text-xs text-gray-700 leading-tight">
-                            Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] hover:underline font-medium">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.
-                        </span>
-                    </label>
-                </div>
-            )}
-
+            {/* ERRORES */}
             {errorPago && (
-                <div className="rounded border border-red-200 bg-red-100 p-2 text-xs text-red-800">
-                    {errorPago}
+                <div className="p-4 bg-red-50 border-l-4 border-red-600 rounded-r-lg flex items-center gap-4">
+                    <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">{errorPago}</span>
                 </div>
             )}
         </div>

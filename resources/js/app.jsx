@@ -1,4 +1,6 @@
 import '../css/app.css';
+import '../css/paso2Habitaciones.css';
+import '../css/paso3Datos.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';

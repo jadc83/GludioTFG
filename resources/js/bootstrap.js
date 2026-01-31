@@ -13,6 +13,8 @@ const REVERB_SCHEME = import.meta.env.VITE_REVERB_SCHEME || import.meta.env.REVE
 
 window.Pusher = Pusher;
 
+const csrfToken = typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') : null;
+
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: REVERB_KEY,
@@ -23,4 +25,11 @@ window.Echo = new Echo({
     forceTLS: REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
+    // Add auth headers so /broadcasting/auth receives CSRF token and proper X-Requested-With
+    auth: {
+        headers: {
+            'X-CSRF-TOKEN': csrfToken || '',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    },
 });

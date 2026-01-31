@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Log;
 
 class ScannerController extends Controller
 {
+    protected ReservaService $reservaService;
+
+    public function __construct(ReservaService $reservaService)
+    {
+        $this->reservaService = $reservaService;
+    }
+
     public function procesar(Request $request)
     {
         $localizador = $request->input('localizador');
@@ -35,12 +42,17 @@ class ScannerController extends Controller
 
                 // Asignar habitaciones
                 try {
-                    $reservaService = new ReservaService();
-                    $asignaciones = $reservaService->asignarHabitacionEnCheckIn($reserva, Auth::id());
-
+                    $asignaciones = $this->reservaService->asignarHabitacionEnCheckIn($reserva, Auth::id());
                     $fallos = array_filter($asignaciones, function($a){ return isset($a['assigned']) && $a['assigned'] === false; });
                     if (count($fallos) > 0) {
-                        return response()->json([ 'success' => false, 'message' => 'No se pudieron asignar todas las habitaciones en el check-in. Contacte recepción.', 'details' => $asignaciones ], 409);
+                        $fallos = count($fallos);
+                        $total = count($asignaciones);
+                        return response()->json([
+                            'success' => false,
+                            'message' => "No se pudieron asignar {$fallos} de {$total} habitaciones en el check-in. Contacte recepción.",
+                            'details' => $asignaciones,
+                            'failed_count' => $fallos
+                        ], 409);
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Error asignando habitaciones via scanner: ' . $e->getMessage());
@@ -50,13 +62,13 @@ class ScannerController extends Controller
                 $reserva->status = 'checked_in';
                 $reserva->save();
 
-                try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }
+                try { event(new ReservaActualizada($reserva, null)); } catch (\Throwable $e) { /* ignore */ }
 
                 return response()->json(['success' => true, 'message' => 'Check-in realizado', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
             }
 
             if ($accion === 'checkout') {
-                $ahora = Carbon::ahora();
+                $ahora = Carbon::now();
                 $checkOut = Carbon::parse($reserva->check_out);
 
                 if ($ahora->startOfDay()->gt($checkOut->endOfDay())) {
@@ -70,7 +82,23 @@ class ScannerController extends Controller
                 $reserva->status = 'checked_out';
                 $reserva->save();
 
-                try { event(new ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignorar */ }
+                // Marcar las habitaciones asignadas como 'limpieza' para que recepción/protocolos las procesen
+                try {
+                    foreach ($reserva->habitaciones()->whereNotNull('habitacion_id')->get() as $hr) {
+                        $habitacion = $hr->habitacion;
+                        if ($habitacion) {
+                            try {
+                                $habitacion->update(['estado' => 'limpieza']);
+                            } catch (\Throwable $e) {
+                                Log::warning('No se pudo actualizar estado de habitación tras checkout (habitacion_id=' . ($habitacion->id ?? 'n/a') . '): ' . $e->getMessage());
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Error marcando habitaciones como limpieza en checkout: ' . $e->getMessage());
+                }
+
+                try { event(new ReservaActualizada($reserva, null)); } catch (\Throwable $e) { /* ignorar */ }
 
                 return response()->json(['success' => true, 'message' => 'Check-out realizado', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
             }

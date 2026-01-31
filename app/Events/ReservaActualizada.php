@@ -13,10 +13,12 @@ class ReservaActualizada implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $reserva;
+    public $meta;
 
-    public function __construct($reserva)
+    public function __construct($reserva, ?array $meta = null)
     {
         $this->reserva = $reserva;
+        $this->meta = $meta;
     }
 
     /**
@@ -35,6 +37,6 @@ class ReservaActualizada implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
-        return [ 'id' => $this->reserva->id ];
+        return [ 'id' => $this->reserva->id, 'meta' => $this->meta ?? null ];
     }
 }

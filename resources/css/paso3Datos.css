@@ -1,0 +1,35 @@
+.paso3-datos {
+  /* Mantener pequeñas adaptaciones específicas sin usar !important para respetar utilidades Tailwind */
+  border-top-left-radius: 2.5rem;
+  border-top-right-radius: 2.5rem;
+  -webkit-border-top-left-radius: 2.5rem;
+  -webkit-border-top-right-radius: 2.5rem;
+  max-height: calc(100vh - 160px); /* coincide con h-[calc(100vh-160px)] en JSX */
+  padding-top: 0;
+}
+
+@media (min-width: 768px) {
+  .paso3-datos {
+    border-top-left-radius: 2.5rem;
+    border-top-right-radius: 2.5rem;
+    max-height: calc(100vh - 160px);
+  }
+}
+
+/* Asegurar que el contenido central use el scroll interno y no expanda el contenedor */
+.paso3-datos > main {
+  overflow-y: auto;
+}
+
+/* Evitar reglas que apunten a utilidades de Tailwind (bg-white, p-4) para no sobreescribirlas. */
+/* En su lugar, usar clases específicas en JSX cuando necesitemos forzar un comportamiento. */
+
+/* Asegurar que el card no crezca y permita scroll interno */
+.paso3-datos .rounded-\[2.5rem\] {
+  min-height: 0;
+}
+
+/* Priorizar max-width del contenido a 42rem (max-w-2xl) sin !important */
+.paso3-datos .max-w-2xl, .paso3-datos .max-w-3xl, .paso3-datos .max-w-7xl {
+  max-width: 42rem;
+}

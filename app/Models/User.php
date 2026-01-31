@@ -83,4 +83,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reserva::class, 'booked_by_user_id');
     }
+
+    /**
+     * Relación con el modelo Empleado (si existe)
+     */
+    public function empleado()
+    {
+        return $this->hasOne(Empleado::class);
+    }
 }

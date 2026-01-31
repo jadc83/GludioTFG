@@ -133,7 +133,7 @@
 
     /* Ajustes generales para evitar textos muy largos que solapen */
     .truncate,
-    .max-w-[10rem] {
+    .max-w-\[10rem\] {
       max-width: 8.5rem !important;
     }
 

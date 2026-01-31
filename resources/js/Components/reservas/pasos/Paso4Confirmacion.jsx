@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import { useState, useEffect, useRef } from 'react';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
+import Modal from '@/Components/Modal';
 import OpcionesPago from '../modales/OpcionesPago';
-import useConfirmacionReserva from '@/hooks/useConfirmacionReserva';
+import CuponDescuento from '@/Components/reservas/CuponDescuento';
+import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
+import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export default function Paso4Confirmacion({
     rango,
@@ -12,7 +15,7 @@ export default function Paso4Confirmacion({
     habitacionesSeleccionadas,
     getTotalHabitaciones,
     retrocederPaso,
-    calcularMontoTotal,
+    precioSinTarifas,
     usuarioActual,
     getValues,
     idClienteSeleccionado,
@@ -23,17 +26,13 @@ export default function Paso4Confirmacion({
     setValue,
     actualizarSeleccionHabitacion,
     agruparHabitacionesPorTipo,
+    preciosPorTipo = {},
     selectedTarifas = {},
     tarifasLookup = {},
     ultimoResultadoPrecio = null,
 }) {
     const formData = watch();
-    const {
-        procesando,
-        prepararDatosReserva,
-        crearReservaAlLlegar: crearReservaHook,
-    } = useConfirmacionReserva();
-
+    const { procesando, prepararDatosReserva, crearReservaAlLlegar: crearReservaHook } = useConfirmacionReserva();
     const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
     const [datosReservaConfirmada, setDatosReservaConfirmada] = useState(null);
     const [pagarAlLlegar, setPagarAlLlegar] = useState(false);
@@ -41,287 +40,276 @@ export default function Paso4Confirmacion({
     const [monto, setMonto] = useState(0);
     const [tarifasAplicadas, setTarifasAplicadas] = useState([]);
     const [cargoTarifas, setCargoTarifas] = useState(0);
-    const [precioPromedioPorNoche, setPrecioPromedioPorNoche] = useState(0);
+    const [precioAvg, setprecioAvg] = useState(0);
     const [errorPagoLocal, setErrorPagoLocal] = useState(null);
+    const [cuponDescuento, setCuponDescuento] = useState('');
+    const [clienteExistenteModal, setClienteExistenteModal] = useState(null);
+    const [showClienteModal, setShowClienteModal] = useState(false);
+    const datosReservaRef = useRef(null);
+    const fechasRef = useRef(null);
+    const [highlightFechas, setHighlightFechas] = useState(false);
 
-    // Cargar el precio del servidor cuando cambian fechas o habitaciones
     useEffect(() => {
         const cargarPrecio = async () => {
             if (!rango?.from || !rango?.to) {
                 setMonto(0);
-                setPrecioPromedioPorNoche(0);
+                setprecioAvg(0);
                 return;
             }
-
             try {
-                const resultado = await calcularMontoTotal();
-
-                    if (typeof resultado === 'object' && resultado.total !== undefined) {
-                        setMonto(resultado.total);
-                        setTarifasAplicadas(resultado.tarifas_aplicadas || []);
-                        setCargoTarifas(resultado.cargo_tarifas || 0);
-
-                    // Usar el precio promedio del backend si está disponible
+                const resultado = await precioSinTarifas();
+                if (typeof resultado === 'object' && resultado.total !== undefined) {
+                    setMonto(resultado.total);
+                    setTarifasAplicadas(resultado.tarifas_aplicadas || []);
+                    setCargoTarifas(resultado.precioTarifas || 0);
                     if (resultado.habitaciones && resultado.habitaciones.length > 0) {
-                        const precioPromedio = resultado.habitaciones[0].precioPromedioPorNoche || 0;
-                        setPrecioPromedioPorNoche(precioPromedio);
-                    } else {
-                        setPrecioPromedioPorNoche(0);
+                        setprecioAvg(resultado.habitaciones[0].precioAvg || 0);
                     }
                 } else {
-                    // Si solo devuelve el total (número)
                     const montoCalculado = resultado;
                     setMonto(montoCalculado);
-
-                    // Calcular precio promedio sin redondear a entero
                     const numeroNoches = calcularNoches(rango.from, rango.to);
-                    const totalHabitaciones = getTotalHabitaciones() || 1;
-                    const precioPorNocheUnaHabitacion = numeroNoches > 0
-                        ? (montoCalculado / totalHabitaciones) / numeroNoches
-                        : 0;
-                    setPrecioPromedioPorNoche(precioPorNocheUnaHabitacion);
+                    const totalHab = getTotalHabitaciones() || 1;
+                    setprecioAvg(numeroNoches > 0 ? (montoCalculado / totalHab) / numeroNoches : 0);
                 }
             } catch (error) {
-                console.error('Error al cargar precio:', error);
                 setMonto(0);
-                setPrecioPromedioPorNoche(0);
+                setprecioAvg(0);
             }
         };
-
         cargarPrecio();
     }, [rango, Object.values(habitacionesSeleccionadas).map(h => h.cantidad).join()]);
 
-    // Crear reserva para pago al llegar
+    // Listener para eventos de falta de fechas (mejora UX)
+    useEffect(() => {
+        const handler = () => {
+            try {
+                if (fechasRef.current) {
+                    fechasRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setHighlightFechas(true);
+                    setTimeout(() => setHighlightFechas(false), 1200);
+                } else {
+                    window.scrollTo({ top: 200, behavior: 'smooth' });
+                }
+            } catch (e) { /* noop */ }
+        };
+        window.addEventListener('faltanFechas', handler);
+        return () => window.removeEventListener('faltanFechas', handler);
+    }, [fechasRef.current]);
+
     const crearReservaAlLlegar = async () => {
         try {
-            const datosReserva = prepararDatosReserva(
-                getValues,
-                rango,
-                habitacionesSeleccionadas,
-                idClienteSeleccionado,
-                tipoClienteSeleccionado,
-                usuarioActual
-            );
-
+            const datosReserva = prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual });
+            datosReservaRef.current = datosReserva;
             const data = await crearReservaHook(datosReserva);
-
-            // Mostrar modal de confirmación
             const datosConfirmacion = {
                 localizador: data.localizador,
                 nombre: formData.name,
                 check_in: rango?.from,
                 check_out: rango?.to,
                 cantidad_habitaciones: getTotalHabitaciones(),
-                precio_total: monto,
+                precio_total: (data?.reserva?.precio_total !== undefined) ? data.reserva.precio_total : monto,
                 pagoAlLlegar: true,
             };
             setDatosReservaConfirmada(datosConfirmacion);
-            setTimeout(() => {
-                setMostrarModalConfirmacion(true);
-            }, 100);
+            setTimeout(() => setMostrarModalConfirmacion(true), 100);
         } catch (error) {
-            setErrorPagoLocal(error.message || 'Error al crear la reserva');
-        }
-    };
-
-    // Fallback: si el backend no devuelve tarifas_aplicadas, construirlas desde selectedTarifas + tarifasLookup
-    const tarifasParaMostrar = () => {
-        // Preferir lo que devolvió el backend en la última consulta
-        if (ultimoResultadoPrecio && Array.isArray(ultimoResultadoPrecio.tarifas_aplicadas) && ultimoResultadoPrecio.tarifas_aplicadas.length > 0) {
-            return ultimoResultadoPrecio.tarifas_aplicadas;
-        }
-
-        if (tarifasAplicadas && tarifasAplicadas.length > 0) return tarifasAplicadas;
-        const ids = Object.keys(selectedTarifas || {}).filter(k => selectedTarifas[k]);
-        return ids.map(id => tarifasLookup[id]).filter(Boolean);
-    };
-
-    const cargoParaMostrar = () => {
-        if (ultimoResultadoPrecio && (ultimoResultadoPrecio.cargo_tarifas || ultimoResultadoPrecio.cargo_tarifas === 0)) {
-            return ultimoResultadoPrecio.cargo_tarifas;
-        }
-        if (cargoTarifas && cargoTarifas > 0) return cargoTarifas;
-        const list = tarifasParaMostrar();
-        const numeroNoches = calcularNoches(rango?.from, rango?.to) || 1;
-        return list.reduce((s, t) => {
-            const mod = Number(t?.modificador_precio || 0);
-            const isMedia = (t?.slug && t.slug.toLowerCase().includes('media')) || (t?.nombre && t.nombre.toLowerCase().includes('media'));
-            return s + (isMedia ? mod * numeroNoches : mod);
-        }, 0);
-    };
-
-    const handleCerrarDrawer = () => {
-        const checkbox = document.getElementById('drawer-toggle');
-        if (checkbox) {
-            checkbox.checked = false;
+            if (error?.status === 409 && error?.cliente_existente) {
+                setClienteExistenteModal(error.cliente_existente);
+                setShowClienteModal(true);
+            } else {
+                setErrorPagoLocal(error.message || 'Error al crear la reserva');
+            }
         }
     };
 
     const handleResetearReserva = () => {
-        // debug log removed
-        // Cerrar el modal
         setMostrarModalConfirmacion(false);
         setDatosReservaConfirmada(null);
-
-        // Resetear formulario
         setValue('name', '');
-        setValue('email', '');
-        setValue('telefono', '');
-        setValue('tipo_documento', 'dni');
-        setValue('numero_documento', '');
-        setValue('nacionalidad', '');
-        setValue('direccion', '');
-
-        // Resetear fechas
         limpiarRango();
-
-        // Resetear selección de habitaciones (iterar y limpiar)
-        Object.keys(habitacionesSeleccionadas).forEach(tipo => {
-            if (actualizarSeleccionHabitacion) {
-                actualizarSeleccionHabitacion(tipo, 0, 0);
-            }
-        });
-
-        // Resetear errores
-        setErrorPagoLocal(null);
-
-        // Volver al paso 1
+        Object.keys(habitacionesSeleccionadas).forEach(tipo => actualizarSeleccionHabitacion(tipo, 0, 0));
         setPasoActual(1);
-
-        // Cerrar el drawer
-        handleCerrarDrawer();
-
-        // Recargar la tabla de reservas
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        setTimeout(() => window.location.reload(), 500);
     };
 
-    const Migitas = () => (
-        <nav aria-label="Progreso de reserva" className="mx-auto flex max-w-xs justify-center items-center gap-2 text-xs">
-            {['Fechas', 'Habitación', 'Datos', 'Confirmar'].map((etiqueta, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    {i === 3 && <span className="text-[#7a0202] font-bold">›</span>}
-                    <span className={`${i === 3 ? 'font-bold text-[#7a0202]' : 'text-gray-400'} text-[11px]`}>{etiqueta}</span>
-                    {i < 3 && <span className="text-gray-300 text-xs">›</span>}
-                </div>
-            ))}
-        </nav>
-    );
+    const tarifasParaMostrar = () => {
+        if (ultimoResultadoPrecio?.tarifas_aplicadas?.length > 0) return ultimoResultadoPrecio.tarifas_aplicadas;
+        if (tarifasAplicadas?.length > 0) return tarifasAplicadas;
+        return Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(id => tarifasLookup[id]).filter(Boolean);
+    };
+
+    const retryCrearReservaConExisting = async () => {
+        if (!datosReservaRef.current || !clienteExistenteModal) return;
+        try {
+            const datos = { ...datosReservaRef.current, reservable_id: clienteExistenteModal.id };
+            const data = await crearReservaHook(datos);
+            const datosConfirmacion = {
+                localizador: data.localizador,
+                nombre: formData.name,
+                check_in: rango?.from,
+                check_out: rango?.to,
+                cantidad_habitaciones: getTotalHabitaciones(),
+                precio_total: (data?.reserva?.precio_total !== undefined) ? data.reserva.precio_total : monto,
+                pagoAlLlegar: true,
+            };
+            setDatosReservaConfirmada(datosConfirmacion);
+            setTimeout(() => setMostrarModalConfirmacion(true), 100);
+            setShowClienteModal(false);
+            setClienteExistenteModal(null);
+        } catch (err) {
+            setErrorPagoLocal(err?.message || 'Error procesando reserva');
+        }
+    };
+
+
+    const cargoParaMostrar = () => {
+        if (ultimoResultadoPrecio && (ultimoResultadoPrecio.precioTarifas || ultimoResultadoPrecio.precioTarifas === 0)) {
+            return ultimoResultadoPrecio.precioTarifas;
+        }
+        if (cargoTarifas && cargoTarifas > 0) return cargoTarifas;
+        const list = tarifasParaMostrar();
+        const nNoches = calcularNoches(rango?.from, rango?.to) || 1;
+        return list.reduce((s, t) => {
+            const mod = Number(t?.modificador_precio || 0);
+            const isMedia = (t?.slug?.toLowerCase().includes('media')) || (t?.nombre?.toLowerCase().includes('media'));
+            return s + (isMedia ? mod * nNoches : mod);
+        }, 0);
+    };
 
     return (
-        <main className="flex h-full flex-col bg-gris p-1 md:p-1.5 text-[12px] md:text-[13px]">
-            <header className="mb-0 border-b border-gray-200 pb-0 pt-1">
-                <h3 className="mb-0 text-center text-[13px] font-bold text-gray-900">Confirmación de Reserva</h3>
-                <Migitas />
+        <div className="relative z-10 mx-auto flex bg-gris h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 sishadow-2xl">
+            <header className="flex-none border-b border-gray-100 bg-gris px-8 py-6 md:px-12">
+                <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
+                    <div className="text-center md:text-left">
+                        <h1 className="text-2xl font-black leading-none text-gray-900 uppercase tracking-tighter">RESUMEN</h1>
+                        <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
+                            Finalizando tu reserva  04 / 04
+                        </p>
+                    </div>
+                    <ReservaBreadcrumbs activeIndex={3} separator="chevron" className="flex items-center gap-3" textClass="text-[10px]" />
+                </div>
             </header>
 
-            <section className="flex-1 overflow-hidden">
-                <div className="space-y-1">
-                    {/* Resumen */}
-                    <div className="bg-gris rounded-lg p-3 mt-3 md:p-2">
-                        <div className="space-y-1">
-                            {/* Número de reserva */}
+            {/* CUERPO: Grid de 12 columnas para maximizar el espacio */}
+            <main className="flex-1 overflow-hidden bg-gris flex flex-col items-center justify-start">
+                <div className="custom-scrollbar w-full max-w-full overflow-y-auto px-6 md:px-12 py-8">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+                        {/* COLUMNA DETALLES: 5/12 del ancho total */}
+                        <div className="lg:col-span-5 space-y-8">
+
                             {localizador && (
-                                <div className="pb-0.5">
-                                    <p className="text-[11px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0">Localizador</p>
-                                    <p className="font-mono font-bold text-[#7a0202] text-sm md:text-base tracking-wide">{localizador}</p>
+                                <div className="bg-gris p-5 rounded-lg flex justify-between items-center shadow-sm">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Localizador</span>
+                                    <span className="font-mono font-bold text-[#7a0202] text-xl tracking-wider">{localizador}</span>
                                 </div>
                             )}
 
-                            {/* Información de la reserva */}
-                            <div className="grid grid-cols-3 md:grid-cols-5 gap-0.5 w-full">
-                                {/* Huésped */}
-                                <div className="px-0.5 md:px-1 text-center">
-                                    <p className="text-[10px] md:text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Huésped</p>
-                                    <p className="text-[11px] md:text-[12px] font-medium text-gray-900 line-clamp-1">{formData.name}</p>
+                            {/* Fichas de Información con acento lateral */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-2">
+                                    <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{formData.name || '—'}</p>
+                                    <p className="text-[11px] text-gray-500 mt-1 font-medium">{formData.email}</p>
                                 </div>
 
-                                {/* Fechas */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Fechas</p>
-                                    <p className="text-[12px] font-medium text-gray-900">{rango?.from?.toLocaleDateString('es-ES')} - {rango?.to?.toLocaleDateString('es-ES')}</p>
-                                </div>
-
-                                {/* Estancia */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Estancia</p>
-                                    <p className="text-[12px] font-medium text-gray-900">
-                                        {(() => {
-                                            const numeroNoches = calcularNoches(rango?.from, rango?.to);
-                                            return `${numeroNoches} noche${numeroNoches !== 1 ? 's' : ''}`;
-                                        })()}
+                                <div ref={fechasRef} className={`bg-gris p-2 ${highlightFechas ? 'ring-2 ring-red-500 rounded-md animate-pulse' : ''}`}>
+                                    <p className="text-sm font-black text-gray-900">
+                                        {rango?.from?.toLocaleDateString('es-ES')} — {rango?.to?.toLocaleDateString('es-ES')}
                                     </p>
-                                </div>
-
-                                {/* Precio por Noche */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Precio/Noche</p>
-                                    <p className="text-[12px] font-medium text-gray-900">
-                                        {precioPromedioPorNoche > 0 ? formatearMoneda(precioPromedioPorNoche) : '—'}
-                                    </p>
-                                </div>
-
-                                {/* Habitaciones */}
-                                <div className="px-1 text-center">
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Habitaciones</p>
-                                    <div className="space-y-0.5">
-                                        {Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0).map(([tipo, r]) => (
-                                                <div key={tipo} className="text-[11px]">
-                                                <p className="font-medium text-gray-900 leading-none">{r.cantidad}x {tipo.charAt(0).toUpperCase() + tipo.slice(1)}</p>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
                             </div>
+                            {/* Detalle de Unidades */}
+                            <div className="p-4 bg-gris shadow-sm w-full max-w-sm mx-auto">
+                                <DesgloseFactura
+                                    habitacionesSeleccionadas={habitacionesSeleccionadas}
+                                    rango={rango}
+                                    monto={monto}
+                                    getTotalHabitaciones={getTotalHabitaciones}
+                                    agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
+                                    tarifasAplicadas={tarifasParaMostrar()}
+                                    cargoTarifas={cargoParaMostrar()}
+                                    ultimoResultadoPrecio={ultimoResultadoPrecio}
+                                    preciosPorTipo={preciosPorTipo}
+                                    theme="dark"
+                                />
 
-                            {/* Monto a Pagar */}
-                            <DesgloseFactura habitacionesSeleccionadas={habitacionesSeleccionadas}
-                                rango={rango} monto={monto} getTotalHabitaciones={getTotalHabitaciones}
-                                agruparHabitacionesPorTipo={agruparHabitacionesPorTipo}
-                                tarifasAplicadas={tarifasParaMostrar()} cargoTarifas={cargoParaMostrar()} />
+
+                            <div className="mt-3">
+                                <CuponDescuento
+                                    value={cuponDescuento}
+                                    onChange={(e) => setCuponDescuento(e.target.value)}
+                                    onApply={() => {
+                                        if (typeof window !== 'undefined') {
+                                            window.dispatchEvent(new CustomEvent('codigoEspecialAplicar', { detail: { codigo: cuponDescuento } }));
+                                        }
+                                        return true;
+                                    }}
+                                />
+                            </div>
+                            </div>
                         </div>
-                    </div>
-                    {/* Opciones de Pago */}
-                    <OpcionesPago
-                        pagarAlLlegar={pagarAlLlegar}
-                        setPagarAlLlegar={setPagarAlLlegar}
-                        opcionPagoSeleccionada={opcionPagoSeleccionada}
-                        setOpcionPagoSeleccionada={setOpcionPagoSeleccionada}
-                        procesando={procesando}
-                        crearReservaAlLlegar={crearReservaAlLlegar}
-                        prepararDatosReserva={() =>
-                            prepararDatosReserva(
-                                getValues,
-                                rango,
-                                habitacionesSeleccionadas,
-                                idClienteSeleccionado,
-                                tipoClienteSeleccionado,
-                                usuarioActual
-                            )
-                        }
-                        monto={monto}
-                        rango={rango}
-                        getTotalHabitaciones={getTotalHabitaciones}
-                        formData={formData}
-                        localizador={localizador}
-                        setDatosReservaConfirmada={setDatosReservaConfirmada}
-                        setMostrarModalConfirmacion={setMostrarModalConfirmacion}
-                        setErrorPago={setErrorPagoLocal}
-                        errorPago={errorPagoLocal}
-                    />
-                </div>
-            </section>
 
-            <footer className="border-t border-gray-200 mt-0.5 pt-0.5 bg-gris px-1.5 md:px-2">
-                <div className="flex items-center justify-between gap-1">
-                    <button onClick={retrocederPaso} className="px-1.5 py-0.5 text-xs font-semibold text-gray-700 bg-gris rounded hover:bg-gray-300 transition">
-                        Atrás
+                        {/* COLUMNA PAGO: 7/12 del ancho total */}
+                        <div className="lg:col-span-7 space-y-8">
+                            {/* Componente de Opciones de Pago con el formulario corregido */}
+                            <div className="px-2">
+                                <OpcionesPago
+                                    pagarAlLlegar={pagarAlLlegar}
+                                    setPagarAlLlegar={setPagarAlLlegar}
+                                    opcionPagoSeleccionada={opcionPagoSeleccionada}
+                                    setOpcionPagoSeleccionada={setOpcionPagoSeleccionada}
+                                    procesando={procesando}
+                                    crearReservaAlLlegar={crearReservaAlLlegar}
+                                    prepararDatosReserva={() => prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual })}
+                                    rango={rango}
+                                    monto={monto}
+                                    errorPago={errorPagoLocal}
+                                    setDatosReservaConfirmada={setDatosReservaConfirmada}
+                                    setMostrarModalConfirmacion={setMostrarModalConfirmacion}
+                                    setErrorPago={setErrorPagoLocal}
+                                    setPasoActual={setPasoActual}
+                                    formData={formData}
+                                    getTotalHabitaciones={getTotalHabitaciones}
+                                    localizador={localizador}
+                                />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+
+            {/* Modal: Cliente existente en pago en recepción */}
+            <Modal show={Boolean(showClienteModal)} onClose={() => setShowClienteModal(false)} maxWidth="md">
+                <div className="p-6">
+                    <h3 className="text-lg font-black text-gray-900 mb-2">Cliente existente detectado</h3>
+                    <p className="text-[12px] text-gray-600 mb-4">El DNI ya está registrado con otro cliente. ¿Quieres usar ese cliente para esta reserva?</p>
+                    {clienteExistenteModal && (
+                        <div className="bg-gray-50 p-4 rounded mb-4">
+                            <p className="font-bold">{clienteExistenteModal.name}</p>
+                            <p className="text-sm text-gray-600">{clienteExistenteModal.email}</p>
+                            <p className="text-sm text-gray-600">DNI: {clienteExistenteModal.numero_documento}</p>
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-3">
+                        <button onClick={() => setShowClienteModal(false)} className="py-2 px-4 rounded bg-white border border-gray-200">Cancelar</button>
+                        <button onClick={retryCrearReservaConExisting} className="py-2 px-4 rounded bg-[#7a0202] text-white font-bold">Usar este cliente</button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* FOOTER: Navegación final */}
+            <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
+                <div className="mx-auto flex max-w-7xl items-center justify-between">
+                    <button onClick={retrocederPaso} className="flex items-center gap-2 text-[10px] font-black text-gray-400 transition-colors uppercase tracking-[0.2em] hover:text-[#7a0202]">
+                        <ArrowLeftIcon className="h-3 w-3" /> Editar Datos del Titular
                     </button>
                 </div>
             </footer>
 
-            <ModalConfirmacionReserva reserva={datosReservaConfirmada} isOpen={mostrarModalConfirmacion} onClose={handleResetearReserva} />
-        </main>
+            <ModalConfirmacionReserva reserva={datosReservaConfirmada} isOpen={mostrarModalConfirmacion} onClose={handleResetearReserva}/>
+        </div>
     );
 }

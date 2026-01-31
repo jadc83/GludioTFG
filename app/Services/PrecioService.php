@@ -5,201 +5,204 @@ namespace App\Services;
 use Carbon\Carbon;
 use App\Models\TipoHabitacion;
 use App\Models\Tarifa;
+use Yasumi\Yasumi;
 
 class PrecioService
 {
 
-    /* Se cargan los precios desde la base de datos */
+    private static ?array $precios = null;
+    private static array $proveedorFechas = [];
 
-    /* Obtiene el mapa de precios base desde la base de datos */
-    private static ?array $mapaPreciosBase = null;
-
-        /* Obtiene el precio base para un tipo de habitación (desde BD) */
-    public function obtenerPrecioBase(string $tipo): float
+    /**
+     * Obtiene el precio base de un tipo de habitación
+     * Carga precios desde base de datos y cachea en memoria
+     * Usado por: cálculos de precio en reservas
+     * Retorna: precio base como float
+     */
+    public function getPrecio(string $tipo): float
     {
-        $tipoKey = strtolower(trim($tipo));
-        $mapeo = $this->cargarMapaPreciosBase();
-        return $mapeo[$tipoKey] ?? 0;
-    }
+        $tipo = strtolower(trim($tipo));
 
-    private function cargarMapaPreciosBase(): array
-    {
-        if (self::$mapaPreciosBase !== null) {
-            return self::$mapaPreciosBase;
+        if (self::$precios === null) {
+            $mapeo = TipoHabitacion::query()->pluck('precio_base', 'slug')->toArray();
+            $preciosFormateados = [];
+            foreach ($mapeo as $slug => $precio) {
+                $preciosFormateados[strtolower($slug)] = (float) $precio;
+            }
+
+            self::$precios = $preciosFormateados;
         }
 
-        $mapeo = TipoHabitacion::query()->pluck('precio_base', 'slug')->toArray();
-        // Asegurar claves en minúsculas
-        $mapeoMinusculas = [];
-        foreach ($mapeo as $slug => $precio) {
-            $mapeoMinusculas[strtolower($slug)] = (float) $precio;
-        }
-
-        self::$mapaPreciosBase = $mapeoMinusculas;
-        return self::$mapaPreciosBase;
+        return self::$precios[$tipo] ?? 0;
     }
 
-        /* Calcula el multiplicador para una fecha específica */
-    private function obtenerMultiplicador(Carbon $fecha): float
+    /**
+     * Calcula modificadores de precio según fecha
+     * Aplica multiplicadores por temporada alta/media y fines de semana
+     * Usado por: precioEntreFechas()
+     * Retorna: factor multiplicador como float
+     */
+    private function getModPrecio(Carbon $fecha): float
     {
-        $multiplicadores = [];
+        $modificadores = [];
 
         // Temporada alta: Julio, Agosto, Diciembre 20+
         if ( $fecha->month === 7 || $fecha->month === 8 || ($fecha->month === 12 && $fecha->day >= 20))
         {
-            $multiplicadores[] = 1.5;
+            $modificadores[] = 1.5;
         }
 
         // Temporada media: Marzo 15+, Abril
         if ( ($fecha->month === 3 && $fecha->day >= 15) || $fecha->month === 4 )
         {
-            $multiplicadores[] = 1.2;
+            $modificadores[] = 1.2;
         }
 
         // Fin de semana: Sábado o Domingo
         if ($fecha->isWeekend()) {
-            $multiplicadores[] = 1.25;
+            $modificadores[] = 1.25;
         }
 
         // Festivos españoles (aplicar 1.5x)
         if ($this->esFestivo($fecha)) {
-            $multiplicadores[] = 1.5;
+            $modificadores[] = 1.5;
         }
 
         // Multiplicadores se multiplican entre sí, no se suman
-        $multiplicadorFinal = 1;
-        foreach ($multiplicadores as $mult) {
-            $multiplicadorFinal *= $mult;
+        $modificadorSalida = 1;
+        foreach ($modificadores as $modificador) {
+            $modificadorSalida *= $modificador;
         }
 
-        return $multiplicadorFinal;
+        return $modificadorSalida;
     }
 
-
-         /* Calcula el precio dinámico aplicando multiplicadores */
-    public function calcularPrecioDinamico( string $tipo, Carbon $checkIn, Carbon $checkOut, int $cantidad = 1 ): array
-     {
-        $precioBase = $this->obtenerPrecioBase($tipo);
+    /**
+     * Calcula precio con modificadores por fecha
+     * Aplica multiplicadores de temporada y fin de semana por día
+     * Usado por: cálculos detallados de precio
+     * Retorna: array con total, promedio, noches y desglose diario
+     */
+    public function precioMod( string $tipo, Carbon $checkIn, Carbon $checkOut, int $cantidad = 1 ): array
+    {
+        $precioBase = $this->getPrecio($tipo);
 
         if ($precioBase <= 0) {
-            return [ 'total' => 0, 'precioPromedioPorNoche' => 0, 'desglose' => [], 'error' => 'Tipo de habitación no válido: ' . $tipo ];
+            return [ 'total' => 0, 'precioAvg' => 0, 'desglose' => [], 'error' => 'Tipo de habitación no válido: ' . $tipo ];
         }
 
-        $precioTotal = 0;
+        $total = 0;
         $desglose = [];
-        $fechaActual = $checkIn->copy();
+        $checkinBak = $checkIn->copy();
 
-        while ($fechaActual < $checkOut) {
-            $multiplicador = $this->obtenerMultiplicador($fechaActual);
+        while ($checkinBak < $checkOut) {
+            $multiplicador = $this->getModPrecio($checkinBak);
             $precioDia = $precioBase * $multiplicador;
-            $precioTotal += $precioDia;
+            $total += $precioDia;
 
             $desglose[] = [
-                'fecha' => $fechaActual->format('Y-m-d'),
-                'dia' => $fechaActual->translatedFormat('l'),
+                'fecha' => $checkinBak->format('Y-m-d'),
+                'dia' => $checkinBak->translatedFormat('l'),
                 'precioBase' => $precioBase,
                 'multiplicador' => $multiplicador,
-                'precioDia' => round($precioDia, 2),
+                'precioDia' => round($precioDia, 2)
             ];
 
-            $fechaActual->addDay();
+            $checkinBak->addDay();
         }
 
-        $numeroNoches = $checkIn->diffInDays($checkOut);
-        $precioTotalConCantidad = $precioTotal * $cantidad;
-        $precioPromedioPorNoche = $numeroNoches > 0 ? round($precioTotalConCantidad / $numeroNoches, 2) : 0;
+        $noches = $checkIn->diffInDays($checkOut);
+        $precioTotal = round($total * $cantidad, 2);
+        $precioAvg = $noches > 0 ? round($precioTotal / $noches, 2) : 0;
 
-        return [
-            'total' => round($precioTotalConCantidad, 2),
-            'precioPromedioPorNoche' => $precioPromedioPorNoche,
-            'numeroNoches' => $numeroNoches,
-            'desglose' => $desglose,
-        ];
+        return [ 'total' => $precioTotal, 'precioAvg' => $precioAvg, 'noches' => $noches, 'desglose' => $desglose ];
     }
 
-     /* Calcula el precio total para múltiples habitaciones */
-    public function calcularMontoTotal( array $habitaciones, Carbon $checkIn, Carbon $checkOut ): array
+    /**
+     * Calcula precio sin aplicar tarifas adicionales
+     * Suma precios de múltiples habitaciones sin descuentos/promociones
+     * Usado por: ReservaService::calcularPrecioTotal()
+     * Retorna: array con total y desglose por habitación
+     */
+    public function precioSinTarifas( array $habitaciones, Carbon $checkIn, Carbon $checkOut ): array
     {
         $montoTotal = 0;
-        $detallesHabitaciones = [];
+        $datosHabitaciones = [];
+        $numeroNoches = $checkIn->diffInDays($checkOut);
 
         foreach ($habitaciones as $habitacion) {
             if (empty($habitacion['cantidad']) || $habitacion['cantidad'] <= 0) {
                 continue;
             }
 
-            $resultado = $this->calcularPrecioDinamico( $habitacion['tipo'] ?? '', $checkIn, $checkOut, (int)$habitacion['cantidad'] );
+            $resultado = $this->precioMod( $habitacion['tipo'] ?? '', $checkIn, $checkOut, (int)$habitacion['cantidad'] );
 
             if (isset($resultado['error'])) {
                 return [ 'error' => $resultado['error'], 'total' => 0 ];
             }
 
             $montoTotal += $resultado['total'];
-            $detallesHabitaciones[] = [
+            $datosHabitaciones[] = [
                 'tipo' => $habitacion['tipo'],
                 'cantidad' => (int)$habitacion['cantidad'],
-                'precioBase' => $this->obtenerPrecioBase($habitacion['tipo']),
+                'precioBase' => $this->getPrecio($habitacion['tipo']),
                 'precioTotal' => $resultado['total'],
-                'precioPromedioPorNoche' => $resultado['precioPromedioPorNoche']
+                'precioAvg' => $resultado['precioAvg']
             ];
         }
 
-        return [ 'total' => round($montoTotal, 2), 'habitaciones' => $detallesHabitaciones,
+        return [ 'total' => round($montoTotal, 2), 'habitaciones' => $datosHabitaciones,
                  'checkIn' => $checkIn->format('Y-m-d'), 'checkOut' => $checkOut->format('Y-m-d'),
-                 'numeroNoches' => $checkIn->diffInDays($checkOut)
+                 'numeroNoches' => $numeroNoches
         ];
     }
 
     /**
-     * Calcula el monto total aplicando tarifas seleccionadas.
+     * Calcula precio aplicando tarifas adicionales
+     * Aplica descuentos, promociones y otros modificadores
+     * Usado por: cálculos finales de precio con promociones
+     * Retorna: array con precio final y desglose de tarifas
      */
-    public function calcularMontoTotalConTarifas(array $habitaciones, Carbon $checkIn, Carbon $checkOut, array $tarifas = []): array
+    public function precioConTarifas(array $habitaciones, Carbon $checkIn, Carbon $checkOut, array $tarifas = []): array
     {
-        $resultado = $this->calcularMontoTotal($habitaciones, $checkIn, $checkOut);
+        $resultado = $this->precioSinTarifas($habitaciones, $checkIn, $checkOut);
 
         if (isset($resultado['error'])) {
             return $resultado;
         }
 
         $subtotal = $resultado['total'] ?? 0;
-        $numeroNoches = $resultado['numeroNoches'] ?? $checkIn->diffInDays($checkOut);
+        $numeroNoches = $resultado['numeroNoches'];
 
-        $totalUnidadesHabitacion = 0;
-        foreach ($habitaciones as $h) {
-            $totalUnidadesHabitacion += (int)($h['cantidad'] ?? 0);
+        $habitacionesTotal = 0;
+
+        foreach ($habitaciones as $habitacion) {
+            $habitacionesTotal += (int)($habitacion['cantidad'] ?? 0);
         }
 
         $tarifasAplicadas = [];
-        $cargoTarifas = 0;
+        $cargoTarifas = 0.0;
 
         if (!empty($tarifas)) {
             $tarifaObjs = Tarifa::whereIn('id', $tarifas)->get();
-            foreach ($tarifaObjs as $t) {
-                $mod = (float)($t->modificador_precio ?? 0);
-                $slug = (string)($t->slug ?? '');
+            foreach ($tarifaObjs as $tarifa) {
+                $mod = (float)($tarifa->modificador_precio ?? 0);
+                $slug = (string)($tarifa->slug ?? '');
                 $cargo = 0.0;
 
-                // Desayuno siempre gratuito
                 if (stripos($slug, 'desayuno') !== false) {
                     $cargo = 0.0;
                 }
-                // Media‑pensión: aplicar por noche y por unidad de habitación
-                else if (stripos($slug, 'media') !== false || stripos($slug, 'media-pension') !== false) {
-                    $cargo = round($mod * $numeroNoches * max(0, $totalUnidadesHabitacion), 2);
+                // Aplicar tarifa por noche por habitación para 'media' o 'pension' (incluye 'pension-completa')
+                else if (stripos($slug, 'media') !== false || stripos($slug, 'pension') !== false || stripos($slug, 'media-pension') !== false) {
+                    $cargo = round($mod * $numeroNoches * max(0, $habitacionesTotal), 2);
                 }
-                // Otros: una sola vez por reserva
                 else {
                     $cargo = round($mod, 2);
                 }
 
                 $cargoTarifas += $cargo;
-                $tarifasAplicadas[] = [
-                    'id' => $t->id,
-                    'nombre' => $t->nombre,
-                    'slug' => $slug,
-                    'modificador_precio' => $mod,
-                    'cargo' => $cargo,
-                ];
+                $tarifasAplicadas[] = [ 'id' => $tarifa->id, 'nombre' => $tarifa->nombre, 'slug' => $slug, 'modificador_precio' => $mod, 'cargo' => $cargo ];
             }
         }
 
@@ -208,38 +211,39 @@ class PrecioService
         $resultado['subtotal_habitaciones'] = round($subtotal, 2);
         $resultado['numeroNoches'] = $numeroNoches;
         $resultado['tarifas_aplicadas'] = $tarifasAplicadas;
-        $resultado['cargo_tarifas'] = round($cargoTarifas, 2);
+        $resultado['precioTarifas'] = round($cargoTarifas, 2);
         $resultado['total'] = $total;
 
         return $resultado;
     }
 
-    /* Verifica si una fecha es festivo en España */
     private function esFestivo(Carbon $fecha): bool
     {
-        $mes = $fecha->month;
-        $dia = $fecha->day;
+        $año = (int)$fecha->format('Y');
 
-        // Festivos fijos españoles
-        $festivosFijos = [
-            '01-01' => 'Año Nuevo',
-            '01-06' => 'Reyes',
-            '05-01' => 'Trabajo',
-            '08-15' => 'Asunción',
-            '10-12' => 'Hispanidad',
-            '11-01' => 'Todos los Santos',
-            '12-25' => 'Navidad',
-        ];
+        if (!isset(self::$proveedorFechas[$año])) {
+            try {
+                self::$proveedorFechas[$año] = Yasumi::create('Spain', $año);
+            } catch (\Exception $e) {
+                self::$proveedorFechas[$año] = null;
+                return false;
+            }
+        }
 
-        $fecha_str = str_pad($mes, 2, '0', STR_PAD_LEFT) . '-' . str_pad($dia, 2, '0', STR_PAD_LEFT);
-        return isset($festivosFijos[$fecha_str]);
+        $aComprobar = self::$proveedorFechas[$año];
+
+        return $aComprobar->isHoliday($fecha);
     }
 
-
-    /* Calcula el precio para una habitación entre dos fechas usando precios base */
-    public function calcularPrecioEntreFechas(string $tipo, Carbon $checkIn, Carbon $checkOut): float
+    /**
+     * Calcula precio total entre dos fechas para un tipo de habitación
+     * Suma precios diarios con modificadores aplicados
+     * Usado por: asignación de habitaciones, extensiones
+     * Retorna: precio total como float
+     */
+    public function precioEntreFechas(string $tipo, Carbon $checkIn, Carbon $checkOut): float
     {
-        $precioBase = $this->obtenerPrecioBase($tipo);
+        $precioBase = $this->getPrecio($tipo);
 
         if ($precioBase <= 0) {
             return 0;
@@ -249,25 +253,31 @@ class PrecioService
         $fecha = $checkIn->copy();
 
         while ($fecha->lt($checkOut)) {
-            $multiplicador = $this->obtenerMultiplicador($fecha);
-            $total += round($precioBase * $multiplicador, 2);
+            $modificador = $this->getModPrecio($fecha);
+            $total += round($precioBase * $modificador, 2);
             $fecha->addDay();
         }
 
         return round($total, 2);
     }
 
-    /* Devuelve un mapa fecha->precio mínimo entre tipos para un rango dado */
-    public function preciosPorRango(Carbon $inicio, Carbon $fin): array
+    /**
+     * Obtiene precios por día en un rango de fechas
+     * Calcula precio diario con modificadores para calendario
+     * Usado por: visualización de precios en calendario
+     * Retorna: array asociativo fecha => precio
+     */
+    public function diaPrecio(Carbon $inicio, Carbon $fin): array
     {
-        // Obtener tipos desde tabla de tipos de habitación en la BD
         $tipos = TipoHabitacion::pluck('slug')->toArray();
         $resultados = [];
         $fecha = $inicio->copy();
         while ($fecha->lte($fin)) {
+
             $minimo = null;
+
             foreach ($tipos as $tipo) {
-                $precioDia = $this->calcularPrecioEntreFechas($tipo, $fecha, $fecha->copy()->addDay());
+                $precioDia = $this->precioEntreFechas($tipo, $fecha, $fecha->copy()->addDay());
                 if ($minimo === null || $precioDia < $minimo) {
                     $minimo = $precioDia;
                 }
@@ -280,12 +290,17 @@ class PrecioService
         return $resultados;
     }
 
-    /* Devuelve precios para un mes concreto */
-    public function preciosMes(int $anio, int $mes): array
+    /**
+     * Obtiene precios para todos los días de un mes
+     * Útil para precargar datos de calendario mensual
+     * Usado por: optimización de carga de calendario
+     * Retorna: array de precios por día del mes
+     */
+    public function preciosMes(int $año, int $mes): array
     {
-        $inicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $inicio = Carbon::createFromDate($año, $mes, 1)->startOfMonth();
         $fin = $inicio->copy()->endOfMonth();
-        return $this->preciosPorRango($inicio, $fin);
+        return $this->diaPrecio($inicio, $fin);
     }
 
 }

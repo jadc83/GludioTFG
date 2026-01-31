@@ -18,6 +18,16 @@ Broadcast::channel('reservas', function ($user) {
     return $user !== null; // permitir usuarios autenticados
 });
 
+// Canal privado para notificar sobre nuevas solicitudes de reembolso
+Broadcast::channel('refund-requests', function ($user) {
+    return $user !== null; // permitir usuarios autenticados
+});
+
+// Canal privado para notificaciones dirigidas a un usuario concreto (user.{id})
+Broadcast::channel('user.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});
+
 // Puedes añadir reglas más estrictas, p.e. usando una policy:
 // Broadcast::channel('reservas.{id}', function ($user, $id) {
 //     return $user->can('view', App\Models\Reserva::find($id));

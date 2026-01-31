@@ -11,12 +11,16 @@ use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\ReservaService;
+use App\Services\PaymentService;
 
 class PagoController extends Controller
 {
-    public function __construct()
+    private PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService)
     {
         Stripe::setApiKey(config('services.stripe.secret'));
+        $this->paymentService = $paymentService;
     }
 
     /**
@@ -28,7 +32,7 @@ class PagoController extends Controller
             'reserva_id' => 'required|integer|exists:reservas,id',
             'monto' => 'required|numeric|min:0.01',
             'subtotal_habitaciones' => 'nullable|numeric|min:0',
-            'cargo_tarifas' => 'nullable|numeric|min:0',
+            'precioTarifas' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -46,6 +50,8 @@ class PagoController extends Controller
             $intentData = [
                 'amount' => (int)round($validated['monto'] * 100), // Stripe usa centavos
                 'currency' => 'eur',
+                // Usar automatic_payment_methods y deshabilitar redirects para evitar métodos que requieran return_url
+                'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
                 'metadata' => [
                     'reserva_id' => $reserva->id,
                     'localizador' => $reserva->localizador,
@@ -57,12 +63,19 @@ class PagoController extends Controller
             if (isset($validated['subtotal_habitaciones'])) {
                 $intentData['metadata']['subtotal_habitaciones'] = (string)round($validated['subtotal_habitaciones'], 2);
             }
-            if (isset($validated['cargo_tarifas'])) {
-                $intentData['metadata']['cargo_tarifas'] = (string)round($validated['cargo_tarifas'], 2);
+            if (isset($validated['precioTarifas'])) {
+                $intentData['metadata']['precioTarifas'] = (string)round($validated['precioTarifas'], 2);
             }
 
             if ($receiptEmail) {
                 $intentData['receipt_email'] = $receiptEmail;
+            }
+
+            // If running locally or client requests it, confirm immediately with Stripe test PM
+            $shouldConfirmWithTestPM = $request->boolean('confirm_with_pm') || app()->isLocal();
+            if ($shouldConfirmWithTestPM) {
+                $intentData['confirm'] = true;
+                $intentData['payment_method'] = 'pm_card_visa';
             }
 
             $paymentIntent = PaymentIntent::create($intentData);
@@ -78,11 +91,24 @@ class PagoController extends Controller
                 'stripe_response' => $paymentIntent->toArray(),
             ]);
 
+            // If the PaymentIntent was confirmed successfully, update pago status
+            if (isset($paymentIntent->status) && $paymentIntent->status === 'succeeded') {
+                try {
+                    $pago->update(['estado' => 'completado', 'pagado_en' => now(), 'stripe_response' => $paymentIntent->toArray()]);
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo actualizar Pago tras confirmacion automática: ' . $e->getMessage());
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'clientSecret' => $paymentIntent->client_secret,
                 'pago_id' => $pago->id,
                 'reserva_id' => $reserva->id,
+                // Exponer estado/id del PaymentIntent para que el cliente pueda
+                // decidir si debe intentar confirmar con Stripe o delegar
+                'paymentIntentId' => $paymentIntent->id ?? null,
+                'paymentIntentStatus' => $paymentIntent->status ?? null,
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe API Error: ' . $e->getMessage());
@@ -130,26 +156,28 @@ class PagoController extends Controller
                 // Actualizar estado de reserva
                 $pago->reserva->update(['pago' => 'pagado']);
 
-                // Enviar correo de confirmación de pago
+                // Enviar notificación centralizada (evitar duplicados con idempotencia)
                 try {
                     $reserva = $pago->reserva->fresh(['reservable', 'pagos']);
-                    $destino = $reserva->reservable?->email ?? null;
-                    if ($destino) {
-                        $esTarjeta = !empty($pago->stripe_payment_intent_id);
-                        $pagoTexto = $esTarjeta ? 'Abonado (Tarjeta)' : 'Pendiente';
-                        $subject = "Pago recibido - Reserva {$reserva->localizador}";
-                        $body = "Hola {$reserva->reservable?->name},\n\nHemos recibido el pago para la reserva {$reserva->localizador}.\nEstado: {$pagoTexto}\nImporte: €{$pago->monto}\n\nGracias.";
+                    $notifiable = $reserva->reservable;
 
-                        try {
-                            \Illuminate\Support\Facades\Mail::raw($body, function ($msg) use ($destino, $subject) {
-                                $msg->to($destino)->subject($subject);
-                            });
-                        } catch (\Throwable $e) {
-                            Log::warning('No se pudo enviar email de confirmación de pago: ' . $e->getMessage());
+                    // Comprueba si ya existe una notificación de pago para este pago
+                    $exists = \Illuminate\Support\Facades\DB::table('notifications')
+                        ->where('type', '\\App\\Notifications\\PagoConfirmadoNotification')
+                        ->whereRaw("(data->>'pago_id')::int = ?", [$pago->id])
+                        ->exists();
+
+                    if (! $exists) {
+                        if ($notifiable && method_exists($notifiable, 'notify')) {
+                            $notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                        } else {
+                            // Fallback a route mail
+                            \Illuminate\Support\Facades\Notification::route('mail', $reserva->reservable?->email ?? null)
+                                ->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
                         }
                     }
                 } catch (\Throwable $e) {
-                    Log::warning('Error preparando email de confirmación de pago: ' . $e->getMessage());
+                    Log::warning('No se pudo notificar confirmación de pago: ' . $e->getMessage());
                 }
 
                 return response()->json([ 'success' => true, 'message' => 'Pago completado exitosamente',
@@ -161,6 +189,10 @@ class PagoController extends Controller
 
                 return response()->json([ 'success' => false, 'message' => 'El pago no se pudo procesar' ], 400);
             }
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::error('Stripe API error confirming payment: ' . $e->getMessage(), ['exception' => $e]);
+            $pago->marcarComoFallido();
+            return response()->json([ 'success' => false, 'error' => 'Error al confirmar el pago (Stripe API).'], 400);
         } catch (\Exception $e) {
             $pago->marcarComoFallido();
             Log::error('Confirmar Pago Error: ' . $e->getMessage());
@@ -172,7 +204,7 @@ class PagoController extends Controller
     /**
      * Webhook de Stripe
      */
-    public function webhook(Request $request, \App\Services\ReservaService $reservaService)
+    public function webhook(Request $request)
     {
         $endpointSecret = config('services.stripe.webhook_secret');
 
@@ -190,6 +222,27 @@ class PagoController extends Controller
                 if ($pago) {
                     $pago->marcarComoPagado();
                     $pago->reserva->update(['pago' => 'pagado']);
+                    // Enviar notificación centralizada desde webhook (evitar duplicados)
+                    try {
+                        $reserva = $pago->reserva->fresh(['reservable', 'pagos']);
+                        $notifiable = $reserva->reservable;
+
+                        $exists = \Illuminate\Support\Facades\DB::table('notifications')
+                            ->where('type', '\\App\\Notifications\\PagoConfirmadoNotification')
+                            ->whereRaw("(data->>'pago_id')::int = ?", [$pago->id])
+                            ->exists();
+
+                        if (! $exists) {
+                            if ($notifiable && method_exists($notifiable, 'notify')) {
+                                $notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                            } else {
+                                \Illuminate\Support\Facades\Notification::route('mail', $reserva->reservable?->email ?? null)
+                                    ->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo notificar confirmación de pago (webhook): ' . $e->getMessage());
+                    }
                 }
             } elseif ($event->type === 'payment_intent.payment_failed') {
                 $paymentIntent = $event->data->object;
@@ -201,7 +254,7 @@ class PagoController extends Controller
             } elseif (in_array($event->type, ['charge.refunded', 'refund.updated', 'refund.created'])) {
                 try {
                     $refundObj = $event->data->object;
-                    $reservaService->handleRefundEvent($refundObj);
+                    $this->paymentService->manejarEventoReembolso($refundObj);
                 } catch (\Throwable $e) {
                     Log::error('Error delegando evento de reembolso al servicio: ' . $e->getMessage());
                 }
@@ -216,7 +269,7 @@ class PagoController extends Controller
     /**
      * Reembolsar una reserva: busca el último pago completado y crea un reembolso en Stripe.
      */
-    public function reembolsarReserva(Request $request, Reserva $reserva, ReservaService $reservaService)
+    public function reembolsarReserva(Request $request, Reserva $reserva)
     {
         $validated = $request->validate([
             'monto' => 'nullable|numeric|min:0.01',
@@ -226,7 +279,7 @@ class PagoController extends Controller
         $user = Auth::user();
         $monto = $validated['monto'] ?? null;
         $cancelar = $validated['cancelar'] ?? false;
-        $resultado = $reservaService->solicitarReembolso($reserva, $user, $monto);
+        $resultado = $this->paymentService->solicitarReembolso($reserva, $user, $monto);
         $status = $resultado['success'] ? 200 : 400;
         if (isset($resultado['status_code'])) {
             $status = $resultado['status_code'];
@@ -234,7 +287,7 @@ class PagoController extends Controller
         // si reembolso fue exitoso forzar marcar la reserva como cancelada
         if ($resultado['success'] && $cancelar) {
             try {
-                \Illuminate\Support\Facades\Log::info('reembolsarReserva: forzando cancelación por parametro cancelar=true (pre-update)', ['reserva_id' => $reserva->id, 'monto' => $monto, 'stack' => array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5), 0, 5)]);
+                \Illuminate\Support\Facades\Log::info('reembolsarReserva: forzando cancelación por parametro cancelar=true (pre-update)', ['reserva_id' => $reserva->id, 'monto' => $monto]);
                 $ultimoPago = $reserva->pagos()->orderByDesc('pagado_en')->first();
                 if ($ultimoPago) {
                     $ultimoPago->update(['estado' => 'cancelado']);

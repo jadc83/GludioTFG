@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Habitaciones\GetDisponiblesAction;
 use App\Http\Requests\StoreHabitacionRequest;
 use App\Http\Requests\UpdateHabitacionRequest;
 use App\Models\Habitacion;
+use App\Models\TipoHabitacion;
+use App\Models\HabitacionReserva;
+use App\Services\PrecioService;
+use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
@@ -29,13 +34,14 @@ class HabitacionController extends Controller
             ->orderBy('numero')
             ->get();
 
+        $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
+        $formatted = $action->handle($habitaciones);
+
         if ($request->wantsJson()) {
-            return response()->json(self::formatear($habitaciones));
+            return response()->json($formatted);
         }
 
-        return [
-            'habitaciones' => self::formatear($habitaciones)
-        ];
+        return [ 'habitaciones' => $formatted ];
     }
 
     /**
@@ -58,10 +64,7 @@ class HabitacionController extends Controller
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $orden => $foto) {
                     $ruta = $foto->store('habitaciones', 'public');
-                    $habitacion->fotos()->create([
-                        'ruta' => $ruta,
-                        'orden' => $orden,
-                    ]);
+                    $habitacion->fotos()->create([ 'ruta' => $ruta, 'orden' => $orden ]);
                 }
             }
             return redirect()->route('panel')->with('success', 'Habitación creada.');
@@ -137,47 +140,9 @@ class HabitacionController extends Controller
 
 
 
-    /**
-     * Formatea colección de habitaciones para el frontend
-     */
-    private static function formatear($habitaciones)
+    public static function getDisponibles(?string $checkIn = null, ?string $checkOut = null)
     {
-        return $habitaciones->map(function ($habitacion) {
-            return [
-                'id' => $habitacion->id,
-                'numero' => $habitacion->numero,
-                'tipo' => $habitacion->tipo,
-                'capacidad' => $habitacion->capacidad,
-                'estado' => $habitacion->estado,
-                'descripcion' => $habitacion->descripcion,
-                'notas' => $habitacion->notas,
-                'fotos' => $habitacion->fotos->map(function ($foto) {
-                    return [
-                        'id' => $foto->id,
-                        'ruta' => $foto->ruta,
-                        'orden' => $foto->orden,
-                        'url' => asset('storage/' . $foto->ruta)
-                    ];
-                })->values()
-            ];
-        })->values();
-    }
-
-    /**
-     * Obtiene habitaciones disponibles, verificando estado y disponibilidad en fechas
-     * Si se pasan fechas, excluye habitaciones con reservas en ese rango
-     */
-    public static function obtenerDisponibles(?string $checkIn = null, ?string $checkOut = null)
-    {
-        $habitaciones = Habitacion::with('fotos')->where('estado', 'disponible');
-
-        if ($checkIn && $checkOut) {
-            $habitaciones->whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-                $query->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn);});
-        }
-
-        $habitaciones = $habitaciones->orderBy('numero')->get();
-
-        return self::formatear($habitaciones);
+        $action = app(GetDisponiblesAction::class);
+        return $action->handle($checkIn, $checkOut);
     }
 }

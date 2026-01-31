@@ -40,5 +40,14 @@ class AppServiceProvider extends ServiceProvider
             // En caso de error (migraciones no ejecutadas) compartir un array vacío
             Inertia::share('tiposHabitacion', []);
         }
+
+        // Registrar listeners para eventos de reserva (listeners queued)
+        try {
+            \Illuminate\Support\Facades\Event::listen(\App\Events\ReservaCreada::class, \App\Listeners\EnviarEmailReservaCreada::class);
+            \Illuminate\Support\Facades\Event::listen(\App\Events\ReservaActualizada::class, \App\Listeners\EnviarEmailReservaActualizada::class);
+            \Illuminate\Support\Facades\Event::listen(\App\Events\ReservaBorrada::class, \App\Listeners\EnviarEmailReservaBorrada::class);
+        } catch (\Throwable $e) {
+            // No bloquear boot si Event facade falla por migraciones
+        }
     }
 }

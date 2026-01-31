@@ -9,112 +9,141 @@ class HabitacionService
 {
     private PrecioService $precioService;
 
-    public function __construct(PrecioService $precioService = null)
+    /**
+     * Constructor del servicio de habitaciones
+     * Inyecta dependencia de servicio de precios
+     * Usado por: inyección automática de dependencias
+     */
+    public function __construct(?PrecioService $precioService = null)
     {
         $this->precioService = $precioService ?? new PrecioService();
     }
 
     /**
-     * Obtiene habitaciones disponibles para un rango de fechas
+     * Formatea colección de habitaciones para respuesta
+     * Agrupa por tipo y calcula precios
+     * Usado por: getDisponibles()
+     * Retorna: array de habitaciones formateadas
      */
-    public function obtenerDisponibles(Carbon $checkIn, Carbon $checkOut): array
+    private function formatearHabitaciones($habitaciones, Carbon $checkIn, Carbon $checkOut): array
     {
-        // Buscar habitaciones que NO tienen reservas que se solapan con el rango
-        // Una reserva se solapa si: check_in < checkout solicitado Y check_out > checkin solicitado
-        $habitacionesDisponibles = Habitacion::whereDoesntHave('reservas', function ($query) use ($checkIn, $checkOut) {
-            $query->where('check_in', '<', $checkOut)
-                  ->where('check_out', '>', $checkIn);
-        })
-        ->where('estado', '!=', 'mantenimiento')
-        ->get();
 
-        return $this->agruparYEnriquecer($habitacionesDisponibles, $checkIn, $checkOut);
-    }
-
-    /**
-     * Agrupa habitaciones por tipo
-     */
-    private function agruparYEnriquecer($habitaciones, Carbon $checkIn, Carbon $checkOut): array
-    {
-        $agrupadasPorTipo = [];
+        $grupos = [];
 
         foreach ($habitaciones as $habitacion) {
             $tipo = $habitacion->tipo;
 
-            if (!isset($agrupadasPorTipo[$tipo])) {
-                $agrupadasPorTipo[$tipo] = [
-                    'tipo' => $tipo,
-                    'cantidad' => 0,
-                    'capacidadMaxima' => 0,
-                    'precioMinimo' => INF,
-                    'precioNoche' => 0,
-                    'precioTotal' => 0,
-                    'habitaciones' => [],
+            if (!isset($grupos[$tipo])) {
+
+                $grupos[$tipo] = [ 'tipo' => $tipo, 'cantidad' => 0, 'capacidadMaxima' => 0, 'precioMinimo' => null,
+                    'precioNoche' => 0, 'precioTotal' => 0, 'habitaciones' => [],
                 ];
+
             }
 
-            $agrupadasPorTipo[$tipo]['cantidad']++;
-            $agrupadasPorTipo[$tipo]['capacidadMaxima'] = max(
-                $agrupadasPorTipo[$tipo]['capacidadMaxima'],
-                $habitacion->capacidad ?? 1
-            );
-
-            // Calcular precio dinámico
-            $noches = $checkOut->diffInDays($checkIn);
-
-            // Calcular precio usando PrecioService
-            $precioCalculo = $this->precioService->calcularPrecioDinamico(
-                $habitacion->tipo,
-                $checkIn,
-                $checkOut
-            );
-
-            $precioTotal = $precioCalculo['total'] ?? 0;
-            $precioPorNoche = $precioCalculo['precioPromedioPorNoche'] ?? 0;
-
-            // Mantener el precio mínimo encontrado
-            $agrupadasPorTipo[$tipo]['precioMinimo'] = min(
-                $agrupadasPorTipo[$tipo]['precioMinimo'],
-                $precioPorNoche
-            );
-            $agrupadasPorTipo[$tipo]['precioNoche'] = $precioPorNoche;
-            $agrupadasPorTipo[$tipo]['precioTotal'] = $precioTotal;
-            $agrupadasPorTipo[$tipo]['habitaciones'][] = [
-                'id' => $habitacion->id,
-                'numero' => $habitacion->numero,
-                'tipo' => $habitacion->tipo,
-                'capacidad' => $habitacion->capacidad,
-                'descripcion' => $habitacion->descripcion,
-            ];
+            $grupos[$tipo]['cantidad']++;
+            $grupos[$tipo]['capacidadMaxima'] = max($grupos[$tipo]['capacidadMaxima'], $habitacion->capacidad ?? 1);
+            $grupos[$tipo]['habitaciones'][] = [ 'id' => $habitacion->id, 'numero' => $habitacion->numero,
+                'tipo' => $habitacion->tipo, 'capacidad' => $habitacion->capacidad, 'descripcion' => $habitacion->descripcion ];
         }
 
-        // Normalizar precioMinimo infinito a null
-        foreach ($agrupadasPorTipo as &$grupo) {
-            if ($grupo['precioMinimo'] === INF) {
+        foreach ($grupos as $tipo => &$grupo) {
+
+            // Calcular precios usando la Action dedicada
+            try {
+                $action = app(\App\Actions\Habitaciones\CalcularPreciosPorTipoAction::class);
+                $preciosMap = $action->handle([$tipo], $checkIn, $checkOut);
+                $precioData = $preciosMap[$tipo] ?? null;
+                $grupo['precioTotal'] = $precioData['total'] ?? 0;
+                $grupo['precioNoche'] = $precioData['por_noche'] ?? 0;
+                $grupo['precioMinimo'] = $grupo['precioNoche'];
+            } catch (\Throwable $e) {
+                $grupo['precioNoche'] = 0;
+                $grupo['precioTotal'] = 0;
                 $grupo['precioMinimo'] = null;
             }
         }
 
-        return array_values($agrupadasPorTipo);
+        return array_values($grupos);
     }
 
     /**
-     * Obtiene el icono Unicode para un tipo de habitación
+     * Obtiene habitaciones disponibles para un período
+     * Calcula disponibilidad considerando reservas existentes y placeholders
+     * Usado por: interfaces de selección de habitaciones
+     * Retorna: array de habitaciones disponibles por tipo
      */
-    public function getIcono(string $tipo): string
+    public function getDisponibles(Carbon $checkIn, Carbon $checkOut, bool $summary = false): array
     {
-        $iconos = [
-            'individual' => '🛏️',
-            'doble' => '🛏️🛏️',
-            'familiar' => '👨‍👩‍👧‍👦',
-            'suite' => '👑',
-        ];
+        // Obtener todas las habitaciones no en mantenimiento
+        $habitacionesBase = Habitacion::where('estado', '!=', 'mantenimiento')->orderBy('numero')->get();
 
-        return $iconos[strtolower($tipo)] ?? '🏨';
+        // Agrupar por tipo y calcular slots disponibles considerando reservas asignadas y placeholders
+        $tipos = $habitacionesBase->pluck('tipo')->unique()->filter()->values();
+
+        $seleccionadas = collect();
+
+        foreach ($tipos as $tipo) {
+            $roomsOfTipo = $habitacionesBase->where('tipo', $tipo);
+            $roomIds = $roomsOfTipo->pluck('id')->all();
+
+            // Contar habitaciones asignadas (distinct habitacion_id) que solapan
+            $assignedCount = \App\Models\HabitacionReserva::whereNotNull('habitacion_id')
+                ->whereIn('habitacion_id', $roomIds)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->distinct('habitacion_id')
+                ->count('habitacion_id');
+
+            // Contar placeholders por tipo que solapan
+            $placeholdersCount = \App\Models\HabitacionReserva::whereNull('habitacion_id')
+                ->where('tipo', $tipo)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->count();
+
+            $totalRooms = count($roomIds);
+            $availableSlots = max(0, $totalRooms - ($assignedCount + $placeholdersCount));
+
+            if ($availableSlots <= 0) {
+                continue;
+            }
+
+            // Seleccionar habitaciones del tipo que no tienen reservas asignadas que solapen
+            $candidateRooms = $roomsOfTipo->filter(function ($h) use ($checkIn, $checkOut) {
+                return !$h->reservas()->where('check_in', '<', $checkOut->format('Y-m-d'))
+                    ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                    ->exists();
+            })->values();
+
+            $toAdd = $candidateRooms->slice(0, $availableSlots);
+            $seleccionadas = $seleccionadas->concat($toAdd);
+        }
+
+        $disponibles = $seleccionadas->sortBy('numero')->values();
+
+        $formateadas = $this->formatearHabitaciones($disponibles, $checkIn, $checkOut);
+
+        if ($summary) {
+            $resumen = [];
+            foreach ($formateadas as $grupo) {
+                $resumen[$grupo['tipo']] = [
+                    'cantidad' => $grupo['cantidad'],
+                    'capacidadMaxima' => $grupo['capacidadMaxima'],
+                ];
+            }
+
+            return $resumen;
+        }
+
+        return $formateadas;
     }
 
     /**
-     * Obtiene la URL de imagen para un tipo de habitación
+     * Obtiene URL de imagen representativa para un tipo de habitación
+     * Retorna imágenes de Unsplash según el tipo
+     * Usado por: interfaces de visualización de habitaciones
+     * Retorna: URL de imagen como string
      */
     public function getImagen(string $tipo): string
     {
@@ -129,55 +158,74 @@ class HabitacionService
     }
 
     /**
-     * Obtiene metadatos de habitación (icono, imagen, etc.)
+     * Cuenta habitaciones disponibles por tipo.
+     * Si $considerarPlaceholders = false se hace una consulta agregada rápida (no considera placeholders).
+     * Si $considerarPlaceholders = true devuelve la disponibilidad real teniendo en cuenta habitaciones asignadas y placeholders (HabitacionReserva).
      */
-    public function obtenerMetadatos(string $tipo): array
-    {
-        return [
-            'tipo' => $tipo,
-            'icono' => $this->getIcono($tipo),
-            'imagen' => $this->getImagen($tipo),
-        ];
-    }
-
     /**
-     * Cuenta habitaciones disponibles por tipo
+     * Cuenta habitaciones disponibles por tipo considerando placeholders
+     * Algoritmo preciso que cuenta habitaciones físicas + placeholders para reservas
+     * Usado por: ReservaService::contarHabitacionesDisponibles()
+     * Retorna: array asociativo tipo => [cantidad, capacidadMaxima]
      */
-    public function contarDisponiblesPorTipo(Carbon $checkIn, Carbon $checkOut): array
+    public function contarDisponiblesPorTipo(Carbon $checkIn, Carbon $checkOut, bool $considerarPlaceholders = false): array
     {
-        $disponibles = $this->obtenerDisponibles($checkIn, $checkOut);
+        if (! $considerarPlaceholders) {
+            $disponibles = Habitacion::selectRaw('tipo, COUNT(*) as cantidad, MAX(capacidad) as capacidadMaxima')
+                ->where('estado', '!=', 'mantenimiento')
+                ->whereDoesntHave('reservas', function ($consulta) use ($checkIn, $checkOut) {
+                    $consulta->where('check_in', '<', $checkOut)
+                      ->where('check_out', '>', $checkIn);
+                })
+                ->groupBy('tipo')
+                ->get();
+
+            $resumen = [];
+            foreach ($disponibles as $disponible) {
+                $resumen[$disponible->tipo] = [ 'cantidad' => (int)$disponible->cantidad, 'capacidadMaxima' => (int)$disponible->capacidadMaxima ];
+            }
+
+            return $resumen;
+        }
+
+        // Considerar placeholders y habitaciones ya asignadas (más preciso, pero más consultas)
+        // Totales por tipo (excluyendo mantenimiento)
+        $totales = Habitacion::where('estado', '!=', 'mantenimiento')
+            ->selectRaw('tipo, COUNT(*) as total, MAX(capacidad) as capacidadMaxima')
+            ->groupBy('tipo')
+            ->get()
+            ->keyBy('tipo');
+
+        // Habitaciones asignadas (distinct habitacion_id) que se solapan
+        $ocupadasAsignadas = \App\Models\HabitacionReserva::whereNotNull('habitacion_id')
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn)
+            ->join('habitaciones', 'habitacion_reserva.habitacion_id', '=', 'habitaciones.id')
+            ->where('habitaciones.estado', '!=', 'mantenimiento')
+            ->selectRaw('habitaciones.tipo, COUNT(DISTINCT habitacion_reserva.habitacion_id) as cnt')
+            ->groupBy('habitaciones.tipo')
+            ->pluck('cnt', 'tipo')
+            ->toArray();
+
+        // Placeholders por tipo
+        $placeholders = \App\Models\HabitacionReserva::whereNull('habitacion_id')
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn)
+            ->selectRaw('tipo, COUNT(*) as cnt')
+            ->groupBy('tipo')
+            ->pluck('cnt', 'tipo')
+            ->toArray();
 
         $resumen = [];
-        foreach ($disponibles as $grupo) {
-            $resumen[$grupo['tipo']] = [
-                'cantidad' => $grupo['cantidad'],
-                'capacidadMaxima' => $grupo['capacidadMaxima'],
-            ];
+        foreach ($totales as $tipo => $row) {
+            $total = (int)$row->total;
+            $capacidadMaxima = (int)$row->capacidadMaxima;
+            $ocupadas = (int)($ocupadasAsignadas[$tipo] ?? 0) + (int)($placeholders[$tipo] ?? 0);
+            $disponible = max(0, $total - $ocupadas);
+
+            $resumen[$tipo] = ['cantidad' => $disponible, 'capacidadMaxima' => $capacidadMaxima];
         }
 
         return $resumen;
-    }
-
-    /**
-     * Valida si hay suficientes habitaciones disponibles
-     */
-    public function validarDisponibilidad(array $habitacionesRequeridas, Carbon $checkIn, Carbon $checkOut): bool
-    {
-        $disponibles = $this->contarDisponiblesPorTipo($checkIn, $checkOut);
-
-        foreach ($habitacionesRequeridas as $req) {
-            $tipo = strtolower($req['tipo'] ?? '');
-            $cantidad = intval($req['cantidad'] ?? 0);
-
-            if ($cantidad > 0) {
-                if (!isset($disponibles[$tipo]) || $disponibles[$tipo]['cantidad'] < $cantidad) {
-                    throw new \Exception(
-                        "No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles."
-                    );
-                }
-            }
-        }
-
-        return true;
     }
 }

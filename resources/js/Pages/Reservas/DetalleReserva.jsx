@@ -1,119 +1,95 @@
-import { CheckCircleIcon, DocumentArrowDownIcon, ArrowLeftIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon, CreditCardIcon, ShieldCheckIcon, PencilIcon, XMarkIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
+import {
+    CheckCircleIcon, DocumentArrowDownIcon, PhoneIcon,
+    MapPinIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon
+} from '@heroicons/react/24/outline';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { useState, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import useReserva from '@/hooks/reservas/useReserva';
+import usePreview from '@/hooks/usePreview';
+import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
-    const [reserva, setReserva] = useState(initialReserva);
+    // --- HOOKS Y ESTADOS PRINCIPALES ---
+    const { reserva, setReserva, refresh, aplicarCambioFechas } = useReserva(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState(null);
+
+    // --- ESTADOS MODAL FECHAS ---
     const [showDateModal, setShowDateModal] = useState(false);
     const [modalCheckIn, setModalCheckIn] = useState('');
     const [modalCheckOut, setModalCheckOut] = useState('');
-    const dateModalRef = useRef(null);
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [preview, setPreview] = useState(null);
-    const [previewError, setPreviewError] = useState(null);
+
+    // --- ESTADOS PAGO / REEMBOLSO ---
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [pendingApplyAfterPayment, setPendingApplyAfterPayment] = useState(false);
     const [aceptaTerminosPago, setAceptaTerminosPago] = useState(false);
-    const [paymentModalHeight, setPaymentModalHeight] = useState(null);
+
+    const [showRefundModal, setShowRefundModal] = useState(false);
+    const [refundReason, setRefundReason] = useState('change_to_cheaper');
+    const [refundNotes, setRefundNotes] = useState('');
+    const [refundAmountInput, setRefundAmountInput] = useState(0);
+
+    const { preview, loading: previewLoading, error: previewError, fetchPreview: fetchPreviewHook } = usePreview(reserva.localizador);
+
+    useReservaEvents(reserva, { onRefresh: refresh });
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 4500);
     };
 
-    const applyDateChange = async (newCheckIn, newCheckOut, pagoId = null) => {
+    const refundableAmount = useMemo(() => {
         try {
-            setIsProcessing(true);
-            const axios = (await import('axios')).default;
-            const payload = { check_in: newCheckIn.format('YYYY-MM-DD'), check_out: newCheckOut.format('YYYY-MM-DD') };
-            if (pagoId) payload.pago_id = pagoId;
-            const res = await axios.post(`/reservas/${reserva.localizador}/modificar-estancia`, payload);
-            showToast(res?.data?.message || 'Reserva actualizada', 'success');
-            if (res?.data?.reserva) setReserva(prev => ({ ...prev, ...res.data.reserva }));
-        } catch (err) {
-            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
-            showToast(msg, 'error');
-        } finally { setIsProcessing(false); }
-    };
-
-    const fetchPreview = async (checkInStr, checkOutStr) => {
-        try {
-            setPreviewError(null);
-            setPreviewLoading(true);
-            const axios = (await import('axios')).default;
-            const res = await axios.get(`/reservas/${reserva.localizador}/preview-modificar-estancia`, { params: { check_in: checkInStr, check_out: checkOutStr } });
-            setPreview(res?.data || null);
-            return res?.data || null;
-        } catch (err) {
-            setPreview(null);
-            setPreviewError(err?.response?.data?.message || err?.message || 'Error calculando vista previa');
-            return null;
-        } finally { setPreviewLoading(false); }
-    };
+            const pagos = reserva.pagos || [];
+            let ultimoPago = pagos.slice().reverse().find(p => ['completado', 'procesando', 'pagado'].includes(p.estado));
+            if (ultimoPago) {
+                const pagosRefunds = reserva.reembolsos || [];
+                let sumRefundsOnPago = pagosRefunds
+                    .filter(r => !r.pago_id || r.pago_id === ultimoPago.id)
+                    .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                return Math.max(0, (Number(ultimoPago.monto) || 0) - sumRefundsOnPago);
+            }
+            return Math.max(0, (Number(reserva.precio_total) || 0) - (Number(reserva.reembolsos_total) || 0));
+        } catch (e) { return 0; }
+    }, [reserva]);
 
     const openDateModal = () => {
-        const ci = dayjs(reserva.check_in).format('YYYY-MM-DD');
-        const co = dayjs(reserva.check_out).format('YYYY-MM-DD');
-        setModalCheckIn(ci);
-        setModalCheckOut(co);
-            setShowDateModal(true);
-        fetchPreview(ci, co);
+        setModalCheckIn(dayjs(reserva.check_in).format('YYYY-MM-DD'));
+        setModalCheckOut(dayjs(reserva.check_out).format('YYYY-MM-DD'));
+        setShowDateModal(true);
+        fetchPreviewHook(reserva.check_in, reserva.check_out);
     };
 
-    // Modal confirm handler: re-use applyDateChange after re-checking preview
     const confirmDateModal = async () => {
         try {
             setIsProcessing(true);
-            const newCheckIn = dayjs(modalCheckIn);
-            const newCheckOut = dayjs(modalCheckOut);
-            if (!newCheckOut.isAfter(newCheckIn)) { showToast('Fechas inválidas.', 'error'); return; }
-
-            // Refetch preview to ensure availability
-            const latestPreview = await fetchPreview(modalCheckIn, modalCheckOut);
-            if (latestPreview && latestPreview.available === false) { showToast('No hay disponibilidad para las fechas seleccionadas.', 'error'); return; }
-
-            // Si hay cargo adicional, abrimos modal de pago y aplicamos el cambio tras el pago
-            if (latestPreview && latestPreview.estimate_charge > 0) {
+            const latestPreview = await fetchPreviewHook(modalCheckIn, modalCheckOut);
+            if (latestPreview?.available === false) {
+                showToast('Sin disponibilidad de activos', 'error');
+                return;
+            }
+            if (latestPreview?.estimate_charge > 0) {
                 setPaymentAmount(latestPreview.estimate_charge);
                 setPendingApplyAfterPayment(true);
-                // medir la altura del modal de fecha y usarla en la modal de pago
-                try {
-                    const h = dateModalRef?.current?.offsetHeight || null;
-                    setPaymentModalHeight(h);
-                } catch (e) {
-                    setPaymentModalHeight(null);
-                }
+                // Pre-aceptar términos para facilitar el flujo (el usuario sigue pudiendo desmarcar)
+                setAceptaTerminosPago(true);
+                // Cerrar el modal de fechas para evitar solapamiento visual
+                setShowDateModal(false);
                 setShowPaymentModal(true);
                 return;
             }
-
-            // Si hay reembolso estimado, aplicamos el cambio y solicitamos reembolso automáticamente
-            await applyDateChange(newCheckIn, newCheckOut);
-            if (latestPreview && latestPreview.estimate_refund > 0) {
-                try {
-                    const axios = (await import('axios')).default;
-                    const monto = latestPreview.estimate_refund;
-                    const r = await axios.post(`/reservas/${reserva.id}/reembolsar`, { monto });
-                    showToast(r?.data?.message || 'Reembolso solicitado correctamente.', 'success');
-                    const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
-                    if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
-                } catch (err) {
-                    const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.';
-                    showToast(msg, 'error');
-                }
-            }
-
+            await aplicarCambioFechas(modalCheckIn, modalCheckOut);
+            showToast('Reembolso solicitado', 'success');
             setShowDateModal(false);
+            refresh();
         } catch (err) {
-            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error al actualizar fechas';
-            showToast(msg, 'error');
+            showToast('Error en la actualizacion', 'error');
         } finally { setIsProcessing(false); }
     };
 
@@ -122,352 +98,296 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         if (!pendingApplyAfterPayment) return;
         try {
             setIsProcessing(true);
-            const newCheckIn = dayjs(modalCheckIn);
-            const newCheckOut = dayjs(modalCheckOut);
-            const pagoId = paymentResult?.pago_id || null;
-            await applyDateChange(newCheckIn, newCheckOut, pagoId);
-            // Refrescar reserva completa
-            const axios = (await import('axios')).default;
-            const refreshed = await axios.get(`/reservas/buscar/${reserva.localizador}`);
-            if (refreshed?.data?.reserva) setReserva(prev => ({ ...prev, ...refreshed.data.reserva }));
-            // Cerrar la modal de edición de fechas al completarse el cambio
+            await aplicarCambioFechas(modalCheckIn, modalCheckOut, paymentResult?.pago_id);
+            showToast('Pago y actualizacion de reserva completados', 'success');
             setShowDateModal(false);
-            showToast('Cambio aplicado tras pago.', 'success');
+            refresh();
         } catch (err) {
-            const msg = err?.response?.data?.message || err?.message || 'Error aplicando cambio tras pago';
-            showToast(msg, 'error');
+            showToast('Error al aplicar cambios tras el pago, consulte a recepción', 'error');
         } finally {
             setPendingApplyAfterPayment(false);
             setIsProcessing(false);
         }
     };
 
-
-    const handlePagoError = (err) => {
-        setShowPaymentModal(false);
-        setPendingApplyAfterPayment(false);
-        const msg = err?.message || 'Error en pago';
-        showToast(msg, 'error');
-    };
-
-
-
-    const getStatusBadge = (status) => {
-        // Map status -> badge class
-        const colors = { 'pendiente': 'badge-info', 'confirmada': 'badge-success', 'completada': 'badge-success', 'cancelada': 'badge-error' };
-        return colors[status] || 'badge-gray';
-    };
-
-    const displayStatus = (status) => {
-        if (!status) return '';
-        const s = String(status).toLowerCase();
-        const map = {
-            'pendiente': 'Por confirmar',
-            'confirmada': 'Confirmada',
-            'completada': 'Completada',
-            'cancelada': 'Cancelada'
-        };
-        return map[s] || (s.charAt(0).toUpperCase() + s.slice(1));
-    };
-
-    const StatusIcon = ({ status, className = 'h-6 w-6' }) => {
-        const s = String(status || '').toLowerCase();
-        if (s === 'pendiente') return <ClockIcon className={`${className} text-blue-600`} />;
-        if (s === 'cancelada') return <XMarkIcon className={`${className} text-[#7a0202]`} />;
-        return <CheckCircleIcon className={`${className} text-green-500`} />;
-    };
-
-    const getPagoBadge = (reservaPago, reservaObj = null) => {
-        // reservaPago: string value stored in reserva.pago
-        // reservaObj: optional reserva object to detect reembolsos parciales
-        const reembolsos = reservaObj?.reembolsos_total || 0;
-        if (reembolsos > 0 && reservaObj?.precio_total && reembolsos < reservaObj.precio_total) return 'badge-warning';
-        const colors = { 'pendiente': 'badge-warning', 'pagado': 'badge-success', 'fallido': 'badge-error' };
-        return colors[reservaPago] || 'badge-gray';
-    };
-
-    // Calcular cuánto queda por reembolsar sobre el ÚLTIMO pago completado.
-    // Si no hay pago, o no hay información, fallback al restante sobre la reserva.
-    let refundableAmount = 0;
-    try {
-        const pagos = reserva.pagos || [];
-        let ultimoPago = null;
-        for (let i = pagos.length - 1; i >= 0; i--) {
-            if (pagos[i].estado === 'completado' || pagos[i].estado === 'procesando' || pagos[i].estado === 'pagado') { ultimoPago = pagos[i]; break; }
-        }
-        if (ultimoPago) {
-            const pagosRefunds = reserva.reembolsos || [];
-            // sumar reembolsos que pertenecen a este pago (si el objeto tiene pago_id o similar)
-            let sumRefundsOnPago = 0;
-            pagosRefunds.forEach(r => {
-                // r.pago_id puede no estar presente en la API, intentar comparar por stripe_refund/payment linkage no disponible en cliente
-                if (!r.pago_id || r.pago_id === ultimoPago.id) {
-                    sumRefundsOnPago += (r.monto || 0);
-                }
+    const handleRefundSubmit = async () => {
+        setIsProcessing(true);
+        try {
+            const api = await import('@/api/reservas');
+            const res = await api.crearSolicitudReembolso(reserva.localizador, {
+                monto: refundAmountInput || refundableAmount,
+                reason_code: refundReason,
+                notes: refundNotes
             });
-            refundableAmount = Math.max(0, (ultimoPago.monto || 0) - sumRefundsOnPago);
-        } else {
-            refundableAmount = Math.max(0, (reserva.precio_total || 0) - (reserva.reembolsos_total || 0));
-        }
-    } catch (e) { refundableAmount = Math.max(0, (reserva.precio_total || 0) - (reserva.reembolsos_total || 0)); }
-
-
+            if (res.success) {
+                showToast('Solicitud enviada correctamente', 'success');
+                setShowRefundModal(false);
+                refresh();
+            }
+        } catch (e) { showToast('Error al procesar solicitud', 'error'); }
+        finally { setIsProcessing(false); }
+    };
 
     const isCancelled = String(reserva.status || '').toLowerCase().includes('cancel');
+    const isCheckedIn = String(reserva.status || '').toLowerCase() === 'checked_in';
 
     return (
         <GuestLayout>
-            <div className="min-h-screen bg-gris pt-6 pb-6">
-                <div className="mx-auto max-w-7xl px-4">
-                    <div className="space-y-3">
+            <div className="min-h-screen bg-gris pb-24">
+                {/* HEADER SECCIÓN */}
+                <header className="bg-gris border-b border-gray-200 sticky top-0 z-30">
+                    <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">
+                                    Reserva <span className="text-gray-400 font-mono">{reserva.localizador}</span>
+                                </h1>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {reserva.status}
+                                </span>
+                            </div>
+                            <p className="text-gray-500 font-medium text-sm mt-1">
+                                {reserva.cliente?.nombre} • {formatearFecha(reserva.check_in)} al {formatearFecha(reserva.check_out)}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {!isCancelled && (
+                                <button onClick={openDateModal} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                                    Modificar Fechas
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                            {/* Left: Main details */}
-                            <div className="md:col-span-3 space-y-4">
-                                <div className="flex items-start justify-between flex-wrap">
-                                    <div className="flex-1 min-w-0">
-                                        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Reserva <span className="font-mono font-normal text-base text-gray-600">{reserva.localizador}</span><span className={`ml-3 text-sm font-semibold ${isCancelled ? 'text-[#7a0202] hidden sm:inline-block' : (String(reserva.status || '').toLowerCase() === 'pendiente' ? 'text-blue-600' : 'text-green-700')}`}>{displayStatus(reserva.status)}</span></h1>
-                                        <div className="mt-2 flex items-center gap-3 text-sm text-gray-600">
-                                            <div className="flex items-center gap-2"><MapPinIcon className="h-4 w-4 text-[#7a0202]" /><span>{reserva.cliente?.nombre}</span></div>
-                                            <div className="flex items-center gap-2">
-                                                <ClockIcon className="h-4 w-4 text-gray-400" />
-                                                <span>{formatearFecha(reserva.check_in)} — {formatearFecha(reserva.check_out)}</span>
-                                                {!isCancelled && (
-                                                    <button onClick={openDateModal} title="Editar fechas" aria-label="Editar fechas" className="ml-3 inline-flex items-center gap-2 bg-[#7a0202] hover:bg-[#6b0101] text-white font-semibold py-1.5 px-3 rounded-md text-sm shadow-sm transition"><PencilIcon className="h-4 w-4" />Editar fechas</button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        {String(reserva.status || '').toLowerCase().includes('cancel') ? (
-                                            <div role="status" aria-label="Reserva cancelada" className="inline-block px-3 py-1 text-sm font-bold text-[#7a0202] border-2 border-[#7a0202] rounded-md uppercase tracking-widest transform -rotate-6 shadow-sm">CANCELADA</div>
-                                        ) : null}
-                                    </div>
+                <main className="max-w-7xl mx-auto px-4 mt-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                        {/* COLUMNA IZQUIERDA: DETALLES */}
+                        <div className="lg:col-span-8 space-y-6 bg-gris">
+
+                            {/* Card: Activos */}
+                            <section className="bg-gris rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Contrato y Activos</h3>
                                 </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={idx} className="p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition flex justify-between items-center">
-                                            <div>
-                                                <div className="text-sm font-semibold">{(hab.tipo ? (hab.tipo.charAt(0).toUpperCase() + hab.tipo.slice(1)) : 'Habitación')}</div>
-                                                <div className="text-xs text-gray-500">{formatearMoneda(hab.precio)} total</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm font-bold text-[#7a0202]">{formatearMoneda(hab.precio)}</div>
+                                        <div key={hab.id || idx} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs uppercase">
+                                                    {hab.tipo?.charAt(0) || 'H'}
+                                                </div>
+                                                <div>
+                                                    <span className="block font-black text-gray-900 text-lg uppercase leading-tight">
+                                                        {hab.numero ? `Habitación ${hab.numero}` : hab.tipo}
+                                                    </span>
+                                                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">
+                                                        {hab.numero ? hab.tipo : `ID: ${reserva.localizador}-${idx+1}`}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+                            </section>
 
-                                <div className="rounded-lg bg-white p-4 shadow-sm">
-                                    <h3 className="text-sm font-bold text-gray-800 mb-2">Información del hotel</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
-                                        <div className="flex items-start gap-2"><MapPinIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Dirección</div><div>Calle Principal 123</div></div></div>
-                                        <div className="flex items-start gap-2"><PhoneIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Teléfono</div><div>+34 91 234 5678</div></div></div>
-                                        <div className="flex items-start gap-2"><EnvelopeIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Email</div><div>info@hotel.com</div></div></div>
-                                        <div className="flex items-start gap-2"><ShieldCheckIcon className="h-4 w-4 text-[#7a0202] mt-0.5" /><div><div className="font-semibold">Servicios</div><div>WiFi, Desayuno, Aparcamiento</div></div></div>
+                            {/* Card: Ubicación y Protocolo */}
+                            <section className="bg-gris rounded-2xl shadow-sm border border-gray-200 p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <h4 className="font-black text-[10px] uppercase tracking-widest text-gray-400">Información de Destino</h4>
+                                    <div className="flex gap-3">
+                                        <MapPinIcon className="h-5 w-5 text-red-900 shrink-0" />
+                                        <p className="text-sm font-bold text-gray-700">Hotel Gludio, Avenida del Ejército, Sanlúcar de Barrameda</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <PhoneIcon className="h-5 w-5 text-red-900 shrink-0" />
+                                        <p className="text-sm font-bold text-gray-700">+34 91 234 5678</p>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Right: Summary card */}
-                            <aside className="w-full mt-6 md:mt-0 md:col-span-1 md:sticky md:top-24 md:overflow-visible md:z-10">
-                                <div className="rounded-lg bg-white shadow-md p-5">
-                                    <div className="text-xs font-semibold text-gray-500">TOTAL</div>
-                                    <div className="mt-2 text-3xl font-bold text-gray-900">{formatearMoneda(reserva.precio_total)}</div>
-
-                                    <div className="mt-4">
-                                        <div className="flex items-center justify-between text-xs text-gray-600">
-                                            <div>Estado pago</div>
-                                            <div className={`font-semibold ${reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total ? 'bg-[#7a0202] text-white px-2 py-0.5 rounded' : ''}`}>{(reserva.reembolsos_total > 0 && reserva.reembolsos_total < reserva.precio_total) ? 'Parcialmente reembolsado' : (reserva.pago ? reserva.pago.charAt(0).toUpperCase() + reserva.pago.slice(1) : '')}</div>
-                                        </div>
-
-
-
-                                        {reserva.reembolsos && reserva.reembolsos.length > 0 && (
-                                            <div className="mt-4 text-sm text-gray-700">
-                                                <div className="font-semibold">Últimos reembolsos</div>
-                                                <div className="mt-2 space-y-2">
-                                                    {reserva.reembolsos.slice(-3).map(r => (
-                                                        <div key={r.id} className="flex items-center justify-between text-sm">
-                                                            <div className="text-gray-600">{r.created_at}</div>
-                                                            <div className="font-semibold text-green-600">{formatearMoneda(r.monto)}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="mt-4 flex flex-col gap-2">
-                                            <button onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`} className="w-full inline-flex items-center justify-center gap-2 bg-transparent border border-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-50"> <DocumentArrowDownIcon className="h-4 w-4"/> PDF</button>
-                                            {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && String(reserva.status || '').toLowerCase() !== 'checked_in' && (
-                                                <button disabled={isProcessing} onClick={() => {
-                                                    if (isProcessing) return;
-                                                    if (!confirm('¿Cancelar reserva y solicitar el reembolso del importe disponible?')) return;
-                                                    setIsProcessing(true);
-                                                    import('axios').then(({ default: axios }) => {
-                                                        axios.post(`/reservas/${reserva.id}/reembolsar`, { monto: refundableAmount, cancelar: true }).then((res) => { showToast(res?.data?.message || 'Reembolso solicitado correctamente.', 'success'); return axios.get(`/reservas/buscar/${reserva.localizador}`); }).then((res2) => { if (res2?.data?.reserva) { setReserva(prev => ({ ...prev, ...res2.data.reserva })); } }).catch((err) => { const msg = err?.response?.data?.message || err?.message || 'Error solicitando reembolso.'; showToast(msg, 'error'); console.error('Reembolso error:', err); }).finally(() => setIsProcessing(false));
-                                                    });
-                                                }} className="w-full bg-[#7a0202] text-white px-3 py-2 rounded font-semibold">Cancelar reserva</button>
-                                            )}
-                                        </div>
-                                    </div>
+                                <div className="bg-gris rounded-2xl p-6">
+                                    <h4 className="font-black text-[10px] uppercase tracking-widest text-black mb-4">Servicios Incluidos</h4>
+                                    <ul className="space-y-2">
+                                        <li className="flex items-center gap-2 text-xs font-bold text-gray-600">
+                                            <CheckCircleIcon className="h-4 w-4 text-green-600" /> Wi-Fi Ultra-Rápido
+                                        </li>
+                                        <li className="flex items-center gap-2 text-xs font-bold text-gray-600">
+                                            <CheckCircleIcon className="h-4 w-4 text-green-600" /> Insonorización Premium
+                                        </li>
+                                    </ul>
                                 </div>
-
-                                <div className="mt-4 grid grid-cols-1 gap-2">
-                                    {!isCancelled && String(reserva.status || '').toLowerCase() === 'pendiente' && (
-                                        <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="w-full mb-0 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-4 rounded-lg text-lg flex items-center justify-center gap-2 transition" aria-label="Hacer check-in"><ArrowDownOnSquareIcon className="h-5 w-5" />Hacer check-in</button>
-                                    )}
-                                    {!isCancelled && String(reserva.status || '').toLowerCase() !== 'checked_out' && (
-                                        <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="w-full mb-0 bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 rounded-lg text-lg flex items-center justify-center gap-2 transition" aria-label="Hacer check-out"><ArrowUpOnSquareIcon className="h-5 w-5" />Hacer check-out</button>
-                                    )}
-                                </div>
-                            </aside>
+                            </section>
                         </div>
 
-                        {/* Middle sections removed for bisecting */}
+                        {/* COLUMNA DERECHA: SIDEBAR "CUADRADO ROJO" */}
+                        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
+                            <div className="bg-[#7a0202] rounded-3xl p-8 text-white shadow-xl shadow-red-100">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Total de Reserva</h4>
+                                <div className="text-4xl font-black mb-8 leading-none">{formatearMoneda(reserva.precio_total)}</div>
 
-                        {/* Edición via modal eliminada; botones de checkin/checkout central eliminados porque ya están en el panel lateral (sticky). */}
-
-
-
-                        <Link href="/" className="inline-flex items-center gap-1 text-[#7a0202] hover:text-[#6b0101] font-semibold text-sm mt-3"><ArrowLeftIcon className="h-4 w-4" />Volver</Link>
-
-                        {toast && (<div className={`fixed right-4 bottom-6 z-50 max-w-xs px-4 py-3 rounded shadow-lg text-sm text-white bg-[#7a0202]`}>{toast.message}</div>)}
-
-                        {/* Mobile quick actions */}
-                        {!isCancelled && (
-                        <div className="sm:hidden fixed bottom-4 left-4 right-4 z-50 flex gap-3">
-                            {String(reserva.status || '').toLowerCase() === 'pendiente' && (
-                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkin'; }} className="flex-1 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-2" aria-label="Hacer check-in"><ArrowDownOnSquareIcon className="h-5 w-5" />Hacer check-in</button>
-                            )}
-
-                            {/* Edit dates button for mobile */}
-                            <button onClick={openDateModal} className="w-28 bg-[#7a0202] hover:bg-[#6b0101] text-white font-bold py-3 rounded-md text-lg flex items-center justify-center gap-2" aria-label="Editar fechas"><PencilIcon className="h-5 w-5" />Editar</button>
-
-                            {String(reserva.status || '').toLowerCase() !== 'checked_out' && (
-                                <button onClick={() => { window.location.href = route('scan-qr') + '?localizador=' + encodeURIComponent(reserva.localizador) + '&action=checkout'; }} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-2" aria-label="Hacer check-out"><ArrowUpOnSquareIcon className="h-5 w-5" />Hacer check-out</button>
-                            )}
-                        </div>
-                        )}
-
-                        {/* Date modal */}
-                        {showDateModal && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                <div ref={dateModalRef} className="bg-white text-black rounded-lg shadow-xl max-w-2xl w-full p-8" style={{ minHeight: '520px' }}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h2 className="text-2xl font-bold mb-1">Modificar fechas</h2>
-                                        <button onClick={() => setShowDateModal(false)} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                                        <span className="opacity-70 font-medium uppercase text-[10px] tracking-widest">Estado del pago</span>
+                                        <span className="font-bold uppercase tracking-widest text-[10px] bg-red-900 px-2 py-1 rounded">{reserva.pago}</span>
                                     </div>
-
-                                    <div className="mt-2 mb-4">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm font-semibold">Disponible para cambio</span>
-                                            <span className={`text-sm font-semibold ${preview?.available ? 'text-green-700' : 'text-red-700'}`}>{ preview == null ? '-' : (preview.available ? 'Sí' : 'No') }</span>
+                                    {reserva.reembolsos_total > 0 && (
+                                        <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3 text-red-200">
+                                            <span className="font-medium uppercase text-[10px] tracking-widest">Devoluciones</span>
+                                            <span className="font-black">-{formatearMoneda(reserva.reembolsos_total)}</span>
                                         </div>
-                                    </div>
+                                    )}
+                                </div>
 
-                                    <div className="grid grid-cols-1 gap-4 mb-4">
-                                        <div>
-                                            <label className="text-sm font-semibold">Check-in</label>
-                                            <input type="date" value={modalCheckIn} onChange={(e) => { setModalCheckIn(e.target.value); fetchPreview(e.target.value, modalCheckOut); }} className="input input-bordered w-full" />
-                                        </div>
+                                <div className="space-y-3">
+                                    {!isCancelled && reserva.status === 'pendiente' && (
+                                        <button
+                                            onClick={() => window.location.href = route('scan-qr') + `?localizador=${reserva.localizador}&action=checkin`}
+                                            className="w-full py-4 bg-white text-[#7a0202] rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-100 transition shadow-lg"
+                                        >
+                                            <ArrowDownOnSquareIcon className="h-4 w-4 inline mr-2" />
+                                            Ejecutar Check-In
+                                        </button>
+                                    )}
 
-                                        <div>
-                                            <label className="text-sm font-semibold">Check-out</label>
-                                            <input type="date" value={modalCheckOut} onChange={(e) => { setModalCheckOut(e.target.value); fetchPreview(modalCheckIn, e.target.value); }} className="input input-bordered w-full" />
-                                        </div>
-                                    </div>
+                                    {!isCancelled && reserva.status !== 'checked_out' && (
+                                        <button
+                                            onClick={() => window.location.href = route('scan-qr') + `?localizador=${reserva.localizador}&action=checkout`}
+                                            className="w-full py-4 bg-black/30 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black/40 transition border border-white/10"
+                                        >
+                                            <ArrowUpOnSquareIcon className="h-4 w-4 inline mr-2" />
+                                            Ejecutar Check-Out
+                                        </button>
+                                    )}
 
-                                    <div className="mt-2 p-4 border rounded bg-gray-50">
-                                        {previewLoading && (<div className="text-sm text-gray-600">Cargando vista previa…</div>)}
-                                        {previewError && (<div className="text-sm text-red-600">{previewError}</div>)}
-                                        {preview && !previewLoading && (
-                                            <div className="text-sm text-gray-800 space-y-4">
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <div className="text-xs text-gray-500">Primer pago</div>
-                                                            <div className="font-semibold">{formatearMoneda(preview.viejo_total)} <span className="text-xs text-gray-500">({preview.nights_old} noches)</span></div>
-                                                        </div>
-                                                        <div className="text-sm text-gray-700" />
-                                                    </div>
-
-                                                    {(preview.nuevo_total !== preview.viejo_total || preview.nights_new !== preview.nights_old) && (
-                                                        <div className="flex justify-between items-center">
-                                                            <div>
-                                                                <div className="text-xs text-gray-500">Nuevo total</div>
-                                                                <div className="font-semibold">{formatearMoneda(preview.nuevo_total)} <span className="text-xs text-gray-500">({preview.nights_new} noches)</span></div>
-                                                            </div>
-                                                            <div className="text-sm text-gray-700" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {preview.estimate_refund > 0 && (
-                                                    <div>
-                                                        <div className="flex justify-between text-green-700"><span>Reembolso estimado</span><strong>{formatearMoneda(preview.estimate_refund)}</strong></div>
-                                                        <div className="flex justify-between text-gray-700"><span>Penalización aplicada</span><span>{formatearMoneda(preview.penalizacion ?? 0)}</span></div>
-                                                        <div className="mt-3 p-3 bg-green-50 border border-green-200 text-green-800 rounded">
-                                                            <div className="font-semibold">Al confirmar, se solicitará un reembolso de {formatearMoneda(preview.estimate_refund)} a la forma de pago original.</div>
-                                                            <div className="text-xs text-gray-600 mt-1">El importe será devuelto al mismo método de pago y puede tardar varios días según la entidad bancaria. Se te notificará cuando se haya procesado.</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {preview.estimate_charge > 0 && (<div className="flex justify-between text-red-700"><span>Estimado cargo adicional</span><strong>{formatearMoneda(preview.estimate_charge)}</strong></div>)}
-
-
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mt-6 flex justify-end gap-2">
-                                        <div className="flex w-full max-w-sm">
-                                            <button onClick={() => setShowDateModal(false)} className="btn btn-ghost w-1/2">Cerrar</button>
-                                            <button
-                                                disabled={previewLoading || (preview && preview.available === false) || isProcessing}
-                                                onClick={async () => { await confirmDateModal(); }}
-                                                className="ml-2 bg-[#7a0202] text-white px-4 py-3 rounded font-semibold shadow-sm hover:opacity-90 disabled:opacity-60 w-1/2"
-                                            >
-                                                {isProcessing ? 'Procesando…' : 'Aplicar cambios'}
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <button
+                                        onClick={() => window.location.href = `/reservas/${reserva.localizador}/pdf`}
+                                        className="w-full py-4 bg-black/10 text-white/80 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black/20 transition border border-white/5"
+                                    >
+                                        <DocumentArrowDownIcon className="h-4 w-4 inline mr-2" />
+                                        Descargar Comprobante
+                                    </button>
                                 </div>
                             </div>
-                        )}
-                        {/* Payment modal for additional charges */}
-                        {showPaymentModal && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" style={paymentModalHeight ? { height: `${paymentModalHeight}px` } : {}}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h2 className="text-2xl font-bold mb-2">Pago Adicional Requerido</h2>
-                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="p-1 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5 text-gray-600"/></button>
-                                    </div>
 
-                                    <p className="text-gray-600 mb-4">Los cambios en la reserva requieren un pago adicional de:</p>
-                                    <div className="bg-gris p-4 rounded-lg mb-4">
-                                        <div className="text-3xl font-bold text-burgundy text-center">{formatearMoneda(paymentAmount)}</div>
-                                    </div>
-
-                                    <FormularioPago monto={paymentAmount} onPagoExitoso={handlePagoExitoso} onError={handlePagoError} reservaData={{ reserva_id: reserva.id, es_edicion_pago: true }} aceptaTerminos={aceptaTerminosPago} />
-
-                                    <div className="mt-3 text-xs text-gray-600">
-                                        <label className="flex items-start gap-3 cursor-pointer">
-                                            <input type="checkbox" id="acepta_terminos_pago" checked={aceptaTerminosPago} onChange={(e) => setAceptaTerminosPago(e.target.checked)} className="mr-2 mt-1" />
-                                            <span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#7a0202] underline">términos y condiciones</a>. Cancelación gratuita hasta 48h antes del check-in.</span>
-                                        </label>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <button onClick={() => { setShowPaymentModal(false); setPendingApplyAfterPayment(false); }} className="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">Cancelar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                            {!isCancelled && reserva.pago === 'pagado' && refundableAmount > 0 && (
+                                <button
+                                    onClick={() => { setRefundAmountInput(refundableAmount); setShowRefundModal(true); }}
+                                    className="w-full py-4 bg-white border border-gray-200 text-gray-500 rounded-2xl font-bold text-xs uppercase tracking-widest hover:border-red-200 hover:text-red-600 transition"
+                                >
+                                    Solicitar Reembolso
+                                </button>
+                            )}
+                        </aside>
                     </div>
-                </div>
+                </main>
+
+                {/* --- MODAL: MODIFICAR FECHAS --- */}
+                {showDateModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden">
+                            <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Ajuste de Estancia</h2>
+                                <button onClick={() => setShowDateModal(false)} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+                            </div>
+                            <div className="p-8 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase text-gray-400">Entrada</label>
+                                        <input
+                                            type="date"
+                                            value={modalCheckIn}
+                                            disabled={isCheckedIn}
+                                            onChange={(e) => { setModalCheckIn(e.target.value); fetchPreviewHook(e.target.value, modalCheckOut); }}
+                                            className="w-full bg-gray-50 border-gray-200 rounded-xl font-bold focus:ring-[#7a0202] focus:border-[#7a0202]"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase text-gray-400">Salida</label>
+                                        <input
+                                            type="date"
+                                            value={modalCheckOut}
+                                            onChange={(e) => { setModalCheckOut(e.target.value); fetchPreviewHook(modalCheckIn, e.target.value); }}
+                                            className="w-full bg-gray-50 border-gray-200 rounded-xl font-bold focus:ring-[#7a0202] focus:border-[#7a0202]"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                                    {previewLoading ? (
+                                        <div className="text-center py-4 text-gray-400 font-bold text-xs uppercase animate-pulse">Calculando impacto...</div>
+                                    ) : preview && (
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <span className="block text-[10px] font-black text-gray-400 uppercase mb-1">Diferencia</span>
+                                                <span className={`text-2xl font-black ${preview.estimate_charge > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                    {preview.estimate_charge > 0 ? '+' : ''}{formatearMoneda(preview.estimate_charge || (preview.nuevo_total - preview.viejo_total))}
+                                                </span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="block text-[10px] font-black text-gray-400 uppercase mb-1">Disponibilidad</span>
+                                                <span className={`text-xs font-black uppercase ${preview.available ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {preview.available ? 'Activo Libre' : 'Sin Cupo'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-8 bg-gray-50 flex gap-3">
+                                <button onClick={() => setShowDateModal(false)} className="flex-1 py-4 bg-white border border-gray-200 rounded-2xl font-bold text-gray-500 uppercase text-xs tracking-widest">Cancelar</button>
+                                <button
+                                    disabled={!preview?.available || isProcessing}
+                                    onClick={confirmDateModal}
+                                    className="flex-1 py-4 bg-[#7a0202] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg disabled:opacity-50"
+                                >
+                                    {isProcessing ? 'Sincronizando...' : 'Confirmar'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- MODAL: PAGO ADICIONAL --- */}
+                {showPaymentModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[120] p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-200">
+                            <div className="flex justify-between items-start mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 uppercase leading-tight">Pago Adicional</h2>
+                                    <p className="text-sm text-gray-400 mt-1 font-medium">Se requiere saldar la diferencia para aplicar cambios.</p>
+                                </div>
+                                <button onClick={() => setShowPaymentModal(false)} className="text-gray-300 hover:text-gray-500 font-bold">✕</button>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-2xl p-6 text-center mb-8 border border-gray-100">
+                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total a pagar ahora</span>
+                                <div className="text-4xl font-black text-[#7a0202] mt-1">{formatearMoneda(paymentAmount)}</div>
+                            </div>
+
+                            <ErrorBoundary>
+                                <FormularioPago
+                                    monto={paymentAmount}
+                                    onPagoExitoso={handlePagoExitoso}
+                                    onError={(e) => showToast(e?.message, 'error')}
+                                    reservaData={{ reserva_id: reserva.id, es_edicion_pago: true, check_in: modalCheckIn || reserva.check_in, check_out: modalCheckOut || reserva.check_out, habitaciones: reserva.habitaciones }}
+                                    aceptaTerminos={aceptaTerminosPago}
+                                    mostrarAceptacion={true}
+                                    onAceptaChange={setAceptaTerminosPago}
+                                />
+                            </ErrorBoundary>
+
+                            <button onClick={() => setShowPaymentModal(false)} className="w-full mt-6 py-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition">Cancelar operación</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- TOAST --- */}
+                {toast && (
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-4 rounded-2xl shadow-2xl bg-gray-900 text-white flex items-center gap-4 animate-in slide-in-from-bottom-10 duration-500">
+                        <div className={`w-2 h-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-green-400'} animate-pulse`} />
+                        <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
+                    </div>
+                )}
             </div>
         </GuestLayout>
     );

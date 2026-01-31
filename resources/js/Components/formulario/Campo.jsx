@@ -99,6 +99,19 @@ const Campo = forwardRef(({
     delete atributos.hijos;
     delete atributos.children;
 
+    // Asegurar que inputs controlados no cambien de uncontrolled a controlled.
+    // Para inputs (excepto file/checkbox/radio) y para select/textarea, si `value` es undefined o null lo normalizamos a cadena vacía.
+    const inputType = atributos.type;
+    if (typeof InputTag === 'string') {
+        if (InputTag === 'input') {
+            if (!['file', 'checkbox', 'radio'].includes(inputType)) {
+                if (atributos.value === undefined || atributos.value === null) atributos.value = '';
+            }
+        } else if (InputTag === 'select' || InputTag === 'textarea') {
+            if (atributos.value === undefined || atributos.value === null) atributos.value = '';
+        }
+    }
+
     const nombre = (atributos.name || id || '').toString().toLowerCase();
     if (!atributos.pattern) {
         if (nombre.includes('email')) {
@@ -106,7 +119,8 @@ const Campo = forwardRef(({
             atributos.title = atributos.title || 'Introduce un email válido';
         }
         if (nombre.includes('tel') || nombre.includes('telefono') || nombre.includes('phone')) {
-            atributos.pattern = atributos.pattern || '^\\+?[0-9\\s\\-()]{7,15}$';
+            // Evitar establecer pattern automático para teléfonos (problemas de compatibilidad
+            // con ciertos motores/flags). Dejar sólo el title para ayudar al usuario.
             atributos.title = atributos.title || 'Teléfono: solo números, espacios, guiones o paréntesis';
         }
         if (nombre.includes('cp') || nombre.includes('codigo_postal') || nombre.includes('postal')) {
