@@ -60,7 +60,10 @@ export default function BarraReservas() {
     const componentesDia = useMemo(() => ({
         Day: ({ date, disabled, ...props }) => {
             const iso = props?.day?.isoDate || (date ? formatearISO(date) : null);
-            const precio = iso ? mapaPrecios[iso] : undefined;
+            const info = iso ? mapaPrecios[iso] : undefined;
+            const precio = info?.precio;
+            const ocupacion = info?.ocupacion ?? 0;
+
             let ayer = false;
             try {
                 if (date instanceof Date && !Number.isNaN(date.getTime())) {
@@ -73,22 +76,46 @@ export default function BarraReservas() {
                 ayer = false;
             }
 
-            const atributoPrecio = !ayer && !disabled && precio ? `€${precio}` : '';
-
-            // Si el hijo es un elemento React (el botón del día), clonar para inyectar el precio
+            // Si el hijo es un elemento React (el botón del día), clonar para inyectar precio y barra
             let contenido = props.children;
-            if (atributoPrecio && React.isValidElement(contenido)) {
+            if (React.isValidElement(contenido)) {
                 const hijosOriginales = contenido.props.children;
-                contenido = cloneElement(contenido, {}, [
-                    hijosOriginales,
-                    <span
-                        key="precio"
-                        className="rdp-day_price"
-                        style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}
-                    >
-                        {atributoPrecio}
-                    </span>,
-                ]);
+                const elementosAdicionales = [];
+
+                if (!ayer && !disabled && precio) {
+                    elementosAdicionales.push(
+                        <span
+                            key="precio"
+                            className="rdp-day_price"
+                            style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', zIndex: 50, fontSize: '10px', fontWeight: 'bold', color: '#7a0202' }}
+                        >
+                            €{precio}
+                        </span>
+                    );
+                }
+
+                if (!ayer && !disabled && ocupacion > 0) {
+                    elementosAdicionales.push(
+                        <div
+                            key="ocupacion"
+                            className="rdp-day_occupancy_bar"
+                            style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                height: '6px',
+                                backgroundColor: ocupacion > 80 ? '#dc2626' : ocupacion > 50 ? '#f59e0b' : '#10b981',
+                                width: `${ocupacion}%`,
+                                borderRadius: '0 0 8px 8px',
+                                zIndex: 5
+                            }}
+                        />
+                    );
+                }
+
+                if (elementosAdicionales.length > 0) {
+                    contenido = cloneElement(contenido, {}, [hijosOriginales, ...elementosAdicionales]);
+                }
             }
 
             return (
