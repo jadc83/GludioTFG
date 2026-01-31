@@ -14,44 +14,9 @@ import { CalendarIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, UserGroupIcon
 import CalendarioPicker, { CalendarioStyles } from './CalendarioPicker';
 import ModalPaso from './pasos/ModalPaso';
 import Campo from '@/Components/formulario/Campo';
-import { ChevronDoubleDownIcon } from '@heroicons/react/24/outline';
 
-function DebugPanel() {
-    const [open, setOpen] = React.useState(false);
-    const [data, setData] = React.useState({ rango: null, habitaciones: null });
 
-    React.useEffect(() => {
-        const id = setInterval(() => {
-            try {
-                const rango = typeof window !== 'undefined' ? window.__lastRango : null;
-                const habs = typeof window !== 'undefined' ? window.__lastHabitacionesPreview : null;
-                setData({ rango, habitaciones: habs });
-            } catch (e) { }
-        }, 600);
-        return () => clearInterval(id);
-    }, []);
 
-    return (
-        <div className="fixed right-4 bottom-4 z-50">
-            <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded shadow-md">
-                <ChevronDoubleDownIcon className="h-4 w-4 text-gray-700" />
-                <span className="text-xs font-bold">Debug</span>
-            </button>
-            {open && (
-                <div className="mt-2 w-80 max-h-64 overflow-auto bg-white border border-gray-200 rounded p-2 text-xs shadow-lg">
-                    <div className="mb-2">
-                        <strong>Rango:</strong>
-                        <pre className="whitespace-pre-wrap">{JSON.stringify(data.rango, null, 2)}</pre>
-                    </div>
-                    <div>
-                        <strong>Habitaciones (preview):</strong>
-                        <pre className="whitespace-pre-wrap">{JSON.stringify(data.habitaciones || null, null, 2)}</pre>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
 
 export default function BarraReservas() {
     const formularioReserva = useReservaForm();

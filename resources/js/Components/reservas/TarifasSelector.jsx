@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
 export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange }) {
-    // Detecta si una tarifa parece corresponder al desayuno
+
     const esDesayuno = (t) => {
         const nombre = String(t.nombre || '').toLowerCase();
         const slug = String(t.slug || '').toLowerCase();
         return nombre.includes('desayun') || slug.includes('desayun');
     };
 
-    // Al montar / cuando cambian las tarifas, nos aseguramos de que las tarifas de desayuno estén marcadas
     useEffect(() => {
         if (!onChange || tarifas.length === 0) return;
         const desayunoIds = tarifas.filter(esDesayuno).map(t => t.id);
@@ -26,16 +25,16 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
                 window.dispatchEvent(new CustomEvent('tarifasSeleccionadas', { detail: next }));
             }
         }
-        // Emitir la lista completa de tarifas para que otros componentes la conozcan
+
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('tarifasLista', { detail: tarifas }));
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, [tarifas]);
 
     function toggleTarifa(id) {
         const tarifa = tarifas.find(t => t.id === id);
-        if (tarifa && esDesayuno(tarifa)) return; // desayuno siempre marcado, no se puede desactivar
+        if (tarifa && esDesayuno(tarifa)) return;
 
         const next = { ...seleccion, [id]: !seleccion[id] };
         if (onChange) onChange(next);
@@ -45,15 +44,12 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
     }
 
     const ordenadas = [...tarifas.filter(esDesayuno), ...tarifas.filter(t => !esDesayuno(t))];
-
-    // Ocultar tarifas redundantes como "reembolsable" (que no suman ni restan), pero mantener desayuno
     const esReembolsable = (t) => {
         const nombre = String(t.nombre || '').toLowerCase();
         const slug = String(t.slug || '').toLowerCase();
         return nombre.includes('reembols') || slug.includes('reembols');
     };
 
-    // Ocultar tarifas de tipo "oferta especial" si existen
     const esOfertaEspecial = (t) => {
         const nombre = String(t.nombre || '').toLowerCase();
         const slug = String(t.slug || '').toLowerCase();
@@ -67,14 +63,7 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
         return true;
     });
 
-    // Estado para código especial temporal
-    const [codigoEspecial, setCodigoEspecial] = useState('');
 
-    function aplicarCodigo() {
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('codigoEspecialAplicar', { detail: { codigo: codigoEspecial } }));
-        }
-    }
 
     return (
         <aside>
@@ -118,17 +107,7 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
                             })}
                             </div>
 
-                            {/* Campo para código especial (temporal) */}
-                            <div className="mt-3 flex flex-col gap-2">
-                                <input
-                                    type="text"
-                                    value={codigoEspecial}
-                                    onChange={(e) => setCodigoEspecial(e.target.value)}
-                                    placeholder="Código"
-                                    className="w-full text-[10px] p-2 border border-gray-200 rounded-md"
-                                />
-                                <button type="button" onClick={aplicarCodigo} className="w-full px-3 py-2 text-[10px] font-bold bg-[#7a0202] text-white rounded-md">Aplicar</button>
-                            </div>
+
                     </>
                     )}
                     <button

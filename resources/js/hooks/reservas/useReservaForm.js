@@ -1,38 +1,45 @@
 import { useForm } from 'react-hook-form';
 import { router, usePage } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
 import { formatearFecha } from '@/utils/fecha';
 import { getReservaPayload } from '@/utils/reservaPayload';
 import useHabitaciones from '../habitaciones/useHabitaciones';
+
+// Normaliza tipos enviados al backend según las opciones permitidas en el validador
+const NORMAL_ALLOWED = ['doble', 'familiar', 'suite'];
+function normalizeTipo(raw) {
+	if (!raw && raw !== 0) return null;
+	const s = String(raw).toLowerCase().trim();
+	if (s === '') return null;
+	if (s.includes('doble')) return 'doble';
+	if (s.includes('suite')) return 'suite';
+	if (s.includes('familiar') || s.includes('family') || s.includes('familia')) return 'familiar';
+	if (NORMAL_ALLOWED.includes(s)) return s;
+	for (const a of NORMAL_ALLOWED) if (s.indexOf(a) !== -1) return a;
+	return null;
+}
 
 export default function useReservaForm() {
 	const { props } = usePage();
 	const usuarioActual = props.auth?.user ?? null;
 	const flash = props.flash ?? {};
 
-	// 1. Estados básicos
 	const [pasoActual, setPasoActual] = useState(1);
 	const [mensajeError, setMensajeError] = useState('');
 	const [rango, setRango] = useState({ from: undefined, to: undefined });
 	const [numHuespedes, setNumHuespedes] = useState(1);
 
-	// 2. Estados de Selección y Precios
 	const [selectedTarifas, setSelectedTarifas] = useState({});
 	const [tarifasLookup, setTarifasLookup] = useState({});
 	const [ultimoPrecio, setUltimoPrecio] = useState(null);
 	const [preciosPorTipo, setPreciosPorTipo] = useState({});
 
-	// 3. IDs de reserva (Flash)
 	const [idReserva, setIdReserva] = useState(flash.reserva_id);
 	const [localizador, setLocalizador] = useState(flash.localizador);
 
-	// Debug: log cambios de rango para depuración de cargas
 	useEffect(() => {
-		try {
-			console.log('useReservaForm rango changed:', rango);
-			try { window.__lastRango = rango; window.__lastRangoTime = Date.now(); } catch (e) {}
-		} catch (e) { /* noop */ }
+		// track rango changes (no global debug exposure in production)
 	}, [rango]);
 
 	useEffect(() => {
@@ -40,7 +47,6 @@ export default function useReservaForm() {
 		if (flash.localizador) setLocalizador(flash.localizador);
 	}, [flash.reserva_id, flash.localizador]);
 
-	// 4. Event Listeners para Tarifas
 	useEffect(() => {
 		const onTarifas = (e) => setSelectedTarifas(e?.detail || {});
 		const onLista = (e) => {
@@ -48,7 +54,6 @@ export default function useReservaForm() {
 			(e?.detail || []).forEach(t => map[t.id] = t);
 			setTarifasLookup(map);
 		};
-
 		window.addEventListener('tarifasSeleccionadas', onTarifas);
 		window.addEventListener('tarifasLista', onLista);
 		return () => {
@@ -57,7 +62,6 @@ export default function useReservaForm() {
 		};
 	}, []);
 
-	// 5. Gestión de Formulario
 	const { register, handleSubmit, formState: { errors }, watch, setValue, getValues } = useForm({
 		mode: 'onSubmit',
 		defaultValues: {
@@ -72,10 +76,8 @@ export default function useReservaForm() {
 		}
 	});
 
-	// 6. Hook de Habitaciones
 	const habitaciones = useHabitaciones({ paso: pasoActual, rango, setRango });
 
-	// Exponer recarga para desarrollo/consola
 	useEffect(() => {
 		if (typeof window !== 'undefined' && habitaciones.recargarDisponibles) {
 			window.formularioReservaRef = { recargarDisponibles: habitaciones.recargarDisponibles };
@@ -83,22 +85,14 @@ export default function useReservaForm() {
 		return () => { if (window.formularioReservaRef) delete window.formularioReservaRef; };
 	}, [habitaciones]);
 
-	// 7. Navegación y Lógica
 	const avanzarPaso = () => {
 		setMensajeError('');
-		if (pasoActual === 1 && (!rango?.from || !rango?.to))
-			return setMensajeError('Selecciona un rango de fechas.');
-
+		if (pasoActual === 1 && (!rango?.from || !rango?.to)) return setMensajeError('Selecciona un rango de fechas.');
 		if (pasoActual === 2) {
 			const totalSel = habitaciones.getTotalHabitaciones();
 			const totalDisp = habitaciones.habitacionesDisponibles.length;
-
-			if (totalSel > CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA)
-				return setMensajeError(`Máximo ${CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA} habitaciones.`);
-			if (totalSel > totalDisp)
-				return setMensajeError(`Solo hay ${totalDisp} disponibles.`);
-
-			// Si hay un usuario logueado, rellenar sus datos y saltar directamente al paso 4
+			if (totalSel > CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA) return setMensajeError(`Máximo ${CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA} habitaciones.`);
+			if (totalSel > totalDisp) return setMensajeError(`Solo hay ${totalDisp} disponibles.`);
 			if (usuarioActual) {
 				try {
 					setValue('name', usuarioActual.name || '');
@@ -108,96 +102,161 @@ export default function useReservaForm() {
 					setValue('numero_documento', usuarioActual.numero_documento || '');
 					setValue('nacionalidad', usuarioActual.nacionalidad || '');
 					setValue('direccion', usuarioActual.direccion || '');
-				} catch (e) {
-					// noop si setValue falla por cualquier motivo
-				}
-
+				} catch (e) {}
 				setPasoActual(4);
 				return;
 			}
 		}
-
 		setPasoActual(prev => prev + 1);
 	};
 
 	const precioSinTarifas = async () => {
 		if (!rango?.from || !rango?.to) return 0;
-		const habs = Object.entries(habitaciones.habitacionesSeleccionadas)
-			.filter(([_, s]) => s.cantidad > 0)
-			.map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
+		// Si el rango no es válido (salida no posterior), evitar llamar al servidor y mostrar mensaje
+		const checkIn = String(formatearFecha(rango.from));
+		const checkOut = String(formatearFecha(rango.to));
+		if (!(new Date(checkOut) > new Date(checkIn))) {
+			setMensajeError('La fecha de salida debe ser posterior a la fecha de entrada.');
+			return 0;
+		}
 
+		const habs = Object.entries(habitaciones.habitacionesSeleccionadas).filter(([_, s]) => s.cantidad > 0).map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
 		if (!habs.length) return 0;
-
 		try {
 			const { calcularPrecio } = await import('@/hooks/reservas/service');
-			const data = await calcularPrecio({
-				check_in: formatearFecha(rango.from),
-				check_out: formatearFecha(rango.to),
-				habitaciones: habs,
+			const payload = {
+				check_in: checkIn,
+				check_out: checkOut,
+				habitaciones: habs.map(h => ({ tipo: normalizeTipo(h.tipo), cantidad: Number(h.cantidad || 0) })).filter(h => h.tipo && Number.isFinite(h.cantidad) && Number(h.cantidad) >= 1),
 				tarifas: Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(Number),
-			});
+			};
+			const data = await calcularPrecio(payload);
 			if (data?.success) setUltimoPrecio(data.data);
 			return data?.data || 0;
-		} catch { return 0; }
+		} catch (err) {
+			// fallback local
+			const fallback = { total: 0, habitaciones: [] };
+			let total = 0;
+			const noches = typeof calcularNoches === 'function' ? calcularNoches(rango.from, rango.to) || 1 : 1;
+			habs.forEach(h => {
+				const tipoInfo = habitaciones.habitacionesPorTipo?.[h.tipo] || {};
+				const precioNoche = Number(tipoInfo.precioEntreNoche ?? tipoInfo.precioNoche ?? tipoInfo.precioTipo ?? tipoInfo.precioMinimo ?? 0);
+				const precioTotal = Number(precioNoche) * Number(noches) * Number(h.cantidad || 1);
+				total += precioTotal;
+				fallback.habitaciones.push({ tipo: h.tipo, cantidad: h.cantidad, precioTotal, precioAvg: precioNoche });
+			});
+			fallback.total = Math.round(total * 100) / 100;
+			setUltimoPrecio(fallback);
+			return fallback;
+		}
 	};
 
-	// Calcular precios por tipo cuando cambian rango, selección de habitaciones o tarifas
 	useEffect(() => {
 		let mounted = true;
 		const calcular = async () => {
-			if (!rango?.from || !rango?.to) {
-				if (mounted) setPreciosPorTipo({});
-				return;
-			}
-			const habs = Object.entries(habitaciones.habitacionesSeleccionadas)
-				.filter(([_, s]) => s.cantidad > 0)
-				.map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
+			if (!rango?.from || !rango?.to) { if (mounted) setPreciosPorTipo({}); return; }
+			let habs = Object.entries(habitaciones.habitacionesSeleccionadas).filter(([_, s]) => s.cantidad > 0).map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
 			if (!habs.length) {
-				if (mounted) setPreciosPorTipo({});
-				return;
+				const tiposDisponibles = Object.keys(habitaciones.habitacionesPorTipo || {});
+				habs = tiposDisponibles.map(t => ({ tipo: t, cantidad: 1 }));
+				if (!habs.length) { if (mounted) setPreciosPorTipo({}); return; }
 			}
 			try {
 				const { calcularPrecio } = await import('@/hooks/reservas/service');
-				const data = await calcularPrecio({
-					check_in: formatearFecha(rango.from),
-					check_out: formatearFecha(rango.to),
-					habitaciones: habs,
-					tarifas: Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(Number),
+			const checkIn = String(formatearFecha(rango.from));
+			const checkOut = String(formatearFecha(rango.to));
+			if (!(new Date(checkOut) > new Date(checkIn))) {
+				setMensajeError('La fecha de salida debe ser posterior a la fecha de entrada.');
+				setPreciosPorTipo(prev => {
+					const merged = { ...(prev || {}) };
+					Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { if (merged[t] === undefined) merged[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+					return merged;
 				});
-				if (mounted) {
-					if (data && Array.isArray(data.habitaciones)) {
-						const map = {};
-						data.habitaciones.forEach(h => {
-							if (h.tipo) map[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? 0);
+				return;
+			}
+			const payload = {
+				check_in: checkIn,
+				check_out: checkOut,
+					habitaciones: habs.map(h => ({ tipo: normalizeTipo(h.tipo), cantidad: Number(h.cantidad || 0) })).filter(h => h.tipo && Number.isFinite(h.cantidad) && Number(h.cantidad) >= 1),
+					tarifas: Object.keys(selectedTarifas).filter(k => selectedTarifas[k]).map(Number),
+				};
+
+				try {
+					const data = await calcularPrecio(payload);
+					if (mounted) {
+						const baseMap = {};
+						Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { baseMap[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+					setPreciosPorTipo(prev => {
+						const merged = { ...(prev || {}) };
+						Object.entries(baseMap).forEach(([t, v]) => { if (merged[t] === undefined) merged[t] = v; });
+						if (data && data.success && Array.isArray(data.data?.habitaciones)) data.data.habitaciones.forEach(h => { if (h.tipo) merged[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? merged[h.tipo] ?? 0); });
+						else if (data && Array.isArray(data.habitaciones)) data.habitaciones.forEach(h => { if (h.tipo) merged[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? merged[h.tipo] ?? 0); });
+
+						return merged;
+					});
+					}
+				} catch (err) {
+					const status = err?.response?.status;
+
+					if (status === 422) {
+						const corrected = { ...payload };
+						corrected.habitaciones = (corrected.habitaciones || []).map(h => ({ tipo: normalizeTipo(h.tipo), cantidad: Number(h.cantidad || 0) })).filter(h => h.tipo && Number.isFinite(h.cantidad) && Number(h.cantidad) >= 1);
+
+						try {
+							const data2 = await calcularPrecio(corrected);
+							if (mounted) {
+								const baseMap = {};
+								Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { baseMap[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+								const map = { ...baseMap };
+								if (data2 && data2.success && Array.isArray(data2.data?.habitaciones)) data2.data.habitaciones.forEach(h => { if (h.tipo) map[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? map[h.tipo] ?? 0); });
+								else if (data2 && Array.isArray(data2.habitaciones)) data2.habitaciones.forEach(h => { if (h.tipo) map[h.tipo] = Number(h.precioAvg ?? h.precio ?? h.precioMinimo ?? map[h.tipo] ?? 0); });
+						setPreciosPorTipo(prev => {
+							const merged = { ...(prev || {}) };
+							Object.entries(baseMap).forEach(([t, v]) => { if (merged[t] === undefined) merged[t] = v; });
+
+							return { ...merged, ...map };
 						});
-						setPreciosPorTipo(map);
+							}
+						} catch (err2) {
+							if (mounted) {
+						setPreciosPorTipo(prev => {
+							const merged = { ...(prev || {}) };
+							Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { if (merged[t] === undefined) merged[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+
+							return merged;
+						});
+							}
+						}
 					} else {
-						setPreciosPorTipo({});
+						if (mounted) {
+						setPreciosPorTipo(prev => {
+							const merged = { ...(prev || {}) };
+							Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { if (merged[t] === undefined) merged[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+
+							return merged;
+						});
+						}
 					}
 				}
-			} catch (e) {
-				if (mounted) setPreciosPorTipo({});
+			} catch (err) {
+				if (mounted) {
+						setPreciosPorTipo(prev => {
+							const merged = { ...(prev || {}) };
+							Object.entries(habitaciones.habitacionesPorTipo || {}).forEach(([t, info]) => { if (merged[t] === undefined) merged[t] = Number(info.precioEntreNoche ?? info.precioNoche ?? info.precioTipo ?? info.precioMinimo ?? 0); });
+
+							return merged;
+						});
+				}
 			}
 		};
 		calcular();
 		return () => { mounted = false; };
-	}, [rango, habitaciones.habitacionesSeleccionadas, selectedTarifas]);
+	}, [rango, habitaciones.habitacionesSeleccionadas, selectedTarifas, habitaciones.habitacionesPorTipo]);
 
 	const confirmarReserva = () => {
-		const payload = getReservaPayload({
-			getValues, rango,
-			habitacionesSeleccionadas: habitaciones.habitacionesSeleccionadas,
-			usuarioActual
-		});
-
+		const payload = getReservaPayload({ getValues, rango, habitacionesSeleccionadas: habitaciones.habitacionesSeleccionadas, usuarioActual });
 		router.post('/reservas', payload, {
-			onSuccess: () => {
-				setPasoActual(1);
-				habitaciones.limpiarRango();
-				const drawer = document.getElementById('drawer-toggle');
-				if (drawer) drawer.checked = false;
-				router.reload();
-			},
+			onSuccess: () => { setPasoActual(1); habitaciones.limpiarRango(); const drawer = document.getElementById('drawer-toggle'); if (drawer) drawer.checked = false; router.reload(); },
 			onError: (err) => setMensajeError(err.message || Object.values(err)[0] || 'Error al reservar')
 		});
 	};
@@ -207,7 +266,7 @@ export default function useReservaForm() {
 		pasoActual, setPasoActual, avanzarPaso, retrocederPaso: () => setPasoActual(p => p - 1),
 		mensajeError, setMensajeError,
 		rango, setRango,
-		...habitaciones, // Exporta automáticamente getIcono, getImagen, etc.
+		...habitaciones,
 		preciosPorTipo,
 		precioSinTarifas, ultimoResultadoPrecio: ultimoPrecio,
 		confirmarReserva,

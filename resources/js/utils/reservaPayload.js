@@ -32,6 +32,18 @@ export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas,
   const values = typeof getValues === 'function' ? getValues() : getValues || {};
   const habitaciones = mapHabitaciones(habitacionesSeleccionadas);
 
+  if (process.env.NODE_ENV !== 'production' && (!rango || !rango.from || !rango.to)) {
+    // Ayuda al debug local cuando las fechas no están presentes
+    try { console.debug('getReservaPayload: rango incompleto', { rango, habitacionesSeleccionadas, values }); } catch (e) {}
+  }
+
+  // Si el usuario está autenticado y no se ha seleccionado explícitamente un cliente,
+  // usar el usuario logueado como reservable (tabla `users`) para evitar conflictos por DNI.
+  const reservableId = (idClienteSeleccionado !== undefined && idClienteSeleccionado !== null) ? idClienteSeleccionado : (usuarioActual?.id ?? null);
+  const tipoUsuario = (idClienteSeleccionado !== undefined && idClienteSeleccionado !== null)
+    ? (tipoClienteSeleccionado || 'cliente')
+    : (usuarioActual ? 'usuario' : (tipoClienteSeleccionado || 'cliente'));
+
   return {
     name: values.name,
     email: values.email,
@@ -44,8 +56,8 @@ export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas,
     check_out: toIsoDate(rango?.to),
     habitaciones,
     tarifas: Array.isArray(tarifasSeleccionadas) ? tarifasSeleccionadas : Object.keys(tarifasSeleccionadas || {}).filter(k => tarifasSeleccionadas[k]).map(Number),
-    reservable_id: idClienteSeleccionado,
-    tipo_usuario: tipoClienteSeleccionado || 'cliente',
+    reservable_id: reservableId,
+    tipo_usuario: tipoUsuario,
     booked_by_user_id: usuarioActual?.id || null,
   };
 }

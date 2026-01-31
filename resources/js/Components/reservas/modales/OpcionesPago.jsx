@@ -25,8 +25,10 @@ export default function OpcionesPago({
     setMostrarModalConfirmacion,
     setErrorPago,
     errorPago,
+    setPasoActual,
 }) {
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
+    const reservaData = (typeof prepararDatosReserva === 'function') ? prepararDatosReserva() : null;
 
     const cardBaseClass = "relative flex flex-col p-5 border-2 transition-all duration-300 cursor-pointer rounded-xl group";
     const activeClass = "border-[#7a0202] bg-white shadow-md";
@@ -73,26 +75,36 @@ export default function OpcionesPago({
                             /* FLOW: STRIPE */
                             <div className="bg-gris rounded-xl p-2">
                                 <div className="flex justify-center">
-                                    <FormularioPago
-                                        reservaData={prepararDatosReserva()}
-                                        monto={monto}
-                                        aceptaTerminos={aceptaTerminos}
-                                        mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
-                                        onAceptaChange={setAceptaTerminos}
-                                        onPagoExitoso={(data) => {
-                                            setDatosReservaConfirmada({
-                                                localizador: data?.localizador || localizador,
-                                                nombre: formData.name,
-                                                check_in: rango?.from,
-                                                check_out: rango?.to,
-                                                cantidad_habitaciones: getTotalHabitaciones(),
-                                                precio_total: monto,
-                                                pagoAlLlegar: false
-                                            });
-                                            setMostrarModalConfirmacion(true);
-                                        }}
-                                        onError={setErrorPago}
-                                    />
+                                    { (!reservaData || !reservaData.check_in || !reservaData.check_out || !(Array.isArray(reservaData.habitaciones) && reservaData.habitaciones.length > 0)) ? (
+                                        <div className="p-6 bg-yellow-50 border border-yellow-300 rounded-xl text-center">
+                                            <p className="text-[11px] font-bold text-yellow-800 mb-3">Faltan fechas o habitaciones</p>
+                                            <p className="text-[10px] text-yellow-700 mb-4">Selecciona fechas y al menos una habitación antes de continuar con el pago.</p>
+                                            <div className="flex justify-center gap-3">
+                                                <button type="button" onClick={() => { try { window.dispatchEvent(new CustomEvent('faltanFechas')); } catch (e){}; if (typeof setPasoActual === 'function') setPasoActual(1); }} className="py-2 px-4 rounded bg-[#7a0202] text-white font-bold">Seleccionar fechas</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <FormularioPago
+                                            reservaData={reservaData}
+                                            monto={monto}
+                                            aceptaTerminos={aceptaTerminos}
+                                            mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
+                                            onAceptaChange={setAceptaTerminos}
+                                            onPagoExitoso={(data) => {
+                                                setDatosReservaConfirmada({
+                                                    localizador: data?.localizador || localizador,
+                                                    nombre: formData.name,
+                                                    check_in: rango?.from,
+                                                    check_out: rango?.to,
+                                                    cantidad_habitaciones: getTotalHabitaciones(),
+                                                    precio_total: monto,
+                                                    pagoAlLlegar: false
+                                                });
+                                                setMostrarModalConfirmacion(true);
+                                            }}
+                                            onError={setErrorPago}
+                                        />
+                                    ) }
                                 </div>
                             </div>
                         ) : (

@@ -80,7 +80,6 @@ class ReservaController extends Controller
 
     public function store(StoreReservaRequest $request)
     {
-        Log::info('Crear Reserva - Datos recibidos:', $request->all());
 
         try {
             $action = app(\App\Actions\Reservas\CreateReservaAction::class);
@@ -293,6 +292,7 @@ class ReservaController extends Controller
             return response()->json([  'success' => false, 'error' => 'Error al calcular precio: ' . $e->getMessage() ], 500);
         }
     }
+
 
     /**
      * Busca una reserva por localizador

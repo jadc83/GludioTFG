@@ -2,10 +2,11 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePage } from '@inertiajs/react';
 import Campo from '@/Components/formulario/Campo';
-import React, { useState, useMemo, useEffect } from 'react';
+import Modal from '@/Components/Modal';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CreditCardIcon, MapPinIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
-function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
+function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError = () => {}, aceptaTerminos = false, mostrarAceptacion = false, onAceptaChange = null }) {
     const page = usePage();
     const csrfToken = page?.props?.csrf_token || document.querySelector('meta[name="csrf-token"]')?.content || '';
     const stripe = useStripe();
@@ -14,72 +15,204 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
     const [acepta, setAcepta] = useState(aceptaTerminos);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [debugErrorJson, setDebugErrorJson] = useState(null);
+
+    // Manejo de clientes existentes (409)
+    const [clienteExistente, setClienteExistente] = useState(null);
+    const [showClienteModal, setShowClienteModal] = useState(false);
+    const crearPayloadRef = useRef(null);
 
     useEffect(() => { setAcepta(aceptaTerminos); }, [aceptaTerminos]);
 
     const user = page?.props?.auth?.user;
-    const [direccion, setDireccion] = useState({
-        calle: reservaData?.direccion?.calle || user?.direccion || '',
-        ciudad: reservaData?.direccion?.ciudad || user?.ciudad || '',
-        codigo_postal: reservaData?.direccion?.codigo_postal || user?.codigo_postal || '',
-        pais: reservaData?.direccion?.pais || 'ES',
-    });
+    // Dirección retirada del formulario: no almacenamos ni pedimos calle/ciudad/código/pais aquí
 
     const [name, setName] = useState(reservaData?.name || user?.name || '');
     const [email, setEmail] = useState(reservaData?.email || user?.email || '');
     const [telefono, setTelefono] = useState(reservaData?.telefono || user?.telefono || '');
 
+    // Refs for focusing invalid fields
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+    const telefonoRef = useRef(null);
+
+    // Continuación del flujo de pago después de crear la reserva
+    const continuarConPago = async (reservaId, monto) => {
+        const resPI = await fetch('/pagos/crear-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ reserva_id: reservaId, monto }),
+        });
+
+        let dataPI = null;
+        if (!resPI.ok) {
+            try { dataPI = await resPI.json(); } catch (parseErr) { /* ignore */ }
+            let message = `Error en comunicación (${resPI.status})`;
+            if (dataPI) {
+                if (dataPI.errors) message = Object.values(dataPI.errors).flat().join('; ');
+                else if (dataPI.error) message = dataPI.error;
+                else if (dataPI.message) message = dataPI.message;
+            }
+            throw new Error(message);
+        }
+        dataPI = await resPI.json();
+        if (!dataPI.success) throw new Error(dataPI.error || 'Error en comunicación');
+
+        const { paymentIntent, error } = await stripe.confirmCardPayment(dataPI.clientSecret, {
+            payment_method: {
+                card: elements.getElement(CardElement),
+                billing_details: { name, email },
+            },
+        });
+
+        if (error) throw new Error(error.message);
+
+        if (paymentIntent.status === 'succeeded') {
+            await fetch('/pagos/confirmar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ payment_intent_id: paymentIntent.id, pago_id: dataPI.pago_id }),
+            });
+            onPagoExitoso({ pago_id: dataPI.pago_id });
+        }
+    };
+
     const procesarPago = async (e) => {
         e.preventDefault();
         if (!stripe || !elements || !acepta) return;
 
+        // Guard: evitar enviar si faltan fechas u habitaciones en el payload
+        if (!reservaData || !reservaData.check_in || !reservaData.check_out) {
+            setMensaje('Selecciona fechas de entrada y salida.');
+            try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('faltanFechas')); } catch (e) {}
+            setProcesando(false);
+            return;
+        }
+        if (!Array.isArray(reservaData.habitaciones) || reservaData.habitaciones.length === 0) {
+            setMensaje('Selecciona al menos una habitación.');
+            try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('faltanHabitaciones')); } catch (e) {}
+            setProcesando(false);
+            return;
+        }
+
         setProcesando(true);
+        let crearPayload = null;
         try {
+            setFieldErrors({});
+            setDebugErrorJson(null);
             const esExtension = Boolean(reservaData?.es_extension || reservaData?.es_edicion_pago);
             let resId = reservaData?.reserva_id;
 
             if (!esExtension) {
                 const service = await import('@/hooks/reservas/service');
-                const dataReserva = await service.crearReserva({ ...reservaData, direccion, name, email, telefono });
-                resId = dataReserva.reserva_id;
+                        const nuevoPayload = { ...reservaData, name, email, telefono };
+                crearPayloadRef.current = nuevoPayload;
+                try {
+                    const dataReserva = await service.crearReserva(crearPayloadRef.current);
+                    resId = dataReserva.reserva_id;
+                } catch (err) {
+                    if (err && err.status === 409 && err.cliente_existente) {
+                        setClienteExistente(err.cliente_existente);
+                        setShowClienteModal(true);
+                        throw err;
+                    }
+                    throw err;
+                }
             }
 
-            const resPI = await fetch('/pagos/crear-payment-intent', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                body: JSON.stringify({ reserva_id: resId, monto }),
-            });
-
-            const dataPI = await resPI.json();
-            if (!dataPI.success) throw new Error(dataPI.error || 'Error en comunicación');
-
-            const { paymentIntent, error } = await stripe.confirmCardPayment(dataPI.clientSecret, {
-                payment_method: {
-                    card: elements.getElement(CardElement),
-                    billing_details: { name, email, address: { line1: direccion.calle, city: direccion.ciudad, postal_code: direccion.codigo_postal, country: direccion.pais } },
-                },
-            });
-
-            if (error) throw new Error(error.message);
-
-            if (paymentIntent.status === 'succeeded') {
-                await fetch('/pagos/confirmar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({ payment_intent_id: paymentIntent.id, pago_id: dataPI.pago_id }),
-                });
-                onPagoExitoso({ pago_id: dataPI.pago_id });
-            }
+            await continuarConPago(resId, monto);
         } catch (err) {
-            setMensaje(err.message);
-            onError(err.message);
+            // If the backend returned validation errors (422), they are usually in err.errors
+            if (err && typeof err === 'object' && err.errors) {
+                setFieldErrors(err.errors || {});
+
+                // Friendly handling for missing dates (backend returns check_in/check_out required)
+                const hasCheckIn = Object.prototype.hasOwnProperty.call(err.errors, 'check_in');
+                const hasCheckOut = Object.prototype.hasOwnProperty.call(err.errors, 'check_out');
+                if (hasCheckIn || hasCheckOut) {
+                    setMensaje('Selecciona fechas de entrada y salida.');
+                    // Notify parent UI to open/scroll to date selector if it wants to
+                    try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('faltanFechas', { detail: {} })); } catch (e) {}
+                } else {
+                    const joined = Object.values(err.errors).flat().join('; ');
+                    setMensaje(joined || (err.message || 'Error de validación'));
+                }
+
+                try { if (typeof onError === 'function') onError(err?.message || Object.values(err?.errors || {}).flat().join('; ') || JSON.stringify(err)); } catch (cbErr) { console.error('onError callback threw', cbErr); }
+            } else {
+                const msg = err?.message || err?.error || (err && err.error && err.error.message) || 'Error procesando pago';
+                setMensaje(msg);
+                try { if (typeof onError === 'function') onError(msg || err?.message || JSON.stringify(err)); } catch (cbErr) { console.error('onError callback threw', cbErr); }
+            }
+
+            // Autoselect/focus first invalid field for better UX
+            setTimeout(() => {
+                    const errorsObj = (err && err.errors) ? err.errors : fieldErrors || {};
+                    const order = ['name','email','telefono'];
+                const first = order.find(k => Object.prototype.hasOwnProperty.call(errorsObj, k));
+                try {
+                    if (first === 'name') { nameRef.current?.focus(); nameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                    else if (first === 'email') { emailRef.current?.focus(); emailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                    else if (first === 'telefono') { telefonoRef.current?.focus(); telefonoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+                } catch (e) { /* noop */ }
+            }, 50);
+
+            // Store debug JSON for developer inspection (copy-able)
+            try { setDebugErrorJson(JSON.stringify({ error: err, payload: crearPayloadRef.current }, null, 2)); } catch (e) { setDebugErrorJson(String(err)); }
         } finally {
             setProcesando(false);
         }
     };
 
+    // Reintentar usando el cliente existente (respuesta 409)
+    const retryUsingExistingClient = async () => {
+        if (!clienteExistente || !crearPayloadRef.current) return;
+        setShowClienteModal(false);
+        setProcesando(true);
+            try {
+            const service = await import('@/hooks/reservas/service');
+            crearPayloadRef.current = { ...(crearPayloadRef.current || {}), reservable_id: clienteExistente.id };
+            const dataReserva = await service.crearReserva(crearPayloadRef.current);
+            setClienteExistente(null);
+            await continuarConPago(dataReserva.reserva_id, monto);
+        } catch (err) {
+            setMensaje(err?.message || 'Error al crear reserva con cliente existente');
+            try { setDebugErrorJson(JSON.stringify({ error: err, payload: crearPayloadRef.current }, null, 2)); } catch (e) { /* noop */ }
+        } finally {
+            setProcesando(false);
+        }
+    };
+
+    const editClientDocument = () => {
+        setShowClienteModal(false);
+        setMensaje('Edita el documento para continuar');
+        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('editarDocumento', { detail: { numero_documento: clienteExistente?.numero_documento } })); } catch (e) {}
+    };
+
     return (
         <div className="w-full mx-auto relative px-2 bg-gris">
+            {/* Modal: Cliente existente (409) */}
+            <Modal show={Boolean(showClienteModal)} onClose={() => setShowClienteModal(false)} maxWidth="md">
+                <div className="p-6">
+                    <h3 className="text-lg font-black text-gray-900 mb-2">Cliente existente detectado</h3>
+                    <p className="text-[12px] text-gray-600 mb-4">Parece que el DNI ya está registrado. ¿Quieres usar este cliente para la reserva?</p>
+                    {clienteExistente && (
+                        <div className="bg-gray-50 p-4 rounded mb-4">
+                            <p className="font-bold">{clienteExistente.name}</p>
+                            <p className="text-sm text-gray-600">{clienteExistente.email}</p>
+                            <p className="text-sm text-gray-600">DNI: {clienteExistente.numero_documento}</p>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-3">
+                        <button onClick={() => setShowClienteModal(false)} className="py-2 px-4 rounded bg-white border border-gray-200">Cancelar</button>
+                        <button onClick={editClientDocument} className="py-2 px-4 rounded bg-yellow-500 text-white font-bold">Editar documento</button>
+                        <button onClick={retryUsingExistingClient} className="py-2 px-4 rounded bg-[#7a0202] text-white font-bold">Usar este cliente</button>
+                    </div>
+                </div>
+            </Modal>
             <form onSubmit={procesarPago} className="space-y-10 w-full">
 
                 {/* SECCIÓN: DIRECCIÓN */}
@@ -90,22 +223,48 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                     </div>
 
                     <div className="space-y-4">
-                        <Campo
-                            value={direccion.calle}
-                            onChange={(e) => setDireccion({...direccion, calle: e.target.value})}
-                            placeholder="DIRECCIÓN COMPLETA (CALLE, NÚMERO, PISO)"
-                            className="w-full border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold placeholder:text-gray-300 focus:ring-[#7a0202] focus:border-[#7a0202]"
-                        />
-                        {/* Grid responsivo: 1 columna en móvil, 3 en tablets/desktop */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <Campo value={direccion.ciudad} onChange={(e) => setDireccion({...direccion, ciudad: e.target.value})} placeholder="CIUDAD" className="border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold" />
-                            <Campo value={direccion.codigo_postal} onChange={(e) => setDireccion({...direccion, codigo_postal: e.target.value})} placeholder="CÓDIGO POSTAL" className="border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold" />
-                            <select value={direccion.pais} onChange={(e) => setDireccion({...direccion, pais: e.target.value})} className="border-gray-200 rounded-lg text-[11px] font-black uppercase bg-white px-3 h-[46px] focus:ring-[#7a0202]">
-                                <option value="ES">España (ES)</option>
-                                <option value="FR">Francia (FR)</option>
-                                <option value="PT">Portugal (PT)</option>
-                            </select>
+                        {/* Campos del titular */}
+                        <div>
+                            <Campo
+                                id="name"
+                                ref={nameRef}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Nombre completo"
+                                className={`w-full border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold ${fieldErrors['name'] ? 'border-red-600' : ''}`}
+                                error={fieldErrors['name']}
+                            />
+                            {fieldErrors['name'] && <p className="text-[11px] text-red-600 mt-1">{fieldErrors['name'].join(', ')}</p>}
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <Campo
+                                    id="email"
+                                    ref={emailRef}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Email"
+                                    className={`border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold ${fieldErrors['email'] ? 'border-red-600' : ''}`}
+                                    error={fieldErrors['email']}
+                                />
+                                {fieldErrors['email'] && <p className="text-[11px] text-red-600 mt-1">{fieldErrors['email'].join(', ')}</p>}
+                            </div>
+
+                            <div>
+                                <Campo
+                                    id="telefono"
+                                    ref={telefonoRef}
+                                    value={telefono}
+                                    onChange={(e) => setTelefono(e.target.value)}
+                                    placeholder="Teléfono"
+                                    className={`border-gray-200 rounded-lg py-3 px-4 text-[12px] font-bold ${fieldErrors['telefono'] ? 'border-red-600' : ''}`}
+                                    error={fieldErrors['telefono']}
+                                />
+                                {fieldErrors['telefono'] && <p className="text-[11px] text-red-600 mt-1">{fieldErrors['telefono'].join(', ')}</p>}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -138,6 +297,18 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError, ace
                 </div>
 
                 {/* ERRORES */}
+                {debugErrorJson && (
+                    <div className="p-3 bg-gray-900 text-white rounded-md mb-2">
+                        <div className="flex items-center justify-between">
+                            <strong className="text-sm">Debug: respuesta de validación (422)</strong>
+                            <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => navigator.clipboard?.writeText(debugErrorJson)} className="text-xs underline">Copiar</button>
+                                <button type="button" onClick={() => setDebugErrorJson(null)} className="text-xs">Cerrar</button>
+                            </div>
+                        </div>
+                        <pre className="mt-2 text-xs max-h-40 overflow-auto">{debugErrorJson}</pre>
+                    </div>
+                )}
                 {mensaje && (
                     <div className="p-5 bg-red-50 border-l-4 border-red-600 rounded-r-xl flex items-center gap-4 animate-pulse">
                         <span className="text-[11px] font-black text-red-800 uppercase tracking-widest">{mensaje}</span>

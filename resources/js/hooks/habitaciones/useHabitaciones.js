@@ -30,8 +30,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 	// Carga de datos con limpieza automática
 	// Encapsular la carga en una función para permitir recarga manual
 	const cargarHabitaciones = async (signal) => {
-		console.log('cargarHabitaciones invoked, rango:', rango);
-		try { window.__cargarHabitacionesInvoked = Date.now(); } catch (e) { /* noop */ }
+
 		const rangoValido = rango?.from && rango?.to;
 		if (!rangoValido) {
 			setHabitaciones([]);
@@ -39,7 +38,6 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 		}
 
 		setCargando(true);
-		setSeleccion({}); // Reset al cambiar fechas
 		try {
 			const datos = await fetchHabitacionesDisponibles(
 				formatearFecha(rango.from),
@@ -48,8 +46,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 			);
 			// Debug: loguear respuesta para verificar formato y claves de precio
 			try {
-				console.log('fetchHabitacionesDisponibles result (preview):', Array.isArray(datos) ? datos.slice(0,5) : datos);
-				try { window.__lastHabitacionesPreview = Array.isArray(datos) ? datos.slice(0,5) : datos; window.__lastHabitacionesFetchTime = Date.now(); } catch (e) {}
+				// debug preview removed
 			} catch (e) { /* noop */ }
 			setHabitaciones(Array.isArray(datos) ? datos : []);
 
@@ -86,6 +83,11 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 		return () => controller.abort();
 	}, [paso, rango]);
 
+	// Resetear la selección SOLO cuando cambian las fechas del rango.
+	useEffect(() => {
+		setSeleccion({});
+	}, [rango?.from, rango?.to]);
+
 	// Valores calculados (Estado derivado)
 	// Esto sustituye a las funciones "getTotal..." y "agrupar..."
 	const totales = useMemo(() => ({
@@ -113,7 +115,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 
 				const obtenerPrecio = (room) => {
 					// 1) claves frecuentes (rápido)
-					const keys = ['precio', 'precioMinimo', 'precio_minimo', 'precio_noche', 'precio_por_noche', 'precio_base', 'price', 'price_min', 'precio_total'];
+					const keys = ['precioEntreNoche', 'precioEntreFechas', 'precioTipo', 'precio', 'precioMinimo', 'precio_minimo', 'precio_noche', 'precio_por_noche', 'precioNoche', 'precioTotal', 'precio_base', 'price', 'price_min', 'precio_total'];
 					for (const k of keys) {
 						if (room && Object.prototype.hasOwnProperty.call(room, k)) {
 							const v = parseNumber(room[k]);
@@ -158,9 +160,17 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 				};
 
 				const precioRoom = obtenerPrecio(h);
+				// Extraer valores explícitos enviados por el backend si existen
+				const precioEntreNocheRoom = (h && (h.precioEntreNoche ?? h.precioNoche ?? h.precio_por_noche ?? h.precio_noche ?? null)) ?? null;
+				const precioTotalRoom = (h && (h.precioTotal ?? h.precio_total ?? null)) ?? null;
+				// si hay precioTotal y no precio por noche calculado, intentar derivarlo
+				const derivedPrecioEntreNoche = (precioEntreNocheRoom !== null) ? precioEntreNocheRoom : (precioTotalRoom !== null && h.noches ? Number(precioTotalRoom) / Number(h.noches) : null);
+				const precioTipoRoom = (h && (h.precioTipo ?? h.precio_base ?? null)) ?? null;
 			if (!acc[tipo]) {
 					acc[tipo] = {
 						precioMinimo: precioRoom,
+						precioEntreNoche: derivedPrecioEntreNoche !== null ? Number(derivedPrecioEntreNoche) : null,
+						precioTipo: precioTipoRoom !== null ? Number(precioTipoRoom) : null,
 						capacidadMaxima: Number(h.capacidad || 0),
 						cantidad: 1,
 						descripcion: h.descripcion || '',
@@ -170,6 +180,8 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 					acc[tipo].cantidad += 1;
 					acc[tipo].capacidadMaxima = Math.max(acc[tipo].capacidadMaxima, Number(h.capacidad || 0));
 					acc[tipo].precioMinimo = Math.min(acc[tipo].precioMinimo || 0, precioRoom) || acc[tipo].precioMinimo;
+					if (acc[tipo].precioEntreNoche === null && precioEntreNocheRoom !== null) acc[tipo].precioEntreNoche = Number(precioEntreNocheRoom);
+					if (acc[tipo].precioTipo === null && precioTipoRoom !== null) acc[tipo].precioTipo = Number(precioTipoRoom);
 			}
 		});
 		return acc;

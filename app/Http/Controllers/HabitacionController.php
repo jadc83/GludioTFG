@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreHabitacionRequest;
 use App\Http\Requests\UpdateHabitacionRequest;
 use App\Models\Habitacion;
+use App\Models\TipoHabitacion;
+use App\Services\PrecioService;
+use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
@@ -140,9 +143,22 @@ class HabitacionController extends Controller
     /**
      * Formatea colección de habitaciones para el frontend
      */
-    private static function formatear($habitaciones)
+    private static function formatear($habitaciones, $preciosPorTipo = [])
     {
-        return $habitaciones->map(function ($habitacion) {
+        // Obtener precios de tipos en un único lote para evitar consultas N+1
+        $slugs = $habitaciones->pluck('tipo')->unique()->filter()->values()->all();
+        $tiposMap = TipoHabitacion::whereIn('slug', $slugs)->get()->keyBy('slug');
+
+        return $habitaciones->map(function ($habitacion) use ($tiposMap, $preciosPorTipo) {
+            $tipoModelo = $tiposMap->get($habitacion->tipo);
+            $precioTipo = $tipoModelo ? (float) $tipoModelo->precio_base : null;
+            $precioEntre = null;
+            $precioEntreNoche = null;
+            if (isset($preciosPorTipo[$habitacion->tipo]) && is_array($preciosPorTipo[$habitacion->tipo])) {
+                $precioEntre = (float)($preciosPorTipo[$habitacion->tipo]['total'] ?? null);
+                $precioEntreNoche = isset($preciosPorTipo[$habitacion->tipo]['por_noche']) ? (float)$preciosPorTipo[$habitacion->tipo]['por_noche'] : null;
+            }
+
             return [
                 'id' => $habitacion->id,
                 'numero' => $habitacion->numero,
@@ -151,6 +167,9 @@ class HabitacionController extends Controller
                 'estado' => $habitacion->estado,
                 'descripcion' => $habitacion->descripcion,
                 'notas' => $habitacion->notas,
+                'precioTipo' => $precioTipo,
+                'precioEntreFechas' => $precioEntre,
+                'precioEntreNoche' => $precioEntreNoche,
                 'fotos' => $habitacion->fotos->map(function ($foto) {
                     return [
                         'id' => $foto->id,
@@ -178,6 +197,30 @@ class HabitacionController extends Controller
 
         $habitaciones = $habitaciones->orderBy('numero')->get();
 
-        return self::formatear($habitaciones);
+        // Si se pasan fechas, calcular precio entre fechas por tipo y añadirlo
+        $preciosPorTipo = [];
+        if ($checkIn && $checkOut) {
+            try {
+                $serv = new PrecioService();
+                $slugs = $habitaciones->pluck('tipo')->unique()->filter()->values()->all();
+                $noches = Carbon::createFromFormat('Y-m-d', $checkIn)->diffInDays(Carbon::createFromFormat('Y-m-d', $checkOut));
+                foreach ($slugs as $slug) {
+                    try {
+                        $precioTotal = $serv->precioEntreFechas($slug, Carbon::createFromFormat('Y-m-d', $checkIn), Carbon::createFromFormat('Y-m-d', $checkOut));
+                        $preciosPorTipo[$slug] = [
+                            'total' => $precioTotal,
+                            'por_noche' => $noches > 0 ? round($precioTotal / $noches, 2) : null,
+                            'noches' => $noches,
+                        ];
+                    } catch (\Exception $e) {
+                        $preciosPorTipo[$slug] = null;
+                    }
+                }
+            } catch (\Exception $e) {
+                $preciosPorTipo = [];
+            }
+        }
+
+        return self::formatear($habitaciones, $preciosPorTipo);
     }
 }

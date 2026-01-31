@@ -418,7 +418,7 @@ class ReservaService
 
         $cantidad = $resumen[$tipo]['cantidad'] ?? 0;
         try {
-            \Illuminate\Support\Facades\Log::info('Disponibilidad debug', [
+            \Illuminate\Support\Facades\Log::debug('Disponibilidad debug', [
                 'tipo' => $tipo,
                 'check_in' => $checkIn->toDateString(),
                 'check_out' => $checkOut->toDateString(),
@@ -526,15 +526,29 @@ class ReservaService
                 $precioPorHabitacion = $this->servicioPrecio->precioEntreFechas(
                     $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
 
+                // Asegurarse de que precio sea numérico y no nulo (fallback a 0)
+                if (!is_numeric($precioPorHabitacion)) {
+                    Log::warning('Precio por habitación no es numérico, aplicando fallback 0', ['tipo' => $tipo, 'valor' => $precioPorHabitacion]);
+                    $precioPorHabitacion = 0;
+                }
+
+                Log::debug('AsignarHabitaciones: creando placeholders', ['reserva_id' => $reserva->id, 'tipo' => $tipo, 'cantidad' => $cantidad, 'precioPorHabitacion' => $precioPorHabitacion]);
+
                 for ($i = 0; $i < $cantidad; $i++) {
-                    HabitacionReserva::create([
-                        'reserva_id' => $reserva->id,
-                        'habitacion_id' => null,
-                        'tipo' => $tipo,
-                        'check_in' => $reserva->check_in,
-                        'check_out' => $reserva->check_out,
-                        'precio' => $precioPorHabitacion,
-                    ]);
+                    try {
+                        $created = HabitacionReserva::create([
+                            'reserva_id' => $reserva->id,
+                            'habitacion_id' => null,
+                            'tipo' => $tipo,
+                            'check_in' => $reserva->check_in,
+                            'check_out' => $reserva->check_out,
+                            'precio' => $precioPorHabitacion,
+                        ]);
+                        Log::debug('Placeholder HabitacionReserva creado', ['id' => $created->id, 'reserva_id' => $created->reserva_id, 'precio' => $created->precio]);
+                    } catch (\Throwable $e) {
+                        Log::error('Error creando placeholder HabitacionReserva', ['reserva_id' => $reserva->id, 'tipo' => $tipo, 'precio' => $precioPorHabitacion, 'error' => $e->getMessage()]);
+                        throw $e;
+                    }
                 }
             });
         }
@@ -565,6 +579,11 @@ class ReservaService
                 }
 
                 $ph->habitacion_id = $candidate->id;
+                // Asegurar que precio no sea nulo antes de guardar (fallback calculado o 0)
+                if (!is_numeric($ph->precio) || $ph->precio === null) {
+                    $precioFallback = $this->servicioPrecio->precioEntreFechas($candidate->tipo ?? ($ph->tipo ?? ''), Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+                    $ph->precio = is_numeric($precioFallback) ? $precioFallback : 0;
+                }
                 $ph->save();
 
                 try { $candidate->update(['estado' => 'ocupada']); } catch (\Throwable $e) { Log::warning('No se pudo actualizar estado de habitacion tras asignacion: ' . $e->getMessage()); }

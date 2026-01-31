@@ -163,7 +163,8 @@ class PrecioService
                 if (stripos($slug, 'desayuno') !== false) {
                     $cargo = 0.0;
                 }
-                else if (stripos($slug, 'media') !== false || stripos($slug, 'media-pension') !== false) {
+                // Aplicar tarifa por noche por habitación para 'media' o 'pension' (incluye 'pension-completa')
+                else if (stripos($slug, 'media') !== false || stripos($slug, 'pension') !== false || stripos($slug, 'media-pension') !== false) {
                     $cargo = round($mod * $numeroNoches * max(0, $habitacionesTotal), 2);
                 }
                 else {

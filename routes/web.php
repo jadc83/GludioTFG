@@ -45,6 +45,8 @@ Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'prec
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.buscar-localizador');
 Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])->where('localizador', '[A-Z0-9]+')->name('reservas.descargar-comprobante');
 Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])->name('reservas.calcular-precio');
+
+
 Route::get('/reservas/{localizador}/info-extension', [ReservaController::class, 'infoExtension'])->where('localizador', '[A-Z0-9]+')->name('reservas.info-extension');
 Route::get('/reservas/calcular-precio', function() {
     return response()->json([

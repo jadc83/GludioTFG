@@ -50,6 +50,8 @@ class PagoController extends Controller
             $intentData = [
                 'amount' => (int)round($validated['monto'] * 100), // Stripe usa centavos
                 'currency' => 'eur',
+                // Forzar sólo métodos de pago por tarjeta para evitar pagos que requieran redirect/return_url
+                'payment_method_types' => ['card'],
                 'metadata' => [
                     'reserva_id' => $reserva->id,
                     'localizador' => $reserva->localizador,
@@ -69,6 +71,13 @@ class PagoController extends Controller
                 $intentData['receipt_email'] = $receiptEmail;
             }
 
+            // If running locally or client requests it, confirm immediately with Stripe test PM
+            $shouldConfirmWithTestPM = $request->boolean('confirm_with_pm') || app()->isLocal();
+            if ($shouldConfirmWithTestPM) {
+                $intentData['confirm'] = true;
+                $intentData['payment_method'] = 'pm_card_visa';
+            }
+
             $paymentIntent = PaymentIntent::create($intentData);
 
             // Guardar registro de pago
@@ -81,6 +90,15 @@ class PagoController extends Controller
                 'descripcion' => "Pago de reserva {$reserva->localizador}",
                 'stripe_response' => $paymentIntent->toArray(),
             ]);
+
+            // If the PaymentIntent was confirmed successfully, update pago status
+            if (isset($paymentIntent->status) && $paymentIntent->status === 'succeeded') {
+                try {
+                    $pago->update(['estado' => 'completado', 'pagado_en' => now(), 'stripe_response' => $paymentIntent->toArray()]);
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo actualizar Pago tras confirmacion automática: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -124,11 +142,8 @@ class PagoController extends Controller
         $pago = Pago::findOrFail($request->pago_id);
 
         try {
-            Log::info('ConfirmarPago request', ['payment_intent_id' => $request->payment_intent_id, 'pago_id' => $request->pago_id]);
             // Obtener PaymentIntent de Stripe
             $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
-
-            Log::info('Stripe PaymentIntent retrieved', ['id' => $paymentIntent->id ?? null, 'status' => $paymentIntent->status ?? null]);
 
             if ($paymentIntent->status === 'succeeded') {
                 // Marcar pago como completado
@@ -268,7 +283,7 @@ class PagoController extends Controller
         // si reembolso fue exitoso forzar marcar la reserva como cancelada
         if ($resultado['success'] && $cancelar) {
             try {
-                \Illuminate\Support\Facades\Log::info('reembolsarReserva: forzando cancelación por parametro cancelar=true (pre-update)', ['reserva_id' => $reserva->id, 'monto' => $monto, 'stack' => array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5), 0, 5)]);
+                \Illuminate\Support\Facades\Log::info('reembolsarReserva: forzando cancelación por parametro cancelar=true (pre-update)', ['reserva_id' => $reserva->id, 'monto' => $monto]);
                 $ultimoPago = $reserva->pagos()->orderByDesc('pagado_en')->first();
                 if ($ultimoPago) {
                     $ultimoPago->update(['estado' => 'cancelado']);

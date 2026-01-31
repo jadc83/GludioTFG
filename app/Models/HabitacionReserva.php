@@ -42,4 +42,14 @@ class HabitacionReserva extends Model
     {
         return $this->hasMany(Huesped::class, 'habitacion_reserva_id');
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (!isset($model->precio) || $model->precio === null || !is_numeric($model->precio)) {
+                // Aplicar fallback seguro para evitar inserciones NULL en la columna precio
+                $model->precio = 0;
+            }
+        });
+    }
 }

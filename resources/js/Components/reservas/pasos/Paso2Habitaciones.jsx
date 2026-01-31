@@ -79,8 +79,8 @@ export default function Paso2Habitaciones({
 
                                                 <div className="flex items-center gap-6">
                                                     <div className="text-right">
-                                                        <p className="text-lg font-black text-[#7a0202]">{(preciosPorTipo[tipo] ?? info.precioMinimo)}€</p>
-                                                        <p className="text-[7px] text-gray-400 font-bold uppercase tracking-tighter">precio / noche</p>
+                                                        <p className="text-lg font-black text-[#7a0202]">{(preciosPorTipo[tipo] ?? info.precioEntreNoche ?? info.precioTipo ?? info.precioMinimo)}€</p>
+                                                        <p className="text-[7px] text-gray-400 font-bold uppercase tracking-tighter">Precio medio por noche</p>
                                                     </div>
 
                                                     <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
@@ -125,7 +125,7 @@ export default function Paso2Habitaciones({
                     </div>
 
                     <div className="p-6 border-t border-gray-200 bg-gris">
-                        <DetalleSubtotal habitacionesSeleccionadas={habitacionesSeleccionadas} rango={rango} tipos={tipos} tarifasSeleccionadas={seleccionTarifas} tarifas={tarifas} />
+                        <DetalleSubtotal habitacionesSeleccionadas={habitacionesSeleccionadas} rango={rango} tipos={tipos} preciosPorTipo={preciosPorTipo} tarifasSeleccionadas={seleccionTarifas} tarifas={tarifas} />
                     </div>
                 </aside>
             </main>

@@ -22,7 +22,8 @@ export async function calcularPrecio(payload) {
 		const res = await axios.post('/reservas/calcular-precio', payload);
 		return res?.data ?? null;
 	} catch (err) {
-		throw err?.response?.data ?? err;
+		// Rethrow full axios error so callers can inspect status/code if needed
+		throw err;
 	}
 }
 
@@ -31,7 +32,12 @@ export async function crearReserva(payload) {
 		const res = await axios.post('/reservas', payload);
 		return res?.data ?? null;
 	} catch (err) {
-		throw err?.response?.data ?? err;
+		// Normalize axios error into a predictable object for callers
+		if (err?.response) {
+			const payload = { status: err.response.status, ...(err.response.data || {}) };
+			throw payload;
+		}
+		throw err;
 	}
 }
 

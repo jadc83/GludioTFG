@@ -11,6 +11,38 @@ class CalcularPrecioRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        $data = $this->all();
+
+        if (isset($data['habitaciones']) && is_array($data['habitaciones'])) {
+            $map = [
+                'double'  => 'doble',
+                'dobles'  => 'doble',
+                'doble'   => 'doble',
+                'family'  => 'familiar',
+                'familia' => 'familiar',
+                'familiar'=> 'familiar',
+                'suite'   => 'suite',
+            ];
+
+            foreach ($data['habitaciones'] as $i => $h) {
+                if (isset($h['tipo'])) {
+                    $tipo = mb_strtolower(trim($h['tipo']));
+                    $data['habitaciones'][$i]['tipo'] = $map[$tipo] ?? $tipo;
+                }
+            }
+        }
+
+        if (isset($data['tarifas']) && is_array($data['tarifas'])) {
+            $data['tarifas'] = array_map(function ($t) {
+                return is_numeric($t) ? (int) $t : $t;
+            }, $data['tarifas']);
+        }
+
+        $this->replace($data);
+    }
+
     public function rules()
     {
         return [
