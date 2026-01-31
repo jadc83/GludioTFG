@@ -14,11 +14,22 @@ class PaymentService
 {
 	protected StripeClient $stripe;
 
+	/**
+	 * Constructor del servicio de pagos
+	 * Inicializa cliente de Stripe con clave secreta
+	 * Usado por: inyección automática de dependencias
+	 */
 	public function __construct()
 	{
 		$this->stripe = new StripeClient(config('services.stripe.secret'));
 	}
 
+	/**
+	 * Verifica si una reserva puede ser reembolsada
+	 * Comprueba tiempo hasta check-in y estado del pago
+	 * Usado por: interfaces de reembolso
+	 * Retorna: boolean indicando posibilidad de reembolso
+	 */
 	public function puedeReembolsar(Reserva $reserva): bool
 	{
 		try {
@@ -31,6 +42,12 @@ class PaymentService
 		}
 	}
 
+	/**
+	 * Solicita reembolso para una reserva
+	 * Crea solicitud y procesa reembolso automático si aplica
+	 * Usado por: acciones de reembolso desde panel de control
+	 * Retorna: array con resultado de la solicitud
+	 */
 	public function solicitarReembolso(Reserva $reserva, $usuario, ?float $monto = null, bool $forceByAdmin = false, ?Pago $pagoOverride = null): array
 	{
 		if (!$forceByAdmin && !$this->puedeReembolsar($reserva)) {
@@ -93,6 +110,12 @@ class PaymentService
 		}
 	}
 
+	/**
+	 * Maneja eventos de reembolso desde Stripe webhooks
+	 * Procesa confirmaciones de reembolso y actualiza registros
+	 * Usado por: controladores de webhooks de Stripe
+	 * Retorna: void
+	 */
 	public function manejarEventoReembolso($refundObj): void
 	{
 		try {

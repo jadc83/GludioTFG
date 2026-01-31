@@ -8,6 +8,12 @@ import useHabitaciones from '../habitaciones/useHabitaciones';
 
 // Normaliza tipos enviados al backend según las opciones permitidas en el validador
 const NORMAL_ALLOWED = ['doble', 'familiar', 'suite'];
+/**
+ * Normaliza tipo de habitación a formato estándar
+ * Convierte variaciones de texto a tipos permitidos
+ * Usado por: procesamiento de datos de formulario
+ * Retorna: string normalizado o null si inválido
+ */
 function normalizeTipo(raw) {
 	if (!raw && raw !== 0) return null;
 	const s = String(raw).toLowerCase().trim();
@@ -20,6 +26,12 @@ function normalizeTipo(raw) {
 	return null;
 }
 
+/**
+ * Hook principal para gestión del formulario de reserva
+ * Maneja estado del formulario multi-paso, validación, precios y envío
+ * Usado por: componentes principales de reserva (BarraReservas, pasos del formulario)
+ * Retorna: objeto con estado, funciones y utilidades del formulario
+ */
 export default function useReservaForm() {
 	const { props } = usePage();
 	const usuarioActual = props.auth?.user ?? null;

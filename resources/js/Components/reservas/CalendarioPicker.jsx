@@ -9,15 +9,29 @@ const CalendarioStyles = () => (
   <style>{`.rdp { --rdp-cell_size: 2.5rem; --rdp-accent_color: #7a0202; --rdp-background_color: #fef2f2; } .rdp-caption { font-weight: 600; color: #1f2937; padding-bottom: 1rem; } .rdp-head_cell { font-weight: 600; color: #6b7280; font-size: 0.875rem; } .rdp-cell { position: relative; } .rdp-day_selected { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_range_middle { background-color: #fee2e2 !important; color: #1f2937; } .rdp-day_range_start, .rdp-day_range_end { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_today { font-weight: 700; color: #7a0202; }`}</style>
 );
 
-const BotonesCalendario = ({ formularioReserva, setCalendarioAbierto, esMobile = false, formatearISO }) => {
+const BotonesCalendario = ({ formularioReserva, setCalendarioAbierto, esMobile = false, formatearISO, preciosPorDia }) => {
   const rangoInicio = formularioReserva.rango?.from;
   const rangoFin = formularioReserva.rango?.to;
   const mismoDia = rangoInicio && rangoFin && formatearISO && formatearISO(rangoInicio) === formatearISO(rangoFin);
-  const deshabilitarContinuar = !rangoInicio || !rangoFin || mismoDia;
+
+  // Verificar si hay días con 100% ocupación en el rango
+  const tieneDiasCompletos = (() => {
+    if (!rangoInicio || !rangoFin || !preciosPorDia) return false;
+    const start = new Date(rangoInicio);
+    const end = new Date(rangoFin);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = formatearISO(d);
+      const info = preciosPorDia[iso];
+      if (info?.ocupacion === 100) return true;
+    }
+    return false;
+  })();
+
+  const deshabilitarContinuar = !rangoInicio || !rangoFin || mismoDia || tieneDiasCompletos;
 
   return (
     <div className={`flex items-center justify-between gap-2 ${!esMobile ? 'px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl' : 'mt-4 pt-4 border-t border-gray-200'}`}>
-      <button onClick={() => { formularioReserva.limpiarRango(); setCalendarioAbierto(null); }} className={`btn btn-sm btn-outline ${esMobile ? 'flex-1' : ''}`}>
+      <button onClick={() => { formularioReserva.limpiarRango(); }} className={`btn btn-sm btn-outline ${esMobile ? 'flex-1' : ''}`}>
         Limpiar
       </button>
       <PrimaryButton className={`${esMobile ? 'flex-1 py-1 px-3 text-xs' : 'py-1 px-3 text-xs'}`} disabled={deshabilitarContinuar}
@@ -50,14 +64,30 @@ function CalendarioPicker({ esMobile, calendarioAbierto, handleSeleccionRango, f
     // Prefetch de meses movido al backend; cliente no dispara carga adicional aquí.
   };
 
+  const isDayDisabled = (date) => {
+    // Deshabilitar días anteriores a hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
+
+    // Deshabilitar días con 100% de ocupación
+    if (preciosPorDia && formatearISO) {
+      const iso = formatearISO(date);
+      const info = preciosPorDia[iso];
+      if (info?.ocupacion === 100) return true;
+    }
+
+    return false;
+  };
+
   const CalendarioDesktop = () => (
     <div ref={innerRef} className="fixed bg-white rounded-xl shadow-2xl p-0 w-full max-w-[40rem] mx-4 z-50 left-1/2 -translate-x-1/2 calendar-pos-1366" data-calendario>
       <div className="w-full p-6 bg-gradient-to-br from-white to-gray-50">
           <DayPicker mode="range" selected={formularioReserva.rango} onSelect={handleSeleccionRango} onMonthChange={handleInternalMonthChange}
-          month={visibleMonth} locale={es} disabled={{ before: new Date() }} numberOfMonths= {1} formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date) }}
+          month={visibleMonth} locale={es} disabled={isDayDisabled} numberOfMonths= {1} formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date) }}
           components={components}/>
       </div>
-      <BotonesCalendario formularioReserva={formularioReserva} setCalendarioAbierto={setCalendarioAbierto} formatearISO={formatearISO} esMobile={esMobile} />
+      <BotonesCalendario formularioReserva={formularioReserva} setCalendarioAbierto={setCalendarioAbierto} formatearISO={formatearISO} esMobile={esMobile} preciosPorDia={preciosPorDia} />
     </div>
   );
 
@@ -66,12 +96,12 @@ function CalendarioPicker({ esMobile, calendarioAbierto, handleSeleccionRango, f
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 px-4 py-6 flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Selecciona {tipo === 'entrada' ? 'entrada' : 'salida'}</h3>
         <div className="flex-1">
-          <DayPicker mode="range" selected={formularioReserva.rango} onSelect={handleSeleccionRango} onMonthChange={handleInternalMonthChange} month={visibleMonth} locale={es} disabled={{ before: new Date() }}
+          <DayPicker mode="range" selected={formularioReserva.rango} onSelect={handleSeleccionRango} onMonthChange={handleInternalMonthChange} month={visibleMonth} locale={es} disabled={isDayDisabled}
             numberOfMonths={1} formatters={{ formatWeekdayName: (date) => obtenerDiaDelaSemana(date).substring(0, 3) }}
             components={components}
           />
         </div>
-        <BotonesCalendario formularioReserva={formularioReserva} setCalendarioAbierto={setCalendarioAbierto} formatearISO={formatearISO} esMobile={esMobile} />
+        <BotonesCalendario formularioReserva={formularioReserva} setCalendarioAbierto={setCalendarioAbierto} formatearISO={formatearISO} esMobile={esMobile} preciosPorDia={preciosPorDia} />
       </div>
     </div>
   );

@@ -9,11 +9,22 @@ class HabitacionService
 {
     private PrecioService $precioService;
 
+    /**
+     * Constructor del servicio de habitaciones
+     * Inyecta dependencia de servicio de precios
+     * Usado por: inyección automática de dependencias
+     */
     public function __construct(?PrecioService $precioService = null)
     {
         $this->precioService = $precioService ?? new PrecioService();
     }
 
+    /**
+     * Formatea colección de habitaciones para respuesta
+     * Agrupa por tipo y calcula precios
+     * Usado por: getDisponibles()
+     * Retorna: array de habitaciones formateadas
+     */
     private function formatearHabitaciones($habitaciones, Carbon $checkIn, Carbon $checkOut): array
     {
 
@@ -56,6 +67,12 @@ class HabitacionService
         return array_values($grupos);
     }
 
+    /**
+     * Obtiene habitaciones disponibles para un período
+     * Calcula disponibilidad considerando reservas existentes y placeholders
+     * Usado por: interfaces de selección de habitaciones
+     * Retorna: array de habitaciones disponibles por tipo
+     */
     public function getDisponibles(Carbon $checkIn, Carbon $checkOut, bool $summary = false): array
     {
         // Obtener todas las habitaciones no en mantenimiento
@@ -122,6 +139,12 @@ class HabitacionService
         return $formateadas;
     }
 
+    /**
+     * Obtiene URL de imagen representativa para un tipo de habitación
+     * Retorna imágenes de Unsplash según el tipo
+     * Usado por: interfaces de visualización de habitaciones
+     * Retorna: URL de imagen como string
+     */
     public function getImagen(string $tipo): string
     {
         $imagenes = [
@@ -138,6 +161,12 @@ class HabitacionService
      * Cuenta habitaciones disponibles por tipo.
      * Si $considerarPlaceholders = false se hace una consulta agregada rápida (no considera placeholders).
      * Si $considerarPlaceholders = true devuelve la disponibilidad real teniendo en cuenta habitaciones asignadas y placeholders (HabitacionReserva).
+     */
+    /**
+     * Cuenta habitaciones disponibles por tipo considerando placeholders
+     * Algoritmo preciso que cuenta habitaciones físicas + placeholders para reservas
+     * Usado por: ReservaService::contarHabitacionesDisponibles()
+     * Retorna: array asociativo tipo => [cantidad, capacidadMaxima]
      */
     public function contarDisponiblesPorTipo(Carbon $checkIn, Carbon $checkOut, bool $considerarPlaceholders = false): array
     {

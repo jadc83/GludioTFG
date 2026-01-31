@@ -8,15 +8,13 @@ import '../../../css/createHabitacion.css';
 import '../../../css/estiloCalendario.css';
 import '../../../css/estiloMenuLateral.css';
 import React, { useState, useEffect, useRef, useCallback, useMemo, isValidElement, cloneElement } from 'react';
+import useCalendarioDia from '../../hooks/calendario/useCalendarioDia';
 import useCalendarioPrecios from '../../hooks/calendario/useCalendarioPrecios';
 import { usePage } from '@inertiajs/react';
 import { CalendarIcon, ArrowDownOnSquareIcon, ArrowUpOnSquareIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import CalendarioPicker, { CalendarioStyles } from './CalendarioPicker';
 import ModalPaso from './pasos/ModalPaso';
 import Campo from '@/Components/formulario/Campo';
-
-
-
 
 export default function BarraReservas() {
     const formularioReserva = useReservaForm();
@@ -45,6 +43,7 @@ export default function BarraReservas() {
         window.addEventListener('abrirCalendario', handler);
         return () => window.removeEventListener('abrirCalendario', handler);
     }, []);
+
     // Cargar precios cuando se abre el calendario
     useEffect(() => {
         if (!calendarioAbierto) return;
@@ -57,74 +56,7 @@ export default function BarraReservas() {
     }, [calendarioAbierto, consultaPrecios, formatearISO]);
 
     const mapaPrecios = useMemo(() => preciosPorDia || {}, [preciosPorDia]);
-    const componentesDia = useMemo(() => ({
-        Day: ({ date, disabled, ...props }) => {
-            const iso = props?.day?.isoDate || (date ? formatearISO(date) : null);
-            const info = iso ? mapaPrecios[iso] : undefined;
-            const precio = info?.precio;
-            const ocupacion = info?.ocupacion ?? 0;
-
-            let ayer = false;
-            try {
-                if (date instanceof Date && !Number.isNaN(date.getTime())) {
-                    const diaDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                    const hoy = new Date();
-                    const t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-                    ayer = diaDate < t;
-                }
-            } catch (e) {
-                ayer = false;
-            }
-
-            // Si el hijo es un elemento React (el botón del día), clonar para inyectar precio y barra
-            let contenido = props.children;
-            if (React.isValidElement(contenido)) {
-                const hijosOriginales = contenido.props.children;
-                const elementosAdicionales = [];
-
-                if (!ayer && !disabled && precio) {
-                    elementosAdicionales.push(
-                        <span
-                            key="precio"
-                            className="rdp-day_price"
-                            style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', zIndex: 50, fontSize: '10px', fontWeight: 'bold', color: '#7a0202' }}
-                        >
-                            €{precio}
-                        </span>
-                    );
-                }
-
-                if (!ayer && !disabled && ocupacion > 0) {
-                    elementosAdicionales.push(
-                        <div
-                            key="ocupacion"
-                            className="rdp-day_occupancy_bar"
-                            style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                height: '6px',
-                                backgroundColor: ocupacion > 80 ? '#dc2626' : ocupacion > 50 ? '#f59e0b' : '#10b981',
-                                width: `${ocupacion}%`,
-                                borderRadius: '0 0 8px 8px',
-                                zIndex: 5
-                            }}
-                        />
-                    );
-                }
-
-                if (elementosAdicionales.length > 0) {
-                    contenido = cloneElement(contenido, {}, [hijosOriginales, ...elementosAdicionales]);
-                }
-            }
-
-            return (
-                <td className={props.className}>
-                    {contenido}
-                </td>
-            );
-        }
-    }), [mapaPrecios, formatearISO]);
+    const componentesDia = useCalendarioDia(mapaPrecios, formatearISO);
 
     return (
         <>
@@ -161,7 +93,6 @@ export default function BarraReservas() {
                                         className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
                                         {formularioReserva.rango?.from ? formatearFecha(formularioReserva.rango.from, 'corta') : '—'}
                                     </button>
-                                    <CalendarioStyles />
                                     <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto} handleSeleccionRango={(rango) => formularioReserva.setRango(rango)}
                                         formularioReserva={formularioReserva} preciosPorDia={preciosPorDia} setCalendarioAbierto={setCalendarioAbierto} tipo="entrada" formatearISO={formatearISO}
                                         calendarioRef={calendarioRef} components={componentesDia} />

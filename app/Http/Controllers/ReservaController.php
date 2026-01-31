@@ -24,6 +24,11 @@ class ReservaController extends Controller
     protected PrecioService $precioService;
     protected HabitacionService $habitacionService;
 
+    /**
+     * Constructor del controlador de reservas
+     * Inyecta servicios necesarios para gestión de reservas
+     * Servicios: ReservaService, PrecioService, HabitacionService
+     */
     public function __construct(ReservaService $reservaService, PrecioService $precioService, HabitacionService $habitacionService)
     {
         $this->reservaService = $reservaService;
@@ -31,6 +36,11 @@ class ReservaController extends Controller
         $this->habitacionService = $habitacionService;
     }
 
+    /**
+     * Envía email de reserva usando clase mailable
+     * Maneja envío con email alternativo si falla el principal
+     * Usado por: store(), marcarCheckIn(), marcarCheckOut()
+     */
     private function sendReservationMail($reserva, $mailable, $fallbackEmail = null)
     {
         try {
@@ -43,16 +53,30 @@ class ReservaController extends Controller
         }
     }
 
+    /**
+     * Respuesta JSON exitosa estandarizada
+     * Usado por: múltiples métodos para respuestas consistentes
+     */
     private function jsonOk(array $data = [], int $status = 200)
     {
         return response()->json(array_merge(['success' => true], $data), $status);
     }
 
+    /**
+     * Respuesta JSON de error estandarizada
+     * Usado por: múltiples métodos para respuestas de error consistentes
+     */
     private function jsonError(string $message, int $status = 400)
     {
         return response()->json(['success' => false, 'error' => $message], $status);
     }
 
+    /**
+     * Lista reservas con filtros y paginación
+     * GET /reservas - Panel de administración de reservas
+     * Filtros: status, localizador, cliente, habitación
+     * Retorna: vista con reservas paginadas
+     */
     public function index(Request $request)
     {
         $reservas = Reserva::withReservable()
@@ -73,11 +97,22 @@ class ReservaController extends Controller
         return ['reservas' => $reservasJson];
     }
 
+    /**
+     * Muestra formulario de creación de reserva
+     * GET /reservas/create
+     * Retorna: vista del formulario de reserva
+     */
     public function create()
     {
         //
     }
 
+    /**
+     * Crea nueva reserva desde formulario
+     * POST /reservas - Procesa datos del formulario de reserva
+     * Valida datos, crea reserva y envía email de confirmación
+     * Retorna: redirección con mensaje de éxito
+     */
     public function store(StoreReservaRequest $request)
     {
 
@@ -129,6 +164,12 @@ class ReservaController extends Controller
         }
     }
 
+    /**
+     * Obtiene habitaciones disponibles para fechas específicas
+     * GET /api/habitaciones-disponibles - Endpoint AJAX para calendario
+     * Parámetros: check_in, check_out
+     * Retorna: JSON con habitaciones disponibles por tipo
+     */
     public function habitacionesDisponibles(Request $request)
     {
         try {
@@ -402,6 +443,12 @@ class ReservaController extends Controller
         }
     }
 
+    /**
+     * Obtiene precios y ocupación por día para calendario
+     * GET /reservas/precios-por-dia - Endpoint para componente calendario
+     * Parámetros: inicio, fin (fechas en formato YYYY-MM-DD)
+     * Retorna: JSON con precios y ocupación diaria
+     */
     public function preciosPorDia(Request $request)
     {
         try {
@@ -436,6 +483,12 @@ class ReservaController extends Controller
 
     /**
      * Marca una reserva como check-in (se usa desde el escáner)
+     */
+    /**
+     * Realiza check-in de una reserva
+     * POST /reservas/{localizador}/check-in - Procesa check-in desde panel
+     * Asigna habitaciones físicas y cambia estado a checked_in
+     * Retorna: JSON con resultado del check-in
      */
     public function marcarCheckIn(Request $request, $localizador)
     {

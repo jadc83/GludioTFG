@@ -13,6 +13,12 @@ class PrecioService
     private static ?array $precios = null;
     private static array $proveedorFechas = [];
 
+    /**
+     * Obtiene el precio base de un tipo de habitación
+     * Carga precios desde base de datos y cachea en memoria
+     * Usado por: cálculos de precio en reservas
+     * Retorna: precio base como float
+     */
     public function getPrecio(string $tipo): float
     {
         $tipo = strtolower(trim($tipo));
@@ -30,6 +36,12 @@ class PrecioService
         return self::$precios[$tipo] ?? 0;
     }
 
+    /**
+     * Calcula modificadores de precio según fecha
+     * Aplica multiplicadores por temporada alta/media y fines de semana
+     * Usado por: precioEntreFechas()
+     * Retorna: factor multiplicador como float
+     */
     private function getModPrecio(Carbon $fecha): float
     {
         $modificadores = [];
@@ -65,6 +77,12 @@ class PrecioService
         return $modificadorSalida;
     }
 
+    /**
+     * Calcula precio con modificadores por fecha
+     * Aplica multiplicadores de temporada y fin de semana por día
+     * Usado por: cálculos detallados de precio
+     * Retorna: array con total, promedio, noches y desglose diario
+     */
     public function precioMod( string $tipo, Carbon $checkIn, Carbon $checkOut, int $cantidad = 1 ): array
     {
         $precioBase = $this->getPrecio($tipo);
@@ -100,6 +118,12 @@ class PrecioService
         return [ 'total' => $precioTotal, 'precioAvg' => $precioAvg, 'noches' => $noches, 'desglose' => $desglose ];
     }
 
+    /**
+     * Calcula precio sin aplicar tarifas adicionales
+     * Suma precios de múltiples habitaciones sin descuentos/promociones
+     * Usado por: ReservaService::calcularPrecioTotal()
+     * Retorna: array con total y desglose por habitación
+     */
     public function precioSinTarifas( array $habitaciones, Carbon $checkIn, Carbon $checkOut ): array
     {
         $montoTotal = 0;
@@ -133,6 +157,12 @@ class PrecioService
         ];
     }
 
+    /**
+     * Calcula precio aplicando tarifas adicionales
+     * Aplica descuentos, promociones y otros modificadores
+     * Usado por: cálculos finales de precio con promociones
+     * Retorna: array con precio final y desglose de tarifas
+     */
     public function precioConTarifas(array $habitaciones, Carbon $checkIn, Carbon $checkOut, array $tarifas = []): array
     {
         $resultado = $this->precioSinTarifas($habitaciones, $checkIn, $checkOut);
@@ -205,6 +235,12 @@ class PrecioService
         return $aComprobar->isHoliday($fecha);
     }
 
+    /**
+     * Calcula precio total entre dos fechas para un tipo de habitación
+     * Suma precios diarios con modificadores aplicados
+     * Usado por: asignación de habitaciones, extensiones
+     * Retorna: precio total como float
+     */
     public function precioEntreFechas(string $tipo, Carbon $checkIn, Carbon $checkOut): float
     {
         $precioBase = $this->getPrecio($tipo);
@@ -225,6 +261,12 @@ class PrecioService
         return round($total, 2);
     }
 
+    /**
+     * Obtiene precios por día en un rango de fechas
+     * Calcula precio diario con modificadores para calendario
+     * Usado por: visualización de precios en calendario
+     * Retorna: array asociativo fecha => precio
+     */
     public function diaPrecio(Carbon $inicio, Carbon $fin): array
     {
         $tipos = TipoHabitacion::pluck('slug')->toArray();
@@ -248,6 +290,12 @@ class PrecioService
         return $resultados;
     }
 
+    /**
+     * Obtiene precios para todos los días de un mes
+     * Útil para precargar datos de calendario mensual
+     * Usado por: optimización de carga de calendario
+     * Retorna: array de precios por día del mes
+     */
     public function preciosMes(int $año, int $mes): array
     {
         $inicio = Carbon::createFromDate($año, $mes, 1)->startOfMonth();

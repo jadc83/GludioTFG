@@ -21,6 +21,11 @@ class ReservaService
     private \App\Services\PaymentService $servicioPago;
     private \App\Services\PdfService $servicioPDF;
 
+    /**
+     * Constructor del servicio de reservas
+     * Inyecta dependencias de servicios de precio, pago y PDF
+     * Usado por: Inyección de dependencias automática
+     */
     public function __construct(?PrecioService $servicioPrecio = null, ?\App\Services\PaymentService $servicioPago = null, ?\App\Services\PdfService $servicioPDF = null)
     {
         $this->servicioPrecio = $servicioPrecio ?? new PrecioService();
@@ -28,6 +33,12 @@ class ReservaService
         $this->servicioPDF = $servicioPDF ?? new \App\Services\PdfService();
     }
 
+    /**
+     * Prepara y valida los datos de una reserva antes de crearla
+     * Valida fechas, habitaciones y calcula precios totales
+     * Usado por: crearReserva(), acciones de reserva
+     * Retorna: array con datos preparados y validados
+     */
     public function prepararDatosReserva(array $datos): array
     {
         $checkIn = Carbon::parse($datos['check_in'] ?? null);
@@ -68,6 +79,12 @@ class ReservaService
         ];
     }
 
+    /**
+     * Prepara fechas para edición de reserva existente
+     * Valida que las nuevas fechas sean coherentes
+     * Usado por: acciones de modificación de reserva
+     * Retorna: array con checkIn y checkOut validados
+     */
     public function prepararFechasParaEdicion(array $requestDates, Reserva $reserva): array
     {
         $checkIn = isset($requestDates['check_in']) ? Carbon::parse($requestDates['check_in']) : Carbon::parse($reserva->check_in);
@@ -84,6 +101,12 @@ class ReservaService
         return [$checkIn, $checkOut];
     }
 
+    /**
+     * Formatea datos de reserva para interfaz de edición
+     * Incluye habitaciones, precios y estadísticas
+     * Usado por: controladores de edición de reserva
+     * Retorna: array con todos los datos formateados para edición
+     */
     public function formatearReservaParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): array
     {
         $noches = max(1, $checkIn->diffInDays($checkOut));
@@ -123,6 +146,8 @@ class ReservaService
     /**
      * Obtiene las habitaciones disponibles y calcula precios para la vista de edición
      * Devuelve una colección mapeada lista para enviar a la vista.
+     * Usado por: formatearReservaParaEdicion()
+     * Retorna: colección de habitaciones con precios calculados
      */
     public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
     {
@@ -175,6 +200,12 @@ class ReservaService
     /**
      * Valida la selección de habitaciones
      */
+    /**
+     * Valida y normaliza la configuración de habitaciones
+     * Verifica tipos válidos y cantidades positivas
+     * Usado por: prepararDatosReserva()
+     * Retorna: array de habitaciones validadas
+     */
     private function validarHabitaciones(array $habitaciones): array
     {
         $validadas = [];
@@ -209,6 +240,9 @@ class ReservaService
 
     /**
      * Calcula el precio total de la reserva
+     * Usa el servicio de precios para calcular sin tarifas adicionales
+     * Usado por: prepararDatosReserva()
+     * Retorna: precio total como float
      */
     private function calcularPrecioTotal(array $habitaciones, Carbon $checkIn, Carbon $checkOut): float
     {
@@ -223,6 +257,9 @@ class ReservaService
 
     /**
      * Genera un localizador único para la reserva
+     * Formato: G + 6 caracteres aleatorios en mayúsculas
+     * Usado por: crearReserva()
+     * Retorna: string único de 7 caracteres
      */
     public function generarLocalizador(): string
     {
@@ -235,7 +272,9 @@ class ReservaService
 
     /**
      * Crea una reserva usando los helpers del servicio.
-     * Devuelve la instancia creada (con id).
+     * Prepara datos, verifica disponibilidad, crea reserva y asigna habitaciones
+     * Usado por: controladores de reserva, acciones de creación
+     * Retorna: instancia de Reserva creada con ID
      */
     public function crearReserva(array $datos, ?User $usuario = null, string $status = 'pendiente'): Reserva
     {
@@ -290,6 +329,9 @@ class ReservaService
 
     /**
      * Elimina una reserva y sus relaciones dentro de transacción.
+     * Borra habitaciones asociadas y dispara evento de eliminación
+     * Usado por: controladores de eliminación de reserva
+     * Retorna: void
      */
     public function eliminarReserva(Reserva $reserva): void
     {
@@ -302,6 +344,9 @@ class ReservaService
 
     /**
      * Obtiene o crea el cliente para la reserva
+     * Busca por DNI, reutiliza si coincide, crea nuevo si no existe
+     * Usado por: crearReserva()
+     * Retorna: ID del cliente (string)
      */
     public function obtenerOCrearCliente(array $datos): string
     {
@@ -352,6 +397,9 @@ class ReservaService
 
     /**
      * Valida si los datos coinciden con un cliente existente
+     * Compara nombre, email y teléfono (case insensitive para nombre)
+     * Usado por: obtenerOCrearCliente()
+     * Retorna: boolean indicando si coinciden
      */
     private function datosCoinciden(Cliente $cliente, array $datos): bool
     {
@@ -362,6 +410,9 @@ class ReservaService
 
     /**
      * Crea un nuevo cliente
+     * Procesa dirección y crea registro en base de datos
+     * Usado por: obtenerOCrearCliente()
+     * Retorna: ID del cliente creado
      */
     private function crearCliente(array $datos): string
     {
@@ -392,6 +443,9 @@ class ReservaService
 
     /**
      * Verifica disponibilidad de habitaciones para un rango de fechas
+     * Itera sobre cada tipo de habitación requerido y verifica disponibilidad
+     * Usado por: crearReserva(), actualizarReserva()
+     * Retorna: true si todas están disponibles, lanza excepción si no
      */
     public function verificarDisponibilidadMultiple(array $habitacionesRequeridas, Carbon $checkIn, Carbon $checkOut): bool
     {
@@ -410,6 +464,9 @@ class ReservaService
 
     /**
      * Cuenta cuántas habitaciones de un tipo están disponibles (tiene en cuenta placeholders)
+     * Usa HabitacionService para cálculo preciso considerando reservas existentes y placeholders
+     * Usado por: verificarDisponibilidad()
+     * Retorna: número entero de habitaciones disponibles
      */
     private function contarHabitacionesDisponibles(string $tipo, Carbon $checkIn, Carbon $checkOut): int
     {
@@ -467,6 +524,8 @@ class ReservaService
 
     /**
      * Genera y devuelve el objeto PDF para una reserva delegando a PdfService
+     * Usado por: controladores que necesitan generar PDFs de reserva
+     * Retorna: objeto PDF generado
      */
     public function generarPdf(Reserva $reserva)
     {
@@ -475,6 +534,9 @@ class ReservaService
 
     /**
      * Determina si la reserva es elegible para reembolso (48h y pago pagado)
+     * Verifica que falten más de 48h para check-in y que el pago esté completado
+     * Usado por: controladores de reembolso, interfaces de usuario
+     * Retorna: boolean indicando si puede reembolsarse
      */
     public function puedeReembolsar(Reserva $reserva): bool
     {
@@ -503,6 +565,9 @@ class ReservaService
 
     /**
      * Delegación a PaymentService para manejar eventos de reembolso desde Stripe.
+     * Procesa webhooks de reembolso y actualiza estado de pagos
+     * Usado por: controladores de webhooks de Stripe
+     * Retorna: void
      */
     public function handleRefundEvent($refundObj): void
     {
@@ -510,7 +575,10 @@ class ReservaService
     }
 
     /**
-     * Asigna habitaciones a una reserva
+     * Asigna habitaciones a una reserva creando placeholders
+     * Verifica disponibilidad y crea registros HabitacionReserva con habitacion_id = null
+     * Usado por: crearReserva() durante el proceso de reserva
+     * Retorna: void
      */
     public function asignarHabitaciones(Reserva $reserva, array $habitacionesRequeridas): void
     {
@@ -547,6 +615,12 @@ class ReservaService
         }
     }
 
+    /**
+     * Asigna habitaciones físicas durante el check-in
+     * Busca habitaciones disponibles y las asigna a placeholders existentes
+     * Usado por: MarcarCheckInAction, procesos de check-in
+     * Retorna: array con resultados de cada asignación
+     */
     public function asignarHabitacionEnCheckIn(Reserva $reserva, $actorId = null): array
     {
         $asignadas = [];
@@ -585,6 +659,12 @@ class ReservaService
         return $asignadas;
     }
 
+    /**
+     * Verifica si una habitación específica está disponible en un rango de fechas
+     * Excluye una reserva específica si se proporciona (para modificaciones)
+     * Usado por: modificaciones de reserva, extensiones
+     * Retorna: boolean indicando disponibilidad
+     */
     public function verificarDisponibilidadHabitacion(int $habitacionId, Carbon $checkIn, Carbon $checkOut, ?int $excluirReservaId = null): bool
     {
         $query = HabitacionReserva::where('habitacion_id', $habitacionId)
@@ -598,6 +678,12 @@ class ReservaService
         return !$query->exists();
     }
 
+    /**
+     * Formatea una colección de reservas para respuesta API
+     * Incluye cliente, habitaciones, precios y estadísticas
+     * Usado por: controladores de listado de reservas
+     * Retorna: array formateado de reservas
+     */
     public function formatearReservas($reservas): array
     {
         return $reservas->map(function ($reserva) {
@@ -630,6 +716,12 @@ class ReservaService
     }
 
 
+    /**
+     * Formatea información del cliente de una reserva
+     * Determina si es usuario registrado o cliente invitado
+     * Usado por: formatearReservas(), detalles de reserva
+     * Retorna: array con tipo y nombre del cliente
+     */
     public function formatearCliente($reserva): array
     {
         if ($reserva->reservable_type === 'App\\Models\\User') {
@@ -644,6 +736,12 @@ class ReservaService
         ];
     }
 
+    /**
+     * Actualiza una reserva existente con nuevos datos
+     * Verifica disponibilidad de habitaciones, actualiza fechas y reasigna habitaciones
+     * Usado por: controladores de actualización de reserva
+     * Retorna: array con reserva actualizada y precio total
+     */
     public function actualizarReserva(Reserva $reserva, array $validated, ?array $meta = null): array
     {
         $checkIn = Carbon::parse($validated['check_in']);
@@ -721,6 +819,12 @@ class ReservaService
         return ['refund' => $refundInfo];
     }
 
+    /**
+     * Obtiene información sobre la posibilidad de extender una reserva
+     * Verifica tiempo hasta checkout y estado de la reserva
+     * Usado por: interfaces de extensión de reserva
+     * Retorna: array con información de extensión disponible
+     */
     public function obtenerInfoExtension(Reserva $reserva): array
     {
         $checkOut = Carbon::parse($reserva->check_out);
@@ -745,6 +849,12 @@ class ReservaService
         ];
     }
 
+    /**
+     * Verifica disponibilidad de habitaciones para extensión de reserva
+     * Comprueba que las habitaciones asignadas estén libres en el período de extensión
+     * Usado por: procesos de extensión de reserva
+     * Retorna: array con números de habitaciones no disponibles
+     */
     public function verificarDisponibilidadExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): array
     {
         $habitacionesNoDisponibles = [];
@@ -769,6 +879,9 @@ class ReservaService
 
     /**
      * Calcula el precio de extensión de una reserva
+     * Suma precios de todas las habitaciones por el período de extensión
+     * Usado por: procesos de extensión de reserva
+     * Retorna: precio total de la extensión (float)
      */
     public function calcularPrecioExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): float
     {
@@ -788,6 +901,9 @@ class ReservaService
 
     /**
      * Aplica la extensión a una reserva
+     * Actualiza fechas de checkout y recalcula precio total
+     * Usado por: acciones de extensión de reserva
+     * Retorna: void
      */
     public function aplicarExtension(Reserva $reserva, Carbon $nuevoCheckOut, float $precioExtension): void
     {
@@ -804,6 +920,9 @@ class ReservaService
 
     /**
      * Extiende una reserva: valida, calcula precio y aplica si se confirma
+     * Verifica disponibilidad, calcula precio y aplica extensión si se confirma
+     * Usado por: acciones de extensión de reserva desde panel de control
+     * Retorna: array con resultado de la extensión
      */
     public function extenderReserva(string $localizador, int $numeroDias, bool $confirmar = false): array
     {
