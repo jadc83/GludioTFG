@@ -204,7 +204,7 @@ export default function IndexReserva({ reservas = [] }) {
                                                     ) : (
                                                         <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
                                                     )}
-                                                    <Badge 
+                                                    <Badge
                                                         label={
                                                             reserva.pago === 'pagado' ? 'Pagado' :
                                                             reserva.pago === 'devuelto' ? 'Devuelto' :
@@ -219,7 +219,7 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             {/* Estado Reserva */}
                                             <td className="px-6 py-6">
-                                                <Badge 
+                                                <Badge
                                                     label={
                                                         reserva.status === 'confirmado' ? 'Confirmada' :
                                                         reserva.status === 'en_estancia' ? 'En Estancia' :
