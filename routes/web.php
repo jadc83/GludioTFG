@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CuponController;
 use App\Http\Controllers\HabitacionController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PanelController;
@@ -79,5 +80,12 @@ Route::get('/empleados', function () { return redirect()->route('panel'); })->na
 Route::resource('reservas', ReservaController::class)->parameters(['reservas' => 'reserva'])->where(['reserva' => '[0-9]+'])->except('store')->middleware('auth');
 Route::post('/reservas/{reserva}/asignar-habitaciones', [ReservaController::class, 'asignarHabitaciones'])->name('reservas.asignar-habitaciones')->middleware('auth');
 Route::post('/reservas/{reserva}/desasignar-habitaciones', [ReservaController::class, 'desasignarHabitaciones'])->name('reservas.desasignar-habitaciones')->middleware('auth');
+
+// Cupones
+Route::post('/cupones/validar', [CuponController::class, 'validar'])->withoutMiddleware('web');
+Route::middleware(['auth'])->group(function () {
+    Route::resource('cupones', \App\Http\Controllers\CuponController::class)->parameters(['cupones' => 'cupon']);
+    Route::post('cupones/{cupon}/toggle', [\App\Http\Controllers\CuponController::class, 'toggle'])->name('cupones.toggle');
+});
 
 require __DIR__ . '/auth.php';

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { router } from '@inertiajs/react';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
 import Modal from '@/Components/Modal';
@@ -43,6 +44,8 @@ export default function Paso4Confirmacion({
     const [precioAvg, setprecioAvg] = useState(0);
     const [errorPagoLocal, setErrorPagoLocal] = useState(null);
     const [cuponDescuento, setCuponDescuento] = useState('');
+    const [descuentoAplicado, setDescuentoAplicado] = useState(0);
+    const [cuponValido, setCuponValido] = useState(null);
     const [clienteExistenteModal, setClienteExistenteModal] = useState(null);
     const [showClienteModal, setShowClienteModal] = useState(false);
     const datosReservaRef = useRef(null);
@@ -103,9 +106,7 @@ export default function Paso4Confirmacion({
 
     const crearReservaAlLlegar = async () => {
         try {
-            console.log('📤 Enviando tarifas a backend:', selectedTarifas);
-            const datosReserva = prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas: selectedTarifas });
-            console.log('📄 Payload tarifas:', datosReserva.tarifas);
+            const datosReserva = prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas: selectedTarifas, cupon_id: cuponValido?.cupon_id });
             const data = await crearReservaHook(datosReserva);
             const datosConfirmacion = {
                 localizador: data.localizador,
@@ -125,6 +126,50 @@ export default function Paso4Confirmacion({
             } else {
                 setErrorPagoLocal(error.message || 'Error al crear la reserva');
             }
+        }
+    };
+
+    const aplicarCupon = async () => {
+        if (!cuponDescuento.trim()) {
+            setErrorPagoLocal('Ingresa un código');
+            return;
+        }
+
+        try {
+            const response = await fetch('/cupones/validar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    codigo: cuponDescuento,
+                    email: formData.email,
+                    precio_total: monto,
+                }),
+            });
+
+            if (response.status === 419) {
+                setErrorPagoLocal('Sesión expirada, recarga la página');
+                return;
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                setDescuentoAplicado(result.descuento);
+                setCuponValido(result);
+                setErrorPagoLocal(null);
+                setMonto(result.precio_final);
+            } else {
+                setErrorPagoLocal(result.error || 'Código inválido');
+                setCuponValido(null);
+                setDescuentoAplicado(0);
+            }
+        } catch (error) {
+            setErrorPagoLocal('Error validando cupón');
+            setCuponValido(null);
         }
     };
 
@@ -245,13 +290,11 @@ export default function Paso4Confirmacion({
                                 <CuponDescuento
                                     value={cuponDescuento}
                                     onChange={(e) => setCuponDescuento(e.target.value)}
-                                    onApply={() => {
-                                        if (typeof window !== 'undefined') {
-                                            window.dispatchEvent(new CustomEvent('codigoEspecialAplicar', { detail: { codigo: cuponDescuento } }));
-                                        }
-                                        return true;
-                                    }}
+                                    onApply={aplicarCupon}
                                 />
+                                {cuponValido && (
+                                    <p className="text-[10px] text-green-600 font-bold mt-2">✓ Descuento de €{cuponValido.descuento.toFixed(2)}</p>
+                                )}
                             </div>
                             </div>
                         </div>

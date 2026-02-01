@@ -41,7 +41,7 @@ class ReservaService
      */
     public function prepararDatosReserva(array $datos): array
     {
-        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - tarifas recibidas:', ['tarifas' => $datos['tarifas'] ?? []]);
+        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datos recibidos:', ['cupon_id' => $datos['cupon_id'] ?? 'NULL', 'tarifas' => $datos['tarifas'] ?? []]);
 
         $checkIn = Carbon::parse($datos['check_in'] ?? null);
         $checkOut = Carbon::parse($datos['check_out'] ?? null);
@@ -84,6 +84,21 @@ class ReservaService
             }
         }
 
+        // Aplicar descuento de cupón si existe
+        $cuponId = null;
+        $descuentoAplicado = 0;
+        if (!empty($datos['cupon_id'])) {
+            $cupon = \App\Models\Cupon::find($datos['cupon_id']);
+            if ($cupon && $cupon->activo && now()->between($cupon->fecha_inicio, $cupon->fecha_fin)) {
+                $descuentoAplicado = $cupon->tipo === 'porcentaje'
+                    ? ($precioTotal * $cupon->valor / 100)
+                    : $cupon->valor;
+                $descuentoAplicado = min($descuentoAplicado, $precioTotal); // No permitir descuento negativo
+                // NO restar el descuento del precioTotal - mantener el precio original
+                $cuponId = $cupon->id;
+            }
+        }
+
         return [
             'nombre' => $datos['name'] ?? null,
             'email' => $datos['email'] ?? null,
@@ -97,6 +112,8 @@ class ReservaService
             'habitaciones' => $habitaciones,
             'precio_total' => $precioTotal,
             'tarifa_id' => $tarifaId,
+            'cupon_id' => $cuponId,
+            'descuento_aplicado' => $descuentoAplicado,
             'reservable_id' => $datos['reservable_id'] ?? null,
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
@@ -317,6 +334,12 @@ class ReservaService
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
             $localizador = $this->generarLocalizador();
 
+            \Illuminate\Support\Facades\Log::info('crearReserva - datosPreparados:', [
+                'cupon_id' => $datosPreparados['cupon_id'] ?? 'NULL',
+                'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
+                'precio_total' => $datosPreparados['precio_total'] ?? 0,
+            ]);
+
             $reserva = Reserva::create([
                 'localizador' => $localizador,
                 'reservable_id' => $datosPreparados['reservable_id'],
@@ -329,10 +352,27 @@ class ReservaService
                 'pago' => $datosPreparados['pago'] ?? 'pendiente',
                 'notas' => $datosPreparados['notas'] ?? 'Reserva creada',
                 'tarifa_id' => $datosPreparados['tarifa_id'] ?? null,
+                'cupon_id' => $datosPreparados['cupon_id'] ?? null,
+                'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
             ]);
 
             // Asignar habitaciones
             $this->asignarHabitaciones($reserva, $datosPreparados['habitaciones']);
+
+            // Registrar cupón aplicado en auditoría
+            if ($datosPreparados['cupon_id'] ?? null) {
+                \App\Models\CuponAplicado::create([
+                    'reserva_id' => $reserva->id,
+                    'cupon_id' => $datosPreparados['cupon_id'],
+                    'codigo' => \App\Models\Cupon::find($datosPreparados['cupon_id'])->codigo ?? '',
+                    'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
+                    'usuario_email' => $datosPreparados['email'] ?? '',
+                    'ip_address' => request()->ip(),
+                ]);
+
+                // Incrementar contador de usos
+                \App\Models\Cupon::find($datosPreparados['cupon_id'])->increment('usos_realizados');
+            }
 
             return $reserva;
         });
@@ -823,6 +863,7 @@ class ReservaService
                 'check_in' => $reserva->check_in,
                 'check_out' => $reserva->check_out,
                 'precio_total' => $reserva->precio_total,
+                'descuento_aplicado' => $reserva->descuento_aplicado ?? 0,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'reembolsos_total' => $reembolsosTotal,
