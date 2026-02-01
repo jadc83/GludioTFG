@@ -1,4 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
+import Badge from '@/Components/UI/Badge';
 import { FunnelIcon, InboxIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, CalendarIcon, UserIcon, HomeIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState, useMemo } from 'react';
@@ -38,30 +39,6 @@ export default function IndexReserva({ reservas = [] }) {
             channel.stopListening('ReservaCreada').stopListening('ReservaActualizada').stopListening('ReservaBorrada');
         };
     }, []);
-
-    // --- CONFIGURACIÓN DE ESTADOS PROFESIONALES ---
-    const configEstado = {
-        confirmado: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Confirmada' },
-        en_estancia: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'En Estancia' },
-        finalizado: { clase: 'bg-blue-50 text-blue-700 border-blue-100', label: 'Finalizada' },
-        cancelado: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Cancelada' },
-        no_presentado: { clase: 'bg-gray-100 text-gray-500 border-gray-200', label: 'No Presentado' },
-        pendiente: { clase: 'bg-purple-50 text-purple-700 border-purple-100', label: 'Pendiente' },
-        reembolso_parcial_pendiente: { clase: 'bg-orange-50 text-orange-700 border-orange-100', label: 'Reembolso Parcial Pendiente' },
-        reembolso_total_pendiente: { clase: 'bg-red-50 text-red-700 border-red-100', label: 'Reembolso Total Pendiente' },
-        reembolso_parcial_confirmado: { clase: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Reembolso Parcial Confirmado' },
-    };
-
-    const configPago = (reserva) => {
-        const estados = {
-            pagado: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Pagado' },
-            devuelto: { clase: 'bg-sky-50 text-sky-700 border-sky-100', label: 'Devuelto' },
-            pendiente: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Pendiente' },
-            reembolso_pendiente: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Reembolso Pendiente' },
-            reembolso_parcial_procesado: { clase: 'bg-orange-50 text-orange-700 border-orange-100', label: 'Parcialmente Reembolsado' },
-        };
-        return estados[reserva.pago] || estados.pendiente;
-    };
 
     const eliminarReserva = (id) => {
         if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
@@ -179,8 +156,6 @@ export default function IndexReserva({ reservas = [] }) {
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {reservas.map((reserva) => {
-                                    const estado = configEstado[reserva.status] || configEstado.pendiente;
-                                    const pago = configPago(reserva);
                                     return (
                                         <tr key={reserva.id} className="group hover:bg-gray-50/50 transition-colors">
                                             {/* Localizador Box */}
@@ -229,17 +204,36 @@ export default function IndexReserva({ reservas = [] }) {
                                                     ) : (
                                                         <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
                                                     )}
-                                                    <span className={`inline-flex w-fit px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${pago.clase}`}>
-                                                        {pago.label}
-                                                    </span>
+                                                    <Badge 
+                                                        label={
+                                                            reserva.pago === 'pagado' ? 'Pagado' :
+                                                            reserva.pago === 'devuelto' ? 'Devuelto' :
+                                                            reserva.pago === 'reembolso_pendiente' ? 'Reembolso Pendiente' :
+                                                            reserva.pago === 'reembolso_parcial_procesado' ? 'Parcialmente Reembolsado' :
+                                                            'Pendiente'
+                                                        }
+                                                        tipo={reserva.pago || 'pendiente'}
+                                                    />
                                                 </div>
                                             </td>
 
                                             {/* Estado Reserva */}
                                             <td className="px-6 py-6">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${estado.clase}`}>
-                                                    {estado.label}
-                                                </span>
+                                                <Badge 
+                                                    label={
+                                                        reserva.status === 'confirmado' ? 'Confirmada' :
+                                                        reserva.status === 'en_estancia' ? 'En Estancia' :
+                                                        reserva.status === 'finalizado' ? 'Finalizada' :
+                                                        reserva.status === 'cancelado' ? 'Cancelada' :
+                                                        reserva.status === 'no_presentado' ? 'No Presentado' :
+                                                        reserva.status === 'pendiente' ? 'Pendiente' :
+                                                        reserva.status === 'reembolso_parcial_pendiente' ? 'Reembolso Parcial Pendiente' :
+                                                        reserva.status === 'reembolso_total_pendiente' ? 'Reembolso Total Pendiente' :
+                                                        reserva.status === 'reembolso_parcial_confirmado' ? 'Reembolso Parcial Confirmado' :
+                                                        'Pendiente'
+                                                    }
+                                                    tipo={reserva.status || 'pendiente'}
+                                                />
                                             </td>
 
                                             {/* Acciones */}

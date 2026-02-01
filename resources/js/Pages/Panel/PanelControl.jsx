@@ -3,6 +3,7 @@ import '../../../css/estiloPanelControl.css';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
+import CreateCupon from '@/Components/cupones/formulario/CreateCupon';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon, TicketIcon} from '@heroicons/react/24/outline';
@@ -109,6 +110,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
                                     <CreateCliente iconOnly />
                                     <CreateHabitacion iconOnly />
                                     <CreateEmpleado iconOnly />
+                                    <CreateCupon iconOnly />
                                 </div>
                             </div>
                         </div>
