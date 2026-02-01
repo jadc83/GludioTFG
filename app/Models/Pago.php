@@ -27,6 +27,11 @@ class Pago extends Model
         return $this->belongsTo(Reserva::class);
     }
 
+    public function reembolsos()
+    {
+        return $this->hasMany(Refund::class, 'pago_id');
+    }
+
     public function marcarComoPagado()
     {
         $this->update([

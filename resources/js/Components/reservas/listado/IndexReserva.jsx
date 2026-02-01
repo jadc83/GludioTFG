@@ -42,21 +42,23 @@ export default function IndexReserva({ reservas = [] }) {
     // --- CONFIGURACIÓN DE ESTADOS PROFESIONALES ---
     const configEstado = {
         confirmado: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Confirmada' },
-        checked_in: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'En Estancia' },
-        checked_out: { clase: 'bg-blue-50 text-blue-700 border-blue-100', label: 'Finalizada' },
+        en_estancia: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'En Estancia' },
+        finalizado: { clase: 'bg-blue-50 text-blue-700 border-blue-100', label: 'Finalizada' },
         cancelado: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Cancelada' },
         no_presentado: { clase: 'bg-gray-100 text-gray-500 border-gray-200', label: 'No Presentado' },
         pendiente: { clase: 'bg-purple-50 text-purple-700 border-purple-100', label: 'Pendiente' },
+        reembolso_parcial_pendiente: { clase: 'bg-orange-50 text-orange-700 border-orange-100', label: 'Reembolso Parcial Pendiente' },
+        reembolso_total_pendiente: { clase: 'bg-red-50 text-red-700 border-red-100', label: 'Reembolso Total Pendiente' },
+        reembolso_parcial_confirmado: { clase: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Reembolso Parcial Confirmado' },
     };
 
     const configPago = (reserva) => {
-        const reembolsos = reserva.reembolsos_total || 0;
-        if (reembolsos > 0 && reembolsos < reserva.precio_total) return { clase: 'bg-orange-50 text-orange-700 border-orange-100', label: 'Parcial' };
-
         const estados = {
             pagado: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Pagado' },
             devuelto: { clase: 'bg-sky-50 text-sky-700 border-sky-100', label: 'Devuelto' },
             pendiente: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Pendiente' },
+            reembolso_pendiente: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Reembolso Pendiente' },
+            reembolso_parcial_procesado: { clase: 'bg-orange-50 text-orange-700 border-orange-100', label: 'Parcialmente Reembolsado' },
         };
         return estados[reserva.pago] || estados.pendiente;
     };
@@ -131,10 +133,14 @@ export default function IndexReserva({ reservas = [] }) {
                     >
                         <option value="todos">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
-                        <option value="confirmado">Confirmado</option>
-                        <option value="checked_in">Check-in</option>
-                        <option value="checked_out">Check-out</option>
-                        <option value="cancelado">Cancelado</option>
+                        <option value="confirmado">Confirmada</option>
+                        <option value="en_estancia">En Estancia</option>
+                        <option value="finalizado">Finalizada</option>
+                        <option value="cancelado">Cancelada</option>
+                        <option value="no_presentado">No Presentado</option>
+                        <option value="reembolso_parcial_pendiente">Reembolso Parcial Pendiente</option>
+                        <option value="reembolso_total_pendiente">Reembolso Total Pendiente</option>
+                        <option value="reembolso_parcial_confirmado">Reembolso Parcial Confirmado</option>
                     </select>
                 </div>
 

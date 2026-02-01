@@ -41,6 +41,8 @@ class ReservaService
      */
     public function prepararDatosReserva(array $datos): array
     {
+        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - tarifas recibidas:', ['tarifas' => $datos['tarifas'] ?? []]);
+
         $checkIn = Carbon::parse($datos['check_in'] ?? null);
         $checkOut = Carbon::parse($datos['check_out'] ?? null);
 
@@ -58,8 +60,29 @@ class ReservaService
             throw new \Exception('Debe seleccionar al menos una habitación.');
         }
 
-        // Calcular precio total
+        // Calcular precio total (sin tarifas)
         $precioTotal = $this->calcularPrecioTotal($habitaciones, $checkIn, $checkOut);
+
+        // Si hay tarifas, sumarlas al precio total
+        $tarifaId = null;
+        if (!empty($datos['tarifas']) && is_array($datos['tarifas'])) {
+            // Procesar TODAS las tarifas seleccionadas
+            $tarifasIds = [];
+            foreach ($datos['tarifas'] as $tarifaIdInput) {
+                if ($tarifaIdInput) {
+                    $tarifa = \App\Models\Tarifa::find($tarifaIdInput);
+                    if ($tarifa) {
+                        // Usar el ID de la tarifa principal (primera no-desayuno o cualquiera)
+                        if (!$tarifaId) {
+                            $tarifaId = $tarifa->id;
+                        }
+                        // Sumar TODAS los modificadores de precio
+                        $precioTotal += ($tarifa->modificador_precio ?? 0);
+                        $tarifasIds[] = $tarifa->id;
+                    }
+                }
+            }
+        }
 
         return [
             'nombre' => $datos['name'] ?? null,
@@ -73,6 +96,7 @@ class ReservaService
             'check_out' => $checkOut,
             'habitaciones' => $habitaciones,
             'precio_total' => $precioTotal,
+            'tarifa_id' => $tarifaId,
             'reservable_id' => $datos['reservable_id'] ?? null,
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
@@ -304,6 +328,7 @@ class ReservaService
                 'status' => $status,
                 'pago' => $datosPreparados['pago'] ?? 'pendiente',
                 'notas' => $datosPreparados['notas'] ?? 'Reserva creada',
+                'tarifa_id' => $datosPreparados['tarifa_id'] ?? null,
             ]);
 
             // Asignar habitaciones

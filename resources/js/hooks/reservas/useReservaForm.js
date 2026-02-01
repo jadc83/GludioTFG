@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { router, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
 import { formatearFecha } from '@/utils/fecha';
 import { getReservaPayload } from '@/utils/reservaPayload';
@@ -50,6 +50,12 @@ export default function useReservaForm() {
 	const [idReserva, setIdReserva] = useState(flash.reserva_id);
 	const [localizador, setLocalizador] = useState(flash.localizador);
 
+	// Método público para actualizar tarifas desde componentes
+	const actualizarTarifas = useCallback((nuevasTarifas) => {
+		console.log('📋 actualizarTarifas:', nuevasTarifas);
+		setSelectedTarifas(nuevasTarifas);
+	}, []);
+
 	useEffect(() => {
 		// track rango changes (no global debug exposure in production)
 	}, [rango]);
@@ -60,16 +66,13 @@ export default function useReservaForm() {
 	}, [flash.reserva_id, flash.localizador]);
 
 	useEffect(() => {
-		const onTarifas = (e) => setSelectedTarifas(e?.detail || {});
 		const onLista = (e) => {
 			const map = {};
 			(e?.detail || []).forEach(t => map[t.id] = t);
 			setTarifasLookup(map);
 		};
-		window.addEventListener('tarifasSeleccionadas', onTarifas);
 		window.addEventListener('tarifasLista', onLista);
 		return () => {
-			window.removeEventListener('tarifasSeleccionadas', onTarifas);
 			window.removeEventListener('tarifasLista', onLista);
 		};
 	}, []);
@@ -266,7 +269,7 @@ export default function useReservaForm() {
 	}, [rango, habitaciones.habitacionesSeleccionadas, selectedTarifas, habitaciones.habitacionesPorTipo]);
 
 	const confirmarReserva = () => {
-		const payload = getReservaPayload({ getValues, rango, habitacionesSeleccionadas: habitaciones.habitacionesSeleccionadas, usuarioActual });
+		const payload = getReservaPayload({ getValues, rango, habitacionesSeleccionadas: habitaciones.habitacionesSeleccionadas, usuarioActual, tarifasSeleccionadas: selectedTarifas });
 		router.post('/reservas', payload, {
 			onSuccess: () => { setPasoActual(1); habitaciones.limpiarRango(); const drawer = document.getElementById('drawer-toggle'); if (drawer) drawer.checked = false; router.reload(); },
 			onError: (err) => setMensajeError(err.message || Object.values(err)[0] || 'Error al reservar')
@@ -283,6 +286,7 @@ export default function useReservaForm() {
 		precioSinTarifas, ultimoResultadoPrecio: ultimoPrecio,
 		confirmarReserva,
 		usuarioActual, idReserva, localizador, numHuespedes, setNumHuespedes,
-		selectedTarifas, tarifasLookup
+		selectedTarifas, tarifasLookup,
+		actualizarTarifas,
 	};
 }

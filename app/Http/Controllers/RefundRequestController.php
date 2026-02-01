@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\PaymentService;
+use App\Services\RefundService;
 use App\Services\PrecioService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Notification;
@@ -15,6 +16,13 @@ use App\Notifications\RefundRequestProcessedNotification;
 
 class RefundRequestController extends Controller
 {
+    protected RefundService $refundService;
+
+    public function __construct(RefundService $refundService)
+    {
+        $this->refundService = $refundService;
+    }
+
     public function store(Request $request, Reserva $reserva)
     {
         Log::info('Incoming RefundRequest store', ['user_id' => Auth::id(), 'localizador' => $reserva->localizador ?? null, 'payload' => $request->all()]);
@@ -125,7 +133,15 @@ class RefundRequestController extends Controller
                 'admin_reason' => $request->admin_reason ?? null,
                 'processed_at' => now(),
                 'stripe_refund_id' => $res['refund_id'] ?? null,
+                'processed_refund_amount_cents' => $res['refund_amount'] ? intval(round($res['refund_amount'] * 100)) : null,
             ]);
+
+            $reserva = $refundRequest->reserva()->with('reembolsos', 'refundRequests')->first();
+
+            // Sincronizar estados después del reembolso
+            if ($reserva) {
+                $this->refundService->sincronizarEstadoReservaSegunReembolsos($reserva);
+            }
 
             // Notify the requester that the refund has been processed
             try {
@@ -156,6 +172,8 @@ class RefundRequestController extends Controller
                             'check_out' => $checkOut->toDateString(),
                             'precio_total' => $pendingNuevoTotal ?? $reserva->precio_total,
                         ]);
+                        // Sincronizar de nuevo después de cambiar fechas
+                        $this->refundService->sincronizarEstadoReservaSegunReembolsos($reserva);
                     }
                 }
             } catch (\Throwable $e) {
@@ -176,6 +194,12 @@ class RefundRequestController extends Controller
             'admin_reason' => $request->admin_reason,
             'processed_at' => now(),
         ]);
+
+        // Sincronizar estado de la reserva (regresa a confirmado si estaba en pendiente)
+        $reserva = $refundRequest->reserva()->with('reembolsos', 'refundRequests')->first();
+        if ($reserva) {
+            $this->refundService->sincronizarEstadoReservaSegunReembolsos($reserva);
+        }
 
         // Notify requester of rejection
         try {

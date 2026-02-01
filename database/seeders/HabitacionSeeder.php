@@ -13,59 +13,47 @@ class HabitacionSeeder extends Seeder
      */
     public function run(): void
     {
-        // 50 habitaciones: 20 dobles, 15 suite, 15 familiar
-        $habitaciones = [
-            // Dobles (20 habitaciones)
-            ['numero' => '107', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con vista al mar', 'estado' => 'disponible'],
-            ['numero' => '108', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con aire acondicionado', 'estado' => 'disponible'],
-            ['numero' => '109', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con bañera', 'estado' => 'disponible'],
-            ['numero' => '110', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble estándar', 'estado' => 'disponible'],
-            ['numero' => '111', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con decoración moderna', 'estado' => 'ocupada'],
-            ['numero' => '112', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con jacuzzi', 'estado' => 'disponible'],
-            ['numero' => '113', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con ventanas amplias', 'estado' => 'disponible'],
-            ['numero' => '114', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con terraza', 'estado' => 'mantenimiento'],
-            ['numero' => '115', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con servicio de habitación 24h', 'estado' => 'disponible'],
-            ['numero' => '116', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con TV de pantalla plana', 'estado' => 'disponible'],
-            ['numero' => '117', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble deluxe', 'estado' => 'disponible'],
-            ['numero' => '118', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con conexión Wi-Fi', 'estado' => 'disponible'],
-            ['numero' => '119', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble con cama king size', 'estado' => 'disponible'],
-            ['numero' => '120', 'tipo' => 'doble', 'capacidad' => 2, 'descripcion' => 'Habitación doble confortables', 'estado' => 'disponible'],
+        // Habitaciones distribuidas en 3 plantas
+        // Planta 1 (100-120): 21 habitaciones dobles
+        // Planta 2 (200-220): 21 habitaciones suite
+        // Planta 3 (300-320): 21 habitaciones familiar
 
-            // Suite (15 habitaciones)
-            ['numero' => '201', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con sala de estar y dormitorio separado', 'estado' => 'disponible'],
-            ['numero' => '202', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite ejecutiva con vistas panorámicas', 'estado' => 'disponible'],
-            ['numero' => '203', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con jacuzzi privado', 'estado' => 'disponible'],
-            ['numero' => '204', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite presidencial con terraza', 'estado' => 'ocupada'],
-            ['numero' => '205', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con minibar completo', 'estado' => 'disponible'],
-            ['numero' => '206', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con sauna privada', 'estado' => 'disponible'],
-            ['numero' => '207', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con acceso a gym privado', 'estado' => 'disponible'],
-            ['numero' => '208', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con cocina americana', 'estado' => 'disponible'],
-            ['numero' => '209', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con bañera de hidromasaje', 'estado' => 'limpieza'],
-            ['numero' => '210', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite deluxe con servicio de conserjería', 'estado' => 'disponible'],
-            ['numero' => '211', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con área de trabajo ejecutiva', 'estado' => 'disponible'],
-            ['numero' => '212', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con vista al atardecer', 'estado' => 'disponible'],
-            ['numero' => '213', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con cama king size doble', 'estado' => 'disponible'],
-            ['numero' => '214', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con acceso a lounge exclusivo', 'estado' => 'disponible'],
-            ['numero' => '215', 'tipo' => 'suite', 'capacidad' => 4, 'descripcion' => 'Suite con desayuno incluido', 'estado' => 'disponible'],
+        $habitaciones = [];
 
-            // Familiar (15 habitaciones)
-            ['numero' => '301', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con dos dormitorios', 'estado' => 'disponible'],
-            ['numero' => '302', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con sala de estar', 'estado' => 'disponible'],
-            ['numero' => '303', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con cocina', 'estado' => 'disponible'],
-            ['numero' => '304', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con 2 baños', 'estado' => 'disponible'],
-            ['numero' => '305', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con zona de juegos', 'estado' => 'ocupada'],
-            ['numero' => '306', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con terraza privada', 'estado' => 'disponible'],
-            ['numero' => '307', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con aire acondicionado central', 'estado' => 'disponible'],
-            ['numero' => '308', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con servicio de niñera', 'estado' => 'disponible'],
-            ['numero' => '309', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con camas dobles y individuales', 'estado' => 'mantenimiento'],
-            ['numero' => '310', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con access a piscina infantil', 'estado' => 'disponible'],
-            ['numero' => '311', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con mini bar', 'estado' => 'disponible'],
-            ['numero' => '312', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con smart TV', 'estado' => 'disponible'],
-            ['numero' => '313', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con balcones', 'estado' => 'disponible'],
-            ['numero' => '314', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con conexión rápida', 'estado' => 'disponible'],
-            ['numero' => '315', 'tipo' => 'familiar', 'capacidad' => 6, 'descripcion' => 'Habitación familiar con estacionamiento incluido', 'estado' => 'disponible'],
-        ];
+        // PLANTA 1: 100-120 (Dobles)
+        for ($i = 100; $i <= 120; $i++) {
+            $habitaciones[] = [
+                'numero' => (string)$i,
+                'tipo' => 'doble',
+                'capacidad' => 2,
+                'descripcion' => "Habitación doble planta 1 - Nº {$i}",
+                'estado' => 'disponible'
+            ];
+        }
 
+        // PLANTA 2: 200-220 (Suite)
+        for ($i = 200; $i <= 220; $i++) {
+            $habitaciones[] = [
+                'numero' => (string)$i,
+                'tipo' => 'suite',
+                'capacidad' => 2,
+                'descripcion' => "Suite planta 2 - Nº {$i}",
+                'estado' => 'disponible'
+            ];
+        }
+
+        // PLANTA 3: 300-320 (Familiar)
+        for ($i = 300; $i <= 320; $i++) {
+            $habitaciones[] = [
+                'numero' => (string)$i,
+                'tipo' => 'familiar',
+                'capacidad' => 4,
+                'descripcion' => "Habitación familiar planta 3 - Nº {$i}",
+                'estado' => 'disponible'
+            ];
+        }
+
+        // Insertar todas las habitaciones
         foreach ($habitaciones as $habitacion) {
             Habitacion::create($habitacion);
         }

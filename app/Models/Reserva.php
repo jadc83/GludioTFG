@@ -43,6 +43,11 @@ class Reserva extends Model
             return $this->hasMany(Refund::class, 'reserva_id');
         }
 
+        public function refundRequests()
+        {
+            return $this->hasMany(\App\Models\RefundRequest::class, 'reserva_id');
+        }
+
     public function tarifa()
     {
         return $this->belongsTo(Tarifa::class, 'tarifa_id');

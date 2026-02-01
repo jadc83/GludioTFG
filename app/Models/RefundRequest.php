@@ -24,6 +24,7 @@ class RefundRequest extends Model
         'admin_reason',
         'processed_at',
         'stripe_refund_id',
+        'processed_refund_amount_cents',
     ];
 
     protected $casts = [

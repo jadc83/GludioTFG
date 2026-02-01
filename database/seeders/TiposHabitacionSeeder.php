@@ -15,9 +15,9 @@ class TiposHabitacionSeeder extends Seeder
     public function run()
     {
         $tipos = [
-            ['slug' => 'doble', 'nombre' => 'Doble', 'capacidad' => 2, 'precio_base' => '50.00'],
-            ['slug' => 'suite', 'nombre' => 'Suite', 'capacidad' => 2, 'precio_base' => '90.00'],
-            ['slug' => 'familiar', 'nombre' => 'Familiar', 'capacidad' => 4, 'precio_base' => '120.00'],
+            ['slug' => 'doble', 'nombre' => 'Doble', 'capacidad' => 2, 'precio_base' => '90.00'],
+            ['slug' => 'suite', 'nombre' => 'Suite', 'capacidad' => 4, 'precio_base' => '150.00'],
+            ['slug' => 'familiar', 'nombre' => 'Familiar', 'capacidad' => 6, 'precio_base' => '110.00'],
         ];
 
         // Eliminar registros no permitidos para asegurar que sólo existan estos tres

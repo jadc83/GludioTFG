@@ -21,16 +21,13 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
 
         if (necesitaUpdate) {
             onChange(next);
-            if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('tarifasSeleccionadas', { detail: next }));
-            }
         }
 
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('tarifasLista', { detail: tarifas }));
         }
 
-    }, [tarifas]);
+    }, [tarifas, onChange]);
 
     function toggleTarifa(id) {
         const tarifa = tarifas.find(t => t.id === id);
@@ -38,9 +35,6 @@ export default function TarifasSelector({ tarifas = [], seleccion = {}, onChange
 
         const next = { ...seleccion, [id]: !seleccion[id] };
         if (onChange) onChange(next);
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('tarifasSeleccionadas', { detail: next }));
-        }
     }
 
     const ordenadas = [...tarifas.filter(esDesayuno), ...tarifas.filter(t => !esDesayuno(t))];

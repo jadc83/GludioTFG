@@ -98,7 +98,41 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError = ()
 
     const procesarPago = async (e) => {
         e.preventDefault();
-        if (!stripe || !elements || !acepta) return;
+        if (!stripe || !elements || !acepta) {
+            console.error('❌ Validación inicial fallida:', { stripe: !!stripe, elements: !!elements, acepta });
+            return;
+        }
+
+        // Validar que CardElement tenga datos
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+            console.error('❌ CardElement no encontrado');
+            setMensaje('Error: elemento de tarjeta no encontrado.');
+            return;
+        }
+
+        console.log('🔍 Validando tarjeta...');
+
+        // Crear un payment method para validar que la tarjeta está completa
+        const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+            billing_details: { name, email },
+        });
+
+        if (pmError) {
+            console.error('❌ Error tarjeta:', pmError);
+            setMensaje(`Tarjeta inválida: ${pmError.message}`);
+            return;
+        }
+
+        if (!paymentMethod) {
+            console.error('❌ No se creó payment method');
+            setMensaje('Por favor, completa los datos de tu tarjeta correctamente.');
+            return;
+        }
+
+        console.log('✅ Tarjeta válida, procediendo con pago');
 
         // Guard: evitar enviar si faltan fechas u habitaciones en el payload
         if (!reservaData || !reservaData.check_in || !reservaData.check_out) {
@@ -110,6 +144,26 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError = ()
         if (!Array.isArray(reservaData.habitaciones) || reservaData.habitaciones.length === 0) {
             setMensaje('Selecciona al menos una habitación.');
             try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('faltanHabitaciones')); } catch (e) {}
+            setProcesando(false);
+            return;
+        }
+
+        // Validar campos de formulario
+        if (!name || !name.trim()) {
+            setMensaje('Por favor, ingresa tu nombre.');
+            nameRef.current?.focus();
+            setProcesando(false);
+            return;
+        }
+        if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setMensaje('Por favor, ingresa un email válido.');
+            emailRef.current?.focus();
+            setProcesando(false);
+            return;
+        }
+        if (!telefono || !telefono.trim()) {
+            setMensaje('Por favor, ingresa tu teléfono.');
+            telefonoRef.current?.focus();
             setProcesando(false);
             return;
         }
@@ -309,7 +363,7 @@ function FormularioPagoInterno({ reservaData, monto, onPagoExitoso, onError = ()
                         </label>
                     )}
 
-                    <button type="submit" disabled={procesando || !stripe || !acepta} className="w-full py-6 mt-4 rounded-xl bg-[#7a0202] text-white font-black text-[12px] uppercase tracking-[0.35em] shadow-2xl shadow-red-900/20 hover:bg-black hover:shadow-none transition-all active:scale-[0.97] disabled:opacity-20 disabled:grayscale">
+                    <button type="submit" disabled={procesando || !stripe || !elements || !acepta || !name?.trim() || !email?.trim() || !telefono?.trim()} className="w-full py-6 mt-4 rounded-xl bg-[#7a0202] text-white font-black text-[12px] uppercase tracking-[0.35em] shadow-2xl shadow-red-900/20 hover:bg-black hover:shadow-none transition-all active:scale-[0.97] disabled:opacity-20 disabled:grayscale">
                         {procesando ? 'Procesando...' : 'Pagar'}
                     </button>
                 </div>

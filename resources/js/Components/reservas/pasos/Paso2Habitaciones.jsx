@@ -8,11 +8,14 @@ import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones, habitacionesSeleccionadas, agruparHabitacionesPorTipo, getImagen,
     actualizarSeleccionHabitacion, getTotalHabitaciones, avanzarPaso, retrocederPaso,
-    numHuespedes, rango, preciosPorTipo = {}
+    numHuespedes, rango, preciosPorTipo = {}, actualizarTarifas = () => {}, selectedTarifas = {}
 }) {
     const [imagenModalAbierto, setImagenModalAbierto] = useState(null);
     const [tarifas, setTarifas] = useState([]);
-    const [seleccionTarifas, setSeleccionTarifas] = useState({});
+
+    useEffect(() => {
+        console.log('Paso2 - selectedTarifas prop recibido:', selectedTarifas);
+    }, [selectedTarifas]);
 
     const tipos = agruparHabitacionesPorTipo(numHuespedes);
     const totalSeleccionado = getTotalHabitaciones();
@@ -120,12 +123,12 @@ export default function Paso2Habitaciones({
                         </div>
 
                         <div className="bg-white/60 rounded-xl p-5 border border-gray-100 shadow-sm transition-all hover:bg-white hover:shadow-md">
-                            <TarifasSelector tarifas={tarifas} seleccion={seleccionTarifas} onChange={setSeleccionTarifas} />
+                            <TarifasSelector tarifas={tarifas} seleccion={selectedTarifas} onChange={actualizarTarifas} />
                         </div>
                     </div>
 
                     <div className="p-6 border-t border-gray-200 bg-gris">
-                        <DetalleSubtotal habitacionesSeleccionadas={habitacionesSeleccionadas} rango={rango} tipos={tipos} preciosPorTipo={preciosPorTipo} tarifasSeleccionadas={seleccionTarifas} tarifas={tarifas} />
+                        <DetalleSubtotal habitacionesSeleccionadas={habitacionesSeleccionadas} rango={rango} tipos={tipos} preciosPorTipo={preciosPorTipo} tarifasSeleccionadas={selectedTarifas} tarifas={tarifas} />
                     </div>
                 </aside>
             </main>

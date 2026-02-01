@@ -205,8 +205,8 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
         } finally { setIsProcessing(false); }
     };
 
-    const isCancelled = reserva.status?.toLowerCase().includes('cancel');
-    const isCheckedIn = reserva.status?.toLowerCase() === 'checked_in';
+    const isCancelled = reserva.status?.toLowerCase().includes('cancelado');
+    const isCheckedIn = reserva.status?.toLowerCase() === 'en_estancia';
 
     return (
         <AuthenticatedLayout>
@@ -369,7 +369,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                         </button>
                                     )}
 
-                                    {!isCancelled && reserva.status !== 'checked_out' && (
+                                    {!isCancelled && reserva.status !== 'finalizado' && (
                                         <button
                                             onClick={() => window.location.href = route('scan-qr') + `?localizador=${reserva.localizador}&action=checkout`}
                                             className="w-full py-4 bg-black/30 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black/40 transition border border-white/10"

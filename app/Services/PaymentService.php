@@ -13,15 +13,17 @@ use Stripe\StripeClient;
 class PaymentService
 {
 	protected StripeClient $stripe;
+	protected RefundService $refundService;
 
 	/**
 	 * Constructor del servicio de pagos
-	 * Inicializa cliente de Stripe con clave secreta
+	 * Inicializa cliente de Stripe con clave secreta y RefundService
 	 * Usado por: inyección automática de dependencias
 	 */
-	public function __construct()
+	public function __construct(?RefundService $refundService = null)
 	{
 		$this->stripe = new StripeClient(config('services.stripe.secret'));
+		$this->refundService = $refundService ?? new RefundService();
 	}
 
 	/**
@@ -79,6 +81,28 @@ class PaymentService
 			return ['success' => false, 'message' => 'No queda saldo disponible para reembolsar en este pago.'];
 		}
 
+		// Verificar si ya existe un refund reciente con el mismo monto (idempotencia)
+		$existingRefund = Refund::where('pago_id', $pago->id)
+			->where('amount_cents', $montoCents)
+			->where('created_at', '>', now()->subMinutes(5))
+			->first();
+
+		if ($existingRefund && $existingRefund->status === 'succeeded') {
+			Log::warning('Refund ya existe para este pago y monto', [
+				'reserva_id' => $reserva->id,
+				'pago_id' => $pago->id,
+				'monto_cents' => $montoCents,
+				'stripe_refund_id' => $existingRefund->stripe_refund_id
+			]);
+
+			return [
+				'success' => true,
+				'refund_id' => $existingRefund->stripe_refund_id,
+				'refund_amount' => $existingRefund->amount_cents / 100,
+				'message' => 'Refund ya existe'
+			];
+		}
+
 		try {
 			return DB::transaction(function () use ($reserva, $pago, $pi_id, $montoCents) {
 				$stripeRefund = $this->stripe->refunds->create([
@@ -119,9 +143,7 @@ class PaymentService
 	public function manejarEventoReembolso($refundObj): void
 	{
 		try {
-			$refundData = is_object($refundObj) && property_exists($refundObj, 'refunds')
-				? end($refundObj->refunds->data)
-				: $refundObj;
+			$refundData = is_object($refundObj) && property_exists($refundObj, 'refunds') ?end($refundObj->refunds->data) : $refundObj;
 
 			if (!$refundData || empty($refundData->id)) return;
 			if (Refund::where('stripe_refund_id', $refundData->id)->exists()) return;
@@ -141,33 +163,20 @@ class PaymentService
 
 				$this->sincronizarEstadosPostReembolso($pago->reserva, $pago);
 			});
+
 		} catch (\Throwable $e) {
+
 			Log::error("Error en webhook de reembolso: " . $e->getMessage());
 		}
 	}
 
 	protected function sincronizarEstadosPostReembolso(Reserva $reserva, Pago $pago): void
 	{
-		$totalPagadoCents = (int)round($reserva->pagos()->where('estado', 'completado')->sum('monto') * 100);
-		$totalReembolsadoCents = (int)$reserva->reembolsos()->sum('amount_cents');
-		$precioTotalCents = (int)round(($reserva->precio_total ?? 0) * 100);
+		// Actualizar estado del pago según reembolsos
+		$this->refundService->sincronizarEstadoPagoSegunReembolsos($pago);
 
-		// Marcar el pago como reembolsado a nivel de pago
-		$pago->update(['estado' => 'reembolsado']);
-
-		// Solo cancelar la reserva si los reembolsos cubren el precio total de la reserva
-		if ($precioTotalCents > 0 && $totalReembolsadoCents >= $precioTotalCents) {
-			$reserva->update(['pago' => 'devuelto', 'status' => 'cancelado']);
-			$pago->update(['estado' => 'cancelado']);
-		}
-
-		RefundRequest::where('reserva_id', $reserva->id)
-			->where('status', 'pending')
-			->update([
-				'status' => 'approved',
-				'processed_at' => now(),
-				'pago_id' => $pago->id
-			]);
+		// Actualizar estado de la reserva según reembolsos
+		$this->refundService->sincronizarEstadoReservaSegunReembolsos($reserva);
 	}
 
 	private function obtenerPaymentIntentId(?Pago $pago, Reserva $reserva): ?string
@@ -189,7 +198,41 @@ class PaymentService
 	private function getSaldoReembolsable(Pago $pago): int
 	{
 		$pagado = (int)round($pago->monto * 100);
-		$reembolsado = (int)Refund::where('pago_id', $pago->id)->sum('amount_cents');
-		return max(0, $pagado - $reembolsado);
+		// Sumar solo refunds completados de este pago específico
+		$reembolsado = (int)Refund::where('pago_id', $pago->id)
+			->where('status', 'succeeded') // Solo contar refunds que Stripe confirió como exitosos
+			->sum('amount_cents');
+
+		$saldoLocal = max(0, $pagado - $reembolsado);
+
+		// Validar contra Stripe también si tenemos PI
+		if ($pago->stripe_payment_intent_id) {
+			try {
+				$stripeIntent = $this->stripe->paymentIntents->retrieve($pago->stripe_payment_intent_id);
+
+				// Para PaymentIntent en estado succeeded, amount_capturable es 0
+				// En ese caso usamos amount_received (lo que fue pagado realmente)
+				// Para otros estados, amount_capturable es lo disponible para capturar
+				$saldoStripe = 0;
+				if ($stripeIntent->status === 'succeeded') {
+					// Para pagos completados, saldo = lo recibido - lo reembolsado
+					$amountReceived = $stripeIntent->amount_received ?? $stripeIntent->amount ?? 0;
+					$saldoStripe = max(0, $amountReceived);
+				} elseif ($stripeIntent->amount_capturable > 0) {
+					// Para pagos pendientes de captura
+					$saldoStripe = max(0, $stripeIntent->amount_capturable);
+				} else {
+					// Fallback
+					$saldoStripe = max(0, $stripeIntent->amount ?? 0);
+				}
+
+				// Usar el menor de los dos (por seguridad)
+				return min($saldoLocal, $saldoStripe);
+			} catch (\Throwable $e) {
+				Log::warning("Error validating refundable balance against Stripe: " . $e->getMessage());
+			}
+		}
+
+		return $saldoLocal;
 	}
 }

@@ -50,6 +50,10 @@ export default function Paso4Confirmacion({
     const [highlightFechas, setHighlightFechas] = useState(false);
 
     useEffect(() => {
+        console.log('Paso4 - selectedTarifas recibido:', selectedTarifas);
+    }, [selectedTarifas]);
+
+    useEffect(() => {
         const cargarPrecio = async () => {
             if (!rango?.from || !rango?.to) {
                 setMonto(0);
@@ -99,8 +103,9 @@ export default function Paso4Confirmacion({
 
     const crearReservaAlLlegar = async () => {
         try {
-            const datosReserva = prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual });
-            datosReservaRef.current = datosReserva;
+            console.log('📤 Enviando tarifas a backend:', selectedTarifas);
+            const datosReserva = prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas: selectedTarifas });
+            console.log('📄 Payload tarifas:', datosReserva.tarifas);
             const data = await crearReservaHook(datosReserva);
             const datosConfirmacion = {
                 localizador: data.localizador,
@@ -262,7 +267,7 @@ export default function Paso4Confirmacion({
                                     setOpcionPagoSeleccionada={setOpcionPagoSeleccionada}
                                     procesando={procesando}
                                     crearReservaAlLlegar={crearReservaAlLlegar}
-                                    prepararDatosReserva={() => prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual })}
+                                    prepararDatosReserva={() => prepararDatosReserva({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas: selectedTarifas })}
                                     rango={rango}
                                     monto={monto}
                                     errorPago={errorPagoLocal}
