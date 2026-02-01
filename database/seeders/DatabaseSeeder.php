@@ -29,6 +29,11 @@ class DatabaseSeeder extends Seeder
 
         // Asegurar que al menos un admin exista para pruebas
         $this->call(\Database\Seeders\AdminUserSeeder::class);
+        $this->call(\Database\Seeders\TiposHabitacionSeeder::class);
+        $this->call(\Database\Seeders\TarifasSeeder::class);
+        $this->call(\Database\Seeders\HabitacionSeeder::class);
+        $this->call(\Database\Seeders\ServiciosSeeder::class);
+        $this->call(\Database\Seeders\ClienteSeeder::class);
         $this->call(\Database\Seeders\CuponSeeder::class);
     }
 }
