@@ -65,13 +65,4 @@ class ReservaInvalidStatusException extends Exception
     }
 }
 
-/**
- * Excepción cuando hay conflicto al procesar operaciones simultáneas
- */
-class ReservaConcurrencyException extends Exception
-{
-    public function __construct(string $message = 'Error de concurrencia al actualizar la reserva')
-    {
-        parent::__construct($message, 409);
-    }
-}
+
