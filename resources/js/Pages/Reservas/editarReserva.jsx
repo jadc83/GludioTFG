@@ -38,13 +38,11 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
     ];
 
     // --- LÓGICA DE DATOS ---
-    // Función eliminada: fetchAvailableHabitaciones nunca se llamaba
 
     useEffect(() => {
         if (reserva?.habitaciones) {
-            const currentIds = reserva.habitaciones.map(h => h.id || h.habitacion_id);
+            const currentIds = reserva.habitaciones.map(h => h.habitacion_id || h.id);
             setSelectedHabitacionIds(prev => {
-                // Mantener la longitud correcta y preservar selecciones existentes
                 const newIds = [...prev];
                 newIds.length = currentIds.length;
                 return newIds;
@@ -73,15 +71,27 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
     const handleDesasignarHabitacion = async (habitacionId) => {
         setSavingHabitaciones(true);
         try {
-            await router.post(`/reservas/${reserva.id}/desasignar-habitaciones`, {
-                habitacion_ids: [habitacionId]
-            }, {
-                preserveScroll: true
+            const response = await fetch(`/reservas/${reserva.id}/desasignar-habitaciones`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ habitacion_ids: [habitacionId] })
             });
 
-            showToast('Habitación desasignada con éxito', 'success');
-            refresh(); // Refrescar para obtener los cambios
+            const data = await response.json();
+
+            if (data.success && data.reserva) {
+                // Actualizar estado con la respuesta del servidor
+                setReserva(data.reserva);
+                showToast('Habitación desasignada con éxito', 'success');
+            } else {
+                showToast(data.error || 'Error al desasignar', 'error');
+            }
         } catch (error) {
+            console.error('Error desasignando:', error);
             showToast('Error al desasignar habitación', 'error');
         } finally {
             setSavingHabitaciones(false);
@@ -92,20 +102,37 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
         setSavingHabitaciones(true);
 
         try {
-            // Solo asignar habitaciones (las desasignaciones se hacen individualmente)
             const asignarIds = selectedHabitacionIds.filter(id => id !== null && id !== undefined);
 
-            if (asignarIds.length > 0) {
-                await router.post(`/reservas/${reserva.id}/asignar-habitaciones`, {
-                    habitacion_ids: asignarIds
-                }, {
-                    preserveScroll: true
-                });
+            if (asignarIds.length === 0) {
+                showToast('Selecciona al menos una habitación', 'warning');
+                setSavingHabitaciones(false);
+                return;
             }
 
-            showToast('Habitaciones asignadas con éxito', 'success');
-            refresh(); // Refrescar para obtener los cambios
+            // Hacer el POST al servidor
+            const response = await fetch(`/reservas/${reserva.id}/asignar-habitaciones`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ habitacion_ids: asignarIds })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.reserva) {
+                // Actualizar estado con la respuesta del servidor
+                setReserva(data.reserva);
+                setSelectedHabitacionIds(data.reserva.habitaciones.map(h => h.habitacion_id));
+                showToast('Habitaciones asignadas con éxito', 'success');
+            } else {
+                showToast(data.error || 'Error al asignar', 'error');
+            }
         } catch (error) {
+            console.error('Error asignando:', error);
             showToast('Error al asignar habitaciones', 'error');
         } finally {
             setSavingHabitaciones(false);
@@ -224,7 +251,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                 </div>
                                 <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
-                                        <div key={hab.id || `hab-${idx}`} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
+                                        <div key={hab.habitacion_id || hab.id || `hab-${idx}`} className="p-6 flex justify-between items-center hover:bg-gray-50 transition">
                                             <div>
                                                 <span className="block font-black text-gray-900 text-lg uppercase leading-tight">
                                                     {hab.numero ? `Habitación ${hab.numero}` : (hab.tipo || 'Habitación Estándar')}
@@ -239,7 +266,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                                         ✓ Asignada
                                                     </span>
                                                     <button
-                                                        onClick={() => handleDesasignarHabitacion(hab.id)}
+                                                        onClick={() => handleDesasignarHabitacion(hab.habitacion_id || hab.id)}
                                                         disabled={savingHabitaciones}
                                                         className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition disabled:opacity-50"
                                                         title="Quitar asignación de habitación"

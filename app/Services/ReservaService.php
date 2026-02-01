@@ -835,6 +835,38 @@ class ReservaService
     }
 
     /**
+     * Formatea lista de reembolsos con tipos (parcial/completo)
+     * Calcula los tipos según el monto acumulado vs total de la reserva
+     * Usado por: controlador show(), detalles de reserva
+     * Retorna: array de reembolsos formateados
+     */
+    public function formatearReembolsos(Reserva $reserva): array
+    {
+        $reservaTotal = $reserva->precio_total ?? 0;
+        $cumulative = 0;
+
+        return $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reservaTotal, &$cumulative) {
+            $amount = ($r->amount_cents ?? 0) / 100;
+            $cumulative += $amount;
+
+            // Determinar si es reembolso parcial o completo
+            $tipo = 'parcial';
+            if ($reservaTotal > 0 && $cumulative >= $reservaTotal) {
+                $tipo = 'completo';
+            }
+
+            return [
+                'id' => $r->id,
+                'monto' => round($amount, 2),
+                'status' => $r->status,
+                'reason' => $r->reason ?? null,
+                'created_at' => $r->created_at?->format('Y-m-d H:i:s') ?? null,
+                'tipo' => $tipo,
+            ];
+        })->values()->toArray();
+    }
+
+    /**
      * Actualiza una reserva existente con nuevos datos
      * Verifica disponibilidad de habitaciones, actualiza fechas y reasigna habitaciones
      * Usado por: controladores de actualización de reserva

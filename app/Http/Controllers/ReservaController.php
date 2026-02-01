@@ -9,6 +9,9 @@ use App\Models\Reserva;
 use App\Services\ReservaService;
 use App\Services\HabitacionService;
 use App\Services\PrecioService;
+use App\Services\ReservaFormatterService;
+use App\Services\ReservaExtensionService;
+use App\Http\Traits\JsonResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -20,55 +23,31 @@ use App\Models\Pago;
 
 class ReservaController extends Controller
 {
+    use JsonResponse;
+
     protected ReservaService $reservaService;
     protected PrecioService $precioService;
     protected HabitacionService $habitacionService;
+    protected ReservaFormatterService $formatterService;
+    protected ReservaExtensionService $extensionService;
 
     /**
      * Constructor del controlador de reservas
      * Inyecta servicios necesarios para gestión de reservas
-     * Servicios: ReservaService, PrecioService, HabitacionService
+     * Servicios: ReservaService, PrecioService, HabitacionService, ReservaFormatterService, ReservaExtensionService
      */
-    public function __construct(ReservaService $reservaService, PrecioService $precioService, HabitacionService $habitacionService)
-    {
+    public function __construct(
+        ReservaService $reservaService,
+        PrecioService $precioService,
+        HabitacionService $habitacionService,
+        ReservaFormatterService $formatterService,
+        ReservaExtensionService $extensionService
+    ) {
         $this->reservaService = $reservaService;
         $this->precioService = $precioService;
         $this->habitacionService = $habitacionService;
-    }
-
-    /**
-     * Envía email de reserva usando clase mailable
-     * Maneja envío con email alternativo si falla el principal
-     * Usado por: store(), marcarCheckIn(), marcarCheckOut()
-     */
-    private function sendReservationMail($reserva, $mailable, $fallbackEmail = null)
-    {
-        try {
-            $destino = $reserva->reservable?->email ?? $fallbackEmail;
-            if ($destino) {
-                Mail::to($destino)->send($mailable);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('No se pudo enviar email de reserva: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Respuesta JSON exitosa estandarizada
-     * Usado por: múltiples métodos para respuestas consistentes
-     */
-    private function jsonOk(array $data = [], int $status = 200)
-    {
-        return response()->json(array_merge(['success' => true], $data), $status);
-    }
-
-    /**
-     * Respuesta JSON de error estandarizada
-     * Usado por: múltiples métodos para respuestas de error consistentes
-     */
-    private function jsonError(string $message, int $status = 400)
-    {
-        return response()->json(['success' => false, 'error' => $message], $status);
+        $this->formatterService = $formatterService;
+        $this->extensionService = $extensionService;
     }
 
     /**
@@ -88,23 +67,13 @@ class ReservaController extends Controller
             ->orderBy('check_in', 'desc')
             ->get();
 
-        $reservasJson = $this->reservaService->formatearReservas($reservas);
+        $reservasJson = $this->formatterService->formatearReservas($reservas);
 
         if ($request->wantsJson()) {
             return response()->json($reservasJson);
         }
 
         return ['reservas' => $reservasJson];
-    }
-
-    /**
-     * Muestra formulario de creación de reserva
-     * GET /reservas/create
-     * Retorna: vista del formulario de reserva
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -175,13 +144,15 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\HabitacionesDisponiblesAction::class);
             $resultado = $action->handle($request->all());
+
             if (!empty($resultado['error'])) {
-                return response()->json(['error' => $resultado['error']], 400);
+                return $this->error($resultado['error'], 400);
             }
-            return response()->json($resultado['data'] ?? []);
+
+            return $this->success(['data' => $resultado['data'] ?? []]);
         } catch (\Exception $e) {
             Log::error('Error en habitacionesDisponibles: ' . $e->getMessage());
-            return response()->json(['error' => 'Error al cargar habitaciones'], 400);
+            return $this->error('Error al cargar habitaciones disponibles', 500);
         }
     }
 
@@ -189,40 +160,19 @@ class ReservaController extends Controller
     public function show(Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
-        // Preparar lista de reembolsos con tipo (parcial/completo) para la vista
-        // Calcular tipo de cada reembolso
-        $reservaTotal = $reserva->precio_total ?? 0;
-        $cumulative = 0;
-        $reembolsosList = $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reserva, &$cumulative, $reservaTotal) {
-            $amount = ($r->amount_cents ?? 0) / 100;
-            $cumulative += $amount;
-            $tipo = 'parcial';
-            if ($reservaTotal > 0 && $cumulative >= $reservaTotal) {
-                $tipo = 'completo';
-            }
-
-            return [
-                'id' => $r->id,
-                'monto' => round($amount, 2),
-                'status' => $r->status,
-                'reason' => $r->reason ?? null,
-                'created_at' => $r->created_at?->format('Y-m-d H:i:s') ?? null,
-                'tipo' => $tipo,
-            ];
-        })->values();
 
         return inertia('Reservas/DetalleReserva', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
-                'cliente' => $this->reservaService->formatearCliente($reserva),
+                'cliente' => $this->formatterService->formatearCliente($reserva),
                 'check_in' => $reserva->check_in,
                 'check_out' => $reserva->check_out,
                 'precio_total' => $reserva->precio_total,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'reembolsos_total' => ($reserva->reembolsos->sum('amount_cents') ?? 0) / 100,
-                'reembolsos' => $reembolsosList,
+                'reembolsos' => $this->formatterService->formatearReembolsos($reserva),
                 'habitaciones' => $reserva->habitaciones->map(function ($hr) {
                     return [
                         'id' => $hr->id,
@@ -240,14 +190,14 @@ class ReservaController extends Controller
 
         [$checkIn, $checkOut] = $this->reservaService->prepararFechasParaEdicion($request->all(), $reserva);
 
-        $reservaData = $this->reservaService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
-        $habitacionesDisponibles = $this->reservaService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
+        $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
+        $habitacionesDisponibles = $this->formatterService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
         return inertia('Reservas/editarReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
-}
+    }
 
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
@@ -328,23 +278,40 @@ class ReservaController extends Controller
             'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
         ]);
 
+        // Detectar si es solicitud JSON/AJAX por headers
+        $isJson = $request->expectsJson() || $request->header('Accept') === 'application/json';
+
         try {
             $result = $this->reservaService->asignarHabitacionManual($reserva, $request->habitacion_ids);
 
             // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
+            $reserva->load(['habitaciones.habitacion', 'reservable']);
 
-            if ($request->wantsJson()) {
+            try {
+                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+            } catch (\Exception $formatError) {
+                if ($isJson) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Error al formatear la respuesta: ' . $formatError->getMessage()
+                    ], 422);
+                }
+                throw $formatError;
+            }
+
+            if ($isJson) {
                 return response()->json([
                     'success' => true,
                     'message' => $result['message'],
-                    'data' => $result
+                    'data' => $result,
+                    'reserva' => $reservaFormateada
                 ]);
             }
 
             return redirect()->back()->with('success', $result['message']);
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
+            if ($isJson) {
                 return response()->json([
                     'success' => false,
                     'error' => $e->getMessage()
@@ -366,23 +333,40 @@ class ReservaController extends Controller
             'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
         ]);
 
+        // Detectar si es solicitud JSON/AJAX por headers
+        $isJson = $request->expectsJson() || $request->header('Accept') === 'application/json';
+
         try {
             $result = $this->reservaService->desasignarHabitaciones($reserva, $request->habitacion_ids);
 
             // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
+            $reserva->load(['habitaciones.habitacion', 'reservable']);
 
-            if ($request->wantsJson()) {
+            try {
+                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+            } catch (\Exception $formatError) {
+                if ($isJson) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Error al formatear la respuesta: ' . $formatError->getMessage()
+                    ], 422);
+                }
+                throw $formatError;
+            }
+
+            if ($isJson) {
                 return response()->json([
                     'success' => true,
                     'message' => $result['message'],
-                    'data' => $result
+                    'data' => $result,
+                    'reserva' => $reservaFormateada
                 ]);
             }
 
             return redirect()->back()->with('success', $result['message']);
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
+            if ($isJson) {
                 return response()->json([
                     'success' => false,
                     'error' => $e->getMessage()
@@ -401,13 +385,13 @@ class ReservaController extends Controller
             $resultado = $action->handle($request->validated());
 
             if (isset($resultado['error'])) {
-                return response()->json([ 'success' => false, 'error' => $resultado['error']], 422);
+                return $this->error($resultado['error'], 422);
             }
 
-            return response()->json([ 'success' => true, 'data' => $resultado ]);
+            return $this->success(['data' => $resultado], 200);
         } catch (\Exception $e) {
-            Log::error('Error en calcularPrecio', [ 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine() ]);
-            return response()->json([  'success' => false, 'error' => 'Error al calcular precio: ' . $e->getMessage() ], 500);
+            Log::error('Error en calcularPrecio', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return $this->error('Error al calcular precio: ' . $e->getMessage(), 500);
         }
     }
 
@@ -420,15 +404,14 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\BuscarPorLocalizadorAction::class);
             $resultado = $action->handle($localizador);
-            if (! ($resultado['success'] ?? false)) {
-                return response()->json($resultado, 404);
+
+            if (!($resultado['success'] ?? false)) {
+                return $this->error($resultado['error'] ?? 'Reserva no encontrada', 404);
             }
-            return response()->json($resultado);
+
+            return $this->success($resultado);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al buscar reserva: ' . $e->getMessage(),
-                ], 500);
+            return $this->error('Error al buscar reserva: ' . $e->getMessage(), 500);
         }
     }
 
@@ -440,10 +423,7 @@ class ReservaController extends Controller
             $pdf = $action->handle($localizador);
             return $pdf->download("Comprobante_{$localizador}.pdf");
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'No se encontró la reserva o error al generar PDF: ' . $e->getMessage(),
-                ], 404);
+            return $this->error('No se encontró la reserva o error al generar PDF: ' . $e->getMessage(), 404);
         }
     }
 
@@ -452,13 +432,11 @@ class ReservaController extends Controller
     {
         try {
             $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
-            $reservaService = new ReservaService();
-            $info = $reservaService->obtenerInfoExtension($reserva);
-            return response()->json(array_merge(['success' => true], is_array($info) ? $info : []));
-
-            } catch (\Exception $e) {
-            return response()->json([ 'success' => false, 'error' => $e->getMessage()], 404);
-            }
+            $info = $this->extensionService->obtenerInfoExtension($reserva);
+            return $this->success(is_array($info) ? $info : []);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 404);
+        }
     }
 
     /* Extiende una reserva con nuevos días adicionales */
@@ -468,12 +446,11 @@ class ReservaController extends Controller
             $numeroDias = (int) $request->input('numero_dias');
             $confirmar = (bool) $request->input('confirmar');
 
-            $action = app(\App\Actions\Reservas\ExtenderReservaAction::class);
-            $resultado = $action->handle($localizador, $numeroDias, $confirmar);
+            $resultado = $this->extensionService->extenderReserva($localizador, $numeroDias, $confirmar);
 
-            return response()->json($resultado);
+            return $this->success($resultado);
         } catch (\Exception $e) {
-            return response()->json([ 'success' => false, 'error' => 'Error al extender la reserva: ' . $e->getMessage()], 500);
+            return $this->error('Error al extender la reserva: ' . $e->getMessage(), 500);
         }
     }
 
@@ -486,19 +463,21 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\ModificarEstanciaAction::class);
             $resultado = $action->handle($localizador, $request->validated());
+
             if (isset($resultado['error'])) {
-                return response()->json($resultado, 402);
-            }
-            if (isset($resultado['success']) && $resultado['success'] === false) {
-                return response()->json($resultado, 400);
+                return $this->error($resultado['error'], 402);
             }
 
-            return response()->json($resultado);
+            if (isset($resultado['success']) && $resultado['success'] === false) {
+                return $this->error($resultado['message'] ?? 'Error al modificar la estancia', 400);
+            }
+
+            return $this->success($resultado);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([ 'success' => false, 'message' => 'Reserva no encontrada.' ], 404);
+            return $this->error('Reserva no encontrada.', 404);
         } catch (\Exception $e) {
             Log::error('Error en modificarEstancia: ' . $e->getMessage());
-            return response()->json([ 'success' => false, 'message' => 'Error al modificar la estancia: ' . $e->getMessage() ], 500);
+            return $this->error('Error al modificar la estancia: ' . $e->getMessage(), 500);
         }
     }
 
@@ -511,12 +490,12 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\PreviewModificarEstanciaAction::class);
             $resultado = $action->handle($localizador, $request->validated());
-            return response()->json($resultado);
+            return $this->success($resultado);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([ 'success' => false, 'message' => 'Reserva no encontrada.' ], 404);
+            return $this->error('Reserva no encontrada.', 404);
         } catch (\Exception $e) {
             Log::error('Error en previewModificarEstancia: ' . $e->getMessage());
-            return response()->json([ 'success' => false, 'message' => 'Error en preview: ' . $e->getMessage() ], 500);
+            return $this->error('Error en preview: ' . $e->getMessage(), 500);
         }
     }
 
@@ -532,13 +511,15 @@ class ReservaController extends Controller
             $params = $request->query();
             $action = app(\App\Actions\Reservas\PreciosPorDiaAction::class);
             $resultado = $action->handle($params);
+
             if (!($resultado['success'] ?? false)) {
-                return response()->json($resultado, 400);
+                return $this->error($resultado['error'] ?? 'Error calculando precios', 400);
             }
-            return response()->json($resultado);
+
+            return $this->success($resultado);
         } catch (\Exception $e) {
             Log::error('Error en preciosPorDia: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Error calculando precios'], 500);
+            return $this->error('Error calculando precios', 500);
         }
     }
 
@@ -548,19 +529,18 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\PreciosMesAction::class);
             $resultado = $action->handle((int)$yyyy, (int)$mm);
+
             if (!($resultado['success'] ?? false)) {
-                return response()->json($resultado, 400);
+                return $this->error($resultado['error'] ?? 'Error calculando precios por mes', 400);
             }
-            return response()->json($resultado);
+
+            return $this->success($resultado);
         } catch (\Exception $e) {
             Log::error('Error en preciosMes: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Error calculando precios por mes'], 500);
+            return $this->error('Error calculando precios por mes', 500);
         }
     }
 
-    /**
-     * Marca una reserva como check-in (se usa desde el escáner)
-     */
     /**
      * Realiza check-in de una reserva
      * POST /reservas/{localizador}/check-in - Procesa check-in desde panel
@@ -572,11 +552,15 @@ class ReservaController extends Controller
         try {
             $action = app(\App\Actions\Reservas\MarcarCheckInAction::class);
             $resultado = $action->handle($localizador);
-            $statusCode = ($resultado['success'] ?? false) ? 200 : 409;
-            return response()->json($resultado, $statusCode);
+
+            if (!($resultado['success'] ?? false)) {
+                return $this->error($resultado['message'] ?? 'No se pudo marcar check-in', 409);
+            }
+
+            return $this->success($resultado);
         } catch (\Exception $e) {
             Log::error('Error en marcarCheckIn: ' . $e->getMessage());
-            return $this->jsonError('No se pudo marcar check-in: ' . $e->getMessage(), 400);
+            return $this->error('No se pudo marcar check-in: ' . $e->getMessage(), 400);
         }
     }
 

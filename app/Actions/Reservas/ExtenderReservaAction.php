@@ -2,19 +2,19 @@
 
 namespace App\Actions\Reservas;
 
-use App\Services\ReservaService;
+use App\Services\ReservaExtensionService;
 
 class ExtenderReservaAction
 {
-    protected ReservaService $reservaService;
+    protected ReservaExtensionService $extensionService;
 
-    public function __construct(ReservaService $reservaService)
+    public function __construct(ReservaExtensionService $extensionService)
     {
-        $this->reservaService = $reservaService;
+        $this->extensionService = $extensionService;
     }
 
     public function handle(string $localizador, int $numeroDias, bool $confirmar = false): array
     {
-        return $this->reservaService->extenderReserva($localizador, $numeroDias, $confirmar);
+        return $this->extensionService->extenderReserva($localizador, $numeroDias, $confirmar);
     }
 }
