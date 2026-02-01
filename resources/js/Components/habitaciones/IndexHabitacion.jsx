@@ -1,5 +1,4 @@
 import EditHabitacion from '@/Components/habitaciones/formulario/EditHabitacion';
-import Badge from '@/Components/UI/Badge';
 import { InboxIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon, UsersIcon } from '@heroicons/react/24/outline';
 import { useState, useMemo, useEffect } from 'react';
 
@@ -21,7 +20,14 @@ export default function IndexHabitacion({ habitaciones = [] }) {
         setTimeout(() => setHabitacionEditar(null), 300);
     };
 
-
+    // --- MAPEO DE ESTADOS PROFESIONAL ---
+    const configEstado = {
+        disponible: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Disponible' },
+        ocupada: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Ocupada' },
+        mantenimiento: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Mantenimiento' },
+        limpieza: { clase: 'bg-sky-50 text-sky-700 border-sky-100', label: 'Limpieza' },
+        default: { clase: 'bg-gray-50 text-gray-500 border-gray-100', label: 'Desconocido' }
+    };
 
     const { habitacionesPaginadas, totalPaginas, inicio, fin } = useMemo(() => {
         const totalPaginas = Math.ceil(habitaciones.length / itemsPorPagina);
@@ -49,50 +55,47 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Localizador</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Tipo</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Capacidad</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Estado Actual</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Descripción / Notas</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-right">Gestión</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Identificador</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Tipo y Capacidad</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">Estado Actual</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Descripción / Notas</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Gestión</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {habitacionesPaginadas.map((hab) => {
+                                        const estado = configEstado[hab.estado] || configEstado.default;
                                         return (
                                             <tr key={hab.id} className="group hover:bg-gray-50/50 transition-colors">
-                                                <td className="px-6 py-5 align-middle text-center">
-                                                    <div className="h-12 w-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200 mx-auto">
-                                                        <span className="font-mono text-lg font-black">{hab.numero}</span>
+                                                <td className="px-6 py-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-12 w-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200">
+                                                            <span className="font-mono text-lg font-black">{hab.numero}</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">Room ID: {hab.id}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-middle text-center">
-                                                    <span className="font-black text-gray-900 uppercase text-sm tracking-tight">{hab.tipo}</span>
-                                                </td>
-                                                <td className="px-6 py-5 align-middle text-center">
-                                                    <div className="flex items-center justify-center gap-1.5 text-gray-400">
-                                                        <UsersIcon className="h-3 w-3" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">{hab.capacidad} plazas</span>
+                                                <td className="px-6 py-6">
+                                                    <div>
+                                                        <span className="block font-black text-gray-900 uppercase text-sm tracking-tight">{hab.tipo}</span>
+                                                        <div className="flex items-center gap-1.5 mt-1 text-gray-400">
+                                                            <UsersIcon className="h-3 w-3" />
+                                                            <span className="text-xs font-bold uppercase tracking-widest">{hab.capacidad} plazas</span>
+                                                        </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-middle text-center">
-                                                    <Badge
-                                                        label={
-                                                            hab.estado === 'disponible' ? 'Disponible' :
-                                                            hab.estado === 'ocupada' ? 'Ocupada' :
-                                                            hab.estado === 'mantenimiento' ? 'Mantenimiento' :
-                                                            hab.estado === 'limpieza' ? 'Limpieza' :
-                                                            'Desconocido'
-                                                        }
-                                                        tipo={hab.estado || 'default'}
-                                                    />
+                                                <td className="px-6 py-6 text-center">
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${estado.clase}`}>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-current mr-2 animate-pulse" />
+                                                        {estado.label}
+                                                    </span>
                                                 </td>
-                                                <td className="px-6 py-5 align-middle text-center">
+                                                <td className="px-6 py-6">
                                                     <p className="text-xs text-gray-500 max-w-xs line-clamp-2 leading-relaxed italic">
                                                         {hab.descripcion || 'Sin especificaciones técnicas.'}
                                                     </p>
                                                 </td>
-                                                <td className="px-6 py-5 align-middle text-right">
+                                                <td className="px-6 py-6 text-right">
                                                     <button
                                                         onClick={() => abrirEdicion(hab)}
                                                         className="inline-flex items-center justify-center p-3 bg-gray-50 text-gray-400 hover:text-[#7a0202] hover:bg-red-50 rounded-xl transition-all group-hover:scale-110 shadow-sm"

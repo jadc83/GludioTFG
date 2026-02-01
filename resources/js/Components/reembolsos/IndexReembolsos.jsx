@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import Badge from '@/Components/UI/Badge';
 import {
     InboxIcon,
     CheckIcon,
@@ -21,7 +20,14 @@ export default function IndexReembolsos({
     onDelete = null
 }) {
 
-
+    // --- CONFIGURACIÓN DE ESTADOS FINANCIEROS ---
+    const configEstado = {
+        pending: { clase: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Pendiente' },
+        approved: { clase: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Aprobado' },
+        processed: { clase: 'bg-blue-50 text-blue-700 border-blue-100', label: 'Procesado' },
+        rejected: { clase: 'bg-rose-50 text-rose-700 border-rose-100', label: 'Rechazado' },
+        default: { clase: 'bg-gray-50 text-gray-500 border-gray-100', label: 'Desconocido' }
+    };
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
@@ -71,6 +77,7 @@ export default function IndexReembolsos({
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {refunds.map((r) => {
+                                        const estado = configEstado[r.status] || configEstado.default;
                                         return (
                                             <tr key={r.id} className="group hover:bg-gray-50/50 transition-colors">
                                                 {/* ID / Ticket */}
@@ -127,16 +134,9 @@ export default function IndexReembolsos({
 
                                                 {/* Estado */}
                                                 <td className="px-6 py-6 text-center">
-                                                    <Badge
-                                                        label={
-                                                            r.status === 'pending' ? 'Pendiente' :
-                                                            r.status === 'approved' ? 'Aprobado' :
-                                                            r.status === 'processed' ? 'Procesado' :
-                                                            r.status === 'rejected' ? 'Rechazado' :
-                                                            'Desconocido'
-                                                        }
-                                                        tipo={r.status || 'pendiente'}
-                                                    />
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${estado.clase}`}>
+                                                        {estado.label}
+                                                    </span>
                                                 </td>
 
                                                 {/* Acciones */}

@@ -77,17 +77,17 @@ export default function IndexEmpleados({ empleados = [] }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Empleado</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Número</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Departamento</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Puesto</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-right">Acciones</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Empleado</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Número</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Departamento</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Puesto</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {empleadosPaginados.map((e) => (
                                         <tr key={e.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-black text-gray-400 text-xs uppercase">
                                                         {e.name?.charAt(0)}
@@ -98,10 +98,10 @@ export default function IndexEmpleados({ empleados = [] }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 align-middle text-center font-mono text-sm font-medium text-gray-700">{e.numero_empleado}</td>
-                                            <td className="px-6 py-5 align-middle text-center text-sm font-bold text-gray-700 uppercase tracking-tight">{e.departamento || '—'}</td>
-                                            <td className="px-6 py-5 align-middle text-center text-sm text-gray-600 uppercase text-[11px] font-bold">{e.puesto || '—'}</td>
-                                            <td className="px-6 py-5 align-middle text-right">
+                                            <td className="px-6 py-4 font-mono text-sm font-medium text-gray-700">{e.numero_empleado}</td>
+                                            <td className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-tight">{e.departamento || '—'}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 uppercase text-[11px] font-bold">{e.puesto || '—'}</td>
+                                            <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"><EyeIcon className="h-5 w-5" /></button>
                                                     	<button onClick={() => abrirEdicion(e)} className="p-2 text-gray-400 hover:text-[#7a0202] hover:bg-red-50 rounded-lg transition"><PencilIcon className="h-5 w-5" /></button>

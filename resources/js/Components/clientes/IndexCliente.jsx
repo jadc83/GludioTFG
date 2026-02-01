@@ -105,17 +105,17 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Cliente</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Documento</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Contacto</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Nacionalidad</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-right">Acciones</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Cliente</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Documento</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Contacto</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Nacionalidad</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {clientesPaginados.map((cliente) => (
                                         <tr key={`${cliente.tipo_usuario}-${cliente.id}`} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-black text-gray-400 text-xs">
                                                         {cliente.name.charAt(0)}
@@ -129,7 +129,7 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-4">
                                                 {cliente.tipo_documento ? (
                                                     <div className="flex flex-col">
                                                         <span className="text-[10px] font-bold text-[#7a0202] uppercase leading-none mb-1">{cliente.tipo_documento}</span>
@@ -139,16 +139,16 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                                                     <span className="text-[10px] font-bold text-gray-300 uppercase">Sin Documento</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-4">
                                                 <div className="text-sm font-bold text-gray-700">{cliente.telefono || '—'}</div>
                                                 <div className="text-[10px] text-gray-400 uppercase font-bold truncate max-w-[150px]">{cliente.direccion || 'No hay dirección'}</div>
                                             </td>
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-4">
                                                 <span className="inline-block px-2 py-1 bg-gray-100 rounded text-[10px] font-black uppercase text-gray-500 tracking-wider">
                                                     {cliente.nacionalidad || 'N/A'}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 align-middle text-right">
+                                            <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
                                                         <EyeIcon className="h-5 w-5" />

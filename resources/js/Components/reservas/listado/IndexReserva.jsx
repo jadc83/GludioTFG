@@ -146,14 +146,12 @@ export default function IndexReserva({ reservas = [] }) {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50/50 border-b border-gray-100">
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Localizador</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Cliente</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Habitación</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Fechas Reservadas</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Precio Total</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Estado Pago</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Estado Reserva</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right align-middle">Acciones</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Localizador</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Cliente / Hab</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Estadía</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Finanzas</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Estado</th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -161,31 +159,29 @@ export default function IndexReserva({ reservas = [] }) {
                                     return (
                                         <tr key={reserva.id} className="group hover:bg-gray-50/50 transition-colors">
                                             {/* Localizador Box */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <div className="flex items-center justify-center gap-3">
+                                            <td className="px-6 py-6">
+                                                <div className="flex items-center gap-3">
                                                     <div className="h-10 w-16 bg-gray-900 text-white rounded-xl flex items-center justify-center shadow-lg shadow-gray-200 group-hover:bg-[#7a0202] transition-colors">
                                                         <span className="font-mono text-xs font-black tracking-tighter">{reserva.localizador}</span>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            {/* Cliente */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <span className="font-black text-gray-900 uppercase text-[10px] tracking-tight">
-                                                    {reserva.cliente_name || 'Anónimo'}
-                                                </span>
-                                            </td>
-
-                                            {/* Habitación */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                    Hab: {reserva.habitacion_numero || '—'}
-                                                </span>
+                                            {/* Cliente / Habitación */}
+                                            <td className="px-6 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-gray-900 uppercase text-sm tracking-tight leading-none mb-1">
+                                                        {reserva.cliente_name || 'Anónimo'}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                        Hab: {reserva.habitacion_numero || '—'}
+                                                    </span>
+                                                </div>
                                             </td>
 
                                             {/* Fechas */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <div className="flex items-center justify-center gap-2 text-xs font-mono font-medium text-gray-600">
+                                            <td className="px-6 py-6">
+                                                <div className="flex items-center gap-2 text-xs font-mono font-medium text-gray-600">
                                                     <CalendarIcon className="h-3 w-3 text-gray-300" />
                                                     <span>{new Date(reserva.check_in).toLocaleDateString('es-ES')}</span>
                                                     <span className="text-gray-300">→</span>
@@ -193,36 +189,36 @@ export default function IndexReserva({ reservas = [] }) {
                                                 </div>
                                             </td>
 
-                                            {/* Precio Total */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-sm font-black text-gray-900">
-                                                        {(parseFloat(reserva.precio_total || 0) - parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
-                                                    </span>
-                                                    {reserva.cupon?.codigo && (
-                                                        <span className="text-xs text-gray-400 mt-1 font-medium">
-                                                            {reserva.cupon.codigo}
-                                                        </span>
+                                            {/* Precio y Pago */}
+                                            <td className="px-6 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    {reserva.descuento_aplicado ? (
+                                                        <>
+                                                            <span className="text-sm font-black text-gray-900">
+                                                                {(parseFloat(reserva.precio_total || 0) - parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
+                                                            </span>
+                                                            <span className="text-xs text-gray-400 line-through">
+                                                                {parseFloat(reserva.precio_total || 0).toFixed(2)} €
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
                                                     )}
+                                                    <Badge
+                                                        label={
+                                                            reserva.pago === 'pagado' ? 'Pagado' :
+                                                            reserva.pago === 'devuelto' ? 'Devuelto' :
+                                                            reserva.pago === 'reembolso_pendiente' ? 'Reembolso Pendiente' :
+                                                            reserva.pago === 'reembolso_parcial_procesado' ? 'Parcialmente Reembolsado' :
+                                                            'Pendiente'
+                                                        }
+                                                        tipo={reserva.pago || 'pendiente'}
+                                                    />
                                                 </div>
                                             </td>
 
-                                            {/* Estado Pago */}
-                                            <td className="px-6 py-5 align-middle text-center">
-                                                <Badge
-                                                    label={
-                                                        reserva.pago === 'pagado' ? 'Pagado' :
-                                                        reserva.pago === 'devuelto' ? 'Devuelto' :
-                                                        reserva.pago === 'reembolso_pendiente' ? 'Reembolso Pendiente' :
-                                                        reserva.pago === 'reembolso_parcial_procesado' ? 'Parcialmente Reembolsado' :
-                                                        'Pendiente'
-                                                    }
-                                                    tipo={reserva.pago || 'pendiente'}
-                                                />
-                                            </td>
-
                                             {/* Estado Reserva */}
-                                            <td className="px-6 py-5 align-middle text-center">
+                                            <td className="px-6 py-6">
                                                 <Badge
                                                     label={
                                                         reserva.status === 'confirmado' ? 'Confirmada' :
@@ -241,7 +237,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Acciones */}
-                                            <td className="px-6 py-5 text-right align-middle">
+                                            <td className="px-6 py-6 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                                                     <button
                                                         onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}

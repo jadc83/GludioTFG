@@ -17,9 +17,9 @@ const TABS = [
     { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
     { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
     { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
+    { id: 'cupones', icon: TicketIcon, label: 'Cupones' },
     { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
     { id: 'estadisticas', icon: ChartBarIcon, label: 'Estadísticas' },
-    { id: 'configuracion', icon: BriefcaseIcon, label: 'Configuración' },
 ];
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
@@ -32,7 +32,7 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 
 import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 const TabEstadisticas = React.lazy(() => import('@/Pages/Panel/TabEstadisticas'));
-const TabConfiguracion = React.lazy(() => import('@/Pages/Panel/TabConfiguracion'));
+const TabCupones = React.lazy(() => import('@/Components/cupones/TabCupones'));
 
 function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados, cupones }) {
   switch (tabActiva) {
@@ -48,18 +48,18 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
     case 'empleados':
       return <IndexEmpleados empleados={empleados} />;
+    case 'cupones':
+      return (
+        <Suspense fallback={<div className="p-6 text-center">Cargando cupones…</div>}>
+          <TabCupones cupones={cupones} />
+        </Suspense>
+      );
     case 'reembolsos':
       return <TabReembolsos />;
     case 'estadisticas':
       return (
         <Suspense fallback={<div className="p-6 text-center">Cargando estadísticas…</div>}>
           <TabEstadisticas />
-        </Suspense>
-      );
-    case 'configuracion':
-      return (
-        <Suspense fallback={<div className="p-6 text-center">Cargando configuración…</div>}>
-          <TabConfiguracion cupones={cupones} />
         </Suspense>
       );
     default:

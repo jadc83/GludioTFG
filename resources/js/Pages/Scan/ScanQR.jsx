@@ -4,7 +4,6 @@ import QRScanner from '@/Components/utilidades/QRScanner';
 import { CheckCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useQRScanner } from '@/hooks/scanner/useQRScanner';
 import { useQRModal } from '@/hooks/scanner/useQRModal';
-import BotonVolver from '@/Components/UI/BotonVolver';
 
 export default function ScanQR() {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
@@ -24,10 +23,6 @@ export default function ScanQR() {
         <GuestLayout>
             <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="mb-6 flex justify-start">
-                        <BotonVolver />
-                    </div>
-
                     {error && (
                         <div className="mb-8 rounded-lg bg-red-100 p-6 shadow-lg">
                             <h2 className="mb-4 text-xl font-semibold text-red-900">Error</h2>

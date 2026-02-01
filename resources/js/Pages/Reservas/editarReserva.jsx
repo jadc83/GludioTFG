@@ -1,21 +1,19 @@
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import BotonVolver from '@/Components/UI/BotonVolver';
 import { useState, useEffect, useMemo } from 'react';
 import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import ErrorBoundary from '@/Components/ErrorBoundary';
-import useToast from '@/hooks/useToast.jsx';
 import dayjs from 'dayjs';
 
 export default function EditarReserva({ reserva: initialReserva, habitaciones = [] }) {
     // --- HOOKS Y ESTADOS ---
     const { reserva, setReserva, refresh, aplicarCambioFechas } = useReserva(initialReserva);
-    const toast = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [toast, setToast] = useState(null);
     const [showDateModal, setShowDateModal] = useState(false);
     const [modalCheckIn, setModalCheckIn] = useState('');
     const [modalCheckOut, setModalCheckOut] = useState('');
@@ -65,6 +63,11 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
     useReservaEvents(reserva, { onRefresh: refresh });
 
     // --- MANEJADORES ---
+    const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4500);
+    };
+
     const handleDesasignarHabitacion = async (habitacionId) => {
         setSavingHabitaciones(true);
         try {
@@ -83,13 +86,13 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
             if (data.success && data.reserva) {
                 // Actualizar estado con la respuesta del servidor
                 setReserva(data.reserva);
-                toast.success('Habitación desasignada con éxito');
+                showToast('Habitación desasignada con éxito', 'success');
             } else {
-                toast.error(data.error || 'Error al desasignar');
+                showToast(data.error || 'Error al desasignar', 'error');
             }
         } catch (error) {
             console.error('Error desasignando:', error);
-            toast.error('Error al desasignar habitación');
+            showToast('Error al desasignar habitación', 'error');
         } finally {
             setSavingHabitaciones(false);
         }
@@ -102,7 +105,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
             const asignarIds = selectedHabitacionIds.filter(id => id !== null && id !== undefined);
 
             if (asignarIds.length === 0) {
-                toast.warning('Selecciona al menos una habitación');
+                showToast('Selecciona al menos una habitación', 'warning');
                 setSavingHabitaciones(false);
                 return;
             }
@@ -124,13 +127,13 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                 // Actualizar estado con la respuesta del servidor
                 setReserva(data.reserva);
                 setSelectedHabitacionIds(data.reserva.habitaciones.map(h => h.habitacion_id));
-                toast.success('Habitaciones asignadas con éxito');
+                showToast('Habitaciones asignadas con éxito', 'success');
             } else {
-                toast.error(data.error || 'Error al asignar');
+                showToast(data.error || 'Error al asignar', 'error');
             }
         } catch (error) {
             console.error('Error asignando:', error);
-            toast.error('Error al asignar habitaciones');
+            showToast('Error al asignar habitaciones', 'error');
         } finally {
             setSavingHabitaciones(false);
         }
@@ -149,7 +152,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
             const latestPreview = await fetchPreviewHook(modalCheckIn, modalCheckOut);
 
             if (latestPreview?.available === false) {
-                toast.error('No hay disponibilidad para esas fechas');
+                showToast('No hay disponibilidad para esas fechas', 'error');
                 return;
             }
 
@@ -161,11 +164,11 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
             }
 
             const res = await aplicarCambioFechas(modalCheckIn, modalCheckOut);
-            toast.success(res?.message || 'Fechas actualizadas');
+            showToast(res?.message || 'Fechas actualizadas', 'success');
             setShowDateModal(false);
             refresh();
         } catch (err) {
-            toast.error(err?.message || 'Error al cambiar fechas');
+            showToast(err?.message || 'Error al cambiar fechas', 'error');
         } finally { setIsProcessing(false); }
     };
 
@@ -175,11 +178,11 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
         try {
             setIsProcessing(true);
             await aplicarCambioFechas(modalCheckIn, modalCheckOut, paymentResult?.pago_id);
-            toast.success('Cambio aplicado tras pago.');
+            showToast('Cambio aplicado tras pago.', 'success');
             setShowDateModal(false);
             refresh();
         } catch (err) {
-            toast.error('Error al aplicar cambios tras el pago');
+            showToast('Error al aplicar cambios tras el pago', 'error');
         } finally {
             setPendingApplyAfterPayment(false);
             setIsProcessing(false);
@@ -193,12 +196,12 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
             const api = await import('@/api/reservas');
             const res = await api.crearSolicitudReembolso(reserva.localizador, payload);
             if (res.success) {
-                toast.success('Solicitud enviada correctamente');
+                showToast('Solicitud enviada correctamente', 'success');
                 setShowRefundModal(false);
                 refresh();
             }
         } catch (e) {
-            toast.error('Error al procesar reembolso');
+            showToast('Error al procesar reembolso', 'error');
         } finally { setIsProcessing(false); }
     };
 
@@ -230,7 +233,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                     Modificar Fechas
                                 </button>
                             )}
-                            <BotonVolver />
+                            <Link href="/" className="text-sm font-bold text-gray-500 hover:text-gray-700">Cerrar</Link>
                         </div>
                     </div>
                 </header>
@@ -519,7 +522,7 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
                                 <FormularioPago
                                     monto={paymentAmount}
                                     onPagoExitoso={handlePagoExitoso}
-                                    onError={(e) => toast.error(e?.message)}
+                                    onError={(e) => showToast(e?.message, 'error')}
                                     reservaData={{ reserva_id: reserva.id, es_edicion_pago: true, check_in: modalCheckIn || reserva.check_in, check_out: modalCheckOut || reserva.check_out, habitaciones: reserva.habitaciones }}
                                     aceptaTerminos={aceptaTerminosPago}
                                     mostrarAceptacion={true}
@@ -529,6 +532,14 @@ export default function EditarReserva({ reserva: initialReserva, habitaciones = 
 
                             <button onClick={() => setShowPaymentModal(false)} className="w-full mt-6 py-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition">Cancelar operación</button>
                         </div>
+                    </div>
+                )}
+
+                {/* --- NOTIFICACIONES (TOAST) --- */}
+                {toast && (
+                    <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 duration-500 ${toast.type === 'error' ? 'bg-red-900 text-white' : 'bg-gray-900 text-white'}`}>
+                        <div className={`w-2 h-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-green-400'} animate-pulse`} />
+                        <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
                     </div>
                 )}
             </div>

@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { TicketIcon } from '@heroicons/react/24/outline';
 import Badge from '@/Components/UI/Badge';
 
-export default function TabCupones({ cupones = {}, mostrarCabecera = true }) {
+export default function TabCupones({ cupones = {} }) {
     const [refrescando, setRefrescando] = useState(false);
 
     const handleDelete = (id) => {
@@ -49,25 +49,20 @@ export default function TabCupones({ cupones = {}, mostrarCabecera = true }) {
     const cuponesData = cupones.data || [];
 
     return (
-        <div className="space-y-6">
+        <div className="p-3 md:p-6 space-y-6">
             {/* --- CABECERA --- */}
-            {mostrarCabecera && (
-                <div className="p-3 md:p-6">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Gestión de <span className="text-[#7a0202]">Cupones</span></h1>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Códigos promocionales y descuentos</p>
-                        </div>
-                        <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
-                            <TicketIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                    </div>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Gestión de <span className="text-[#7a0202]">Cupones</span></h1>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Códigos promocionales y descuentos</p>
                 </div>
-            )}
+                <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
+                    <TicketIcon className="h-6 w-6 text-gray-400" />
+                </div>
+            </div>
 
-            <div className={mostrarCabecera ? 'p-3 md:p-6' : ''}>
-                {/* --- BARRA DE ACCIONES --- */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+            {/* --- BARRA DE ACCIONES --- */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <div>
                     <p className="text-sm font-semibold text-gray-700">Total de cupones: <span className="text-[#7a0202]">{cuponesData.length}</span></p>
                 </div>
@@ -88,46 +83,45 @@ export default function TabCupones({ cupones = {}, mostrarCabecera = true }) {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Código</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Tipo</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Valor</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Usos Totales</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Usos/Usuario</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Válido Hasta</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-center">Estado</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 align-middle text-right">Acciones</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Código</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Tipo</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Valor</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Usos</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Válido Hasta</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Estado</th>
+                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {cuponesData.map(cupon => (
                                     <tr key={cupon.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-5 align-middle text-center">
+                                        <td className="px-6 py-4">
                                             <span className="font-mono font-bold text-[#7a0202] text-base">{cupon.codigo}</span>
                                         </td>
-                                        <td className="px-6 py-5 align-middle text-center">
+                                        <td className="px-6 py-4">
                                             <span className="inline-block bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-100">
                                                 {cupon.tipo === 'porcentaje' ? 'Porcentaje' : 'Monto Fijo'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 align-middle text-center font-semibold text-gray-900">{getValorTexto(cupon)}</td>
-                                        <td className="px-6 py-5 align-middle text-center text-gray-600">
+                                        <td className="px-6 py-4 font-semibold text-gray-900">{getValorTexto(cupon)}</td>
+                                        <td className="px-6 py-4 text-gray-600">
                                             {cupon.usos_realizados}/{cupon.usos_maximos || '∞'}
                                         </td>
-                                        <td className="px-6 py-5 align-middle text-center text-gray-600">
-                                            {cupon.usos_por_usuario || '∞'}
-                                        </td>
-                                        <td className="px-6 py-5 align-middle text-center text-gray-600">
+                                        <td className="px-6 py-4 text-gray-600">
                                             {new Date(cupon.fecha_fin).toLocaleDateString('es-ES')}
                                         </td>
-                                        <td className="px-6 py-5 align-middle text-center">
+                                        <td className="px-6 py-4">
                                             {getEstadoBadge(cupon)}
                                         </td>
-                                        <td className="px-6 py-5 align-middle text-right">
+                                        <td className="px-6 py-4">
                                             <div className="flex gap-2">
                                                 <button
-                                                    disabled
-                                                    title="La edición de cupones se realiza en el panel administrativo"
-                                                    className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+                                                    onClick={() => {
+                                                        setFormData(cupon);
+                                                        setEditingId(cupon.id);
+                                                        setShowForm(true);
+                                                    }}
+                                                    className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                                                 >
                                                     Editar
                                                 </button>
@@ -157,7 +151,6 @@ export default function TabCupones({ cupones = {}, mostrarCabecera = true }) {
                         </table>
                     </div>
                 )}
-            </div>
             </div>
         </div>
     );

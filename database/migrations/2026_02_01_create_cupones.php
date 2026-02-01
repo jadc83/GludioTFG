@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             $table->string('descripcion')->nullable();
             $table->timestamps();
+
             $table->index('codigo');
             $table->index('activo');
         });

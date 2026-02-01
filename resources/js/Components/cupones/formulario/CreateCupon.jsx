@@ -11,7 +11,6 @@ export default function CreateCupon({ iconOnly = false, onSuccess = null }) {
         tipo: 'porcentaje',
         valor: '',
         usos_maximos: '',
-        usos_por_usuario: '',
         fecha_inicio: new Date().toISOString().split('T')[0],
         fecha_fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         activo: true,
@@ -122,29 +121,16 @@ export default function CreateCupon({ iconOnly = false, onSuccess = null }) {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Campo
-                                        id="usos_maximos"
-                                        label="Usos Totales (vacío = ilimitado)"
-                                        type="number"
-                                        min="1"
-                                        value={formulario.usos_maximos}
-                                        onChange={cambiar}
-                                        error={errores.usos_maximos}
-                                        placeholder="100"
-                                    />
-
-                                    <Campo
-                                        id="usos_por_usuario"
-                                        label="Usos por Usuario (vacío = ilimitado)"
-                                        type="number"
-                                        min="1"
-                                        value={formulario.usos_por_usuario}
-                                        onChange={cambiar}
-                                        error={errores.usos_por_usuario}
-                                        placeholder="Ej: 3"
-                                    />
-                                </div>
+                                <Campo
+                                    id="usos_maximos"
+                                    label="Usos Máximos (vacío = ilimitado)"
+                                    type="number"
+                                    min="1"
+                                    value={formulario.usos_maximos}
+                                    onChange={cambiar}
+                                    error={errores.usos_maximos}
+                                    placeholder="100"
+                                />
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <Campo

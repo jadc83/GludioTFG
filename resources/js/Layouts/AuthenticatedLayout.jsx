@@ -3,8 +3,8 @@ import CookieBanner from '@/Components/UI/CookieBanner';
 import BarraReservas from '@/Components/reservas/BarraReservas';
 import Nav from '@/Components/UI/Nav';
 import { usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
-import useToast from '@/hooks/useToast.jsx';
+import Toast from '@/Components/UI/Toast';
+import { useEffect, useState } from 'react';
 
 export default function AuthenticatedLayout({ children }) {
     const page = usePage();
@@ -14,22 +14,22 @@ export default function AuthenticatedLayout({ children }) {
     // Ocultar BarraReservas en el dashboard
     const showBarraReservas = !component.startsWith('Dashboard');
 
-    const toast = useToast();
+    const [toastMsg, setToastMsg] = useState(null);
     useEffect(() => {
         const errors = page?.props?.errors || {};
         if (errors && Object.keys(errors).length > 0) {
             const first = Object.keys(errors)[0];
             const msg = errors[first] && errors[first][0];
-            if (msg) toast.error(msg);
+            if (msg) setToastMsg(msg);
         }
 
         // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            toast.info(`Se ha solicitado un reembolso parcial de €${amt}`);
+            setToastMsg(`Se ha solicitado un reembolso parcial de €${amt}`);
         }
-    }, [page.props.errors, page.props.flash, toast]);
+    }, [page.props.errors, page.props.flash]);
 
     return (
         <div className="flex min-h-screen flex-col bg-gris">
@@ -42,6 +42,8 @@ export default function AuthenticatedLayout({ children }) {
             <Footer />
 
             <CookieBanner />
+
+            <Toast message={toastMsg} />
         </div>
     );
 }

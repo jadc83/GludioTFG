@@ -1,7 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import Badge from '@/Components/UI/Badge';
-import BotonVolver from '@/Components/UI/BotonVolver';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import {
@@ -23,35 +21,39 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
         { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
     ];
 
-
+    // Configuración de estados para la tabla de reservas
+    const configEstado = {
+        'Completada': 'bg-blue-50 text-blue-700 border-blue-100',
+        'Confirmada': 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        'En curso': 'bg-amber-50 text-amber-700 border-amber-100',
+        'Cancelada': 'bg-rose-50 text-rose-700 border-rose-100',
+        'default': 'bg-gray-50 text-gray-500 border-gray-100'
+    };
 
     return (
         <AuthenticatedLayout>
             <Head title="Mi Perfil" />
 
-            <div className="py-12 min-h-screen" style={{ backgroundImage: "url('/fondo2.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+            <div className="py-12 bg-gray-50 min-h-screen">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
                     {/* --- ENCABEZADO DE SECCIÓN --- */}
                     <div className="flex items-center justify-between mb-10">
                         <div>
-                            <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-none">
-                                Centro de <span className="text-white/80">Usuario</span>
+                            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight leading-none">
+                                Centro de <span className="text-[#7a0202]">Usuario</span>
                             </h1>
-                            <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em] mt-2">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">
                                 Gestiona tu cuenta, historial de estancias y seguridad
                             </p>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <BotonVolver href={route('home')} />
-                            <div className="h-14 w-14 bg-black/20 rounded-2xl flex items-center justify-center border border-white/10 shadow-sm">
-                                <IdentificationIcon className="h-7 w-7 text-white/60" />
-                            </div>
+                        <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center border border-gray-200 shadow-sm">
+                            <IdentificationIcon className="h-7 w-7 text-gray-400" />
                         </div>
                     </div>
 
                     {/* --- NAVEGACIÓN POR TABS (ESTILO INDUSTRIAL) --- */}
-                    <div className="flex gap-2 mb-8 bg-gray-900 p-1.5 rounded-2xl w-fit border border-white/10">
+                    <div className="flex gap-2 mb-8 bg-gray-200/50 p-1.5 rounded-2xl w-fit">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -61,11 +63,11 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
                                         isActive
-                                        ? 'bg-black/30 text-white border border-white/40'
-                                        : 'text-white/60 hover:text-white hover:bg-black/20'
+                                        ? 'bg-[#7a0202] text-white shadow-lg shadow-red-900/20'
+                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
                                     }`}
                                 >
-                                    <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-white/40'}`} />
+                                    <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                                     {tab.label}
                                 </button>
                             );
@@ -73,14 +75,14 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                     </div>
 
                     {/* --- CONTENEDOR PRINCIPAL DE CONTENIDO --- */}
-                    <div className="bg-gray-900 rounded-[2.5rem] border border-white/10 shadow-sm overflow-hidden min-h-[500px]">
+                    <div className="bg-white rounded-[2.5rem] border border-gray-200 shadow-sm overflow-hidden min-h-[500px]">
 
                         {/* TAB: INFORMACIÓN PERSONAL */}
                         {activeTab === 'informacion' && (
                             <div className="p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="mb-10">
-                                    <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-1">Información Personal</h3>
-                                    <p className="text-xs text-white/60 font-medium">Actualiza los datos de tu ficha de cliente</p>
+                                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.3em] mb-1">Información Personal</h3>
+                                    <p className="text-xs text-gray-400 font-medium">Actualiza los datos de tu ficha de cliente</p>
                                 </div>
                                 <UpdateProfileInformationForm
                                     mustVerifyEmail={mustVerifyEmail}
@@ -94,66 +96,64 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                         {activeTab === 'reservas' && (
                             <div className="p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="mb-10">
-                                    <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-1">Historial de Estancias</h3>
-                                    <p className="text-xs text-white/60 font-medium">Consulta el estado de tus reservas actuales y pasadas</p>
+                                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.3em] mb-1">Historial de Estancias</h3>
+                                    <p className="text-xs text-gray-400 font-medium">Consulta el estado de tus reservas actuales y pasadas</p>
                                 </div>
 
                                 {reservas.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                                        <div className="h-16 w-16 bg-black/20 rounded-full flex items-center justify-center mb-4 border border-white/20">
-                                            <TicketIcon className="h-8 w-8 text-white/40" />
+                                        <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                            <TicketIcon className="h-8 w-8 text-gray-200" />
                                         </div>
-                                        <h4 className="text-sm font-black text-white uppercase tracking-widest">No hay registros</h4>
-                                        <p className="text-xs text-white/60 mt-1 mb-8">Parece que aún no has realizado ninguna reserva con nosotros.</p>
-                                        <Link href="/" className="px-8 py-4 bg-black/30 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black/50 transition shadow-lg border border-white/20">
+                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">No hay registros</h4>
+                                        <p className="text-xs text-gray-400 mt-1 mb-8">Parece que aún no has realizado ninguna reserva con nosotros.</p>
+                                        <Link href="/" className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition shadow-lg shadow-gray-200">
                                             Explorar Habitaciones
                                         </Link>
                                     </div>
                                 ) : (
-                                    <div className="overflow-hidden rounded-2xl">
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
                                             <thead>
-                                                <tr className="border-b border-white/20 bg-gray-900">
-                                                    <th className="py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white rounded-tl-2xl">Localizador</th>
-                                                    <th className="py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white">Check-In / Out</th>
-                                                    <th className="py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white">Noches</th>
-                                                    <th className="py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white">Inversión</th>
-                                                    <th className="py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white">Estado</th>
-                                                    <th className="py-5 text-center rounded-tr-2xl"></th>
+                                                <tr className="border-b border-gray-100">
+                                                    <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Localizador</th>
+                                                    <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Check-In / Out</th>
+                                                    <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">Noches</th>
+                                                    <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Inversión</th>
+                                                    <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Estado</th>
+                                                    <th className="pb-5"></th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200">
+                                            <tbody className="divide-y divide-gray-50">
                                                 {reservas.map((reserva) => (
-                                                    <tr key={reserva.id} className="group bg-gris hover:bg-gray-200 transition-colors">
-                                                        <td className="py-6 text-center align-middle">
-                                                            <div className="h-9 w-20 bg-[#7a0202] text-white rounded-xl flex items-center justify-center shadow-lg group-hover:bg-[#5a0101] transition-colors mx-auto">
+                                                    <tr key={reserva.id} className="group hover:bg-gray-50/50 transition-colors">
+                                                        <td className="py-6">
+                                                            <div className="h-9 w-20 bg-gray-900 text-white rounded-xl flex items-center justify-center shadow-lg shadow-gray-200 group-hover:bg-[#7a0202] transition-colors">
                                                                 <span className="font-mono text-xs font-black tracking-tighter">{reserva.localizador}</span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6 text-center align-middle">
-                                                            <div className="flex items-center justify-center gap-2 text-xs font-mono font-bold text-gray-700">
+                                                        <td className="py-6">
+                                                            <div className="flex items-center gap-2 text-xs font-mono font-bold text-gray-600">
                                                                 <span>{reserva.fecha_entrada}</span>
-                                                                <span className="text-gray-400">→</span>
+                                                                <span className="text-gray-300">→</span>
                                                                 <span>{reserva.fecha_salida}</span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6 text-center align-middle text-xs font-black text-gray-900">
+                                                        <td className="py-6 text-center text-xs font-black text-gray-900">
                                                             {reserva.noches}
                                                         </td>
-                                                        <td className="py-6 text-center align-middle font-black text-gray-900 text-sm italic">
+                                                        <td className="py-6 font-black text-gray-900 text-sm italic">
                                                             {reserva.monto_total}
                                                         </td>
-                                                        <td className="py-6 text-center align-middle">
-                                                            <Badge
-                                                                label={reserva.estado}
-                                                                tipo={reserva.estado?.toLowerCase() === 'completada' ? 'completado' : reserva.estado?.toLowerCase() === 'confirmada' ? 'confirmado' : reserva.estado?.toLowerCase() === 'en curso' ? 'en_estancia' : reserva.estado?.toLowerCase() === 'cancelada' ? 'cancelado' : 'pendiente'}
-                                                            />
+                                                        <td className="py-6">
+                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${configEstado[reserva.estado] || configEstado.default}`}>
+                                                                {reserva.estado}
+                                                            </span>
                                                         </td>
-                                                        <td className="py-6 text-center align-middle">
+                                                        <td className="py-6 text-right">
                                                             <Link
                                                                 href={`/reservas/${reserva.id}`}
-                                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all border border-gray-200"
+                                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-400 hover:text-[#7a0202] rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
                                                             >
                                                                 Detalles
                                                                 <ChevronRightIcon className="h-3 w-3" />
@@ -163,7 +163,6 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                 ))}
                                             </tbody>
                                         </table>
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -173,8 +172,8 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                         {activeTab === 'seguridad' && (
                             <div className="p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="mb-10 text-center md:text-left">
-                                    <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-1">Protección de Cuenta</h3>
-                                    <p className="text-xs text-white/60 font-medium">Asegura tu cuenta actualizando la contraseña periódicamente</p>
+                                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.3em] mb-1">Protección de Cuenta</h3>
+                                    <p className="text-xs text-gray-400 font-medium">Asegura tu cuenta actualizando la contraseña periódicamente</p>
                                 </div>
                                 <div className="max-w-2xl">
                                     <UpdatePasswordForm className="w-full" />

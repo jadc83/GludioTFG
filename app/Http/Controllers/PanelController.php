@@ -33,7 +33,7 @@ class PanelController extends Controller
             ->orderBy('name')
             ->get();
 
-        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion', 'cupon'])
+        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)

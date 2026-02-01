@@ -121,7 +121,7 @@ export default function IndexEstadisticas({
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                        <span className="text-[#7a0202]">Ocupación</span>
+                        Estadísticas y <span className="text-[#7a0202]">Análisis</span>
                     </h1>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                         Panel de métricas y rendimiento operativo
@@ -164,7 +164,7 @@ export default function IndexEstadisticas({
                     onClick={onBuscar}
                     className="w-full md:w-auto px-10 py-3 bg-[#7a0202] text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-[#5a0101] transition shadow-lg shadow-red-100 h-[46px]"
                 >
-                    Generar Gráfica
+                    Generar Reporte
                 </button>
             </div>
 
