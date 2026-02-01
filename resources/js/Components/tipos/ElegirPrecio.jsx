@@ -50,7 +50,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
   return (
     <div className="p-6">
       <h2 className="mb-6 text-2xl font-bold text-[#920303]">Precios de Habitaciones</h2>
-      
+
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
