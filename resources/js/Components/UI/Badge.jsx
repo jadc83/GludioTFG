@@ -15,10 +15,13 @@ export default function Badge({ label, tipo = 'default', className = '' }) {
         // Estados en progreso
         en_estancia: 'bg-amber-50 text-amber-700 border border-amber-100',
         proximo: 'bg-amber-50 text-amber-700 border border-amber-100',
+        mantenimiento: 'bg-amber-50 text-amber-700 border border-amber-100',
         pendiente: 'bg-purple-50 text-purple-700 border border-purple-100',
         procesando: 'bg-purple-50 text-purple-700 border border-purple-100',
+        limpieza: 'bg-sky-50 text-sky-700 border border-sky-100',
 
         // Estados negativos
+        ocupada: 'bg-rose-50 text-rose-700 border border-rose-100',
         cancelado: 'bg-rose-50 text-rose-700 border border-rose-100',
         inactivo: 'bg-rose-50 text-rose-700 border border-rose-100',
         expirado: 'bg-gray-100 text-gray-700 border border-gray-200',

@@ -15,24 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'tipo_documento' => 'dni',
-            'numero_documento' => '00000000T',
-            'nacionalidad' => 'Española',
-            'direccion' => 'Dirección de prueba',
-            'telefono' => '600000000'
-        ]);
-
-        // Asegurar que al menos un admin exista para pruebas
         $this->call(\Database\Seeders\AdminUserSeeder::class);
         $this->call(\Database\Seeders\TiposHabitacionSeeder::class);
         $this->call(\Database\Seeders\TarifasSeeder::class);
         $this->call(\Database\Seeders\HabitacionSeeder::class);
-        $this->call(\Database\Seeders\ServiciosSeeder::class);
         $this->call(\Database\Seeders\ClienteSeeder::class);
         $this->call(\Database\Seeders\CuponSeeder::class);
     }

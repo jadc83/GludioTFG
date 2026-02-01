@@ -13,6 +13,7 @@ class Cupon extends Model
         'tipo',
         'valor',
         'usos_maximos',
+        'usos_por_usuario',
         'usos_realizados',
         'fecha_inicio',
         'fecha_fin',

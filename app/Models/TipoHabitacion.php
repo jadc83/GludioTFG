@@ -16,6 +16,7 @@ class TipoHabitacion extends Model
         'nombre',
         'capacidad',
         'precio_base',
+        'image_links',
     ];
 
     protected $casts = [

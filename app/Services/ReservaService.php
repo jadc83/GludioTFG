@@ -41,8 +41,6 @@ class ReservaService
      */
     public function prepararDatosReserva(array $datos): array
     {
-        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datos recibidos:', ['cupon_id' => $datos['cupon_id'] ?? 'NULL', 'tarifas' => $datos['tarifas'] ?? []]);
-
         $checkIn = Carbon::parse($datos['check_in'] ?? null);
         $checkOut = Carbon::parse($datos['check_out'] ?? null);
 
@@ -333,12 +331,6 @@ class ReservaService
 
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
             $localizador = $this->generarLocalizador();
-
-            \Illuminate\Support\Facades\Log::info('crearReserva - datosPreparados:', [
-                'cupon_id' => $datosPreparados['cupon_id'] ?? 'NULL',
-                'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
-                'precio_total' => $datosPreparados['precio_total'] ?? 0,
-            ]);
 
             $reserva = Reserva::create([
                 'localizador' => $localizador,
@@ -875,6 +867,12 @@ class ReservaService
                     $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
                     return $nums->count() ? $nums->implode(', ') : 'Sin asignar';
                 })(),
+                'cupon' => $reserva->cupon ? [
+                    'id' => $reserva->cupon->id,
+                    'codigo' => $reserva->cupon->codigo,
+                    'tipo' => $reserva->cupon->tipo,
+                    'valor' => $reserva->cupon->valor,
+                ] : null,
             ];
         })->toArray();
     }

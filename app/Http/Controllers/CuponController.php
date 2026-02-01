@@ -24,12 +24,10 @@ class CuponController extends Controller
             return response()->json(['success' => false, 'error' => 'Código vacío']);
         }
 
-        // Validar mínimo 60€
         if ($precioTotal < 60) {
             return response()->json(['success' => false, 'error' => 'Mínimo €60 para aplicar cupones']);
         }
 
-        // Rate limiting: máx 5 intentos por IP por minuto
         $cacheKey = "cupon_intentos_{$request->ip()}";
         $intentos = Cache::get($cacheKey, 0);
         if ($intentos >= 5) {
@@ -37,39 +35,34 @@ class CuponController extends Controller
         }
         Cache::put($cacheKey, $intentos + 1, 60);
 
-        // 1. Validar que existe
         $cupon = Cupon::where('codigo', $codigo)->first();
         if (!$cupon) {
             return response()->json(['success' => false, 'error' => 'Código no válido']);
         }
 
-        // 2. Validar que está activo
         if (!$cupon->activo) {
             return response()->json(['success' => false, 'error' => 'Cupón inactivo']);
         }
 
-        // 3. Validar fecha
+
         $ahora = now();
         if ($ahora->isBefore($cupon->fecha_inicio) || $ahora->isAfter($cupon->fecha_fin)) {
             return response()->json(['success' => false, 'error' => 'Cupón expirado']);
         }
 
-        // 4. Validar usos máximos
         if ($cupon->usos_maximos && $cupon->usos_realizados >= $cupon->usos_maximos) {
             return response()->json(['success' => false, 'error' => 'Cupón agotado']);
         }
 
-        // 5. Validar usos por usuario (solo si está autenticado)
-        if ($email) {
-            $yaUsado = CuponAplicado::where('cupon_id', $cupon->id)
+        if ($email && $cupon->usos_por_usuario) {
+            $usosDelUsuario = CuponAplicado::where('cupon_id', $cupon->id)
                 ->where('usuario_email', $email)
-                ->exists();
-            if ($yaUsado) {
-                return response()->json(['success' => false, 'error' => 'Ya usaste este cupón']);
+                ->count();
+            if ($usosDelUsuario >= $cupon->usos_por_usuario) {
+                return response()->json(['success' => false, 'error' => "Este cupón ya fue usado {$cupon->usos_por_usuario} veces"]);
             }
         }
 
-        // 6. Validar que la reserva no tenga ya otro cupón (1 cupón por reserva)
         if ($reservaId) {
             $otroCupon = CuponAplicado::where('reserva_id', $reservaId)->exists();
             if ($otroCupon) {
@@ -77,12 +70,10 @@ class CuponController extends Controller
             }
         }
 
-        // Calcular descuento
         $descuento = $cupon->tipo === 'porcentaje'
             ? ($precioTotal * $cupon->valor / 100)
             : $cupon->valor;
 
-        // No permitir descuento negativo
         $descuento = min($descuento, $precioTotal);
 
         return response()->json([
@@ -94,9 +85,6 @@ class CuponController extends Controller
         ]);
     }
 
-    /**
-     * Store - Crear nuevo cupón
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -104,6 +92,7 @@ class CuponController extends Controller
             'tipo' => 'required|in:porcentaje,monto_fijo',
             'valor' => 'required|numeric|min:0.01',
             'usos_maximos' => 'nullable|integer|min:1',
+            'usos_por_usuario' => 'nullable|integer|min:1',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after:fecha_inicio',
             'activo' => 'boolean',
@@ -119,9 +108,7 @@ class CuponController extends Controller
         return back()->with('success', 'Cupón creado exitosamente');
     }
 
-    /**
-     * Update - Actualizar cupón
-     */
+
     public function update(Request $request, Cupon $cupon)
     {
         $validated = $request->validate([
@@ -129,6 +116,7 @@ class CuponController extends Controller
             'tipo' => 'required|in:porcentaje,monto_fijo',
             'valor' => 'required|numeric|min:0.01',
             'usos_maximos' => 'nullable|integer|min:1',
+            'usos_por_usuario' => 'nullable|integer|min:1',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after:fecha_inicio',
             'activo' => 'boolean',
@@ -143,9 +131,6 @@ class CuponController extends Controller
         return back()->with('success', 'Cupón actualizado exitosamente');
     }
 
-    /**
-     * Destroy - Eliminar cupón
-     */
     public function destroy(Cupon $cupon)
     {
         if ($cupon->usos_realizados > 0) {
@@ -157,9 +142,6 @@ class CuponController extends Controller
         return back()->with('success', 'Cupón eliminado exitosamente');
     }
 
-    /**
-     * Toggle activo/inactivo
-     */
     public function toggle(Cupon $cupon)
     {
         $cupon->update(['activo' => !$cupon->activo]);

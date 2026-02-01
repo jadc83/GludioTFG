@@ -71,6 +71,12 @@ Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name(
 Route::post('/webhooks/stripe', [PagoController::class, 'webhook'])->withoutMiddleware('VerifyCsrfToken');
 Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsarReserva'])->name('reservas.reembolsar');
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
+Route::middleware('auth')->group(function () {
+    Route::get('/api/tipos-habitaciones/list', [TipoHabitacionController::class, 'list'])->name('tipos-habitaciones.list');
+    Route::post('/api/tipos-habitaciones', [TipoHabitacionController::class, 'store'])->name('tipos-habitaciones.store');
+    Route::patch('/api/tipos-habitaciones/{tipoHabitacion}', [TipoHabitacionController::class, 'update'])->name('tipos-habitaciones.update');
+    Route::delete('/api/tipos-habitaciones/{tipoHabitacion}', [TipoHabitacionController::class, 'destroy'])->name('tipos-habitaciones.destroy');
+});
 Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
 Route::resource('empleados', EmpleadoController::class)->only(['create','store','update'])->middleware('auth');

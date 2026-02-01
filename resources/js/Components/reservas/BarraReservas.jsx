@@ -75,22 +75,22 @@ export default function BarraReservas() {
 
             {/* BARRA STICKY */}
             {!esPanelControl && (
-                <div className="sticky top-16 z-40 bg-gris shadow-md">
+                <div className="sticky top-16 z-40 bg-gradient-to-br from-[#920303] to-[#6b0202] shadow-md">
                     <div className="px-4 py-3 relative">
                         <div className="flex items-center gap-3 justify-center md:justify-center">
                             <div className="flex items-center justify-center gap-3 flex-wrap">
-                                <div className="hidden sm:flex items-center gap-1 text-[#7a0202]">
+                                <div className="hidden sm:flex items-center gap-1 text-white">
                                     <CalendarIcon className="w-5 h-5" />
                                 </div>
 
                                 {/* INPUT ENTRADA */}
                                 <div className="flex items-center gap-2 relative">
-                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                    <label className="text-xs font-semibold text-white whitespace-nowrap">
                                         <span className="hidden sm:inline">Entrada</span>
-                                        <span className="sm:hidden inline-flex"><ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" /></span>
+                                        <span className="sm:hidden inline-flex"><ArrowDownOnSquareIcon className="h-5 w-5 text-white" /></span>
                                     </label>
                                     <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'entrada' ? null : 'entrada')}
-                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
+                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white text-gray-900 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-0 active:shadow-inner truncate" aria-label="Seleccionar fecha de entrada">
                                         {formularioReserva.rango?.from ? formatearFecha(formularioReserva.rango.from, 'corta') : '—'}
                                     </button>
                                     <CalendarioPicker esMobile={esMobile} calendarioAbierto={calendarioAbierto} handleSeleccionRango={(rango) => formularioReserva.setRango(rango)}
@@ -100,12 +100,12 @@ export default function BarraReservas() {
 
                                 {/* INPUT SALIDA */}
                                 <div className="flex items-center gap-2 relative">
-                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                    <label className="text-xs font-semibold text-white whitespace-nowrap">
                                         <span className="hidden sm:inline">Salida</span>
-                                        <span className="sm:hidden inline-flex"><ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" /></span>
+                                        <span className="sm:hidden inline-flex"><ArrowUpOnSquareIcon className="h-5 w-5 text-white" /></span>
                                     </label>
                                     <button onClick={() => setCalendarioAbierto(calendarioAbierto === 'salida' ? null : 'salida')} disabled={!formularioReserva.rango?.from}
-                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white border border-gray-200 text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed truncate" aria-label="Seleccionar fecha de salida">
+                                        className="px-3 py-1.5 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-white text-gray-900 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-0 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed truncate" aria-label="Seleccionar fecha de salida">
                                         {formularioReserva.rango?.to ? formatearFecha(formularioReserva.rango.to, 'corta') : '—'}
                                     </button>
                                     <CalendarioStyles />
@@ -117,15 +117,15 @@ export default function BarraReservas() {
                                     )}
                                 </div>
 
-                                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-gris rounded">
-                                    <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                <div className="flex flex-row items-center gap-1.5 px-2 py-1 bg-black/20 rounded">
+                                    <label className="text-xs font-semibold text-white whitespace-nowrap">
                                         <span className="hidden sm:inline">Huéspedes:</span>
-                                        <span className="sm:hidden inline-flex"><UserGroupIcon className="h-5 w-5 text-gray-700" /></span>
+                                        <span className="sm:hidden inline-flex"><UserGroupIcon className="h-5 w-5 text-white" /></span>
                                     </label>
                                     <Campo id="num_huespedes_barra" type="number" min={1} sinEstilosPorDefecto={true}
                                         value={formularioReserva.numHuespedes}
                                         onChange={(e) => formularioReserva.setNumHuespedes(Math.max(1, Number(e.target.value) || 1))}
-                                        clase="w-16 text-sm px-2 py-1 rounded border border-gray-300 bg-white text-gray-700" />
+                                        clase="w-16 text-sm px-2 py-1 rounded border border-white/20 bg-white text-gray-900" />
                                 </div>
                             </div>
 

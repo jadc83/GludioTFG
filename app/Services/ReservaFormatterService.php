@@ -20,47 +20,23 @@ use Carbon\Carbon;
 class ReservaFormatterService
 {
     private PrecioService $servicioPrecio;
+    private ReservaService $reservaService;
 
-    public function __construct(?PrecioService $servicioPrecio = null)
+    public function __construct(?PrecioService $servicioPrecio = null, ?ReservaService $reservaService = null)
     {
         $this->servicioPrecio = $servicioPrecio ?? new PrecioService();
+        $this->reservaService = $reservaService ?? app(ReservaService::class);
     }
 
     /**
      * Formatea una colección de reservas para respuesta API
-     * Incluye cliente, habitaciones, precios y estadísticas
+     * Delega a ReservaService para evitar duplicación
      * Usado por: controladores de listado de reservas
      * Retorna: array formateado de reservas
      */
     public function formatearReservas($reservas): array
     {
-        return $reservas->map(function ($reserva) {
-            $nombreCliente = 'Sin cliente';
-            if ($reserva->reservable) {
-                $nombreCliente = $reserva->reservable?->name ?? 'Sin cliente';
-            }
-
-            $reembolsosTotal = $reserva->reembolsos ? ($reserva->reembolsos->sum('amount_cents') ?: 0) / 100 : 0;
-
-            return [
-                'id' => $reserva->id,
-                'localizador' => $reserva->localizador,
-                'check_in' => $reserva->check_in,
-                'check_out' => $reserva->check_out,
-                'precio_total' => $reserva->precio_total,
-                'status' => $reserva->status,
-                'pago' => $reserva->pago,
-                'reembolsos_total' => $reembolsosTotal,
-                'notas' => $reserva->notas,
-                'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
-                'cliente_name' => $nombreCliente,
-                'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
-                'habitacion_numero' => (function() use ($reserva) {
-                    $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
-                    return $nums->count() ? $nums->implode(', ') : 'Sin asignar';
-                })(),
-            ];
-        })->toArray();
+        return $this->reservaService->formatearReservas($reservas);
     }
 
     /**

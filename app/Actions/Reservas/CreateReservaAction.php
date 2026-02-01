@@ -19,7 +19,7 @@ class CreateReservaAction
     public function handle(array $data, $usuario = null, string $status = 'pendiente'): array
     {
         $reserva = $this->reservaService->crearReserva($data, $usuario, $status);
-        $reserva->load(['reservable', 'habitaciones.habitacion']);
+        $reserva->load(['reservable', 'habitaciones.habitacion', 'cupon']);
 
 
 

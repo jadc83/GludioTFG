@@ -59,7 +59,7 @@ class ReservaController extends Controller
     public function index(Request $request)
     {
         $reservas = Reserva::withReservable()
-            ->with(['habitaciones.habitacion', 'bookedBy'])
+            ->with(['habitaciones.habitacion', 'bookedBy', 'cupon'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
@@ -97,6 +97,8 @@ class ReservaController extends Controller
             ];
 
             if ($request->wantsJson()) {
+                // Para JSON, incluir la reserva completa con relaciones cargadas
+                $respuesta['reserva'] = $result['reserva'] ?? null;
                 return response()->json($respuesta);
             }
 

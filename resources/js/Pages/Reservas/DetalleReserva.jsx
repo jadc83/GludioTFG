@@ -5,19 +5,21 @@ import {
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import BotonVolver from '@/Components/UI/BotonVolver';
 import { useState, useEffect, useMemo } from 'react';
 import useReserva from '@/hooks/reservas/useReserva';
 import usePreview from '@/hooks/usePreview';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import ErrorBoundary from '@/Components/ErrorBoundary';
+import useToast from '@/hooks/useToast.jsx';
 import dayjs from 'dayjs';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
     // --- HOOKS Y ESTADOS PRINCIPALES ---
     const { reserva, setReserva, refresh, aplicarCambioFechas } = useReserva(initialReserva);
+    const toast = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [toast, setToast] = useState(null);
 
     // --- ESTADOS MODAL FECHAS ---
     const [showDateModal, setShowDateModal] = useState(false);
@@ -38,11 +40,6 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     const { preview, loading: previewLoading, error: previewError, fetchPreview: fetchPreviewHook } = usePreview(reserva.localizador);
 
     useReservaEvents(reserva, { onRefresh: refresh });
-
-    const showToast = (message, type = 'info') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4500);
-    };
 
     const refundableAmount = useMemo(() => {
         try {
@@ -71,25 +68,24 @@ export default function DetalleReserva({ reserva: initialReserva }) {
             setIsProcessing(true);
             const latestPreview = await fetchPreviewHook(modalCheckIn, modalCheckOut);
             if (latestPreview?.available === false) {
-                showToast('Sin disponibilidad de activos', 'error');
+                toast.error('Sin disponibilidad de activos');
                 return;
             }
             if (latestPreview?.estimate_charge > 0) {
                 setPaymentAmount(latestPreview.estimate_charge);
                 setPendingApplyAfterPayment(true);
-                // Pre-aceptar términos para facilitar el flujo (el usuario sigue pudiendo desmarcar)
+
                 setAceptaTerminosPago(true);
-                // Cerrar el modal de fechas para evitar solapamiento visual
                 setShowDateModal(false);
                 setShowPaymentModal(true);
                 return;
             }
             await aplicarCambioFechas(modalCheckIn, modalCheckOut);
-            showToast('Reembolso solicitado', 'success');
+            toast.success('Reembolso solicitado');
             setShowDateModal(false);
             refresh();
         } catch (err) {
-            showToast('Error en la actualizacion', 'error');
+            toast.error('Error en la actualizacion');
         } finally { setIsProcessing(false); }
     };
 
@@ -99,11 +95,11 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         try {
             setIsProcessing(true);
             await aplicarCambioFechas(modalCheckIn, modalCheckOut, paymentResult?.pago_id);
-            showToast('Pago y actualizacion de reserva completados', 'success');
+            toast.success('Pago y actualizacion de reserva completados');
             setShowDateModal(false);
             refresh();
         } catch (err) {
-            showToast('Error al aplicar cambios tras el pago, consulte a recepción', 'error');
+            toast.error('Error al aplicar cambios tras el pago, consulte a recepción');
         } finally {
             setPendingApplyAfterPayment(false);
             setIsProcessing(false);
@@ -120,11 +116,11 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                 notes: refundNotes
             });
             if (res.success) {
-                showToast('Solicitud enviada correctamente', 'success');
+                toast.success('Solicitud enviada correctamente');
                 setShowRefundModal(false);
                 refresh();
             }
-        } catch (e) { showToast('Error al procesar solicitud', 'error'); }
+        } catch (e) { toast.error('Error al procesar solicitud'); }
         finally { setIsProcessing(false); }
     };
 
@@ -151,6 +147,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
+                            <BotonVolver />
                             {!isCancelled && (
                                 <button onClick={openDateModal} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition shadow-sm">
                                     Modificar Fechas
@@ -368,7 +365,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                 <FormularioPago
                                     monto={paymentAmount}
                                     onPagoExitoso={handlePagoExitoso}
-                                    onError={(e) => showToast(e?.message, 'error')}
+                                    onError={(e) => toast.error(e?.message)}
                                     reservaData={{ reserva_id: reserva.id, es_edicion_pago: true, check_in: modalCheckIn || reserva.check_in, check_out: modalCheckOut || reserva.check_out, habitaciones: reserva.habitaciones }}
                                     aceptaTerminos={aceptaTerminosPago}
                                     mostrarAceptacion={true}
@@ -378,14 +375,6 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                             <button onClick={() => setShowPaymentModal(false)} className="w-full mt-6 py-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-gray-600 transition">Cancelar operación</button>
                         </div>
-                    </div>
-                )}
-
-                {/* --- TOAST --- */}
-                {toast && (
-                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-4 rounded-2xl shadow-2xl bg-gray-900 text-white flex items-center gap-4 animate-in slide-in-from-bottom-10 duration-500">
-                        <div className={`w-2 h-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-green-400'} animate-pulse`} />
-                        <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
                     </div>
                 )}
             </div>

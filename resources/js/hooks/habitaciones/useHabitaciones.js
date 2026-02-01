@@ -24,8 +24,30 @@ const UI_ASSETS = {
 export default function useHabitaciones({ paso, rango, setRango }) {
 	const [habitaciones, setHabitaciones] = useState([]);
 	const [cargando, setCargando] = useState(false);
+	const [tiposHabitacion, setTiposHabitacion] = useState({});
 
 	const [seleccion, setSeleccion] = useState({});
+
+	// Cargar tipos de habitación una sola vez para obtener capacidades
+	useEffect(() => {
+		const cargarTipos = async () => {
+			try {
+				const res = await fetch('/api/tipos-habitaciones/list');
+				if (res.ok) {
+					const response = await res.json();
+					const data = response.data || [];
+					const mapa = {};
+					data.forEach(tipo => {
+						mapa[tipo.nombre?.toLowerCase() || tipo.slug?.toLowerCase()] = tipo.capacidad;
+					});
+					setTiposHabitacion(mapa);
+				}
+			} catch (e) {
+				console.error('Error cargando tipos de habitación:', e);
+			}
+		};
+		cargarTipos();
+	}, []);
 
 	// Carga de datos con limpieza automática
 	// Encapsular la carga en una función para permitir recarga manual
@@ -44,11 +66,16 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 				formatearFecha(rango.to),
 				{ signal }
 			);
+			// Enriquecer datos con capacidad desde tipos
+			const datosEnriquecidos = (Array.isArray(datos) ? datos : []).map(h => ({
+				...h,
+				capacidad: h.capacidad || tiposHabitacion[h.tipo?.toLowerCase()] || 0
+			}));
 			// Debug: loguear respuesta para verificar formato y claves de precio
 			try {
 				// debug preview removed
 			} catch (e) { /* noop */ }
-			setHabitaciones(Array.isArray(datos) ? datos : []);
+			setHabitaciones(datosEnriquecidos);
 
 			// Intentar obtener precios por tipo mediante la API de cálculo de precios
 			try {

@@ -53,6 +53,11 @@ class Reserva extends Model
         return $this->belongsTo(Tarifa::class, 'tarifa_id');
     }
 
+    public function cupon()
+    {
+        return $this->belongsTo(Cupon::class, 'cupon_id');
+    }
+
     /** Scopes **/
 
     public function scopeWithReservable($query)

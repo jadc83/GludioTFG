@@ -1,4 +1,5 @@
 import GuestLayout from '@/Layouts/GuestLayout';
+import BotonVolver from '@/Components/UI/BotonVolver';
 
 export default function TerminosCondiciones() {
     return (
@@ -159,9 +160,7 @@ export default function TerminosCondiciones() {
 
                     {/* Footer con botón volver */}
                     <div className="mt-12 pt-8 border-t border-gray-200 flex justify-center">
-                        <button onClick={() => window.close()} className="inline-flex items-center justify-center rounded-lg bg-black text-white px-6 py-3 font-semibold text-sm uppercase tracking-wider hover:bg-[#7a0202] transition-colors">
-                            ← Volver
-                        </button>
+                        <BotonVolver />
                     </div>
                 </div>
             </div>

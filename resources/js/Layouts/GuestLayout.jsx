@@ -2,29 +2,29 @@ import Footer from '@/Components/UI/Footer';
 import CookieBanner from '@/Components/UI/CookieBanner';
 import BarraReservas from '@/Components/reservas/BarraReservas';
 import Navbar from '@/Components/UI/Nav';
-import Toast from '@/Components/UI/Toast';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import useToast from '@/hooks/useToast.jsx';
 
 export default function GuestLayout({ children }) {
     const page = usePage();
-    const [toastMsg, setToastMsg] = useState(null);
+    const toast = useToast();
 
     useEffect(() => {
         const errors = page?.props?.errors || {};
         if (errors && Object.keys(errors).length > 0) {
             const first = Object.keys(errors)[0];
             const msg = errors[first] && errors[first][0];
-            if (msg) setToastMsg(msg);
+            if (msg) toast.error(msg);
         }
 
         // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            setToastMsg(`Se ha solicitado un reembolso parcial de €${amt}`);
+            toast.info(`Se ha solicitado un reembolso parcial de €${amt}`);
         }
-    }, [page.props.errors, page.props.flash]);
+    }, [page.props.errors, page.props.flash, toast]);
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
@@ -37,8 +37,6 @@ export default function GuestLayout({ children }) {
             <Footer />
 
             <CookieBanner />
-
-            <Toast message={toastMsg} />
         </div>
     );
 }

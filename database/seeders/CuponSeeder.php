@@ -18,6 +18,7 @@ class CuponSeeder extends Seeder
             'tipo' => 'porcentaje',
             'valor' => 10,
             'usos_maximos' => 50,
+            'usos_por_usuario' => 1,
             'usos_realizados' => 0,
             'fecha_inicio' => now(),
             'fecha_fin' => now()->addMonths(3),
@@ -30,11 +31,12 @@ class CuponSeeder extends Seeder
             'tipo' => 'porcentaje',
             'valor' => 25,
             'usos_maximos' => 100,
+            'usos_por_usuario' => null,
             'usos_realizados' => 0,
             'fecha_inicio' => now(),
             'fecha_fin' => now()->addMonths(6),
             'activo' => true,
-            'descripcion' => 'Descuento de verano: 25% en reservas',
+            'descripcion' => 'Descuento de verano: 25% en reservas (sin límite por usuario)',
         ]);
 
         Cupon::create([
@@ -42,11 +44,12 @@ class CuponSeeder extends Seeder
             'tipo' => 'porcentaje',
             'valor' => 15,
             'usos_maximos' => 200,
+            'usos_por_usuario' => 3,
             'usos_realizados' => 0,
             'fecha_inicio' => now(),
             'fecha_fin' => now()->addMonths(12),
             'activo' => true,
-            'descripcion' => 'Cupón de ahorro: 15% en cualquier reserva',
+            'descripcion' => 'Cupón de ahorro: 15% en cualquier reserva (máx 3 usos por usuario)',
         ]);
 
         Cupon::create([
@@ -54,11 +57,12 @@ class CuponSeeder extends Seeder
             'tipo' => 'monto_fijo',
             'valor' => 20,
             'usos_maximos' => 75,
+            'usos_por_usuario' => null,
             'usos_realizados' => 0,
             'fecha_inicio' => now(),
             'fecha_fin' => now()->addMonths(2),
             'activo' => true,
-            'descripcion' => 'Descuento fijo: €20 en tu reserva',
+            'descripcion' => 'Descuento fijo: €20 en tu reserva (sin límite por usuario)',
         ]);
 
         Cupon::create([
@@ -66,11 +70,12 @@ class CuponSeeder extends Seeder
             'tipo' => 'monto_fijo',
             'valor' => 30,
             'usos_maximos' => 500,
+            'usos_por_usuario' => 2,
             'usos_realizados' => 0,
             'fecha_inicio' => now(),
             'fecha_fin' => now()->addMonths(12),
             'activo' => true,
-            'descripcion' => 'Código referral: €30 de descuento',
+            'descripcion' => 'Código referral: €30 de descuento (máx 2 usos por usuario)',
         ]);
 
         Cupon::create([
