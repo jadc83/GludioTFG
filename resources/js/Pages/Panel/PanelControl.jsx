@@ -6,7 +6,7 @@ import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
 import CreateCupon from '@/Components/cupones/formulario/CreateCupon';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon, TicketIcon} from '@heroicons/react/24/outline';
+import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon, TicketIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 import TabClientes from '@/Components/clientes/TabClientes';
 import TabReservas from '@/Components/reservas/listado/TabReservas';
@@ -17,7 +17,7 @@ const TABS = [
     { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
     { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
     { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
-    { id: 'cupones', icon: TicketIcon, label: 'Cupones' },
+    { id: 'configuracion', icon: Cog6ToothIcon, label: 'Configuración' },
     { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
     { id: 'estadisticas', icon: ChartBarIcon, label: 'Estadísticas' },
 ];
@@ -33,8 +33,27 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 const TabEstadisticas = React.lazy(() => import('@/Pages/Panel/TabEstadisticas'));
 const TabCupones = React.lazy(() => import('@/Components/cupones/TabCupones'));
+const ElegirPrecio = React.lazy(() => import('@/Components/tipos/ElegirPrecio'));
 
-function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados, cupones }) {
+function TabConfiguracion({ cupones, tiposHabitacion }) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <Suspense fallback={<div className="p-6 text-center">Cargando cupones…</div>}>
+          <TabCupones cupones={cupones} />
+        </Suspense>
+      </div>
+      <hr className="border-gray-300" />
+      <div>
+        <Suspense fallback={<div className="p-6 text-center">Cargando precios…</div>}>
+          <ElegirPrecio tiposHabitacion={tiposHabitacion} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados, cupones, tiposHabitacion }) {
   switch (tabActiva) {
     case 'habitaciones':
       return <TabHabitaciones habitaciones={habitaciones} />;
@@ -48,12 +67,8 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
     case 'empleados':
       return <IndexEmpleados empleados={empleados} />;
-    case 'cupones':
-      return (
-        <Suspense fallback={<div className="p-6 text-center">Cargando cupones…</div>}>
-          <TabCupones cupones={cupones} />
-        </Suspense>
-      );
+    case 'configuracion':
+      return <TabConfiguracion cupones={cupones} tiposHabitacion={tiposHabitacion} />;
     case 'reembolsos':
       return <TabReembolsos />;
     case 'estadisticas':
@@ -71,7 +86,7 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
   }
 }
-export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = [], empleados = [], cupones = {} }) {
+export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = [], empleados = [], cupones = {}, tiposHabitacion = [] }) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
 
     // Cargar tab desde localStorage al montar
@@ -129,7 +144,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
 
                         <div className="contenedorContenido bg-gris">
                             <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados}
-                                users={users} reservas={reservas} empleados={empleados} cupones={cupones} />
+                                users={users} reservas={reservas} empleados={empleados} cupones={cupones} tiposHabitacion={tiposHabitacion} />
                         </div>
                     </div>
                 </div>

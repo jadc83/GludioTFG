@@ -8,6 +8,7 @@ use App\Models\Reserva;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\Cupon;
+use App\Models\TipoHabitacion;
 use App\Services\ReservaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -77,6 +78,7 @@ class PanelController extends Controller
             'reservas'                => $this->reservaService->formatearReservas($reservas),
             'empleados'               => $empleados,
             'cupones'                 => Cupon::paginate(15),
+            'tiposHabitacion'         => TipoHabitacion::all(),
         ]);
     }
 }

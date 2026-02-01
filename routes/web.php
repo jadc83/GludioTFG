@@ -41,6 +41,7 @@ Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisp
 Route::get('/habitaciones/disponibles', [HabitacionController::class, 'getDisponibles'])->name('habitaciones.disponibles');
 Route::get('/reservas/precios-por-dia', [ReservaController::class, 'preciosPorDia'])->name('reservas.precios-por-dia');
 Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
+Route::put('/api/tipos-habitacion/{tipoHabitacion}', [TipoHabitacionController::class, 'update'])->middleware('auth');
 Route::get('/api/tarifas', [TarifaController::class, 'index']);
 Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'preciosMes'])->name('reservas.precios-mes');
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.buscar-localizador');

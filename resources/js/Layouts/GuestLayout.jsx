@@ -22,7 +22,7 @@ export default function GuestLayout({ children }) {
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            setToastMsg(`Se ha solicitado un reembolso parcial de €${amt}`);
+            setToastMsg(`Se ha solicitado un reembolso parcial de ${amt}€`);
         }
     }, [page.props.errors, page.props.flash]);
 

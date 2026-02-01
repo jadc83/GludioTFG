@@ -43,7 +43,7 @@ export default function TabCupones({ cupones = {} }) {
     };
 
     const getValorTexto = (cupon) => {
-        return cupon.tipo === 'porcentaje' ? `${cupon.valor}%` : `€${cupon.valor}`;
+        return cupon.tipo === 'porcentaje' ? `${cupon.valor}%` : `${cupon.valor}€`;
     };
 
     const cuponesData = cupones.data || [];

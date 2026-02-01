@@ -30,8 +30,8 @@ export function formatearMoneda(cantidad, moneda = 'EUR') {
     if (cantidad === null || cantidad === undefined) return '—';
 
     const formateadores = {
-        EUR: (n) => `€${n.toFixed(2)}`,
-        USD: (n) => `$${n.toFixed(2)}`,
+        EUR: (n) => `${n.toFixed(2)}€`,
+        USD: (n) => `${n.toFixed(2)}$`,
         GBP: (n) => `£${n.toFixed(2)}`,
     };
 

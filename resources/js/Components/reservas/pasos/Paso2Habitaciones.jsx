@@ -4,6 +4,7 @@ import TarifasSelector from '@/Components/reservas/TarifasSelector';
 import DetalleSubtotal from '@/Components/reservas/utilidades/DetalleSubtotal';
 import { UsersIcon, InformationCircleIcon, PlusIcon, MinusIcon, WifiIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import ModalGaleria from '@/Components/reservas/modales/ModalGaleria';
 
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones, habitacionesSeleccionadas, agruparHabitacionesPorTipo, getImagen,
@@ -12,6 +13,25 @@ export default function Paso2Habitaciones({
 }) {
     const [imagenModalAbierto, setImagenModalAbierto] = useState(null);
     const [tarifas, setTarifas] = useState([]);
+
+    // Fotos por tipo de habitación
+    const fotosPorTipo = {
+        doble: [
+            'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80',
+            'https://images.unsplash.com/photo-1578665478519-e21cc028cb29?w=800&q=80',
+            'https://images.unsplash.com/photo-1540932014986-7db9c3030eb7?w=800&q=80',
+        ],
+        suite: [
+            'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80',
+            'https://images.unsplash.com/photo-1578665478519-e21cc028cb29?w=800&q=80',
+            'https://images.unsplash.com/photo-1540932014986-7db9c3030eb7?w=800&q=80',
+        ],
+        familiar: [
+            'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80',
+            'https://images.unsplash.com/photo-1578665478519-e21cc028cb29?w=800&q=80',
+            'https://images.unsplash.com/photo-1540932014986-7db9c3030eb7?w=800&q=80',
+        ],
+    };
 
     useEffect(() => {
         console.log('Paso2 - selectedTarifas prop recibido:', selectedTarifas);
@@ -144,6 +164,14 @@ export default function Paso2Habitaciones({
                     </button>
                 </div>
             </footer>
+
+            {/* MODAL GALERIA */}
+            <ModalGaleria
+                titulo={imagenModalAbierto}
+                fotos={fotosPorTipo[imagenModalAbierto] || []}
+                abierto={!!imagenModalAbierto}
+                onCerrar={() => setImagenModalAbierto(null)}
+            />
         </div>
     );
 }

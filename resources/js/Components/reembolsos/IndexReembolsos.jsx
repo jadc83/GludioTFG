@@ -110,7 +110,7 @@ export default function IndexReembolsos({
                                                 <td className="px-6 py-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-base font-black text-[#7a0202]">
-                                                            {r.requested_amount_cents ? `€${(r.requested_amount_cents/100).toFixed(2)}` : '€0.00'}
+                                                            {r.requested_amount_cents ? `${(r.requested_amount_cents/100).toFixed(2)}€` : '0.00€'}
                                                         </span>
                                                         {r.processed_refund && (
                                                             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tighter">
