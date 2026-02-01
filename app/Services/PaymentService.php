@@ -12,18 +12,33 @@ use Stripe\StripeClient;
 
 class PaymentService
 {
-	protected StripeClient $stripe;
+	protected ?StripeClient $stripe = null;
 	protected RefundService $refundService;
 
 	/**
 	 * Constructor del servicio de pagos
-	 * Inicializa cliente de Stripe con clave secreta y RefundService
+	 * Inicializa RefundService
 	 * Usado por: inyección automática de dependencias
 	 */
 	public function __construct(?RefundService $refundService = null)
 	{
-		$this->stripe = new StripeClient(config('services.stripe.secret'));
 		$this->refundService = $refundService ?? new RefundService();
+	}
+
+	/**
+	 * Obtiene instancia de StripeClient (lazy loading)
+	 * Inicializa solo cuando se necesita
+	 */
+	protected function getStripe(): StripeClient
+	{
+		if ($this->stripe === null) {
+			$stripeSecret = env('STRIPE_SECRET_KEY');
+			if (!$stripeSecret) {
+				throw new \RuntimeException('STRIPE_SECRET_KEY no está configurada en el archivo .env. Por favor, configura la clave de Stripe.');
+			}
+			$this->stripe = new StripeClient($stripeSecret);
+		}
+		return $this->stripe;
 	}
 
 	/**
@@ -105,7 +120,7 @@ class PaymentService
 
 		try {
 			return DB::transaction(function () use ($reserva, $pago, $pi_id, $montoCents) {
-				$stripeRefund = $this->stripe->refunds->create([
+				$stripeRefund = $this->getStripe()->refunds->create([
 					'payment_intent' => $pi_id,
 					'amount' => $montoCents,
 				]);
@@ -185,7 +200,7 @@ class PaymentService
 			return $pago->stripe_payment_intent_id;
 		}
 		try {
-			$search = $this->stripe->paymentIntents->search([
+			$search = $this->getStripe()->paymentIntents->search([
 				'query' => "metadata['localizador']:'{$reserva->localizador}'",
 				'limit' => 1
 			]);
@@ -208,7 +223,7 @@ class PaymentService
 		// Validar contra Stripe también si tenemos PI
 		if ($pago->stripe_payment_intent_id) {
 			try {
-				$stripeIntent = $this->stripe->paymentIntents->retrieve($pago->stripe_payment_intent_id);
+				$stripeIntent = $this->getStripe()->paymentIntents->retrieve($pago->stripe_payment_intent_id);
 
 				// Para PaymentIntent en estado succeeded, amount_capturable es 0
 				// En ese caso usamos amount_received (lo que fue pagado realmente)
