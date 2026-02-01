@@ -82,6 +82,10 @@ Route::post('/reservas/{reserva}/asignar-habitaciones', [ReservaController::clas
 Route::post('/reservas/{reserva}/desasignar-habitaciones', [ReservaController::class, 'desasignarHabitaciones'])->name('reservas.desasignar-habitaciones')->middleware('auth');
 
 // Cupones
-Route::post('/cupones/validar', [CuponController::class, 'validar']);
+Route::post('/cupones/validar', [CuponController::class, 'validar'])->withoutMiddleware('web');
+Route::middleware(['auth'])->group(function () {
+    Route::resource('cupones', \App\Http\Controllers\CuponController::class)->parameters(['cupones' => 'cupon']);
+    Route::post('cupones/{cupon}/toggle', [\App\Http\Controllers\CuponController::class, 'toggle'])->name('cupones.toggle');
+});
 
 require __DIR__ . '/auth.php';

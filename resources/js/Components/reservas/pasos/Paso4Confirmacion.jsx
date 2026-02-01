@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { router } from '@inertiajs/react';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
 import Modal from '@/Components/Modal';
@@ -137,13 +138,22 @@ export default function Paso4Confirmacion({
         try {
             const response = await fetch('/cupones/validar', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     codigo: cuponDescuento,
                     email: formData.email,
                     precio_total: monto,
                 }),
             });
+
+            if (response.status === 419) {
+                setErrorPagoLocal('Sesión expirada, recarga la página');
+                return;
+            }
 
             const result = await response.json();
 

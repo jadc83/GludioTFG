@@ -13,7 +13,7 @@ class Reserva extends Model
     protected $table = 'reservas';
 
     protected $fillable = [ 'localizador', 'user_id', 'booked_by_user_id', 'check_in', 'check_out', 'precio_total',
-        'status', 'pago', 'notas', 'reservable_type', 'reservable_id', 'tarifa_id'];
+        'status', 'pago', 'notas', 'reservable_type', 'reservable_id', 'tarifa_id', 'cupon_id', 'descuento_aplicado'];
 
     protected $casts = [ 'precio_total' => 'float'];
 

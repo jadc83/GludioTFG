@@ -11,5 +11,8 @@ class VerifyCsrfToken extends BaseVerifier
      *
      * @var array<int, string>
      */
-    protected $except = [];
+    protected $except = [
+        'cupones/validar',
+        'webhooks/stripe',
+    ];
 }

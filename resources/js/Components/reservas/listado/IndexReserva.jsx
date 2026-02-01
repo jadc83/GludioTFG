@@ -217,7 +217,18 @@ export default function IndexReserva({ reservas = [] }) {
                                             {/* Precio y Pago */}
                                             <td className="px-6 py-6">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
+                                                    {reserva.descuento_aplicado ? (
+                                                        <>
+                                                            <span className="text-sm font-black text-gray-900">
+                                                                {(parseFloat(reserva.precio_total || 0) - parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
+                                                            </span>
+                                                            <span className="text-xs text-gray-400 line-through">
+                                                                {parseFloat(reserva.precio_total || 0).toFixed(2)} €
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
+                                                    )}
                                                     <span className={`inline-flex w-fit px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${pago.clase}`}>
                                                         {pago.label}
                                                     </span>

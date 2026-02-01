@@ -28,7 +28,7 @@ export function toIsoDate(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas = [] }) {
+export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas, idClienteSeleccionado, tipoClienteSeleccionado, usuarioActual, tarifasSeleccionadas = [], cupon_id = null }) {
   const values = typeof getValues === 'function' ? getValues() : getValues || {};
   const habitaciones = mapHabitaciones(habitacionesSeleccionadas);
 
@@ -59,6 +59,7 @@ export function getReservaPayload({ getValues, rango, habitacionesSeleccionadas,
     reservable_id: reservableId,
     tipo_usuario: tipoUsuario,
     booked_by_user_id: usuarioActual?.id || null,
+    cupon_id: cupon_id || null,
   };
 }
 

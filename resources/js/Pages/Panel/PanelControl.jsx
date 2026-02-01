@@ -5,7 +5,7 @@ import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitac
 import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
 import TabHabitaciones from '@/Components/habitaciones/TabHabitaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon} from '@heroicons/react/24/outline';
+import {BriefcaseIcon, HomeIcon, UsersIcon, ChartBarIcon, TicketIcon} from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 import TabClientes from '@/Components/clientes/TabClientes';
 import TabReservas from '@/Components/reservas/listado/TabReservas';
@@ -16,6 +16,7 @@ const TABS = [
     { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
     { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
     { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
+    { id: 'cupones', icon: TicketIcon, label: 'Cupones' },
     { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
     { id: 'estadisticas', icon: ChartBarIcon, label: 'Estadísticas' },
 ];
@@ -30,8 +31,9 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 
 import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 const TabEstadisticas = React.lazy(() => import('@/Pages/Panel/TabEstadisticas'));
+const TabCupones = React.lazy(() => import('@/Components/cupones/TabCupones'));
 
-function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados }) {
+function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, users, reservas, empleados, cupones }) {
   switch (tabActiva) {
     case 'habitaciones':
       return <TabHabitaciones habitaciones={habitaciones} />;
@@ -45,6 +47,12 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
     case 'empleados':
       return <IndexEmpleados empleados={empleados} />;
+    case 'cupones':
+      return (
+        <Suspense fallback={<div className="p-6 text-center">Cargando cupones…</div>}>
+          <TabCupones cupones={cupones} />
+        </Suspense>
+      );
     case 'reembolsos':
       return <TabReembolsos />;
     case 'estadisticas':
@@ -62,7 +70,7 @@ function TabContenido({ tabActiva, habitaciones, clientes, clientesFiltrados, us
       );
   }
 }
-export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = [], empleados = []}) {
+export default function PanelControl({ habitaciones = [], clientes = [], clientesFiltrados = [], users = [], reservas = [], empleados = [], cupones = {} }) {
     const [tabActiva, setTabActiva] = useState('habitaciones');
 
     // Cargar tab desde localStorage al montar
@@ -119,7 +127,7 @@ export default function PanelControl({ habitaciones = [], clientes = [], cliente
 
                         <div className="contenedorContenido bg-gris">
                             <TabContenido tabActiva={tabActiva} habitaciones={habitaciones} clientes={clientes} clientesFiltrados={clientesFiltrados}
-                                users={users} reservas={reservas} empleados={empleados}/>
+                                users={users} reservas={reservas} empleados={empleados} cupones={cupones} />
                         </div>
                     </div>
                 </div>

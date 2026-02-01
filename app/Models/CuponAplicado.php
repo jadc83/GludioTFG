@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CuponAplicado extends Model
 {
+    protected $table = 'cupones_aplicados';
+
     protected $fillable = [
         'reserva_id',
         'cupon_id',

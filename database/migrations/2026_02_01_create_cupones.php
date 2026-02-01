@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             $table->string('descripcion')->nullable();
             $table->timestamps();
-            
+
             $table->index('codigo');
             $table->index('activo');
         });
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->string('usuario_email')->nullable();
             $table->ipAddress('ip_address')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['reserva_id', 'cupon_id']);
         });
     }
