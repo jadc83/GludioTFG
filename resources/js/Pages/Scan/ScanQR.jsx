@@ -68,6 +68,15 @@ export default function ScanQR() {
                                     </>
                                 )}
 
+                                {modalType === 'success' && (
+                                    <>
+                                        <CheckCircleIcon className="mx-auto h-16 w-16 text-blue-500" />
+                                        <h2 className="text-2xl font-bold mt-4">¡Reserva encontrada!</h2>
+                                        <p className="mt-2 text-gray-700">Se ha encontrado la reserva <span className="font-mono">{reservaInfo?.localizador}</span>.</p>
+                                        <p className="mt-2 text-gray-600">Haga clic en continuar para ver los detalles.</p>
+                                    </>
+                                )}
+
                                 <div className="mt-6">
                                     <button onClick={closeModal} className="px-4 py-2 bg-[#7a0202] text-white rounded">Cerrar</button>
                                 </div>

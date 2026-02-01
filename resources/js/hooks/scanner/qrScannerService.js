@@ -68,9 +68,8 @@ export class QRScannerService {
             if (response?.success === false) {
                 throw new Error(response?.error || response?.message || 'Error procesando check-in');
             }
-            // Redirigir directamente a la página de detalle
-            const loc = reservaInfo?.localizador || '';
-            return { type: 'redirect', url: `/reserva/${encodeURIComponent(loc)}` };
+            // Mostrar modal de éxito antes de redirigir
+            return { type: 'modal', modalType: 'checkin' };
         }
 
         if (action === 'checkout') {
@@ -80,7 +79,7 @@ export class QRScannerService {
             return { type: 'modal', modalType: 'checkout' };
         }
 
-        // Sin acción: ir al detalle
-        return { type: 'redirect', url: route('reserva.show', { reserva: reservaInfo?.localizador || '' }) };
+        // Sin acción: mostrar modal de éxito antes de redirigir
+        return { type: 'modal', modalType: 'success' };
     }
 }

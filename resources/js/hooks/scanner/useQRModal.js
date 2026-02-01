@@ -25,6 +25,12 @@ export function useQRModal() {
             }
         } else if (modalType === 'checkout') {
             router.visit('/');
+        } else if (modalType === 'success') {
+            // Para escaneos sin acción específica, ir al detalle de la reserva
+            const loc = reservaInfo?.localizador || '';
+            if (loc) {
+                router.visit(route('reserva.show', { reserva: loc }));
+            }
         }
     };
 
