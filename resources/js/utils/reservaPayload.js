@@ -1,7 +1,3 @@
-/**
- * Utilidades para construir el payload mínimo de reserva que envía el frontend.
- * El backend es la fuente de verdad y realizará validaciones adicionales.
- */
 export function mapHabitaciones(habitacionesSeleccionadas = {}) {
     return Object.entries(habitacionesSeleccionadas || {})
         .filter(([, r]) => r.cantidad > 0)
@@ -15,13 +11,10 @@ export function mapHabitaciones(habitacionesSeleccionadas = {}) {
 
 export function toIsoDate(date) {
     if (!date) return null;
-    // Si ya viene en formato 'YYYY-MM-DD' devuelvo tal cual (evita reinterpretación)
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
         return date;
 
-    // Normalizar objetos Date evitando toISOString() que convierte a UTC
-    // y puede devolver el día anterior según la zona horaria del navegador.
-    const d = date instanceof Date ? date : new Date(date);
+    const fecha = date instanceof Date ? date : new Date(date);
     if (Number.isNaN(d.getTime())) return null;
 
     const yyyy = d.getFullYear();
@@ -58,8 +51,7 @@ export function getReservaPayload({
         } catch (e) {}
     }
 
-    // Si el usuario está autenticado y no se ha seleccionado explícitamente un cliente,
-    // usar el usuario logueado como reservable (tabla `users`) para evitar conflictos por DNI.
+
     const reservableId =
         idClienteSeleccionado !== undefined && idClienteSeleccionado !== null
             ? idClienteSeleccionado

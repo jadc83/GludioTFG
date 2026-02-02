@@ -3,7 +3,6 @@ import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import Paginacion from '@/Components/UI/Paginacion';
-import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
 import {
     HomeIcon,
     InboxIcon,
@@ -182,7 +181,7 @@ export default function IndexReserva({ reservas = [] }) {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left responsive-table">
+                        <table className="responsive-table w-full border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50/50">
                                     <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -222,8 +221,11 @@ export default function IndexReserva({ reservas = [] }) {
                                             className="group transition-colors hover:bg-gray-50/50"
                                         >
                                             {/* Localizador Box */}
-                                            <td className="px-6 py-6 text-center" data-label="Localizador">
-                                                <div className="flex items-center justify-center gap-3 md:justify-center justify-end w-full">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Localizador"
+                                            >
+                                                <div className="flex w-full items-center justify-end justify-center gap-3 md:justify-center">
                                                     <div className="flex h-10 w-16 items-center justify-center rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-200 transition-colors group-hover:bg-[#7a0202]">
                                                         <span className="font-mono text-xs font-black tracking-tighter">
                                                             {
@@ -235,7 +237,10 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Cliente */}
-                                            <td className="px-6 py-6 text-center" data-label="Cliente">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Cliente"
+                                            >
                                                 <span className="text-xs font-medium uppercase leading-none tracking-tight text-gray-900">
                                                     {reserva.cliente_name ||
                                                         'Anónimo'}
@@ -243,7 +248,10 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Habitación */}
-                                            <td className="px-6 py-6 text-center" data-label="Habitación">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Habitación"
+                                            >
                                                 <span className="text-sm font-medium text-gray-600">
                                                     {reserva.habitacion_numero ||
                                                         '—'}
@@ -251,7 +259,10 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Llegada */}
-                                            <td className="px-6 py-6 text-center" data-label="Llegada">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Llegada"
+                                            >
                                                 <div className="font-mono text-xs font-medium text-gray-600">
                                                     {new Date(
                                                         reserva.check_in,
@@ -262,7 +273,10 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Salida */}
-                                            <td className="px-6 py-6 text-center" data-label="Salida">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Salida"
+                                            >
                                                 <div className="font-mono text-xs font-medium text-gray-600">
                                                     {new Date(
                                                         reserva.check_out,
@@ -273,89 +287,115 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Precio */}
-                                            <td className="px-6 py-6 text-center" data-label="Precio">
-                                                <div className="flex flex-col items-end md:items-center w-full">
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Precio"
+                                            >
+                                                <div className="flex w-full flex-col items-end md:items-center">
                                                     <span className="text-xs text-gray-400 line-through">
-                                                        {(parseFloat(reserva.precio_total || 0) + parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
+                                                        {(
+                                                            parseFloat(
+                                                                reserva.precio_total ||
+                                                                    0,
+                                                            ) +
+                                                            parseFloat(
+                                                                reserva.descuento_aplicado ||
+                                                                    0,
+                                                            )
+                                                        ).toFixed(2)}{' '}
+                                                        €
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-900">
-                                                        {parseFloat(reserva.precio_total || 0).toFixed(2)} €
+                                                        {parseFloat(
+                                                            reserva.precio_total ||
+                                                                0,
+                                                        ).toFixed(2)}{' '}
+                                                        €
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* Estado Pago */}
-                                            <td className="px-6 py-6 text-center" data-label="Estado Pago">
-                                                <div className="flex justify-end md:justify-center w-full">
-                                                <Badge
-                                                    label={
-                                                        reserva.pago ===
-                                                        'pagado'
-                                                            ? 'Pagado'
-                                                            : reserva.pago ===
-                                                                'devuelto'
-                                                              ? 'Devuelto'
-                                                              : reserva.pago ===
-                                                                  'reembolso_pendiente'
-                                                                ? 'Reembolso Pendiente'
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Estado Pago"
+                                            >
+                                                <div className="flex w-full justify-end md:justify-center">
+                                                    <Badge
+                                                        label={
+                                                            reserva.pago ===
+                                                            'pagado'
+                                                                ? 'Pagado'
                                                                 : reserva.pago ===
-                                                                    'reembolso_parcial_procesado'
-                                                                  ? 'Parcialmente Reembolsado'
-                                                                  : 'Pendiente'
-                                                    }
-                                                    tipo={
-                                                        reserva.pago ||
-                                                        'pendiente'
-                                                    }
-                                                />
+                                                                    'devuelto'
+                                                                  ? 'Devuelto'
+                                                                  : reserva.pago ===
+                                                                      'reembolso_pendiente'
+                                                                    ? 'Reembolso Pendiente'
+                                                                    : reserva.pago ===
+                                                                        'reembolso_parcial_procesado'
+                                                                      ? 'Parcialmente Reembolsado'
+                                                                      : 'Pendiente'
+                                                        }
+                                                        tipo={
+                                                            reserva.pago ||
+                                                            'pendiente'
+                                                        }
+                                                    />
                                                 </div>
                                             </td>
 
                                             {/* Estado Reserva */}
-                                            <td className="px-6 py-6 text-center" data-label="Estado Reserva">
-                                                <div className="flex justify-end md:justify-center w-full">
-                                                <Badge
-                                                    label={
-                                                        reserva.status ===
-                                                        'confirmado'
-                                                            ? 'Confirmada'
-                                                            : reserva.status ===
-                                                                'en_estancia'
-                                                              ? 'En Estancia'
-                                                              : reserva.status ===
-                                                                  'finalizado'
-                                                                ? 'Finalizada'
+                                            <td
+                                                className="px-6 py-6 text-center"
+                                                data-label="Estado Reserva"
+                                            >
+                                                <div className="flex w-full justify-end md:justify-center">
+                                                    <Badge
+                                                        label={
+                                                            reserva.status ===
+                                                            'confirmado'
+                                                                ? 'Confirmada'
                                                                 : reserva.status ===
-                                                                    'cancelado'
-                                                                  ? 'Cancelada'
+                                                                    'en_estancia'
+                                                                  ? 'En Estancia'
                                                                   : reserva.status ===
-                                                                      'no_presentado'
-                                                                    ? 'No Presentado'
+                                                                      'finalizado'
+                                                                    ? 'Finalizada'
                                                                     : reserva.status ===
-                                                                        'pendiente'
-                                                                      ? 'Pendiente'
+                                                                        'cancelado'
+                                                                      ? 'Cancelada'
                                                                       : reserva.status ===
-                                                                          'reembolso_parcial_pendiente'
-                                                                        ? 'Reembolso Parcial Pendiente'
+                                                                          'no_presentado'
+                                                                        ? 'No Presentado'
                                                                         : reserva.status ===
-                                                                            'reembolso_total_pendiente'
-                                                                          ? 'Reembolso Total Pendiente'
+                                                                            'pendiente'
+                                                                          ? 'Pendiente'
                                                                           : reserva.status ===
-                                                                              'reembolso_parcial_confirmado'
-                                                                            ? 'Reembolso Parcial'
-                                                                            : 'Pendiente'
-                                                    }
-                                                    tipo={
-                                                        reserva.status ||
-                                                        'pendiente'
-                                                    }
-                                                />
+                                                                              'reembolso_parcial_pendiente'
+                                                                            ? 'Reembolso Parcial Pendiente'
+                                                                            : reserva.status ===
+                                                                                'reembolso_total_pendiente'
+                                                                              ? 'Reembolso Total Pendiente'
+                                                                              : reserva.status ===
+                                                                                  'reembolso_parcial_confirmado'
+                                                                                ? 'Reembolso Parcial'
+                                                                                : 'Pendiente'
+                                                        }
+                                                        tipo={
+                                                            reserva.status ||
+                                                            'pendiente'
+                                                        }
+                                                    />
                                                 </div>
                                             </td>
 
                                             {/* Acciones */}
-                                            <td className="px-6 py-6 text-right full-width mt-2 md:mt-0" data-label="Acciones">
-                                                <div className="flex justify-end gap-2 w-full">
+                                            <td
+                                                className="full-width mt-2 px-6 py-6 text-right md:mt-0"
+                                                data-label="Acciones"
+                                            >
+                                                <div className="flex w-full justify-end gap-2">
                                                     <button
                                                         onClick={() =>
                                                             router.visit(

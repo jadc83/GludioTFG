@@ -17,7 +17,7 @@ export default {
                 mono: ['JetBrains Mono', 'Fira Code', 'Consolas', ...defaultTheme.fontFamily.mono],
             },
             colors: {
-                'gris': '#E2E0DC',
+                'gris': '#ffffff',
             },
         },
     },

@@ -1,8 +1,11 @@
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useState, useEffect, useRef } from 'react';
 import { obtenerClientes } from '@/hooks/reservas/service';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useEffect, useRef, useState } from 'react';
 
-export default function BusquedaClientes({ onSeleccionar, clienteSeleccionado }) {
+export default function BusquedaClientes({
+    onSeleccionar,
+    clienteSeleccionado,
+}) {
     const [busqueda, setBusqueda] = useState('');
     const [clientes, setClientes] = useState([]);
     const [filtrados, setFiltrados] = useState([]);
@@ -48,13 +51,17 @@ export default function BusquedaClientes({ onSeleccionar, clienteSeleccionado })
     // Cerrar resultados al hacer clic fuera
     useEffect(() => {
         const handleClickFuera = (event) => {
-            if (contenedorRef.current && !contenedorRef.current.contains(event.target)) {
+            if (
+                contenedorRef.current &&
+                !contenedorRef.current.contains(event.target)
+            ) {
                 setMostrarResultados(false);
             }
         };
 
         document.addEventListener('mousedown', handleClickFuera);
-        return () => document.removeEventListener('mousedown', handleClickFuera);
+        return () =>
+            document.removeEventListener('mousedown', handleClickFuera);
     }, []);
 
     const handleSeleccionar = (cliente) => {
@@ -118,10 +125,14 @@ export default function BusquedaClientes({ onSeleccionar, clienteSeleccionado })
                     ) : (
                         <ul className="divide-y divide-gray-100">
                             {filtrados.map((cliente) => (
-                                <li key={`${cliente.tipo_usuario}-${cliente.id}`}>
+                                <li
+                                    key={`${cliente.tipo_usuario}-${cliente.id}`}
+                                >
                                     <button
                                         type="button"
-                                        onClick={() => handleSeleccionar(cliente)}
+                                        onClick={() =>
+                                            handleSeleccionar(cliente)
+                                        }
                                         className="block w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
                                     >
                                         <div className="font-medium text-gray-900">
@@ -137,7 +148,8 @@ export default function BusquedaClientes({ onSeleccionar, clienteSeleccionado })
                                         </div>
                                         {cliente.numero_documento && (
                                             <div className="text-xs text-gray-400">
-                                                {cliente.tipo_documento?.toUpperCase()}: {cliente.numero_documento}
+                                                {cliente.tipo_documento?.toUpperCase()}
+                                                : {cliente.numero_documento}
                                             </div>
                                         )}
                                     </button>
@@ -156,7 +168,8 @@ export default function BusquedaClientes({ onSeleccionar, clienteSeleccionado })
                                 Cliente seleccionado
                             </div>
                             <div className="mt-1 text-sm text-green-700">
-                                {clienteSeleccionado.name} - {clienteSeleccionado.email}
+                                {clienteSeleccionado.name} -{' '}
+                                {clienteSeleccionado.email}
                             </div>
                         </div>
                         <button

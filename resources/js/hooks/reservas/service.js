@@ -73,8 +73,8 @@ export async function obtenerClientes() {
     try {
         const res = await axios.get('/clientes', {
             headers: {
-                'Accept': 'application/json'
-            }
+                Accept: 'application/json',
+            },
         });
         console.log('Respuesta completa de clientes:', res);
         console.log('res.data:', res.data);
@@ -92,7 +92,7 @@ export async function obtenerHabitacionesDisponibles(checkIn, checkOut) {
             params: {
                 check_in: checkIn,
                 check_out: checkOut,
-                individuales: 'true'
+                individuales: 'true',
             },
         });
         return res?.data ?? [];

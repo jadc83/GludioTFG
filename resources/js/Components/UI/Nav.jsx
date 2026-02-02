@@ -144,7 +144,7 @@ export default function Navbar() {
             </div>
 
             <div
-                className={`${AbrirDesplegable ? 'block' : 'hidden'} lg:hidden bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm`}
+                className={`${AbrirDesplegable ? 'block' : 'hidden'} border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur lg:hidden`}
             >
                 <div className="flex flex-col space-y-1 px-4 py-3">
                     <ResponsiveNavLink

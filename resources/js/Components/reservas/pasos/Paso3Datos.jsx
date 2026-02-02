@@ -1,8 +1,8 @@
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
 import Boton from '@/Components/UI/Boton';
 import { IdentificationIcon } from '@heroicons/react/24/outline';
-import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 import '../../../../css/paso3Datos.css';
+import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 
 export default function Paso3Datos({
     watch,

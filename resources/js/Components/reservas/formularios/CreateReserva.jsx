@@ -1,26 +1,26 @@
 import Campo from '@/Components/formulario/Campo';
-import Boton from '@/Components/UI/Boton';
+import FormularioPago from '@/Components/pagos/FormularioPago';
 import BusquedaClientes from '@/Components/reservas/formularios/BusquedaClientes';
-import { useFormGenerico } from '@/hooks/useFormGenerico';
+import Boton from '@/Components/UI/Boton';
 import {
     calcularPrecio,
     obtenerHabitacionesDisponibles,
     obtenerTarifas,
 } from '@/hooks/reservas/service';
+import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import {
     CalendarIcon,
+    CreditCardIcon,
     HomeIcon,
+    TagIcon,
     UserIcon,
     XMarkIcon,
-    CreditCardIcon,
-    TagIcon,
 } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 export default function CreateReserva({ iconOnly = false }) {
-
     const [abierto, setAbierto] = useState(false);
     const [tabActiva, setTabActiva] = useState('fechas');
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState([]);
@@ -30,6 +30,7 @@ export default function CreateReserva({ iconOnly = false }) {
     const [precioCalculado, setPrecioCalculado] = useState(0);
     const [tarifas, setTarifas] = useState([]);
     const [tarifasSeleccionadas, setTarifasSeleccionadas] = useState([]);
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
     const datosIniciales = {
         // Fechas
@@ -64,10 +65,16 @@ export default function CreateReserva({ iconOnly = false }) {
         notas: '',
     };
 
-    const { formulario, cambiar, errores, estaCargando, actualizarCampo, setData } =
-        useFormGenerico(datosIniciales, '/reservas', '', () => {
-            handleCerrar();
-        });
+    const {
+        formulario,
+        cambiar,
+        errores,
+        estaCargando,
+        actualizarCampo,
+        setData,
+    } = useFormGenerico(datosIniciales, '/reservas', '', () => {
+        handleCerrar();
+    });
 
     const handleCerrar = () => {
         setAbierto(false);
@@ -83,11 +90,10 @@ export default function CreateReserva({ iconOnly = false }) {
     useEffect(() => {
         if (!abierto) return;
 
-        obtenerTarifas()
-            .then((data) => {
-                console.log('Tarifas cargadas:', data);
-                setTarifas(data || []);
-            });
+        obtenerTarifas().then((data) => {
+            console.log('Tarifas cargadas:', data);
+            setTarifas(data || []);
+        });
     }, [abierto]);
 
     // Buscar habitaciones disponibles cuando cambian las fechas
@@ -115,7 +121,12 @@ export default function CreateReserva({ iconOnly = false }) {
                 // Agrupar por tipo
                 const porTipo = {};
                 (data || []).forEach((hab) => {
-                    console.log('Procesando habitación:', hab.tipo, 'precio_noche:', hab.precio_noche);
+                    console.log(
+                        'Procesando habitación:',
+                        hab.tipo,
+                        'precio_noche:',
+                        hab.precio_noche,
+                    );
                     if (!porTipo[hab.tipo]) {
                         porTipo[hab.tipo] = {
                             cantidad: 0,
@@ -171,15 +182,23 @@ export default function CreateReserva({ iconOnly = false }) {
                 console.error('Error calculando precio:', err);
                 console.error('Error response:', err.response?.data);
             });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [habitacionesPorTipo, formulario.check_in, formulario.check_out, tarifasSeleccionadas]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        habitacionesPorTipo,
+        formulario.check_in,
+        formulario.check_out,
+        tarifasSeleccionadas,
+    ]);
 
     const cambiarCantidadHabitaciones = (tipo, cantidad) => {
         setHabitacionesPorTipo((prev) => ({
             ...prev,
             [tipo]: {
                 ...prev[tipo],
-                cantidad: Math.max(0, Math.min(cantidad, prev[tipo].disponibles)),
+                cantidad: Math.max(
+                    0,
+                    Math.min(cantidad, prev[tipo].disponibles),
+                ),
             },
         }));
     };
@@ -189,7 +208,12 @@ export default function CreateReserva({ iconOnly = false }) {
 
         if (cliente) {
             actualizarCampo('reservable_id', cliente.id);
-            actualizarCampo('reservable_type', cliente.tipo_usuario === 'user' ? 'App\\Models\\User' : 'App\\Models\\Cliente');
+            actualizarCampo(
+                'reservable_type',
+                cliente.tipo_usuario === 'user'
+                    ? 'App\\Models\\User'
+                    : 'App\\Models\\Cliente',
+            );
             actualizarCampo('nombre_cliente', cliente.name);
             actualizarCampo('email_cliente', cliente.email);
             actualizarCampo('telefono_cliente', cliente.telefono || '');
@@ -214,8 +238,9 @@ export default function CreateReserva({ iconOnly = false }) {
     const guardar = async (e) => {
         e.preventDefault();
 
-        const habitacionesConCantidad = Object.entries(habitacionesPorTipo)
-            .filter(([_, info]) => info.cantidad > 0);
+        const habitacionesConCantidad = Object.entries(
+            habitacionesPorTipo,
+        ).filter(([_, info]) => info.cantidad > 0);
 
         if (habitacionesConCantidad.length === 0) {
             alert('Debes seleccionar al menos una habitación');
@@ -223,10 +248,12 @@ export default function CreateReserva({ iconOnly = false }) {
         }
 
         // Construir array de habitaciones para el backend
-        const habitacionesParaReserva = habitacionesConCantidad.map(([tipo, info]) => ({
-            tipo: tipo,
-            cantidad: info.cantidad,
-        }));
+        const habitacionesParaReserva = habitacionesConCantidad.map(
+            ([tipo, info]) => ({
+                tipo: tipo,
+                cantidad: info.cantidad,
+            }),
+        );
 
         // Construir payload con nombres de campos correctos para el backend
         const payload = {
@@ -250,7 +277,10 @@ export default function CreateReserva({ iconOnly = false }) {
 
             // Habitaciones y tarifas
             habitaciones: habitacionesParaReserva,
-            tarifas: tarifasSeleccionadas.length > 0 ? tarifasSeleccionadas : undefined,
+            tarifas:
+                tarifasSeleccionadas.length > 0
+                    ? tarifasSeleccionadas
+                    : undefined,
 
             // Otros datos
             num_huespedes: formulario.num_huespedes || 1,
@@ -259,7 +289,7 @@ export default function CreateReserva({ iconOnly = false }) {
         };
 
         // Eliminar campos undefined
-        Object.keys(payload).forEach(key => {
+        Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) {
                 delete payload[key];
             }
@@ -314,7 +344,7 @@ export default function CreateReserva({ iconOnly = false }) {
         setTarifasSeleccionadas((prev) =>
             prev.includes(tarifaId)
                 ? prev.filter((id) => id !== tarifaId)
-                : [...prev, tarifaId]
+                : [...prev, tarifaId],
         );
     };
 
@@ -334,7 +364,7 @@ export default function CreateReserva({ iconOnly = false }) {
 
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar */}
             <div
-                className={`fixed inset-0 md:top-16 z-[9999] overflow-hidden transition-all duration-300 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+                className={`fixed inset-0 z-[9999] overflow-hidden transition-all duration-300 md:top-16 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
             >
                 {/* Backdrop */}
                 <div
@@ -344,7 +374,7 @@ export default function CreateReserva({ iconOnly = false }) {
 
                 {/* Panel Lateral (Slide-over) - Más ancho para mostrar más info */}
                 <div
-                    className={`absolute inset-0 md:left-auto md:right-0 md:top-0 md:bottom-0 flex w-full max-w-full md:max-w-2xl transform flex-col bg-white shadow-2xl transition-transform duration-500 ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden rounded-none md:!rounded-l-[2rem]`}
+                    className={`absolute inset-0 flex w-full max-w-full transform flex-col bg-white shadow-2xl transition-transform duration-500 md:bottom-0 md:left-auto md:right-0 md:top-0 md:max-w-2xl ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden rounded-none md:!rounded-l-[2rem]`}
                 >
                     {/* Header estilo Gludio */}
                     <header className="flex flex-none items-center justify-between border-b border-gray-100 bg-white p-6">
@@ -445,10 +475,12 @@ export default function CreateReserva({ iconOnly = false }) {
                                             </h4>
                                         </div>
 
-                                        {!formulario.check_in || !formulario.check_out ? (
+                                        {!formulario.check_in ||
+                                        !formulario.check_out ? (
                                             <div className="rounded-lg bg-gray-50 p-6 text-center">
                                                 <p className="text-sm text-gray-500">
-                                                    Completa las fechas para ver habitaciones disponibles
+                                                    Completa las fechas para ver
+                                                    habitaciones disponibles
                                                 </p>
                                             </div>
                                         ) : cargandoHabitaciones ? (
@@ -457,71 +489,89 @@ export default function CreateReserva({ iconOnly = false }) {
                                                     Cargando habitaciones...
                                                 </p>
                                             </div>
-                                        ) : Object.keys(habitacionesPorTipo).length === 0 ? (
+                                        ) : Object.keys(habitacionesPorTipo)
+                                              .length === 0 ? (
                                             <div className="rounded-lg bg-red-50 p-6 text-center">
                                                 <p className="text-sm text-red-600">
-                                                    No hay habitaciones disponibles para las fechas seleccionadas
+                                                    No hay habitaciones
+                                                    disponibles para las fechas
+                                                    seleccionadas
                                                 </p>
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
-                                                {Object.entries(habitacionesPorTipo).map(
-                                                    ([tipo, info]) => (
-                                                        <div
-                                                            key={tipo}
-                                                            className="rounded-lg border-2 border-gray-200 bg-white p-4 transition-all hover:border-[#7a0202]"
-                                                        >
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <h5 className="text-sm font-black uppercase text-gray-900">
-                                                                            {tipo}
-                                                                        </h5>
-                                                                        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
-                                                                            {info.disponibles} disponibles
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="mt-1 text-xs text-gray-500">
-                                                                        €{info.precio} / noche
-                                                                    </p>
-                                                                </div>
+                                                {Object.entries(
+                                                    habitacionesPorTipo,
+                                                ).map(([tipo, info]) => (
+                                                    <div
+                                                        key={tipo}
+                                                        className="rounded-lg border-2 border-gray-200 bg-white p-4 transition-all hover:border-[#7a0202]"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1">
                                                                 <div className="flex items-center gap-3">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            cambiarCantidadHabitaciones(
-                                                                                tipo,
-                                                                                info.cantidad - 1,
-                                                                            )
-                                                                        }
-                                                                        disabled={info.cantidad === 0}
-                                                                        className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
-                                                                    >
-                                                                        -
-                                                                    </button>
-                                                                    <span className="w-8 text-center text-sm font-bold text-gray-900">
-                                                                        {info.cantidad}
+                                                                    <h5 className="text-sm font-black uppercase text-gray-900">
+                                                                        {tipo}
+                                                                    </h5>
+                                                                    <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+                                                                        {
+                                                                            info.disponibles
+                                                                        }{' '}
+                                                                        disponibles
                                                                     </span>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            cambiarCantidadHabitaciones(
-                                                                                tipo,
-                                                                                info.cantidad + 1,
-                                                                            )
-                                                                        }
-                                                                        disabled={
-                                                                            info.cantidad >= info.disponibles
-                                                                        }
-                                                                        className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
-                                                                    >
-                                                                        +
-                                                                    </button>
                                                                 </div>
+                                                                <p className="mt-1 text-xs text-gray-500">
+                                                                    €
+                                                                    {
+                                                                        info.precio
+                                                                    }{' '}
+                                                                    / noche
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        cambiarCantidadHabitaciones(
+                                                                            tipo,
+                                                                            info.cantidad -
+                                                                                1,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        info.cantidad ===
+                                                                        0
+                                                                    }
+                                                                    className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="w-8 text-center text-sm font-bold text-gray-900">
+                                                                    {
+                                                                        info.cantidad
+                                                                    }
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        cambiarCantidadHabitaciones(
+                                                                            tipo,
+                                                                            info.cantidad +
+                                                                                1,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        info.cantidad >=
+                                                                        info.disponibles
+                                                                    }
+                                                                    className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
+                                                                >
+                                                                    +
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                    ),
-                                                )}
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
@@ -533,7 +583,9 @@ export default function CreateReserva({ iconOnly = false }) {
                                 <div className="animate-in fade-in space-y-6 duration-300">
                                     <BusquedaClientes
                                         onSeleccionar={handleSeleccionarCliente}
-                                        clienteSeleccionado={clienteSeleccionado}
+                                        clienteSeleccionado={
+                                            clienteSeleccionado
+                                        }
                                     />
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -575,16 +627,16 @@ export default function CreateReserva({ iconOnly = false }) {
                                             error={errores.tipo_documento}
                                             required
                                         >
-                                            {Object.entries(TIPOS_DOCUMENTO).map(
-                                                ([clave, valor]) => (
-                                                    <option
-                                                        key={clave}
-                                                        value={valor}
-                                                    >
-                                                        {valor.toUpperCase()}
-                                                    </option>
-                                                ),
-                                            )}
+                                            {Object.entries(
+                                                TIPOS_DOCUMENTO,
+                                            ).map(([clave, valor]) => (
+                                                <option
+                                                    key={clave}
+                                                    value={valor}
+                                                >
+                                                    {valor.toUpperCase()}
+                                                </option>
+                                            ))}
                                         </Campo>
                                     </div>
 
@@ -633,17 +685,27 @@ export default function CreateReserva({ iconOnly = false }) {
                                                 <div
                                                     key={tarifa.id}
                                                     className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                                                        tarifasSeleccionadas.includes(tarifa.id)
+                                                        tarifasSeleccionadas.includes(
+                                                            tarifa.id,
+                                                        )
                                                             ? 'border-[#7a0202] bg-red-50'
                                                             : 'border-gray-200 bg-white hover:border-gray-300'
                                                     }`}
-                                                    onClick={() => toggleTarifa(tarifa.id)}
+                                                    onClick={() =>
+                                                        toggleTarifa(tarifa.id)
+                                                    }
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <input
                                                             type="checkbox"
-                                                            checked={tarifasSeleccionadas.includes(tarifa.id)}
-                                                            onChange={() => toggleTarifa(tarifa.id)}
+                                                            checked={tarifasSeleccionadas.includes(
+                                                                tarifa.id,
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleTarifa(
+                                                                    tarifa.id,
+                                                                )
+                                                            }
                                                             className="mt-1 h-5 w-5 rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202]"
                                                         />
                                                         <div className="flex-1">
@@ -652,19 +714,24 @@ export default function CreateReserva({ iconOnly = false }) {
                                                             </h5>
                                                             {tarifa.descripcion && (
                                                                 <p className="mt-1 text-xs text-gray-500">
-                                                                    {tarifa.descripcion}
+                                                                    {
+                                                                        tarifa.descripcion
+                                                                    }
                                                                 </p>
                                                             )}
                                                             <div className="mt-2 flex items-center gap-2">
-                                                                <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
-                                                                    tarifa.tipo_modificador === 'porcentaje'
-                                                                        ? 'bg-blue-100 text-blue-700'
-                                                                        : 'bg-green-100 text-green-700'
-                                                                }`}>
-                                                                    {tarifa.tipo_modificador === 'porcentaje'
+                                                                <span
+                                                                    className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                                                                        tarifa.tipo_modificador ===
+                                                                        'porcentaje'
+                                                                            ? 'bg-blue-100 text-blue-700'
+                                                                            : 'bg-green-100 text-green-700'
+                                                                    }`}
+                                                                >
+                                                                    {tarifa.tipo_modificador ===
+                                                                    'porcentaje'
                                                                         ? `${tarifa.valor > 0 ? '+' : ''}${tarifa.valor}%`
-                                                                        : `${tarifa.valor > 0 ? '+' : ''}€${Math.abs(tarifa.valor)}`
-                                                                    }
+                                                                        : `${tarifa.valor > 0 ? '+' : ''}€${Math.abs(tarifa.valor)}`}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -729,11 +796,94 @@ export default function CreateReserva({ iconOnly = false }) {
                                                     Precio Total
                                                 </span>
                                                 <span className="text-3xl font-black text-[#7a0202]">
-                                                    €{precioCalculado.toFixed(2)}
+                                                    €
+                                                    {precioCalculado.toFixed(2)}
                                                 </span>
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* FORMULARIO DE PAGO STRIPE */}
+                                    {formulario.metodo_pago === 'tarjeta' &&
+                                        precioCalculado > 0 && (
+                                            <div className="animate-in slide-in-from-top-4 duration-500">
+                                                <div className="mb-4 flex items-center gap-3 border-l-4 border-black pl-4">
+                                                    <CreditCardIcon className="h-5 w-5 text-black" />
+                                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-900">
+                                                        Datos de la Tarjeta
+                                                    </h4>
+                                                </div>
+
+                                                <FormularioPago
+                                                    monto={precioCalculado}
+                                                    reservaData={{
+                                                        check_in:
+                                                            formulario.check_in,
+                                                        check_out:
+                                                            formulario.check_out,
+                                                        name: formulario.nombre_cliente,
+                                                        email: formulario.email_cliente,
+                                                        telefono:
+                                                            formulario.telefono_cliente,
+                                                        habitaciones:
+                                                            Object.entries(
+                                                                habitacionesPorTipo,
+                                                            )
+                                                                .filter(
+                                                                    ([
+                                                                        _,
+                                                                        info,
+                                                                    ]) =>
+                                                                        info.cantidad >
+                                                                        0,
+                                                                )
+                                                                .map(
+                                                                    ([
+                                                                        tipo,
+                                                                        info,
+                                                                    ]) => ({
+                                                                        tipo,
+                                                                        cantidad:
+                                                                            info.cantidad,
+                                                                    }),
+                                                                ),
+                                                        tarifas:
+                                                            tarifasSeleccionadas,
+                                                        num_huespedes:
+                                                            formulario.num_huespedes,
+                                                        metodo_pago: 'tarjeta',
+                                                        notas: formulario.notas,
+                                                        reservable_id:
+                                                            formulario.reservable_id,
+                                                        reservable_type:
+                                                            formulario.reservable_type,
+                                                    }}
+                                                    aceptaTerminos={
+                                                        aceptaTerminos
+                                                    }
+                                                    mostrarAceptacion={true}
+                                                    onAceptaChange={
+                                                        setAceptaTerminos
+                                                    }
+                                                    onPagoExitoso={(data) => {
+                                                        console.log(
+                                                            'Pago exitoso desde CreateReserva:',
+                                                            data,
+                                                        );
+                                                        handleCerrar();
+                                                        router.reload({
+                                                            only: ['reservas'],
+                                                        });
+                                                    }}
+                                                    onError={(err) => {
+                                                        console.error(
+                                                            'Error en pago:',
+                                                            err,
+                                                        );
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
                                 </div>
                             )}
                         </div>
@@ -764,11 +914,18 @@ export default function CreateReserva({ iconOnly = false }) {
                                     variant="primary"
                                     color="danger"
                                     loading={estaCargando}
+                                    className={
+                                        formulario.metodo_pago === 'tarjeta'
+                                            ? 'hidden'
+                                            : ''
+                                    }
                                     disabled={
                                         estaCargando ||
                                         !formulario.check_in ||
                                         !formulario.check_out ||
-                                        !Object.values(habitacionesPorTipo).some(info => info.cantidad > 0)
+                                        !Object.values(
+                                            habitacionesPorTipo,
+                                        ).some((info) => info.cantidad > 0)
                                     }
                                 >
                                     Crear Reserva

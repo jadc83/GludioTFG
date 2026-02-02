@@ -304,10 +304,7 @@ export default function EditarReserva({
                                 <div className="divide-y divide-gray-100">
                                     {reserva.habitaciones.map((hab, idx) => (
                                         <div
-                                            key={
-                                                hab.slot_id ||
-                                                `hab-${idx}`
-                                            }
+                                            key={hab.slot_id || `hab-${idx}`}
                                             className="flex items-center justify-between p-6 transition hover:bg-gray-50"
                                         >
                                             <div>
@@ -389,24 +386,35 @@ export default function EditarReserva({
                                                         <span className="rounded-full bg-[#7a0202] px-3 py-1 text-xs font-black text-white">
                                                             #{idx + 1}
                                                         </span>
-                                                        <span className="text-sm font-bold text-gray-900 uppercase">
-                                                            {hSlot.tipo || 'Sin tipo'}
+                                                        <span className="text-sm font-bold uppercase text-gray-900">
+                                                            {hSlot.tipo ||
+                                                                'Sin tipo'}
                                                         </span>
                                                         {hSlot.habitacion_id && (
                                                             <span className="text-xs text-gray-500">
-                                                                (Habitación {hSlot.numero || hSlot.habitacion_id})
+                                                                (Habitación{' '}
+                                                                {hSlot.numero ||
+                                                                    hSlot.habitacion_id}
+                                                                )
                                                             </span>
                                                         )}
                                                     </div>
                                                     {hSlot.precio && (
                                                         <span className="text-xs text-gray-500">
-                                                            {formatearMoneda(hSlot.precio)} / noche
+                                                            {formatearMoneda(
+                                                                hSlot.precio,
+                                                            )}{' '}
+                                                            / noche
                                                         </span>
                                                     )}
                                                 </div>
                                                 {hSlot.habitacion_id && (
                                                     <button
-                                                        onClick={() => handleDesasignarHabitacion(hSlot.habitacion_id)}
+                                                        onClick={() =>
+                                                            handleDesasignarHabitacion(
+                                                                hSlot.habitacion_id,
+                                                            )
+                                                        }
                                                         className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-100"
                                                     >
                                                         Desasignar

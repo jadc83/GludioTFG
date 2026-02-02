@@ -346,7 +346,7 @@ export default function IndexEstadisticas({
                             className={`overflow-hidden transition-all duration-500 ease-in-out ${mostrarDetallesTabla ? 'max-h-[5000px]' : 'max-h-0'}`}
                         >
                             <div className="overflow-x-auto p-4 md:p-8">
-                                <table className="w-full border-collapse text-left responsive-table">
+                                <table className="responsive-table w-full border-collapse text-left">
                                     <thead>
                                         <tr className="border-b border-gray-100">
                                             <th className="px-4 pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -372,7 +372,10 @@ export default function IndexEstadisticas({
                                                 key={d.fecha}
                                                 className="group transition-colors hover:bg-gray-50/50"
                                             >
-                                                <td className="px-4 py-4 font-mono text-xs font-bold text-gray-500 transition-colors group-hover:text-gray-900" data-label="Día">
+                                                <td
+                                                    className="px-4 py-4 font-mono text-xs font-bold text-gray-500 transition-colors group-hover:text-gray-900"
+                                                    data-label="Día"
+                                                >
                                                     {dayjs(d.fecha).format(
                                                         'DD MMM',
                                                     )}

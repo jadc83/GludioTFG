@@ -1,6 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
 import Modal from '@/Components/Modal';
-import { MapPinIcon } from '@heroicons/react/24/outline';
 import { usePage } from '@inertiajs/react';
 import {
     CardElement,
@@ -475,87 +474,78 @@ function FormularioPagoInterno({
                     </div>
                 </div>
             </Modal>
-            <form onSubmit={procesarPago} className="w-full space-y-10">
-                {/* SECCIÓN: DIRECCIÓN */}
-                <div className="px-6">
-                    <div className="mb-6 flex items-center gap-4">
-                        <MapPinIcon className="h-5 w-5 text-gray-400" />
-                        <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-900">
-                            Detalles de Facturación
-                        </h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        {/* Campos del titular */}
+            <form onSubmit={procesarPago} className="w-full space-y-6">
+                {/* SECCIÓN: DATOS (Solo si no vienen por props o están vacíos) */}
+                <div className="space-y-4">
+                    {!reservaData?.name && (
                         <div>
                             <Campo
                                 id="name"
+                                label="Titular de la tarjeta"
                                 ref={nameRef}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Nombre completo"
-                                className={`w-full rounded-lg border-gray-200 px-4 py-3 text-[12px] font-bold ${fieldErrors['name'] ? 'border-red-600' : ''}`}
                                 error={fieldErrors['name']}
                             />
-                            {fieldErrors['name'] && (
-                                <p className="mt-1 text-[11px] text-red-600">
-                                    {fieldErrors['name'].join(', ')}
-                                </p>
-                            )}
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {!reservaData?.email && (
                             <div>
                                 <Campo
                                     id="email"
+                                    label="Email"
                                     ref={emailRef}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    className={`rounded-lg border-gray-200 px-4 py-3 text-[12px] font-bold ${fieldErrors['email'] ? 'border-red-600' : ''}`}
+                                    placeholder="Email de contacto"
                                     error={fieldErrors['email']}
                                 />
-                                {fieldErrors['email'] && (
-                                    <p className="mt-1 text-[11px] text-red-600">
-                                        {fieldErrors['email'].join(', ')}
-                                    </p>
-                                )}
                             </div>
+                        )}
 
+                        {!reservaData?.telefono && (
                             <div>
                                 <Campo
                                     id="telefono"
+                                    label="Teléfono"
                                     ref={telefonoRef}
                                     value={telefono}
                                     onChange={(e) =>
                                         setTelefono(e.target.value)
                                     }
                                     placeholder="Teléfono"
-                                    className={`rounded-lg border-gray-200 px-4 py-3 text-[12px] font-bold ${fieldErrors['telefono'] ? 'border-red-600' : ''}`}
                                     error={fieldErrors['telefono']}
                                 />
-                                {fieldErrors['telefono'] && (
-                                    <p className="mt-1 text-[11px] text-red-600">
-                                        {fieldErrors['telefono'].join(', ')}
-                                    </p>
-                                )}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
                 {/* SECCIÓN: TARJETA */}
-                <div className="px-6">
-                    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 border-l-4 border-black pl-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900">
+                            Tarjeta Bancaria
+                        </h4>
+                    </div>
+                    <div className="rounded-xl border-2 border-gray-100 bg-white p-4 shadow-sm transition-all focus-within:border-black">
                         <CardElement
                             options={{
                                 style: {
                                     base: {
                                         fontSize: '14px',
                                         color: '#111827',
-                                        letterSpacing: '0.05em',
+                                        fontFamily: 'system-ui, sans-serif',
+                                        letterSpacing: '0.025em',
                                         fontSmoothing: 'antialiased',
-                                        '::placeholder': { color: '#d1d5db' },
+                                        '::placeholder': { color: '#9ca3af' },
+                                    },
+                                    invalid: {
+                                        color: '#dc2626',
+                                        iconColor: '#dc2626',
                                     },
                                 },
                             }}
@@ -564,9 +554,9 @@ function FormularioPagoInterno({
                 </div>
 
                 {/* ACEPTACIÓN Y ACCIÓN */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                     {mostrarAceptacion && (
-                        <label className="group flex cursor-pointer items-center justify-center gap-4 px-2 text-center">
+                        <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:bg-gray-50">
                             <input
                                 type="checkbox"
                                 checked={acepta}
@@ -574,33 +564,46 @@ function FormularioPagoInterno({
                                     setAcepta(e.target.checked);
                                     onAceptaChange?.(e.target.checked);
                                 }}
-                                className="h-5 w-5 cursor-pointer rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202]"
+                                className="mt-0.5 h-5 w-5 cursor-pointer rounded border-gray-300 text-black focus:ring-black"
                             />
-                            <span className="text-center text-[10px] font-bold uppercase leading-relaxed tracking-tight text-gray-500 transition-colors group-hover:text-gray-700">
-                                Acepto los{' '}
-                                <span className="text-gray-900 underline decoration-[#7a0202] decoration-2 underline-offset-4">
+                            <span className="text-[10px] font-bold uppercase leading-relaxed tracking-tight text-gray-500 transition-colors group-hover:text-gray-700">
+                                He leído y acepto los{' '}
+                                <span className="text-gray-900 underline decoration-black decoration-2 underline-offset-4">
                                     términos y condiciones
                                 </span>
-                                .
+                                , así como la política de cancelación.
                             </span>
                         </label>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={
-                            procesando ||
-                            !stripe ||
-                            !elements ||
-                            !acepta ||
-                            !name?.trim() ||
-                            !email?.trim() ||
-                            !telefono?.trim()
-                        }
-                        className="mt-4 w-full rounded-xl bg-[#7a0202] py-6 text-[12px] font-black uppercase tracking-[0.35em] text-white shadow-2xl shadow-red-900/20 transition-all hover:bg-black hover:shadow-none active:scale-[0.97] disabled:opacity-20 disabled:grayscale"
-                    >
-                        {procesando ? 'Procesando...' : 'Pagar'}
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            type="submit"
+                            disabled={
+                                procesando ||
+                                !stripe ||
+                                !elements ||
+                                !acepta ||
+                                !name?.trim() ||
+                                !email?.trim() ||
+                                !telefono?.trim()
+                            }
+                            className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-black py-4 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-gray-900 active:scale-[0.98] disabled:opacity-20 disabled:grayscale"
+                        >
+                            {procesando ? (
+                                <span className="flex items-center gap-2">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                                    Procesando...
+                                </span>
+                            ) : (
+                                `Pagar y Confirmar €${Number(monto).toFixed(2)}`
+                            )}
+                        </button>
+
+                        <p className="text-center text-[10px] font-medium text-gray-400">
+                            Transacción segura encriptada vía Stripe
+                        </p>
+                    </div>
                 </div>
 
                 {/* ERRORES */}
@@ -625,20 +628,21 @@ function FormularioPagoInterno({
                                 <button
                                     type="button"
                                     onClick={() => setDebugErrorJson(null)}
-                                    className="text-xs"
+                                    className="text-white hover:text-gray-300"
                                 >
-                                    Cerrar
+                                    ✕
                                 </button>
                             </div>
                         </div>
-                        <pre className="mt-2 max-h-40 overflow-auto text-xs">
+                        <pre className="mt-2 max-h-40 overflow-auto font-mono text-xs">
                             {debugErrorJson}
                         </pre>
                     </div>
                 )}
                 {mensaje && (
-                    <div className="flex animate-pulse items-center gap-4 rounded-r-xl border-l-4 border-red-600 bg-red-50 p-5">
-                        <span className="text-[11px] font-black uppercase tracking-widest text-red-800">
+                    <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-4 transition-all duration-300">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-red-600"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-red-900">
                             {mensaje}
                         </span>
                     </div>

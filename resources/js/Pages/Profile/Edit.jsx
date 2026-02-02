@@ -9,9 +9,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import '../../../css/profile.css';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
-import '../../../css/profile.css';
 
 export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
     const [activeTab, setActiveTab] = useState('informacion');
@@ -64,9 +64,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2.5 rounded-xl px-5 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
-                                        isActive
-                                            ? 'active'
-                                            : ''
+                                        isActive ? 'active' : ''
                                     }`}
                                 >
                                     <Icon
@@ -134,7 +132,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left responsive-table">
+                                        <table className="responsive-table w-full text-left">
                                             <thead>
                                                 <tr className="border-b border-gray-100">
                                                     <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -161,7 +159,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                         key={reserva.id}
                                                         className="group transition-colors hover:bg-gray-50/50"
                                                     >
-                                                        <td className="py-6" data-label="Localizador">
+                                                        <td
+                                                            className="py-6"
+                                                            data-label="Localizador"
+                                                        >
                                                             <div className="flex h-9 w-20 items-center justify-center rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-200 transition-colors group-hover:bg-[#7a0202]">
                                                                 <span className="font-mono text-xs font-black tracking-tighter">
                                                                     {
@@ -170,7 +171,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6" data-label="Check-In / Out">
+                                                        <td
+                                                            className="py-6"
+                                                            data-label="Check-In / Out"
+                                                        >
                                                             <div className="flex items-center gap-2 font-mono text-xs font-bold text-gray-600">
                                                                 <span>
                                                                     {
@@ -187,22 +191,34 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6 text-center text-xs font-black text-gray-900" data-label="Noches">
+                                                        <td
+                                                            className="py-6 text-center text-xs font-black text-gray-900"
+                                                            data-label="Noches"
+                                                        >
                                                             {reserva.noches}
                                                         </td>
-                                                        <td className="py-6 text-sm font-black italic text-gray-900" data-label="Inversión">
+                                                        <td
+                                                            className="py-6 text-sm font-black italic text-gray-900"
+                                                            data-label="Inversión"
+                                                        >
                                                             {
                                                                 reserva.monto_total
                                                             }
                                                         </td>
-                                                        <td className="py-6" data-label="Estado">
+                                                        <td
+                                                            className="py-6"
+                                                            data-label="Estado"
+                                                        >
                                                             <span
                                                                 className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm ${configEstado[reserva.estado] || configEstado.default}`}
                                                             >
                                                                 {reserva.estado}
                                                             </span>
                                                         </td>
-                                                        <td className="py-6 text-right" data-label="">
+                                                        <td
+                                                            className="py-6 text-right"
+                                                            data-label=""
+                                                        >
                                                             <Link
                                                                 href={`/reservas/${reserva.id}`}
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all hover:text-[#7a0202]"

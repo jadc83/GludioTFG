@@ -1,4 +1,3 @@
-import React, { Suspense, useEffect, useState } from 'react';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import IndexCliente from '@/Components/clientes/IndexCliente';
 import CreateCupon from '@/Components/cupones/formulario/CreateCupon';
@@ -9,15 +8,15 @@ import IndexHabitacion from '@/Components/habitaciones/IndexHabitacion';
 import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
 import IndexReserva from '@/Components/reservas/listado/IndexReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Link } from '@inertiajs/react';
 import {
+    BriefcaseIcon,
     ChartBarIcon,
     Cog6ToothIcon,
-    InboxIcon,
-    BriefcaseIcon,
-    UsersIcon,
     HomeIcon,
+    InboxIcon,
+    UsersIcon,
 } from '@heroicons/react/24/outline';
+import React, { Suspense, useEffect, useState } from 'react';
 
 const TABS = [
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
@@ -172,7 +171,7 @@ export default function PanelControl({
                             </div>
                         </div>
 
-                        <div className="mb-6 flex flex-wrap items-center justify-center gap-3 acciones-rapidas-panel">
+                        <div className="acciones-rapidas-panel mb-6 flex flex-wrap items-center justify-center gap-3">
                             <CreateReserva iconOnly />
                             <CreateCliente iconOnly />
                             <CreateHabitacion iconOnly />

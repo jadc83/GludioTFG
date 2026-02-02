@@ -6,10 +6,10 @@ import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches } from '@/utils/formatters';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
+import '../../../../css/paso4Confirmacion.css';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import OpcionesPago from '../modales/OpcionesPago';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
-import '../../../../css/paso4Confirmacion.css';
 
 export default function Paso4Confirmacion({
     rango,
@@ -270,7 +270,7 @@ export default function Paso4Confirmacion({
     };
 
     return (
-        <div className="paso4-confirmacion shadow-2xl relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-gris">
+        <div className="paso4-confirmacion relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-gris shadow-2xl">
             <header className="flex-none border-b border-gray-100 bg-gris px-6 py-5 md:px-10 md:py-6">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
                     <div className="text-center md:text-left">

@@ -89,7 +89,7 @@ export default function IndexEmpleados({ empleados = [] }) {
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left responsive-table">
+                            <table className="responsive-table w-full border-collapse text-left">
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -115,7 +115,10 @@ export default function IndexEmpleados({ empleados = [] }) {
                                             key={e.id}
                                             className="group transition-colors hover:bg-gray-50/50"
                                         >
-                                            <td className="px-6 py-4" data-label="Empleado">
+                                            <td
+                                                className="px-6 py-4"
+                                                data-label="Empleado"
+                                            >
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xs font-black uppercase text-gray-400">
                                                         {e.name?.charAt(0)}
@@ -130,16 +133,28 @@ export default function IndexEmpleados({ empleados = [] }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 font-mono text-sm font-medium text-gray-700" data-label="Número">
+                                            <td
+                                                className="px-6 py-4 font-mono text-sm font-medium text-gray-700"
+                                                data-label="Número"
+                                            >
                                                 {e.numero_empleado}
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-bold uppercase tracking-tight text-gray-700" data-label="Departamento">
+                                            <td
+                                                className="px-6 py-4 text-sm font-bold uppercase tracking-tight text-gray-700"
+                                                data-label="Departamento"
+                                            >
                                                 {e.departamento || '—'}
                                             </td>
-                                            <td className="px-6 py-4 text-[11px] text-sm font-bold uppercase text-gray-600" data-label="Puesto">
+                                            <td
+                                                className="px-6 py-4 text-[11px] text-sm font-bold uppercase text-gray-600"
+                                                data-label="Puesto"
+                                            >
                                                 {e.puesto || '—'}
                                             </td>
-                                            <td className="px-6 py-4 text-right" data-label="Acciones">
+                                            <td
+                                                className="px-6 py-4 text-right"
+                                                data-label="Acciones"
+                                            >
                                                 <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                                                     <button className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
                                                         <EyeIcon className="h-5 w-5" />
