@@ -1,5 +1,6 @@
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import axios from 'axios';
 
 export default function ElegirPrecio({ tiposHabitacion = [] }) {
     const [tipos, setTipos] = useState(tiposHabitacion);
@@ -26,28 +27,17 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
 
     const guardarCambios = async (id) => {
         try {
-            const response = await fetch(`/api/tipos-habitacion/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute('content'),
-                },
-                body: JSON.stringify(formData),
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const { data } = await axios.put(`/api/tipos-habitacion/${id}`, formData, {
+                headers: { 'X-CSRF-Token': csrf },
             });
 
-            if (response.ok) {
-                setTipos((prev) =>
-                    prev.map((t) => (t.id === id ? formData : t)),
-                );
-                setEditando(null);
-                setFormData({});
-            } else {
-                console.error('Error al guardar los cambios');
-            }
+            // Asumimos éxito si no lanza error
+            setTipos((prev) => prev.map((t) => (t.id === id ? formData : t)));
+            setEditando(null);
+            setFormData({});
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error guardando cambios:', error?.response || error);
         }
     };
 

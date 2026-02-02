@@ -1,75 +1,14 @@
-import { useEffect } from 'react';
+import useTarifasSelector from '@/hooks/reservas/useTarifasSelector';
 
 export default function TarifasSelector({
     tarifas = [],
     seleccion = {},
     onChange,
 }) {
-    const esDesayuno = (t) => {
-        const nombre = String(t.nombre || '').toLowerCase();
-        const slug = String(t.slug || '').toLowerCase();
-        return nombre.includes('desayun') || slug.includes('desayun');
-    };
-
-    useEffect(() => {
-        if (!onChange || tarifas.length === 0) return;
-        const desayunoIds = tarifas.filter(esDesayuno).map((t) => t.id);
-        if (desayunoIds.length === 0) return;
-
-        let necesitaUpdate = false;
-        const next = { ...seleccion };
-        desayunoIds.forEach((id) => {
-            if (!next[id]) {
-                next[id] = true;
-                necesitaUpdate = true;
-            }
-        });
-
-        if (necesitaUpdate) {
-            onChange(next);
-        }
-
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-                new CustomEvent('tarifasLista', { detail: tarifas }),
-            );
-        }
-    }, [tarifas, onChange]);
-
-    function toggleTarifa(id) {
-        const tarifa = tarifas.find((t) => t.id === id);
-        if (tarifa && esDesayuno(tarifa)) return;
-
-        const next = { ...seleccion, [id]: !seleccion[id] };
-        if (onChange) onChange(next);
-    }
-
-    const ordenadas = [
-        ...tarifas.filter(esDesayuno),
-        ...tarifas.filter((t) => !esDesayuno(t)),
-    ];
-    const esReembolsable = (t) => {
-        const nombre = String(t.nombre || '').toLowerCase();
-        const slug = String(t.slug || '').toLowerCase();
-        return nombre.includes('reembols') || slug.includes('reembols');
-    };
-
-    const esOfertaEspecial = (t) => {
-        const nombre = String(t.nombre || '').toLowerCase();
-        const slug = String(t.slug || '').toLowerCase();
-        return (
-            nombre.includes('ofert') ||
-            nombre.includes('especial') ||
-            slug.includes('ofert') ||
-            slug.includes('especial')
-        );
-    };
-
-    const ordenadasVisibles = ordenadas.filter((t) => {
-        if (esDesayuno(t)) return true;
-        if (esReembolsable(t)) return false;
-        if (esOfertaEspecial(t)) return false;
-        return true;
+    const { ordenadasVisibles, toggleTarifa, esDesayuno, isChecked } = useTarifasSelector({
+        tarifas,
+        seleccion,
+        onChange,
     });
 
     return (
@@ -94,9 +33,7 @@ export default function TarifasSelector({
                             <div className="space-y-2">
                                 {ordenadasVisibles.map((t) => {
                                     const breakfast = esDesayuno(t);
-                                    const checked = breakfast
-                                        ? true
-                                        : !!seleccion[t.id];
+                                    const checked = isChecked(t);
                                     const priceText = breakfast
                                         ? 'Gratis'
                                         : `${Number(t.modificador_precio) >= 0 ? '+' : ''}${Number(t.modificador_precio).toFixed(0)}€`;

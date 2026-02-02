@@ -1,7 +1,6 @@
 // Servicio local para reservas. Reexporta las funciones del módulo API central
 // Esto permite cambiar la implementación sólo en este archivo en el futuro.
 import axios from 'axios';
-
 import * as api from '@/api/reservas';
 
 export const buscarReserva = async (localizador) =>
@@ -33,27 +32,23 @@ export async function calcularPrecio(payload) {
 
 export async function crearReserva(payload) {
     try {
-        const res = await axios.post('/reservas', payload);
+        const res = await axios.post('/reservas', payload, {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
         return res?.data ?? null;
     } catch (err) {
-        // Normalize axios error into a predictable object for callers
         if (err?.response) {
             const payload = {
                 status: err.response.status,
                 ...(err.response.data || {}),
             };
+            console.error('crearReserva error response:', err.response);
             throw payload;
         }
         throw err;
-    }
-}
-
-export async function infoExtension(localizador) {
-    try {
-        const res = await axios.get(`/reservas/${localizador}/info-extension`);
-        return res?.data ?? null;
-    } catch (err) {
-        throw err?.response?.data ?? err;
     }
 }
 

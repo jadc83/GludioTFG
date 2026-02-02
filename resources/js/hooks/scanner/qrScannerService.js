@@ -1,6 +1,7 @@
 /**
  * Servicio para manejar operaciones relacionadas con el escaneo de QR
  */
+import axios from 'axios';
 export class QRScannerService {
     /**
      * Extrae el localizador de un texto escaneado (puede ser URL o texto directo)
@@ -43,26 +44,16 @@ export class QRScannerService {
             payload.accion = action;
         }
 
-        const response = await fetch(route('scan.procesar'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf || '',
-                Accept: 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(payload),
-        });
-
-        const body = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            throw new Error(
-                body?.error || body?.message || 'Error procesando escaneo',
-            );
+        try {
+            const { data } = await axios.post(route('scan.procesar'), payload, {
+                headers: { 'X-CSRF-TOKEN': csrf || '', Accept: 'application/json' },
+                withCredentials: true,
+            });
+            return data;
+        } catch (err) {
+            const body = err?.response?.data;
+            throw new Error(body?.error || body?.message || err?.message || 'Error procesando escaneo');
         }
-
-        return body;
     }
 
     /**

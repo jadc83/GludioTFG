@@ -51,6 +51,7 @@ export default function Paso2Habitaciones({
     const entradasVisibles = Object.entries(tipos).filter(
         ([, info]) => (info.cantidad || 0) > 0,
     );
+    const isThree = entradasVisibles.length === 3;
     const totalDisponibles = Object.values(tipos).reduce(
         (sum, info) => sum + (info.cantidad || 0),
         0,
@@ -82,8 +83,8 @@ export default function Paso2Habitaciones({
             </header>
 
             <main className="flex flex-none flex-col overflow-hidden bg-gradient-to-r from-red-900 to-red-800 md:flex-1 md:flex-row">
-                <div className="custom-scrollbar flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="mx-auto mt-8 max-w-4xl space-y-6 pb-4">
+                <div className={`custom-scrollbar flex-1 ${isThree ? 'overflow-visible p-2 md:p-4' : 'overflow-y-auto p-4 md:p-6'}`}>
+                    <div className={`mx-auto my-4 max-w-4xl h-full ${isThree ? 'flex flex-col justify-between' : 'space-y-6'}`}>
                         {' '}
                         {estaCargandoHabitaciones ? (
                             <LoadingSpinner />
@@ -93,41 +94,43 @@ export default function Paso2Habitaciones({
                                     habitacionesSeleccionadas[tipo]?.cantidad >
                                     0;
                                 return (
-                                    <TarjetaHabitacion
-                                        key={tipo}
-                                        tipo={tipo}
-                                        info={info}
-                                        isSelected={isSelected}
-                                        preciosPorTipo={preciosPorTipo}
-                                        actualizarSeleccionHabitacion={
-                                            actualizarSeleccionHabitacion
-                                        }
-                                        puedoSeleccionarMas={
-                                            puedoSeleccionarMas
-                                        }
-                                        getImagen={getImagen}
-                                        setImagenModalAbierto={
-                                            setImagenModalAbierto
-                                        }
-                                    />
+                                    <div key={tipo} className={isThree ? 'flex-1 flex items-stretch w-full' : 'w-full'}>
+                                        <TarjetaHabitacion
+                                            tipo={tipo}
+                                            info={info}
+                                            isSelected={isSelected}
+                                            preciosPorTipo={preciosPorTipo}
+                                            actualizarSeleccionHabitacion={
+                                                actualizarSeleccionHabitacion
+                                            }
+                                            puedoSeleccionarMas={
+                                                puedoSeleccionarMas
+                                            }
+                                            getImagen={getImagen}
+                                            setImagenModalAbierto={
+                                                setImagenModalAbierto
+                                            }
+                                            fullHeight={isThree}
+                                        />
+                                    </div>
                                 );
                             })
                         )}
                     </div>
                 </div>
 
-                <aside className="flex w-full flex-none flex-col border-t border-gray-200 bg-gris md:w-96 md:border-l md:border-t-0">
+                <aside className="flex w-full flex-none flex-col md:w-96 bg-gradient-to-r from-red-900 to-red-800 text-white md:border-l md:border-transparent">
                     <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6">
-                        <div className="border-l-4 border-[#7a0202] pl-4">
-                            <h5 className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-900">
+                        <div className="border-l-4 border-white/20 pl-4">
+                            <h5 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">
                                 Configuración
                             </h5>
-                            <p className="mt-1 text-[8px] font-bold uppercase tracking-widest text-gray-400">
+                            <p className="mt-1 text-[8px] font-bold uppercase tracking-widest text-white/80">
                                 Servicios Adicionales
                             </p>
                         </div>
 
-                        <div className="rounded-xl border border-gray-100 bg-white/60 p-5 shadow-sm transition-all hover:bg-white hover:shadow-md">
+                        <div className="rounded-xl border border-white/10 bg-white/60 p-5 shadow-sm transition-all hover:bg-white hover:shadow-md">
                             <TarifasSelector
                                 tarifas={tarifas}
                                 seleccion={selectedTarifas}
@@ -136,7 +139,7 @@ export default function Paso2Habitaciones({
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-200 bg-gris p-6">
+                    <div className="border-t border-transparent bg-gradient-to-r from-red-900 to-red-800 p-6">
                         <DetalleSubtotal
                             habitacionesSeleccionadas={
                                 habitacionesSeleccionadas

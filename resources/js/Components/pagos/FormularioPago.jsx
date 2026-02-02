@@ -9,6 +9,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 
 function FormularioPagoInterno({
     reservaData,
@@ -58,34 +59,23 @@ function FormularioPagoInterno({
 
     // Continuación del flujo de pago después de crear la reserva
     const continuarConPago = async (reservaId, monto) => {
-        const resPI = await fetch('/pagos/crear-payment-intent', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-            },
-            body: JSON.stringify({ reserva_id: reservaId, monto }),
-        });
-
         let dataPI = null;
-        if (!resPI.ok) {
-            try {
-                dataPI = await resPI.json();
-            } catch (parseErr) {
-                /* ignore */
-            }
-            let message = `Error en comunicación (${resPI.status})`;
-            if (dataPI) {
-                if (dataPI.errors)
-                    message = Object.values(dataPI.errors).flat().join('; ');
-                else if (dataPI.error) message = dataPI.error;
-                else if (dataPI.message) message = dataPI.message;
+        try {
+            const resPI = await axios.post('/pagos/crear-payment-intent', { reserva_id: reservaId, monto }, {
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+            });
+            dataPI = resPI.data;
+            if (!dataPI.success) throw new Error(dataPI.error || 'Error en comunicación');
+        } catch (err) {
+            const detail = err?.response?.data;
+            let message = err?.message || 'Error en comunicación';
+            if (detail) {
+                if (detail.errors) message = Object.values(detail.errors).flat().join('; ');
+                else if (detail.error) message = detail.error;
+                else if (detail.message) message = detail.message;
             }
             throw new Error(message);
         }
-        dataPI = await resPI.json();
-        if (!dataPI.success)
-            throw new Error(dataPI.error || 'Error en comunicación');
 
         // If server already confirmed the PaymentIntent (e.g. local test confirm),
         // skip calling stripe.confirmCardPayment to avoid "already confirmed" errors
@@ -94,27 +84,22 @@ function FormularioPagoInterno({
             dataPI.paymentIntentStatus === 'succeeded'
         ) {
             // Inform app that payment is confirmed
-            const resConfirm = await fetch('/pagos/confirmar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({
+            try {
+                const resConfirm = await axios.post('/pagos/confirmar', {
                     payment_intent_id: dataPI.paymentIntentId,
                     pago_id: dataPI.pago_id,
-                }),
-            });
-            if (!resConfirm.ok) {
-                let errText = `Error confirmando pago (${resConfirm.status})`;
-                try {
-                    const jd = await resConfirm.json();
-                    errText = jd?.message || jd?.error || errText;
-                } catch (e) {}
+                }, {
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+                });
+                const confirmJson = resConfirm.data;
+                onPagoExitoso({ pago_id: dataPI.pago_id, confirmData: confirmJson });
+                return;
+            } catch (err) {
+                const jd = err?.response?.data;
+                let errText = err?.message || 'Error confirmando pago';
+                if (jd) errText = jd?.message || jd?.error || errText;
                 throw new Error(errText);
             }
-            onPagoExitoso({ pago_id: dataPI.pago_id });
-            return;
         }
 
         const { paymentIntent, error } = await stripe.confirmCardPayment(
@@ -130,23 +115,26 @@ function FormularioPagoInterno({
         if (error) throw new Error(error.message);
 
         if (paymentIntent.status === 'succeeded') {
-            await fetch('/pagos/confirmar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({
+            try {
+                const resConfirm = await axios.post('/pagos/confirmar', {
                     payment_intent_id: paymentIntent.id,
                     pago_id: dataPI.pago_id,
-                }),
-            });
-            onPagoExitoso({ pago_id: dataPI.pago_id });
+                }, {
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+                });
+                const confirmJson = resConfirm.data;
+                onPagoExitoso({ pago_id: dataPI.pago_id, confirmData: confirmJson });
+            } catch (err) {
+                const jd = err?.response?.data;
+                let errText = err?.message || 'Error confirmando pago';
+                if (jd) errText = jd?.message || jd?.error || errText;
+                throw new Error(errText);
+            }
         }
     };
 
     const procesarPago = async (e) => {
-        e.preventDefault();
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
         if (!stripe || !elements || !acepta) {
             console.error('❌ Validación inicial fallida:', {
                 stripe: !!stripe,
@@ -255,11 +243,34 @@ function FormularioPagoInterno({
                     const dataReserva = await service.crearReserva(
                         crearPayloadRef.current,
                     );
-                    resId = dataReserva.reserva_id;
+
+                    // Handle expected error shape: { success: false, error: 'message' }
+                    if (!dataReserva) {
+                        console.error('crearReserva returned null/undefined:', dataReserva);
+                        throw new Error('No se pudo crear la reserva. Respuesta vacía del servidor.');
+                    }
+
+                    if (dataReserva.success === false) {
+                        const serverMsg = dataReserva.error || dataReserva.message || JSON.stringify(dataReserva);
+                        console.error('crearReserva responded with success=false:', dataReserva);
+                        throw new Error(serverMsg);
+                    }
+
+                    // Validate response: must contain reserva_id (or nested reserva)
+                    if (!dataReserva.reserva_id && !(dataReserva.reserva && dataReserva.reserva.id)) {
+                        console.error('crearReserva returned invalid response:', dataReserva);
+                        throw new Error('No se pudo crear la reserva. Respuesta inesperada del servidor.');
+                    }
+
+                    resId = dataReserva.reserva_id ?? dataReserva.reserva?.id ?? resId;
                 } catch (err) {
                     if (err && err.status === 409 && err.cliente_existente) {
                         setClienteExistente(err.cliente_existente);
                         setShowClienteModal(true);
+                        throw err;
+                    }
+                    // Re-throw with friendly message if it's a generic Error
+                    if (err instanceof Error && !err.status) {
                         throw err;
                     }
                     throw err;
@@ -474,7 +485,7 @@ function FormularioPagoInterno({
                     </div>
                 </div>
             </Modal>
-            <form onSubmit={procesarPago} className="w-full space-y-6">
+            <div role="form" className="w-full space-y-6">
                 {/* SECCIÓN: DATOS (Solo si no vienen por props o están vacíos) */}
                 <div className="space-y-4">
                     {!reservaData?.name && (
@@ -531,6 +542,13 @@ function FormularioPagoInterno({
                             Tarjeta Bancaria
                         </h4>
                     </div>
+                    {/* Mostrar aviso si Stripe no está inicializado */}
+                    {(!stripe || !elements) && (
+                        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+                            <strong className="block font-bold">Pasarela de pagos no disponible</strong>
+                            <p className="mt-1">No es posible procesar pagos con tarjeta en este momento. Cambia el método de pago o intenta más tarde.</p>
+                        </div>
+                    )}
                     <div className="rounded-xl border-2 border-gray-100 bg-white p-4 shadow-sm transition-all focus-within:border-black">
                         <CardElement
                             options={{
@@ -578,7 +596,8 @@ function FormularioPagoInterno({
 
                     <div className="flex flex-col gap-3">
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={procesarPago}
                             disabled={
                                 procesando ||
                                 !stripe ||
@@ -647,7 +666,7 @@ function FormularioPagoInterno({
                         </span>
                     </div>
                 )}
-            </form>
+            </div>
 
             {/* OVERLAY DE CARGA */}
             {procesando && (

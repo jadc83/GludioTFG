@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
 
 export default function CreateReserva({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
@@ -31,6 +32,8 @@ export default function CreateReserva({ iconOnly = false }) {
     const [tarifas, setTarifas] = useState([]);
     const [tarifasSeleccionadas, setTarifasSeleccionadas] = useState([]);
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
+    const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
+    const [datosReservaConfirmada, setDatosReservaConfirmada] = useState(null);
 
     const datosIniciales = {
         // Fechas
@@ -751,9 +754,21 @@ export default function CreateReserva({ iconOnly = false }) {
                                             id="num_huespedes"
                                             label="Número de Huéspedes"
                                             type="number"
-                                            min="1"
+                                            min={1}
+                                            max={4}
                                             value={formulario.num_huespedes}
-                                            onChange={cambiar}
+                                            onChange={(e) =>
+                                                actualizarCampo(
+                                                    'num_huespedes',
+                                                    Math.min(
+                                                        4,
+                                                        Math.max(
+                                                            1,
+                                                            Number(e.target.value) || 1,
+                                                        ),
+                                                    ),
+                                                )
+                                            }
                                             error={errores.num_huespedes}
                                             required
                                         />
@@ -870,10 +885,31 @@ export default function CreateReserva({ iconOnly = false }) {
                                                             'Pago exitoso desde CreateReserva:',
                                                             data,
                                                         );
-                                                        handleCerrar();
-                                                        router.reload({
-                                                            only: ['reservas'],
-                                                        });
+                                                        try {
+                                                            const confirm = data?.confirmData || {};
+                                                            const localizador = confirm?.localizador || null;
+                                                            const cantidad_habitaciones = Object.values(
+                                                                habitacionesPorTipo,
+                                                            ).reduce((s, info) => s + (info.cantidad || 0), 0);
+
+                                                            const datosConfirmacion = {
+                                                                localizador: localizador,
+                                                                nombre: formulario.nombre_cliente,
+                                                                check_in: formulario.check_in,
+                                                                check_out: formulario.check_out,
+                                                                cantidad_habitaciones,
+                                                                precio_total: precioCalculado,
+                                                                pagoAlLlegar: false,
+                                                            };
+
+                                                            handleCerrar();
+                                                            setDatosReservaConfirmada(datosConfirmacion);
+                                                            setMostrarModalConfirmacion(true);
+                                                        } catch (err) {
+                                                            console.error('Error preparando confirmación:', err);
+                                                            handleCerrar();
+                                                            router.reload({ only: ['reservas'] });
+                                                        }
                                                     }}
                                                     onError={(err) => {
                                                         console.error(
@@ -909,13 +945,14 @@ export default function CreateReserva({ iconOnly = false }) {
                                 >
                                     Cancelar
                                 </Boton>
+                                {/* Mostrar botón 'Crear Reserva' como fallback si Stripe no está configurado */}
                                 <Boton
                                     type="submit"
                                     variant="primary"
                                     color="danger"
                                     loading={estaCargando}
                                     className={
-                                        formulario.metodo_pago === 'tarjeta'
+                                        formulario.metodo_pago === 'tarjeta' && import.meta.env.VITE_STRIPE_PUBLIC_KEY
                                             ? 'hidden'
                                             : ''
                                     }
@@ -928,13 +965,31 @@ export default function CreateReserva({ iconOnly = false }) {
                                         ).some((info) => info.cantidad > 0)
                                     }
                                 >
-                                    Crear Reserva
+                                    {formulario.metodo_pago === 'tarjeta' && !import.meta.env.VITE_STRIPE_PUBLIC_KEY
+                                        ? 'Crear Reserva (Pago en Recepción)'
+                                        : 'Crear Reserva'}
                                 </Boton>
                             </div>
                         </footer>
                     </form>
                 </div>
             </div>
+
+            {/* Modal de Confirmación tras pago */}
+            <ModalConfirmacionReserva
+                reserva={datosReservaConfirmada}
+                isOpen={mostrarModalConfirmacion}
+                onClose={() => {
+                    setMostrarModalConfirmacion(false);
+                    setDatosReservaConfirmada(null);
+                    // Recargar lista de reservas para reflejar la nueva reserva
+                    try {
+                        router.reload({ only: ['reservas'] });
+                    } catch (e) {
+                        window.location.reload();
+                    }
+                }}
+            />
         </>
     );
 }

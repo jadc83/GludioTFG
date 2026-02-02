@@ -14,16 +14,17 @@ export default function TarjetaHabitacion({
     puedoSeleccionarMas,
     getImagen,
     setImagenModalAbierto,
+    fullHeight = false,
 }) {
     return (
         <article
             key={tipo}
-            className={`tarjeta-habitacion group flex flex-col rounded-xl border bg-white transition-all duration-300 md:flex-row ${isSelected ? 'border-[#7a0202] shadow-md ring-1 ring-[#7a0202]' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
+            className={`tarjeta-habitacion group w-full flex flex-col min-h-0 rounded-xl border bg-white transition-all duration-300 md:flex-row overflow-hidden ${fullHeight ? 'md:h-28 md:h-32' : ''} ${isSelected ? 'border-[#7a0202] shadow-md ring-1 ring-[#7a0202]' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
         >
-            <div className="relative h-28 w-full shrink-0 rounded-lg bg-gray-900 md:h-32 md:w-48">
+            <div className={`relative w-full shrink-0 rounded-lg bg-gray-900 ${fullHeight ? 'md:h-full md:w-44' : 'h-16 md:h-20 md:w-44'}`}>
                 <img
                     src={getImagen(tipo)}
-                    className="h-full w-full rounded-lg object-cover opacity-90"
+                    className="absolute inset-0 h-full w-full rounded-lg object-cover opacity-90"
                     alt={tipo}
                 />
                 <button
@@ -34,7 +35,7 @@ export default function TarjetaHabitacion({
                 </button>
             </div>
 
-            <div className="flex flex-1 flex-col justify-center p-4">
+            <div className={`flex flex-1 flex-col justify-center ${fullHeight ? 'p-3 md:p-4' : 'p-4'}`}>
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
                         <h4 className="text-sm font-black uppercase tracking-tight text-gray-900">
@@ -91,7 +92,7 @@ export default function TarjetaHabitacion({
                                             1,
                                         )
                                     }
-                                    className="cta-button flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-[9px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#7a0202] active:scale-95 disabled:opacity-20"
+                                    className="cta-button flex items-center gap-1 rounded-lg bg-gray-900 px-3 py-2 text-[8px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#7a0202] active:scale-95 disabled:opacity-20"
                                 >
                                     <PlusIcon className="h-3 w-3 stroke-[3]" />{' '}
                                     Seleccionar

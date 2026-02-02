@@ -239,13 +239,17 @@ export default function BarraReservas() {
                                         id="num_huespedes_barra"
                                         type="number"
                                         min={1}
+                                        max={4}
                                         sinEstilosPorDefecto={true}
                                         value={formularioReserva.numHuespedes}
                                         onChange={(e) =>
                                             formularioReserva.setNumHuespedes(
-                                                Math.max(
-                                                    1,
-                                                    Number(e.target.value) || 1,
+                                                Math.min(
+                                                    4,
+                                                    Math.max(
+                                                        1,
+                                                        Number(e.target.value) || 1,
+                                                    ),
                                                 ),
                                             )
                                         }

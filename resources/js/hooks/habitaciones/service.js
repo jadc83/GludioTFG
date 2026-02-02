@@ -2,23 +2,28 @@
  * Servicio: funciones para consultar habitaciones disponibles desde el backend.
  * Exporta `fetchHabitacionesDisponibles(check_in, check_out, options)`.
  */
+import axios from 'axios';
+
 export async function fetchHabitacionesDisponibles(
     check_in,
     check_out,
     { signal } = {},
 ) {
-    const url = `/habitaciones/disponibles?check_in=${encodeURIComponent(check_in)}&check_out=${encodeURIComponent(check_out)}`;
-    // Añadimos opciones para evitar cache y facilitar visualización en DevTools
-    const res = await fetch(url + `&_ts=${Date.now()}`, {
-        method: 'GET',
-        signal,
-        cache: 'no-store',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    });
-    if (!res.ok) {
-        const t = await res.text().catch(() => null);
-        const msg = t || res.statusText || `HTTP ${res.status}`;
-        throw new Error(msg);
+    try {
+        const params = {
+            check_in,
+            check_out,
+            individuales: 'true',
+            _ts: Date.now(),
+        };
+        const { data } = await axios.get('/habitaciones/disponibles', {
+            params,
+            signal,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        return data;
+    } catch (err) {
+        const msg = err?.response?.data || err?.message || 'Error obteniendo habitaciones disponibles';
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
-    return res.json();
 }

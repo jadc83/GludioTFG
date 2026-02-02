@@ -6,6 +6,7 @@ import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches } from '@/utils/formatters';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import '../../../../css/paso4Confirmacion.css';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import OpcionesPago from '../modales/OpcionesPago';
@@ -163,26 +164,17 @@ export default function Paso4Confirmacion({
         }
 
         try {
-            const response = await fetch('/cupones/validar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    codigo: cuponDescuento,
-                    email: formData.email,
-                    precio_total: monto,
-                }),
-            });
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const { data: result, status } = await axios.post('/cupones/validar', {
+                codigo: cuponDescuento,
+                email: formData.email,
+                precio_total: monto,
+            }, { headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' } });
 
-            if (response.status === 419) {
+            if (status === 419) {
                 setErrorPagoLocal('Sesión expirada, recarga la página');
                 return;
             }
-
-            const result = await response.json();
 
             if (result.success) {
                 setCuponValido(result);
@@ -193,6 +185,7 @@ export default function Paso4Confirmacion({
                 setCuponValido(null);
             }
         } catch (error) {
+            console.error('Error validando cupón:', error?.response || error);
             setErrorPagoLocal('Error validando cupón');
             setCuponValido(null);
         }

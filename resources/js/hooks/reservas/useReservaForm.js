@@ -81,11 +81,17 @@ export default function useReservaForm() {
 
     useEffect(() => {
         let mounted = true;
-        fetch('/api/tarifas')
-            .then((r) => (r.ok ? r.json() : []))
-            .then((data) => {
-                if (mounted) setTarifas(data || []);
-            });
+        // Usar axios para consistencia con el resto del proyecto
+        import('axios').then(({ default: axios }) => {
+            axios
+                .get('/api/tarifas')
+                .then(({ data }) => {
+                    if (mounted) setTarifas(data || []);
+                })
+                .catch(() => {
+                    if (mounted) setTarifas([]);
+                });
+        });
         return () => {
             mounted = false;
         };

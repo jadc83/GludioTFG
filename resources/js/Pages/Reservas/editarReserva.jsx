@@ -9,6 +9,7 @@ import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import { Link } from '@inertiajs/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 export default function EditarReserva({
     reserva: initialReserva,
@@ -79,35 +80,25 @@ export default function EditarReserva({
         setTimeout(() => setToast(null), 4500);
     };
 
+
     const handleDesasignarHabitacion = async (habitacionId) => {
         setSavingHabitaciones(true);
         try {
-            const response = await fetch(
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const { data } = await axios.post(
                 `/reservas/${reserva.id}/desasignar-habitaciones`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN':
-                            document.querySelector('meta[name="csrf-token"]')
-                                ?.content || '',
-                    },
-                    body: JSON.stringify({ habitacion_ids: [habitacionId] }),
-                },
+                { habitacion_ids: [habitacionId] },
+                { headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } },
             );
 
-            const data = await response.json();
-
             if (data.success && data.reserva) {
-                // Actualizar estado con la respuesta del servidor
                 setReserva(data.reserva);
                 showToast('Habitación desasignada con éxito', 'success');
             } else {
                 showToast(data.error || 'Error al desasignar', 'error');
             }
         } catch (error) {
-            console.error('Error desasignando:', error);
+            console.error('Error desasignando:', error?.response || error);
             showToast('Error al desasignar habitación', 'error');
         } finally {
             setSavingHabitaciones(false);
@@ -123,32 +114,26 @@ export default function EditarReserva({
             const habitacionIds = [...selectedHabitacionIds];
 
             // Hacer el POST al servidor
-            const response = await fetch(
-                `/reservas/${reserva.id}/asignar-habitaciones`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN':
-                            document.querySelector('meta[name="csrf-token"]')
-                                ?.content || '',
-                    },
-                    body: JSON.stringify({ habitacion_ids: habitacionIds }),
-                },
-            );
-
-            const data = await response.json();
-
-            if (data.success && data.reserva) {
-                // Actualizar estado con la respuesta del servidor
-                setReserva(data.reserva);
-                setSelectedHabitacionIds(
-                    data.reserva.habitaciones.map((h) => h.habitacion_id),
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const { data } = await axios.post(
+                    `/reservas/${reserva.id}/asignar-habitaciones`,
+                    { habitacion_ids: habitacionIds },
+                    { headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } },
                 );
-                showToast('Habitaciones actualizadas con éxito', 'success');
-            } else {
-                showToast(data.error || 'Error al actualizar', 'error');
+
+                if (data.success && data.reserva) {
+                    setReserva(data.reserva);
+                    setSelectedHabitacionIds(
+                        data.reserva.habitaciones.map((h) => h.habitacion_id),
+                    );
+                    showToast('Habitaciones actualizadas con éxito', 'success');
+                } else {
+                    showToast(data.error || 'Error al actualizar', 'error');
+                }
+            } catch (error) {
+                console.error('Error actualizando:', error?.response || error);
+                showToast('Error al actualizar habitaciones', 'error');
             }
         } catch (error) {
             console.error('Error actualizando:', error);
@@ -440,8 +425,24 @@ export default function EditarReserva({
                                                     </span>
                                                 </button>
 
-                                                {availableHabitaciones.map(
-                                                    (habFisica) => {
+{(() => {
+                                                    const filtered = availableHabitaciones.filter(
+                                                        (habFisica) =>
+                                                            !hSlot.tipo ||
+                                                            (habFisica.tipo && habFisica.tipo.toLowerCase() === hSlot.tipo.toLowerCase()),
+                                                    );
+
+                                                    if (filtered.length === 0) {
+                                                        return (
+                                                            <div className="col-span-full">
+                                                                <div className="rounded-xl border-2 p-3 text-center text-sm text-gray-500">
+                                                                    No hay habitaciones disponibles de este tipo
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return filtered.map((habFisica) => {
                                                         const isSelected =
                                                             selectedHabitacionIds[
                                                                 idx
@@ -449,29 +450,20 @@ export default function EditarReserva({
                                                         const isUsedElsewhere =
                                                             selectedHabitacionIds.some(
                                                                 (id, i) =>
-                                                                    id ===
-                                                                        habFisica.id &&
+                                                                    id === habFisica.id &&
                                                                     i !== idx,
                                                             );
 
                                                         return (
                                                             <button
-                                                                key={
-                                                                    habFisica.id
-                                                                }
-                                                                disabled={
-                                                                    isUsedElsewhere
-                                                                }
+                                                                key={habFisica.id}
+                                                                disabled={isUsedElsewhere}
                                                                 onClick={() => {
-                                                                    const copy =
-                                                                        [
-                                                                            ...selectedHabitacionIds,
-                                                                        ];
-                                                                    copy[idx] =
-                                                                        habFisica.id;
-                                                                    setSelectedHabitacionIds(
-                                                                        copy,
-                                                                    );
+                                                                    const copy = [
+                                                                        ...selectedHabitacionIds,
+                                                                    ];
+                                                                    copy[idx] = habFisica.id;
+                                                                    setSelectedHabitacionIds(copy);
                                                                 }}
                                                                 className={`relative rounded-xl border-2 p-3 transition ${
                                                                     isSelected
@@ -482,19 +474,15 @@ export default function EditarReserva({
                                                                 }`}
                                                             >
                                                                 <span className="block text-lg font-black leading-none">
-                                                                    {
-                                                                        habFisica.numero
-                                                                    }
+                                                                    {habFisica.numero}
                                                                 </span>
                                                                 <span className="text-[8px] font-bold uppercase opacity-60">
-                                                                    {
-                                                                        habFisica.tipo
-                                                                    }
+                                                                    {habFisica.tipo}
                                                                 </span>
                                                             </button>
                                                         );
-                                                    },
-                                                )}
+                                                    });
+                                                })()}
                                             </div>
                                         </div>
                                     ))}

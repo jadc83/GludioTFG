@@ -427,18 +427,6 @@ class ReservaController extends Controller
         }
     }
 
-    /* Obtiene información sobre si una reserva puede extenderse */
-    public function infoExtension($localizador)
-    {
-        try {
-            $reserva = Reserva::where('localizador', $localizador)->firstOrFail();
-            $info = $this->extensionService->obtenerInfoExtension($reserva);
-            return $this->success(is_array($info) ? $info : []);
-        } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 404);
-        }
-    }
-
     /* Extiende una reserva con nuevos días adicionales */
     public function extenderReserva(Request $request, $localizador)
     {
