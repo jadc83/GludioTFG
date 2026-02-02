@@ -1,4 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
+import Boton from '@/Components/UI/Boton';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TicketIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -38,14 +39,16 @@ export default function CreateCupon({ iconOnly = false, onSuccess = null }) {
 
     return (
         <>
-            <button
+            <Boton
                 onClick={() => setAbierto(true)}
-                className={`flex items-center gap-2 rounded-xl bg-[#7a0202] text-xs font-black uppercase tracking-widest text-white shadow-md transition hover:bg-[#5a0101] ${iconOnly ? 'p-3' : 'px-6 py-3'}`}
+                icon={TicketIcon}
+                size={iconOnly ? 'sm' : 'md'}
+                className={iconOnly ? '!px-3 !py-3' : ''}
                 title="Nuevo Cupón"
                 aria-label="Nuevo Cupón"
             >
-                <TicketIcon className="h-5 w-5" /> {!iconOnly && ' Nuevo Cupón'}
-            </button>
+                {!iconOnly && 'Nuevo Cupón'}
+            </Boton>
 
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
             <div
@@ -214,13 +217,14 @@ export default function CreateCupon({ iconOnly = false, onSuccess = null }) {
                             >
                                 Cancelar
                             </button>
-                            <button
+                            <Boton
                                 type="submit"
                                 disabled={estaCargando}
-                                className="flex-1 rounded-xl bg-[#7a0202] px-4 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-200 hover:bg-[#5a0101] disabled:cursor-not-allowed disabled:opacity-50"
+                                loading={estaCargando}
+                                className="flex-1"
                             >
-                                {estaCargando ? 'Guardando...' : 'Crear Cupón'}
-                            </button>
+                                Crear Cupón
+                            </Boton>
                         </footer>
                     </form>
                 </div>

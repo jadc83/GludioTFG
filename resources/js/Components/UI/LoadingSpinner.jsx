@@ -4,6 +4,8 @@ export default function LoadingSpinner({
     className = '',
 }) {
     return (
-        <span className={`loading loading-spinner ${color} ${size} ${className}`}></span>
+        <span
+            className={`loading loading-spinner ${color} ${size} ${className}`}
+        ></span>
     );
 }

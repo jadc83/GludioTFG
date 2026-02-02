@@ -1,5 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
-
+import Boton from '@/Components/UI/Boton';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import {
@@ -77,15 +77,16 @@ export default function CreateEmpleado({ iconOnly = false }) {
 
     return (
         <>
-            <button
+            <Boton
                 onClick={() => setAbierto(true)}
-                className={`flex items-center gap-2 rounded-xl bg-[#7a0202] text-xs font-black uppercase tracking-widest text-white shadow-md transition hover:bg-[#5a0101] ${iconOnly ? 'p-3' : 'px-6 py-3'}`}
+                icon={BriefcaseIcon}
+                size={iconOnly ? 'sm' : 'md'}
+                className={iconOnly ? '!px-3 !py-3' : ''}
                 title="Nuevo Empleado"
                 aria-label="Nuevo Empleado"
             >
-                <BriefcaseIcon className="h-5 w-5" />{' '}
-                {!iconOnly && ' Nuevo Empleado'}
-            </button>
+                {!iconOnly && 'Nuevo Empleado'}
+            </Boton>
 
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
             <div

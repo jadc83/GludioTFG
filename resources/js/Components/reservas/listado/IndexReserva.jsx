@@ -80,7 +80,9 @@ export default function IndexReserva({ reservas = [] }) {
             setEliminandoId(id);
 
             try {
-                await router.delete(`/reservas/${id}`, { preserveScroll: true });
+                await router.delete(`/reservas/${id}`, {
+                    preserveScroll: true,
+                });
             } finally {
                 // Delay extendido para asegurar que el spinner sea bien perceptible
                 setTimeout(() => setEliminandoId(null), 3000);
@@ -372,10 +374,14 @@ export default function IndexReserva({ reservas = [] }) {
                                                                 reserva.id,
                                                             )
                                                         }
-                                                        disabled={eliminandoId === reserva.id}
+                                                        disabled={
+                                                            eliminandoId ===
+                                                            reserva.id
+                                                        }
                                                         className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black disabled:opacity-50"
                                                     >
-                                                        {eliminandoId === reserva.id ? (
+                                                        {eliminandoId ===
+                                                        reserva.id ? (
                                                             <LoadingSpinner />
                                                         ) : (
                                                             <TrashIcon className="h-4 w-4" />

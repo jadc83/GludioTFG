@@ -1,3 +1,4 @@
+import Boton from '@/Components/UI/Boton';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import {
     ArrowTrendingUpIcon,
@@ -191,12 +192,14 @@ export default function IndexEstadisticas({
                         </div>
                     </div>
                 </div>
-                <button
+                <Boton
                     onClick={onBuscar}
-                    className="h-[46px] w-full rounded-xl bg-[#7a0202] px-10 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] md:w-auto"
+                    loading={cargando}
+                    disabled={cargando}
+                    className="h-[46px] w-full md:w-auto"
                 >
                     Generar Reporte
-                </button>
+                </Boton>
             </div>
 
             {/* --- CONTENIDO DINÁMICO --- */}

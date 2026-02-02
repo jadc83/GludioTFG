@@ -35,7 +35,8 @@ export default function TabEstadisticas() {
             setDatos(null);
             setMostrarGrafico(false);
         } finally {
-            setCargando(false);
+            // Delay mínimo para que el spinner sea bien perceptible
+            setTimeout(() => setCargando(false), 3000);
         }
     };
 

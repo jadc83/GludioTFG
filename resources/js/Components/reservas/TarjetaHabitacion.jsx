@@ -20,13 +20,16 @@ export default function TarjetaHabitacion({
             key={tipo}
             className={`group flex flex-col rounded-xl border bg-white transition-all duration-300 md:flex-row ${isSelected ? 'border-[#7a0202] shadow-md ring-1 ring-[#7a0202]' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
         >
-            <div className="relative h-28 w-full shrink-0 bg-gray-900 rounded-lg md:h-32 md:w-48">
+            <div className="relative h-28 w-full shrink-0 rounded-lg bg-gray-900 md:h-32 md:w-48">
                 <img
                     src={getImagen(tipo)}
-                    className="h-full w-full object-cover opacity-90 rounded-lg"
+                    className="h-full w-full rounded-lg object-cover opacity-90"
                     alt={tipo}
                 />
-                <button onClick={() => setImagenModalAbierto(tipo)} className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity group-hover:opacity-100 md:opacity-0">
+                <button
+                    onClick={() => setImagenModalAbierto(tipo)}
+                    className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity group-hover:opacity-100 md:opacity-0"
+                >
                     <InformationCircleIcon className="h-6 w-6 text-white" />
                 </button>
             </div>
@@ -40,8 +43,7 @@ export default function TarjetaHabitacion({
                         <div className="flex items-center gap-3">
                             <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-gray-400">
                                 <UsersIcon className="h-3 w-3" />{' '}
-                                {info.capacidadMaxima}{' '}
-                                Capacidad
+                                {info.capacidadMaxima} Capacidad
                             </span>
                         </div>
                     </div>
@@ -49,9 +51,7 @@ export default function TarjetaHabitacion({
                     <div className="flex items-center gap-6">
                         <div className="text-right">
                             <p className="text-lg font-black text-[#7a0202]">
-                                {preciosPorTipo[
-                                    tipo
-                                ] ??
+                                {preciosPorTipo[tipo] ??
                                     info.precioEntreNoche ??
                                     info.precioTipo ??
                                     info.precioMinimo}
@@ -83,9 +83,7 @@ export default function TarjetaHabitacion({
                                 </div>
                             ) : (
                                 <button
-                                    disabled={
-                                        !puedoSeleccionarMas
-                                    }
+                                    disabled={!puedoSeleccionarMas}
                                     onClick={() =>
                                         actualizarSeleccionHabitacion(
                                             tipo,

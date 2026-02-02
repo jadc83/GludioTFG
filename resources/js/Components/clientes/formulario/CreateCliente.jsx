@@ -1,4 +1,5 @@
 import Campo from '@/Components/formulario/Campo';
+import Boton from '@/Components/UI/Boton';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -32,14 +33,16 @@ export default function CreateCliente({ iconOnly = false }) {
 
     return (
         <>
-            <button
+            <Boton
                 onClick={() => setAbierto(true)}
-                className={`flex items-center gap-2 rounded-xl bg-[#7a0202] text-xs font-black uppercase tracking-widest text-white shadow-md transition hover:bg-[#5a0101] ${iconOnly ? 'p-3' : 'px-6 py-3'}`}
+                icon={UserIcon}
+                size={iconOnly ? 'sm' : 'md'}
+                className={iconOnly ? '!px-3 !py-3' : ''}
                 title="Nuevo Cliente"
                 aria-label="Nuevo Cliente"
             >
-                <UserIcon className="h-5 w-5" /> {!iconOnly && ' Nuevo Cliente'}
-            </button>
+                {!iconOnly && 'Nuevo Cliente'}
+            </Boton>
 
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
             <div

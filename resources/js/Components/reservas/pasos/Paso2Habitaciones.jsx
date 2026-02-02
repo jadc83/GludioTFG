@@ -1,14 +1,12 @@
+import ModalGaleria from '@/Components/reservas/modales/ModalGaleria';
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
 import TarifasSelector from '@/Components/reservas/TarifasSelector';
-import ModalGaleria from '@/Components/reservas/modales/ModalGaleria';
-import DetalleSubtotal from '@/Components/reservas/utilidades/DetalleSubtotal';
 import TarjetaHabitacion from '@/Components/reservas/TarjetaHabitacion';
+import DetalleSubtotal from '@/Components/reservas/utilidades/DetalleSubtotal';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
-import {
-    ArrowLeftIcon,
-} from '@heroicons/react/24/outline';
-import { useEffect, useState } from 'react';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones,
@@ -99,10 +97,16 @@ export default function Paso2Habitaciones({
                                         info={info}
                                         isSelected={isSelected}
                                         preciosPorTipo={preciosPorTipo}
-                                        actualizarSeleccionHabitacion={actualizarSeleccionHabitacion}
-                                        puedoSeleccionarMas={puedoSeleccionarMas}
+                                        actualizarSeleccionHabitacion={
+                                            actualizarSeleccionHabitacion
+                                        }
+                                        puedoSeleccionarMas={
+                                            puedoSeleccionarMas
+                                        }
                                         getImagen={getImagen}
-                                        setImagenModalAbierto={setImagenModalAbierto}
+                                        setImagenModalAbierto={
+                                            setImagenModalAbierto
+                                        }
                                     />
                                 );
                             })
