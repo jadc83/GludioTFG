@@ -15,7 +15,7 @@ class GetDisponiblesAction
     }
 
     /* Devuelve la disponibilidad formateada entre dos fechas. */
-    public function handle(?string $checkIn = null, ?string $checkOut = null): array
+    public function handle(?string $checkIn = null, ?string $checkOut = null, bool $individuales = false): array
     {
         if ($checkIn && $checkOut) {
             $check_in = Carbon::createFromFormat('Y-m-d', $checkIn);
@@ -24,14 +24,19 @@ class GetDisponiblesAction
             $request = request();
             $checkIn = $checkIn ?? $request->query('check_in') ?? $request->query('checkIn');
             $checkOut = $checkOut ?? $request->query('check_out') ?? $request->query('checkOut');
+            $individuales = $individuales || $request->query('individuales') === 'true';
             $check_in = $checkIn ? Carbon::createFromFormat('Y-m-d', $checkIn) : null;
             $check_out = $checkOut ? Carbon::createFromFormat('Y-m-d', $checkOut) : null;
         }
 
         if (! $check_in || ! $check_out) {
-            return $this->service->getDisponibles(Carbon::now(), Carbon::now()->addDay(), true);
+            return $individuales
+                ? $this->service->getDisponiblesIndividuales(Carbon::now(), Carbon::now()->addDay())
+                : $this->service->getDisponibles(Carbon::now(), Carbon::now()->addDay(), true);
         }
 
-        return $this->service->getDisponibles($check_in, $check_out, false);
+        return $individuales
+            ? $this->service->getDisponiblesIndividuales($check_in, $check_out)
+            : $this->service->getDisponibles($check_in, $check_out, false);
     }
 }

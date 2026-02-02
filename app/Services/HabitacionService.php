@@ -145,6 +145,79 @@ class HabitacionService
     }
 
     /**
+     * Obtiene lista de habitaciones individuales disponibles (no agrupadas)
+     * Para uso en formularios donde se necesita seleccionar habitaciones específicas
+     * Retorna: array de habitaciones con id, numero, tipo, precio_noche
+     */
+    public function getDisponiblesIndividuales(Carbon $checkIn, Carbon $checkOut): array
+    {
+        // Obtener todas las habitaciones no en mantenimiento
+        $habitacionesBase = Habitacion::where('estado', '!=', 'mantenimiento')->orderBy('numero')->get();
+
+        // Agrupar por tipo y calcular slots disponibles
+        $tipos = $habitacionesBase->pluck('tipo')->unique()->filter()->values();
+
+        $seleccionadas = collect();
+
+        foreach ($tipos as $tipo) {
+            $roomsOfTipo = $habitacionesBase->where('tipo', $tipo);
+            $roomIds = $roomsOfTipo->pluck('id')->all();
+
+            // Contar habitaciones asignadas que solapan
+            $assignedCount = \App\Models\HabitacionReserva::whereNotNull('habitacion_id')
+                ->whereIn('habitacion_id', $roomIds)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->distinct('habitacion_id')
+                ->count('habitacion_id');
+
+            // Contar placeholders por tipo que solapan
+            $placeholdersCount = \App\Models\HabitacionReserva::whereNull('habitacion_id')
+                ->where('tipo', $tipo)
+                ->where('check_in', '<', $checkOut->format('Y-m-d'))
+                ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->count();
+
+            $totalRooms = count($roomIds);
+            $availableSlots = max(0, $totalRooms - ($assignedCount + $placeholdersCount));
+
+            if ($availableSlots <= 0) {
+                continue;
+            }
+
+            // Seleccionar habitaciones del tipo que no tienen reservas asignadas que solapen
+            $candidateRooms = $roomsOfTipo->filter(function ($h) use ($checkIn, $checkOut) {
+                return !$h->reservas()->where('check_in', '<', $checkOut->format('Y-m-d'))
+                    ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                    ->exists();
+            })->values();
+
+            $toAdd = $candidateRooms->slice(0, $availableSlots);
+            $seleccionadas = $seleccionadas->concat($toAdd);
+        }
+
+        $disponibles = $seleccionadas->sortBy('numero')->values();
+
+        // Calcular precio por noche para cada habitación
+        $action = app(\App\Actions\Habitaciones\CalcularPreciosPorTipoAction::class);
+        $preciosMap = $action->handle($disponibles->pluck('tipo')->unique()->toArray(), $checkIn, $checkOut);
+
+        $resultado = [];
+        foreach ($disponibles as $habitacion) {
+            $precioData = $preciosMap[$habitacion->tipo] ?? null;
+            $resultado[] = [
+                'id' => $habitacion->id,
+                'numero' => $habitacion->numero,
+                'tipo' => $habitacion->tipo,
+                'capacidad' => $habitacion->capacidad,
+                'precio_noche' => $precioData['por_noche'] ?? 0,
+            ];
+        }
+
+        return $resultado;
+    }
+
+    /**
      * Obtiene URL de imagen representativa para un tipo de habitación
      * Retorna imágenes de Unsplash según el tipo
      * Usado por: interfaces de visualización de habitaciones

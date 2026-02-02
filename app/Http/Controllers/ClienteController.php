@@ -24,12 +24,25 @@ class ClienteController extends Controller
             $cliente->tipo_usuario = 'cliente';
         });
 
+        // Obtener también los users
+        $users = User::buscar($request->busqueda)
+            ->tipoDocumento($request->tipo_documento)
+            ->orderBy('name')
+            ->get();
+
+        $users->each(function($user) {
+            $user->tipo_usuario = 'user';
+        });
+
+        // Combinar ambas colecciones
+        $todosLosClientes = $clientes->concat($users);
+
         if ($request->wantsJson()) {
-            return response()->json($clientes);
+            return response()->json($todosLosClientes);
         }
 
         return [
-            'clientes' => $clientes
+            'clientes' => $todosLosClientes
         ];
     }
 

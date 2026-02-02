@@ -41,7 +41,12 @@ class ReservaService
      */
     public function prepararDatosReserva(array $datos): array
     {
-        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datos recibidos:', ['cupon_id' => $datos['cupon_id'] ?? 'NULL', 'tarifas' => $datos['tarifas'] ?? []]);
+        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datos recibidos:', [
+            'cupon_id' => $datos['cupon_id'] ?? 'NULL',
+            'tarifas' => $datos['tarifas'] ?? [],
+            'name' => $datos['name'] ?? 'NULL',
+            'email' => $datos['email'] ?? 'NULL'
+        ]);
 
         $checkIn = Carbon::parse($datos['check_in'] ?? null);
         $checkOut = Carbon::parse($datos['check_out'] ?? null);
@@ -99,7 +104,17 @@ class ReservaService
             }
         }
 
-        return [
+        // Mapear método de pago del frontend a estado de pago del backend
+        $metodoPago = $datos['metodo_pago'] ?? 'pendiente';
+        $estadoPago = 'pendiente'; // Por defecto
+
+        // Si el método es tarjeta y hay un payment intent ID, considerarlo pagado
+        if ($metodoPago === 'tarjeta' && !empty($datos['payment_intent_id'])) {
+            $estadoPago = 'pagado';
+        }
+        // Para otros métodos (recepcion, transferencia), mantener pendiente
+
+        $datosReturn = [
             'nombre' => $datos['name'] ?? null,
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
@@ -115,9 +130,21 @@ class ReservaService
             'cupon_id' => $cuponId,
             'descuento_aplicado' => $descuentoAplicado,
             'reservable_id' => $datos['reservable_id'] ?? null,
+            'reservable_type' => $datos['reservable_type'] ?? null, // Preservar el tipo desde frontend
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
+            'pago' => $estadoPago,
+            'metodo_pago' => $metodoPago, // Guardar el método elegido
+            'notas' => $datos['notas'] ?? '',
         ];
+
+        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datosReturn:', [
+            'nombre' => $datosReturn['nombre'],
+            'email' => $datosReturn['email'],
+            'precio_total' => $datosReturn['precio_total']
+        ]);
+
+        return $datosReturn;
     }
 
     /**
@@ -321,14 +348,27 @@ class ReservaService
         $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
 
         // Resolver reservable (usuario o cliente)
-        if (($datosPreparados['tipo_usuario'] ?? '') === 'usuario' && $usuario) {
+        // Si viene reservable_type desde el frontend, usarlo directamente
+        if (!empty($datosPreparados['reservable_type']) && !empty($datosPreparados['reservable_id'])) {
+            $reservableType = $datosPreparados['reservable_type'];
+            \Illuminate\Support\Facades\Log::info('crearReserva - usando reservable existente:', [
+                'reservable_id' => $datosPreparados['reservable_id'],
+                'reservable_type' => $reservableType
+            ]);
+        } elseif (($datosPreparados['tipo_usuario'] ?? '') === 'usuario' && $usuario) {
             $datosPreparados['reservable_id'] = $usuario->id;
             $reservableType = User::class;
+            \Illuminate\Support\Facades\Log::info('crearReserva - usando usuario autenticado:', ['id' => $usuario->id]);
         } else {
+            // Crear o buscar cliente
             $clienteId = $this->obtenerOCrearCliente($datosPreparados);
             $datosPreparados['reservable_id'] = $clienteId;
             $reservableType = Cliente::class;
             $datosPreparados['tipo_usuario'] = 'cliente';
+            \Illuminate\Support\Facades\Log::info('crearReserva - cliente obtenido/creado:', [
+                'cliente_id' => $clienteId,
+                'reservable_type' => $reservableType
+            ]);
         }
 
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
@@ -354,6 +394,14 @@ class ReservaService
                 'tarifa_id' => $datosPreparados['tarifa_id'] ?? null,
                 'cupon_id' => $datosPreparados['cupon_id'] ?? null,
                 'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('crearReserva - reserva creada:', [
+                'id' => $reserva->id,
+                'localizador' => $reserva->localizador,
+                'reservable_id' => $reserva->reservable_id,
+                'reservable_type' => $reserva->reservable_type,
+                'precio_total' => $reserva->precio_total
             ]);
 
             // Asignar habitaciones
@@ -411,8 +459,15 @@ class ReservaService
      */
     public function obtenerOCrearCliente(array $datos): string
     {
+        \Illuminate\Support\Facades\Log::info('obtenerOCrearCliente - datos recibidos:', [
+            'nombre' => $datos['nombre'] ?? 'NULL',
+            'email' => $datos['email'] ?? 'NULL',
+            'reservable_id' => $datos['reservable_id'] ?? 'NULL'
+        ]);
+
         // Si hay un cliente/usuario especificado, usarlo
         if (!empty($datos['reservable_id'])) {
+            \Illuminate\Support\Facades\Log::info('obtenerOCrearCliente - usando reservable_id existente:', ['id' => $datos['reservable_id']]);
             return $datos['reservable_id'];
         }
 
@@ -477,6 +532,11 @@ class ReservaService
      */
     private function crearCliente(array $datos): string
     {
+        \Illuminate\Support\Facades\Log::info('crearCliente - creando nuevo cliente:', [
+            'nombre' => $datos['nombre'] ?? 'NULL',
+            'email' => $datos['email'] ?? 'NULL'
+        ]);
+
         // Procesar dirección - puede venir como array o string
         $direccion = $datos['direccion'] ?? 'Sin dirección';
         if (is_array($direccion)) {
@@ -497,6 +557,11 @@ class ReservaService
             'numero_documento' => $datos['numero_documento'] ?? null,
             'nacionalidad' => $datos['nacionalidad'] ?? '',
             'direccion' => $direccion,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('crearCliente - cliente creado:', [
+            'id' => $cliente->id,
+            'name' => $cliente->name
         ]);
 
         return $cliente->id;
@@ -788,8 +853,9 @@ class ReservaService
                 $precioTotal += $precioHabitacion;
             }
 
-            // Actualizar precio total de la reserva
-            $reserva->update(['precio_total' => $precioTotal]);
+            // NO actualizar precio_total aquí porque ya incluye tarifas y otros modificadores
+            // Solo actualizamos los precios individuales de las habitaciones asignadas
+            // El precio_total se estableció al crear la reserva y debe mantenerse
         });
 
         return [
@@ -825,12 +891,9 @@ class ReservaService
                 }
             }
 
-            // Recalcular precio total basado en habitaciones aún asignadas
-            $precioTotal = HabitacionReserva::where('reserva_id', $reserva->id)
-                ->whereNotNull('habitacion_id')
-                ->sum('precio');
-
-            $reserva->update(['precio_total' => $precioTotal]);
+            // NO actualizar precio_total al desasignar porque el precio total
+            // incluye tarifas y otros modificadores que no están en los precios de habitaciones
+            // La desasignación solo libera la habitación física pero mantiene el precio de la reserva
         });
 
         return [

@@ -69,4 +69,47 @@ export async function extenderReserva(localizador, payload) {
     }
 }
 
+export async function obtenerClientes() {
+    try {
+        const res = await axios.get('/clientes', {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Respuesta completa de clientes:', res);
+        console.log('res.data:', res.data);
+        return res?.data ?? [];
+    } catch (err) {
+        console.error('Error obteniendo clientes:', err);
+        console.error('Error details:', err.response);
+        return [];
+    }
+}
+
+export async function obtenerHabitacionesDisponibles(checkIn, checkOut) {
+    try {
+        const res = await axios.get('/habitaciones/disponibles', {
+            params: {
+                check_in: checkIn,
+                check_out: checkOut,
+                individuales: 'true'
+            },
+        });
+        return res?.data ?? [];
+    } catch (err) {
+        console.error('Error obteniendo habitaciones disponibles:', err);
+        return [];
+    }
+}
+
+export async function obtenerTarifas() {
+    try {
+        const res = await axios.get('/api/tarifas');
+        return res?.data ?? [];
+    } catch (err) {
+        console.error('Error obteniendo tarifas:', err);
+        return [];
+    }
+}
+
 // Nota: si en el futuro queremos cambiar la fuente (fetch, cache, worker), modificar aquí.

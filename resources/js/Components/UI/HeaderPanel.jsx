@@ -4,6 +4,7 @@ export default function HeaderPanel({
     titulo,
     subtitulo,
     icono: Icono = InboxIcon,
+    children,
 }) {
     return (
         <div className="mb-8 flex items-center justify-between">
@@ -15,8 +16,11 @@ export default function HeaderPanel({
                     {subtitulo}
                 </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
-                <Icono className="h-6 w-6 text-gray-400" />
+            <div className="flex items-center gap-4">
+                {children}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
+                    <Icono className="h-6 w-6 text-gray-400" />
+                </div>
             </div>
         </div>
     );

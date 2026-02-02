@@ -126,6 +126,17 @@ export default function EditarReserva({
                 (id) => id !== null && id !== undefined,
             );
 
+            // Validar que el número de habitaciones seleccionadas coincida con los slots requeridos
+            const slotsRequeridos = reserva.habitaciones?.length || 0;
+            if (asignarIds.length !== slotsRequeridos) {
+                showToast(
+                    `Debes asignar exactamente ${slotsRequeridos} habitación${slotsRequeridos !== 1 ? 'es' : ''} (tienes ${asignarIds.length} seleccionada${asignarIds.length !== 1 ? 's' : ''})`,
+                    'warning',
+                );
+                setSavingHabitaciones(false);
+                return;
+            }
+
             if (asignarIds.length === 0) {
                 showToast('Selecciona al menos una habitación', 'warning');
                 setSavingHabitaciones(false);
@@ -394,6 +405,38 @@ export default function EditarReserva({
                                             key={hSlot.id || `slot-${idx}`}
                                             className="space-y-4"
                                         >
+                                            {/* Header del slot con información de la habitación */}
+                                            <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="rounded-full bg-[#7a0202] px-3 py-1 text-xs font-black text-white">
+                                                            #{idx + 1}
+                                                        </span>
+                                                        <span className="text-sm font-bold text-gray-900 uppercase">
+                                                            {hSlot.tipo || 'Sin tipo'}
+                                                        </span>
+                                                        {hSlot.habitacion_id && (
+                                                            <span className="text-xs text-gray-500">
+                                                                (Habitación {hSlot.habitacion_numero || hSlot.habitacion_id})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {hSlot.precio && (
+                                                        <span className="text-xs text-gray-500">
+                                                            {formatearMoneda(hSlot.precio)} / noche
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {hSlot.habitacion_id && (
+                                                    <button
+                                                        onClick={() => handleDesasignarHabitacion(hSlot.habitacion_id)}
+                                                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-100"
+                                                    >
+                                                        Desasignar
+                                                    </button>
+                                                )}
+                                            </div>
+
                                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
                                                 <button
                                                     onClick={() => {

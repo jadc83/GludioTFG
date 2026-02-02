@@ -3,6 +3,7 @@ import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import Paginacion from '@/Components/UI/Paginacion';
+import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
 import {
     HomeIcon,
     InboxIcon,
@@ -106,7 +107,9 @@ export default function IndexReserva({ reservas = [] }) {
             <HeaderPanel
                 titulo="Reservas"
                 subtitulo="Panel de control y gestión de reservas"
-            />
+            >
+                <CreateReserva />
+            </HeaderPanel>
 
             {/* Barra de filtros */}
             <BarraBuscador
