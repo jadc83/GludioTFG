@@ -12,9 +12,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: testing
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -27,9 +27,9 @@ jobs:
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: testing
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_DATABASE: ${{ secrets.POSTGRES_DB }}
+      DB_USERNAME: ${{ secrets.POSTGRES_USER }}
+      DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -44,6 +44,13 @@ jobs:
 
       - name: Build assets
         run: npm run build
+
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.POSTGRES_USER }}" ] || [ -z "${{ secrets.POSTGRES_PASSWORD }}" ] || [ -z "${{ secrets.POSTGRES_DB }}" ]; then
+            echo "Required secrets (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB) are not set. Please add them to repository secrets.";
+            exit 1;
+          fi
 
       - name: Run tests
         run: phpunit tests --testdox
