@@ -18,7 +18,7 @@ class UpdateReservaRequest extends FormRequest
         return [
             'check_in' => ['required', 'date', 'after_or_equal:today'],
             'check_out' => ['required', 'date', 'after:check_in'],
-            'status' => ['required', 'in:pendiente,confirmado,checked_in,checked_out,cancelado,no_presentado'],
+            'status' => ['required', 'in:pendiente,confirmado,en_estancia,finalizado,cancelado,no_presentado,reembolso_parcial_pendiente,reembolso_total_pendiente,reembolso_parcial_confirmado'],
             'pago' => ['required', 'in:pendiente,parcial,pagado,devuelto'],
             'habitacion_ids' => ['required', 'array', 'min:1'],
             'habitacion_ids.*' => ['integer', 'exists:habitaciones,id'],

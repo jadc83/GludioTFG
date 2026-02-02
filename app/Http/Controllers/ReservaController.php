@@ -544,7 +544,7 @@ class ReservaController extends Controller
     /**
      * Realiza check-in de una reserva
      * POST /reservas/{localizador}/check-in - Procesa check-in desde panel
-     * Asigna habitaciones físicas y cambia estado a checked_in
+    * Asigna habitaciones físicas y cambia estado a en_estancia
      * Retorna: JSON con resultado del check-in
      */
     public function marcarCheckIn(Request $request, $localizador)

@@ -48,6 +48,7 @@ class ReservaFormatterService
                 'check_in' => $reserva->check_in,
                 'check_out' => $reserva->check_out,
                 'precio_total' => $reserva->precio_total,
+                'descuento_aplicado' => $reserva->descuento_aplicado,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'reembolsos_total' => $reembolsosTotal,

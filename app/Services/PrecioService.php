@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use App\Models\TipoHabitacion;
 use App\Models\Tarifa;
+use App\Models\Cupon;
 use Yasumi\Yasumi;
 
 class PrecioService
@@ -301,6 +302,52 @@ class PrecioService
         $inicio = Carbon::createFromDate($año, $mes, 1)->startOfMonth();
         $fin = $inicio->copy()->endOfMonth();
         return $this->diaPrecio($inicio, $fin);
+    }
+
+    /**
+     * Calcula precio completo incluyendo base, modificadores, tarifas y cupón
+     * Método unificado que reemplaza múltiples cálculos separados
+     * Usado por: ReservaService::prepararDatosReserva()
+     * Retorna: array con precio_total, descuento_aplicado, tarifa_ids
+     */
+    public function calcularPrecioCompleto(array $habitaciones, Carbon $checkIn, Carbon $checkOut, array $tarifas = [], ?int $cuponId = null): array
+    {
+        // Calcular precio base con modificadores
+        $resultadoBase = $this->precioSinTarifas($habitaciones, $checkIn, $checkOut);
+        if (isset($resultadoBase['error'])) {
+            return $resultadoBase;
+        }
+
+        $precioTotal = $resultadoBase['total'];
+
+        // Aplicar tarifas adicionales
+        $tarifaIds = [];
+        foreach ($tarifas as $tarifaId) {
+            $tarifa = Tarifa::find($tarifaId);
+            if ($tarifa) {
+                $precioTotal += $tarifa->modificador_precio ?? 0;
+                $tarifaIds[] = $tarifaId;
+            }
+        }
+
+        // Aplicar cupón si existe
+        $descuentoAplicado = 0;
+        if ($cuponId) {
+            $cupon = Cupon::find($cuponId);
+            if ($cupon && $cupon->activo && now()->between($cupon->fecha_inicio, $cupon->fecha_fin)) {
+                $descuentoAplicado = $cupon->tipo === 'porcentaje'
+                    ? ($precioTotal * $cupon->valor / 100)
+                    : $cupon->valor;
+                $descuentoAplicado = min($descuentoAplicado, $precioTotal);
+            }
+        }
+
+        return [
+            'precio_total' => round($precioTotal, 2),
+            'descuento_aplicado' => round($descuentoAplicado, 2),
+            'tarifa_ids' => $tarifaIds,
+            'desglose' => $resultadoBase
+        ];
     }
 
 }

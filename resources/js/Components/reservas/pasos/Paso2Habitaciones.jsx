@@ -8,6 +8,7 @@ import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import '../../../../css/paso2Habitaciones.css';
 
 export default function Paso2Habitaciones({
     estaCargandoHabitaciones,
@@ -59,7 +60,7 @@ export default function Paso2Habitaciones({
         totalSeleccionado < CONFIG_RESERVAS.MAX_HABITACIONES_POR_RESERVA;
 
     return (
-        <div className="relative z-10 mx-auto flex h-auto max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+        <div className="paso2-habitaciones relative z-10 mx-auto flex h-auto max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
             {/* HEADER COMPACTO */}
             <header className="flex-none border-b border-gray-100 bg-white px-8 py-5 md:px-12">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
@@ -152,7 +153,7 @@ export default function Paso2Habitaciones({
 
             {/* FOOTER: Reducido en padding vertical */}
             <footer className="flex-none border-t border-gray-100 bg-white px-10 py-5">
-                <div className="mx-auto flex max-w-7xl items-center justify-between">
+                <div className="footer-actions mx-auto flex max-w-7xl items-center justify-between">
                     <Boton
                         variant="ghost"
                         size="sm"

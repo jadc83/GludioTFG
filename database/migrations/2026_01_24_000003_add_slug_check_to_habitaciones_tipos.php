@@ -12,9 +12,23 @@ return new class extends Migration
      */
     public function up()
     {
-        // Añade una restricción CHECK para permitir sólo los slugs autorizados
-        // Nota: CHECK es soportado/enforzado en MySQL 8+ y en Postgres. En versiones antiguas de MySQL puede ser ignorado.
-        DB::statement("ALTER TABLE habitaciones_tipos ADD CONSTRAINT chk_habitaciones_tipos_slug CHECK (slug IN ('doble','suite','familiar'))");
+        $driver = DB::connection()->getDriverName();
+        $checkExpression = "(slug IN ('doble','suite','familiar'))";
+
+        switch ($driver) {
+            case 'sqlite':
+                // SQLite sólo permite constraints anónimos mediante ALTER TABLE
+                DB::statement("ALTER TABLE habitaciones_tipos ADD CHECK {$checkExpression}");
+                break;
+            case 'mysql':
+                // MySQL 8+ soporta CHECK nombrados pero usa DROP CHECK para revertir
+                DB::statement("ALTER TABLE habitaciones_tipos ADD CONSTRAINT chk_habitaciones_tipos_slug CHECK {$checkExpression}");
+                break;
+            default:
+                // PostgreSQL y otros SGBD compatibles
+                DB::statement("ALTER TABLE habitaciones_tipos ADD CONSTRAINT chk_habitaciones_tipos_slug CHECK {$checkExpression}");
+                break;
+        }
     }
 
     /**
@@ -24,6 +38,18 @@ return new class extends Migration
      */
     public function down()
     {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            // No hay sintaxis DROP CHECK en SQLite; requeriría recrear la tabla.
+            return;
+        }
+
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE habitaciones_tipos DROP CHECK chk_habitaciones_tipos_slug");
+            return;
+        }
+
         DB::statement("ALTER TABLE habitaciones_tipos DROP CONSTRAINT IF EXISTS chk_habitaciones_tipos_slug");
     }
 };

@@ -1,16 +1,25 @@
 <?php
 
-use App\Services\PrecioService;
-use Carbon\Carbon;
+use PHPUnit\Framework\TestCase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+class PrecioServiceTest extends TestCase {
+    // previous test code...
 
-it('detects known spanish holidays using Yasumi', function () {
-    $precioService = new PrecioService();
+    public function testGetModPrecioOnHoliday() {
+        $precioService = new PrecioService(); // Replace with the actual constructor
 
-    $festivo = Carbon::parse('2026-01-01'); // Año Nuevo
-    $noFestivo = Carbon::parse('2026-02-02');
+        // Known holiday date
+        $holidayDate = '2026-01-01';
+        // Known regular date
+        $regularDate = '2026-02-02';
 
-    expect($precioService->esFestivo($festivo))->toBeTrue();
-    expect($precioService->esFestivo($noFestivo))->toBeFalse();
-});
+        // Test holiday price modifier (should be 1.5x)
+        $holidayPriceModifier = $precioService->getModPrecio($holidayDate);
+        $this->assertGreaterThan(1, $holidayPriceModifier);
+        $this->assertEquals(1.5, $holidayPriceModifier);
+
+        // Test regular date price modifier (should be lower than holiday price modifier)
+        $regularPriceModifier = $precioService->getModPrecio($regularDate);
+        $this->assertLessThan($holidayPriceModifier, $regularPriceModifier);
+    }
+}

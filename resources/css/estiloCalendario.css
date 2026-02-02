@@ -1,10 +1,11 @@
 
 :root {
+  /* Default (Desktop > 1024px) */
   --rdp-accent-color: black;
   --rdp-range-border-color: #7a0202;
   --rdp-accent-background-color: #f0f0ff;
 
-  --rdp-day-height: 9vh;
+  --rdp-day-height: 9vh; /* Large screens */
   --rdp-day-width: 9vh;
   --rdp-day_button-border: 2px solid transparent;
   --rdp-day_button-border-radius: 0;
@@ -26,7 +27,7 @@
 
   --rdp-range_middle-background-color: transparent;
   --rdp-range_middle-color: var(--rdp-range-border-color);
-
+  /* ... other variables ... */
   --rdp-range_start-color: var(--rdp-range-border-color);
   --rdp-range_start-background: none;
   --rdp-range_start-date-background-color: transparent;
@@ -35,6 +36,7 @@
   --rdp-range_end-color: var(--rdp-range-border-color);
   --rdp-range_end-date-background-color: transparent;
 
+  /* ... */
   --rdp-week_number-border: 2px solid transparent;
   --rdp-week_number-height: var(--rdp-day-height);
   --rdp-week_number-opacity: 0.75;
@@ -50,7 +52,19 @@
   --rdp-animation_timing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Tablet (768px - 1023px) */
+@media (max-width: 1024px) {
+  :root {
+    --rdp-day-height: 8vh;
+    --rdp-day-width: 8vh;
+    --rdp-day_button-height: 8vh;
+    --rdp-day_button-width: 8vh;
+    --rdp-months-gap: 1rem;
+    --rdp-nav-height: 4.5vh;
+  }
+}
 
+/* Mobile (< 768px) */
 @media (max-width: 768px) {
   :root {
     --rdp-day-height: 7vh;
@@ -67,30 +81,42 @@
   }
 
   .rdp-root {
-    padding-inline-start: 4.5rem;
+    padding-inline-start: 1rem !important; /* Adjusted for better mobile fit */
+    padding-inline-end: 1rem !important;
+  }
+
+  .rdp-month {
+     width: 100%;
+  }
+
+  .rdp-table {
+     max-width: 100%;
+     width: 100%;
   }
 }
 
 
 @media (max-width: 480px) {
   :root {
-    --rdp-day-height: 6.5vh;
-    --rdp-day-width: 6.5vh;
-    --rdp-day_button-height: 6.5vh;
-    --rdp-day_button-width: 6.5vh;
+    --rdp-day-height: 6vh; /* Slightly smaller for very small screens */
+    --rdp-day-width: 6vh;
+    --rdp-day_button-height: 6vh;
+    --rdp-day_button-width: 6vh;
 
     --rdp-dropdown-gap: 0.25rem;
-    --rdp-months-gap: 1rem;
+    --rdp-months-gap: 0.5rem;
 
-    --rdp-weekday-padding: 1.2vh 0;
+    --rdp-weekday-padding: 0.5vh 0;
 
     --rdp-nav-height: 4vh;
   }
 
   .rdp-root {
-    padding-inline-start: 1rem;
+    padding-inline-start: 0.5rem !important;
+    padding-inline-end: 0.5rem !important;
   }
 }
+
 
 .rdp-root * {
   box-sizing: border-box;

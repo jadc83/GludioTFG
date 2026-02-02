@@ -11,6 +11,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import '../../../css/profile.css';
 
 export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
     const [activeTab, setActiveTab] = useState('informacion');
@@ -34,27 +35,27 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
         <AuthenticatedLayout>
             <Head title="Mi Perfil" />
 
-            <div className="min-h-screen bg-gray-50 py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="perfil-page">
+                <div className="mx-auto max-w-6xl">
                     {/* --- ENCABEZADO DE SECCIÓN --- */}
-                    <div className="mb-10 flex items-center justify-between">
+                    <div className="perfil-header mb-8 flex items-center justify-between">
                         <div>
-                            <h1 className="text-3xl font-black uppercase leading-none tracking-tight text-gray-900">
+                            <h1 className="text-2xl font-black uppercase leading-none tracking-tight text-gray-900 sm:text-3xl">
                                 Centro de{' '}
-                                <span className="text-[#7a0202]">Usuario</span>
+                                <span className="text-gray-900">Usuario</span>
                             </h1>
-                            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Gestiona tu cuenta, historial de estancias y
                                 seguridad
                             </p>
                         </div>
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="icono flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm sm:h-14 sm:w-14">
                             <IdentificationIcon className="h-7 w-7 text-gray-400" />
                         </div>
                     </div>
 
-                    {/* --- NAVEGACIÓN POR TABS (ESTILO INDUSTRIAL) --- */}
-                    <div className="mb-8 flex w-fit gap-2 rounded-2xl bg-gray-200/50 p-1.5">
+                    {/* --- NAVEGACIÓN POR TABS (MOBILE FIRST) --- */}
+                    <div className="perfil-tabs mb-8">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -62,10 +63,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2.5 rounded-xl px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                    className={`flex items-center gap-2.5 rounded-xl px-5 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
                                         isActive
-                                            ? 'bg-[#7a0202] text-white shadow-lg shadow-red-900/20'
-                                            : 'text-gray-500 hover:bg-gray-200 hover:text-gray-900'
+                                            ? 'active'
+                                            : ''
                                     }`}
                                 >
                                     <Icon
@@ -78,10 +79,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                     </div>
 
                     {/* --- CONTENEDOR PRINCIPAL DE CONTENIDO --- */}
-                    <div className="min-h-[500px] overflow-hidden rounded-[2.5rem] border border-gray-200 bg-white shadow-sm">
+                    <div className="perfil-card min-h-[500px] overflow-hidden">
                         {/* TAB: INFORMACIÓN PERSONAL */}
                         {activeTab === 'informacion' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="mb-10">
                                     <h3 className="mb-1 text-xs font-black uppercase tracking-[0.3em] text-gray-900">
                                         Información Personal
@@ -101,7 +102,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
 
                         {/* TAB: MIS RESERVAS */}
                         {activeTab === 'reservas' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="mb-10">
                                     <h3 className="mb-1 text-xs font-black uppercase tracking-[0.3em] text-gray-900">
                                         Historial de Estancias
@@ -133,7 +134,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left">
+                                        <table className="w-full text-left responsive-table">
                                             <thead>
                                                 <tr className="border-b border-gray-100">
                                                     <th className="pb-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -160,7 +161,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                         key={reserva.id}
                                                         className="group transition-colors hover:bg-gray-50/50"
                                                     >
-                                                        <td className="py-6">
+                                                        <td className="py-6" data-label="Localizador">
                                                             <div className="flex h-9 w-20 items-center justify-center rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-200 transition-colors group-hover:bg-[#7a0202]">
                                                                 <span className="font-mono text-xs font-black tracking-tighter">
                                                                     {
@@ -169,7 +170,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6">
+                                                        <td className="py-6" data-label="Check-In / Out">
                                                             <div className="flex items-center gap-2 font-mono text-xs font-bold text-gray-600">
                                                                 <span>
                                                                     {
@@ -186,22 +187,22 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-6 text-center text-xs font-black text-gray-900">
+                                                        <td className="py-6 text-center text-xs font-black text-gray-900" data-label="Noches">
                                                             {reserva.noches}
                                                         </td>
-                                                        <td className="py-6 text-sm font-black italic text-gray-900">
+                                                        <td className="py-6 text-sm font-black italic text-gray-900" data-label="Inversión">
                                                             {
                                                                 reserva.monto_total
                                                             }
                                                         </td>
-                                                        <td className="py-6">
+                                                        <td className="py-6" data-label="Estado">
                                                             <span
                                                                 className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm ${configEstado[reserva.estado] || configEstado.default}`}
                                                             >
                                                                 {reserva.estado}
                                                             </span>
                                                         </td>
-                                                        <td className="py-6 text-right">
+                                                        <td className="py-6 text-right" data-label="">
                                                             <Link
                                                                 href={`/reservas/${reserva.id}`}
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all hover:text-[#7a0202]"

@@ -116,7 +116,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
 
             {/* CONTENEDOR RAIZ: Z-index extremo y posicionado bajo el header (top-16) */}
             <div
-                className={`fixed inset-x-0 bottom-0 top-16 z-[9999] transition-all duration-300 ${abierto ? 'visible' : 'invisible'}`}
+                className={`fixed inset-0 md:top-16 z-[9999] overflow-hidden transition-all duration-300 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
             >
                 {/* Fondo oscuro (Backdrop) - ERROR DE SINTAXIS CORREGIDO AQUÍ */}
                 <div
@@ -126,7 +126,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
 
                 {/* Panel Lateral (Slide-over) */}
                 <div
-                    className={`absolute bottom-0 right-0 top-0 flex w-full max-w-md transform flex-col bg-white shadow-2xl transition-transform duration-500 ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden !rounded-l-[2rem]`}
+                    className={`absolute inset-0 md:left-auto md:right-0 md:top-0 md:bottom-0 flex w-full max-w-full md:max-w-md transform flex-col bg-white shadow-2xl transition-transform duration-500 ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden rounded-none md:!rounded-l-[2rem]`}
                 >
                     {/* Header estilo Gludio */}
                     <header className="flex flex-none items-center justify-between border-b border-gray-100 bg-white p-6">

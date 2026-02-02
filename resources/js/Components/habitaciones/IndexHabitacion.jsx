@@ -102,7 +102,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
     }, [habitaciones, paginaActual, filtros]);
 
     return (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
             <HeaderPanel
                 titulo="Habitaciones"
                 subtitulo="Inventario y control de habitaciones"
@@ -172,7 +172,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left">
+                            <table className="w-full border-collapse text-left responsive-table">
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -205,7 +205,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                 key={hab.id}
                                                 className="group transition-colors hover:bg-gray-50/50"
                                             >
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Identificador">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white shadow-lg shadow-gray-200">
                                                             <span className="font-mono text-lg font-black">
@@ -214,12 +214,12 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Tipo">
                                                     <span className="block text-sm font-black uppercase tracking-tight text-gray-900">
                                                         {hab.tipo}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Capacidad">
                                                     <div className="flex items-center gap-1.5 text-gray-400">
                                                         <UsersIcon className="h-3 w-3" />
                                                         <span className="text-xs font-bold uppercase tracking-widest">
@@ -228,7 +228,7 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-6 text-center">
+                                                <td className="px-6 py-6 text-center" data-label="Estado">
                                                     <span
                                                         className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${estado.clase}`}
                                                     >
@@ -236,13 +236,13 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                         {estado.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Descripción / Notas">
                                                     <p className="line-clamp-2 max-w-xs text-xs italic leading-relaxed text-gray-500">
                                                         {hab.descripcion ||
                                                             'Sin especificaciones técnicas.'}
                                                     </p>
                                                 </td>
-                                                <td className="px-6 py-6 text-right">
+                                                <td className="px-6 py-6 text-right" data-label="Gestión">
                                                     <button
                                                         onClick={() =>
                                                             abrirEdicion(hab)

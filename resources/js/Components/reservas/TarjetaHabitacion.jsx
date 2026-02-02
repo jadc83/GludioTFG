@@ -18,7 +18,7 @@ export default function TarjetaHabitacion({
     return (
         <article
             key={tipo}
-            className={`group flex flex-col rounded-xl border bg-white transition-all duration-300 md:flex-row ${isSelected ? 'border-[#7a0202] shadow-md ring-1 ring-[#7a0202]' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
+            className={`tarjeta-habitacion group flex flex-col rounded-xl border bg-white transition-all duration-300 md:flex-row ${isSelected ? 'border-[#7a0202] shadow-md ring-1 ring-[#7a0202]' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
         >
             <div className="relative h-28 w-full shrink-0 rounded-lg bg-gray-900 md:h-32 md:w-48">
                 <img
@@ -48,7 +48,7 @@ export default function TarjetaHabitacion({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="cta-row flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
                         <div className="text-right">
                             <p className="text-lg font-black text-[#7a0202]">
                                 {preciosPorTipo[tipo] ??
@@ -91,7 +91,7 @@ export default function TarjetaHabitacion({
                                             1,
                                         )
                                     }
-                                    className="flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-[9px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#7a0202] active:scale-95 disabled:opacity-20"
+                                    className="cta-button flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-[9px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#7a0202] active:scale-95 disabled:opacity-20"
                                 >
                                     <PlusIcon className="h-3 w-3 stroke-[3]" />{' '}
                                     Seleccionar
