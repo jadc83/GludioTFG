@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-export default function TypingAnimation({ words = [], typeSpeed = 50, deleteSpeed = 30, pauseDelay = 1500, loop = true }) {
+export default function TypingAnimation({
+    words = [],
+    typeSpeed = 50,
+    deleteSpeed = 30,
+    pauseDelay = 1500,
+    loop = true,
+}) {
     const [displayText, setDisplayText] = useState('');
     const [wordIndex, setWordIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -30,12 +36,20 @@ export default function TypingAnimation({ words = [], typeSpeed = 50, deleteSpee
         }, speed);
 
         return () => clearTimeout(timer);
-    }, [displayText, wordIndex, isDeleting, words, typeSpeed, deleteSpeed, pauseDelay]);
+    }, [
+        displayText,
+        wordIndex,
+        isDeleting,
+        words,
+        typeSpeed,
+        deleteSpeed,
+        pauseDelay,
+    ]);
 
     return (
         <span className="inline-flex items-center gap-1">
             <span className="font-medium text-gray-700">{displayText}</span>
-            <span className="inline-block w-0.5 h-5 bg-[#7a0202] animate-pulse"></span>
+            <span className="inline-block h-5 w-0.5 animate-pulse bg-[#7a0202]"></span>
         </span>
     );
 }

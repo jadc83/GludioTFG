@@ -1,74 +1,120 @@
 export const PATRONES_VALIDACION = {
     email: {
-        patron: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
-        titulo: 'Introduce un email válido'
+        patron: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+        titulo: 'Introduce un email válido',
     },
     telefono: {
         patron: '^\\+?[0-9\\s\\-()]{7,15}$',
-        titulo: 'Teléfono: solo números, espacios, guiones o paréntesis'
+        titulo: 'Teléfono: solo números, espacios, guiones o paréntesis',
     },
     codigoPostal: {
         patron: '^\\d{4,6}$',
-        titulo: 'Código postal: 4 a 6 dígitos'
+        titulo: 'Código postal: 4 a 6 dígitos',
     },
     dniNie: {
         patron: '([XxYyZz]\\d{7}[A-Za-z]|\\d{8}[A-Za-z])',
-        titulo: 'DNI/NIE: formato 8 dígitos + letra o NIE (X/Y/Z + 7 dígitos + letra)'
+        titulo: 'DNI/NIE: formato 8 dígitos + letra o NIE (X/Y/Z + 7 dígitos + letra)',
     },
     pasaporte: {
         patron: '^[A-Za-z0-9\\-\\s]{5,20}$',
-        titulo: 'Pasaporte: letras y números (5-20 caracteres)'
+        titulo: 'Pasaporte: letras y números (5-20 caracteres)',
     },
     nombre: {
         patron: "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$",
-        titulo: 'Nombre: solo letras, espacios y guiones'
+        titulo: 'Nombre: solo letras, espacios y guiones',
     },
     ciudad: {
         patron: "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$",
-        titulo: 'Ciudad: solo letras y espacios'
+        titulo: 'Ciudad: solo letras y espacios',
     },
     pais: {
         patron: "^[A-Za-zÀ-ÖØ-öø-ÿ'´`\\- ]{2,60}$",
-        titulo: 'Introduce un país válido'
+        titulo: 'Introduce un país válido',
     },
     numero: {
         patron: '^\\d+$',
-        titulo: 'Solo números'
+        titulo: 'Solo números',
     },
     localizador: {
-        patron: '^[A-Z0-9\-]{4,20}$',
-        titulo: 'Localizador: letras mayúsculas, números o guión'
+        patron: '^[A-Z0-9-]{4,20}$',
+        titulo: 'Localizador: letras mayúsculas, números o guión',
     },
     precio: {
         patron: '^\\d{1,9}(?:[\\.,]\\d{1,2})?$',
-        titulo: 'Número: opcional decimales (ej. 123.45)'
+        titulo: 'Número: opcional decimales (ej. 123.45)',
     },
     capacidad: {
         patron: '^\\d+$',
-        titulo: 'Introduce un número entero'
+        titulo: 'Introduce un número entero',
     },
     fecha: {
         patron: '^\\d{4}-\\d{2}-\\d{2}$',
-        titulo: 'Fecha: YYYY-MM-DD'
-    }
+        titulo: 'Fecha: YYYY-MM-DD',
+    },
 };
 
 export const obtenerPatronValidacion = (nombre) => {
     if (!nombre || typeof nombre !== 'string') return null;
 
     if (nombre.includes('email')) return PATRONES_VALIDACION.email;
-    if (nombre.includes('tel') || nombre.includes('telefono') || nombre.includes('phone')) return PATRONES_VALIDACION.telefono;
-    if (nombre.includes('cp') || nombre.includes('codigo_postal') || nombre.includes('postal')) return PATRONES_VALIDACION.codigoPostal;
-    if (nombre.includes('numero_documento') || nombre === 'dni' || nombre.includes('nif') || nombre.includes('nie')) return PATRONES_VALIDACION.dniNie;
-    if (nombre.includes('pasaporte') || nombre.includes('passport')) return PATRONES_VALIDACION.pasaporte;
-    if (nombre === 'name' || nombre.includes('nombre')) return PATRONES_VALIDACION.nombre;
-    if (nombre.includes('ciudad') || nombre.includes('city')) return PATRONES_VALIDACION.ciudad;
-    if (nombre.includes('pais') || nombre.includes('nacionalidad')) return PATRONES_VALIDACION.pais;
-    if (nombre === 'numero' || nombre.includes('numero_') || nombre.endsWith('_num')) return PATRONES_VALIDACION.numero;
-    if (nombre.includes('localizador') || nombre.includes('localizador_reserva') || nombre === 'localizador') return PATRONES_VALIDACION.localizador;
-    if (nombre.includes('precio') || nombre.includes('importe') || nombre.includes('monto') || nombre.includes('tarifa') || nombre.includes('total')) return PATRONES_VALIDACION.precio;
-    if (nombre.includes('capacidad') || nombre.includes('cantidad') || nombre.includes('personas') || nombre.includes('adult') || nombre.includes('nino') || nombre.includes('niños')) return PATRONES_VALIDACION.capacidad;
-    if (nombre.includes('fecha') || nombre.includes('date')) return PATRONES_VALIDACION.fecha;
+    if (
+        nombre.includes('tel') ||
+        nombre.includes('telefono') ||
+        nombre.includes('phone')
+    )
+        return PATRONES_VALIDACION.telefono;
+    if (
+        nombre.includes('cp') ||
+        nombre.includes('codigo_postal') ||
+        nombre.includes('postal')
+    )
+        return PATRONES_VALIDACION.codigoPostal;
+    if (
+        nombre.includes('numero_documento') ||
+        nombre === 'dni' ||
+        nombre.includes('nif') ||
+        nombre.includes('nie')
+    )
+        return PATRONES_VALIDACION.dniNie;
+    if (nombre.includes('pasaporte') || nombre.includes('passport'))
+        return PATRONES_VALIDACION.pasaporte;
+    if (nombre === 'name' || nombre.includes('nombre'))
+        return PATRONES_VALIDACION.nombre;
+    if (nombre.includes('ciudad') || nombre.includes('city'))
+        return PATRONES_VALIDACION.ciudad;
+    if (nombre.includes('pais') || nombre.includes('nacionalidad'))
+        return PATRONES_VALIDACION.pais;
+    if (
+        nombre === 'numero' ||
+        nombre.includes('numero_') ||
+        nombre.endsWith('_num')
+    )
+        return PATRONES_VALIDACION.numero;
+    if (
+        nombre.includes('localizador') ||
+        nombre.includes('localizador_reserva') ||
+        nombre === 'localizador'
+    )
+        return PATRONES_VALIDACION.localizador;
+    if (
+        nombre.includes('precio') ||
+        nombre.includes('importe') ||
+        nombre.includes('monto') ||
+        nombre.includes('tarifa') ||
+        nombre.includes('total')
+    )
+        return PATRONES_VALIDACION.precio;
+    if (
+        nombre.includes('capacidad') ||
+        nombre.includes('cantidad') ||
+        nombre.includes('personas') ||
+        nombre.includes('adult') ||
+        nombre.includes('nino') ||
+        nombre.includes('niños')
+    )
+        return PATRONES_VALIDACION.capacidad;
+    if (nombre.includes('fecha') || nombre.includes('date'))
+        return PATRONES_VALIDACION.fecha;
 
     return null;
 };
@@ -113,7 +159,11 @@ export const calcularDigitoControlMRZ = (s) => {
 
 export const validarPasaporteMRZ = (value) => {
     if (!value) return false;
-    const v = value.toString().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+    const v = value
+        .toString()
+        .toUpperCase()
+        .replace(/\s+/g, '')
+        .replace(/-/g, '');
 
     // Validación con dígito de control
     if (/^[A-Z0-9<]+\d$/.test(v)) {

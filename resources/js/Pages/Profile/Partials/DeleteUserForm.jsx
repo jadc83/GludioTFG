@@ -4,8 +4,8 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/UI/SecondaryButton';
 import Campo from '@/Components/formulario/Campo';
-import { useForm } from '@inertiajs/react';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 export default function DeleteUserForm({ className = '' }) {

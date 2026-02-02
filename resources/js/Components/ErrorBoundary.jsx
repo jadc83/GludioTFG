@@ -18,10 +18,17 @@ export default class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="p-6 bg-red-50 border-l-4 border-red-600 rounded-md mb-2">
-                    <strong className="block text-sm font-black text-red-800">Error cargando el formulario de pago</strong>
-                    <p className="text-xs text-red-700 mt-2">{String(this.state.error?.message || this.state.error)}</p>
-                    <p className="text-xs text-gray-500 mt-2">Abre la consola (F12) y pega aquí el error si necesitas ayuda.</p>
+                <div className="mb-2 rounded-md border-l-4 border-red-600 bg-red-50 p-6">
+                    <strong className="block text-sm font-black text-red-800">
+                        Error cargando el formulario de pago
+                    </strong>
+                    <p className="mt-2 text-xs text-red-700">
+                        {String(this.state.error?.message || this.state.error)}
+                    </p>
+                    <p className="mt-2 text-xs text-gray-500">
+                        Abre la consola (F12) y pega aquí el error si necesitas
+                        ayuda.
+                    </p>
                 </div>
             );
         }

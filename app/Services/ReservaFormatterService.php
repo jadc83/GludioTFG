@@ -57,7 +57,7 @@ class ReservaFormatterService
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
                 'habitacion_numero' => (function() use ($reserva) {
                     $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
-                    return $nums->count() ? $nums->implode(', ') : 'Sin asignar';
+                    return $nums->count() ? $nums->implode(', ') : 's/a';
                 })(),
             ];
         })->toArray();

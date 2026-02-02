@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import * as api from '@/api/estadisticas';
 import IndexEstadisticas from '@/Components/estadisticas/IndexEstadisticas';
+import { useEffect, useState } from 'react';
 
 export default function TabEstadisticas() {
     const [cargando, setCargando] = useState(false);
@@ -10,7 +10,7 @@ export default function TabEstadisticas() {
     const [mostrarGrafico, setMostrarGrafico] = useState(false);
 
     useEffect(() => {
-        const today = new Date().toISOString().slice(0,10);
+        const today = new Date().toISOString().slice(0, 10);
         setFechaDesde(today);
         setFechaHasta(today);
         obtenerDatos(today, today, false);
@@ -19,7 +19,10 @@ export default function TabEstadisticas() {
     const obtenerDatos = async (desde, hasta, activarGrafico = true) => {
         setCargando(true);
         try {
-            const res = await api.obtenerOcupacion({ fecha_desde: desde, fecha_hasta: hasta });
+            const res = await api.obtenerOcupacion({
+                fecha_desde: desde,
+                fecha_hasta: hasta,
+            });
             if (res?.success) {
                 setDatos(res.data);
                 if (activarGrafico) setMostrarGrafico(true);

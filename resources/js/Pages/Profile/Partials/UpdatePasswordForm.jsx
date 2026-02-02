@@ -2,9 +2,9 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
-import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { useRef } from 'react';
 
 export default function UpdatePasswordForm({ className = '' }) {
@@ -34,7 +34,12 @@ export default function UpdatePasswordForm({ className = '' }) {
             onSuccess: () => limpiarFormulario(reset, clearErrors),
             onError: (errors) => {
                 if (errors.password) {
-                    limpiarFormulario(reset, clearErrors, 'password', 'password_confirmation');
+                    limpiarFormulario(
+                        reset,
+                        clearErrors,
+                        'password',
+                        'password_confirmation',
+                    );
                     passwordInput.current.focus();
                 }
 

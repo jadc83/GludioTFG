@@ -3,13 +3,14 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
-import { Head, useForm } from '@inertiajs/react';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { Head, useForm } from '@inertiajs/react';
 
 export default function ConfirmPassword() {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        password: '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            password: '',
+        });
 
     const submit = (e) => {
         e.preventDefault();

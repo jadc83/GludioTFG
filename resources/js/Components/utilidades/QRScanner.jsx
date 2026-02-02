@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
+import { useEffect, useRef, useState } from 'react';
 
 export default function QRScanner({ onScanSuccess }) {
     const videoRef = useRef(null);
@@ -11,7 +11,7 @@ export default function QRScanner({ onScanSuccess }) {
         const initCamera = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
+                    video: { facingMode: 'environment' },
                 });
 
                 if (videoRef.current) {
@@ -28,12 +28,18 @@ export default function QRScanner({ onScanSuccess }) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
 
-            if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-                    // Obtener o crear contexto optimizado para lecturas frecuentes
+            if (
+                video &&
+                canvas &&
+                video.readyState === video.HAVE_ENOUGH_DATA
+            ) {
+                // Obtener o crear contexto optimizado para lecturas frecuentes
                 let ctx = canvas._ctx;
                 if (!ctx) {
                     try {
-                        ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        ctx = canvas.getContext('2d', {
+                            willReadFrequently: true,
+                        });
                     } catch (e) {
                         // Fallback en navegadores que no soporten la opción
                         ctx = canvas.getContext('2d');
@@ -42,7 +48,10 @@ export default function QRScanner({ onScanSuccess }) {
                 }
 
                 // Actualizar tamaño solo cuando cambie (evitar reflows innecesarios)
-                if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                if (
+                    canvas.width !== video.videoWidth ||
+                    canvas.height !== video.videoHeight
+                ) {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                 }
@@ -51,7 +60,12 @@ export default function QRScanner({ onScanSuccess }) {
 
                 let imageData;
                 try {
-                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    imageData = ctx.getImageData(
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height,
+                    );
                 } catch (err) {
                     // Si por alguna razón getImageData falla en tamaño completo, intentar una región menor para evitar romper el bucle
                     try {
@@ -65,8 +79,16 @@ export default function QRScanner({ onScanSuccess }) {
 
                 if (imageData) {
                     try {
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        if (code && code.data && String(code.data).trim().length > 0) {
+                        const code = jsQR(
+                            imageData.data,
+                            imageData.width,
+                            imageData.height,
+                        );
+                        if (
+                            code &&
+                            code.data &&
+                            String(code.data).trim().length > 0
+                        ) {
                             onScanSuccess(code.data);
                             return;
                         }
@@ -82,9 +104,12 @@ export default function QRScanner({ onScanSuccess }) {
         initCamera();
 
         return () => {
-            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+            if (animationIdRef.current)
+                cancelAnimationFrame(animationIdRef.current);
             if (videoRef.current && videoRef.current.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject
+                    .getTracks()
+                    .forEach((track) => track.stop());
             }
         };
     }, [onScanSuccess]);
@@ -92,9 +117,15 @@ export default function QRScanner({ onScanSuccess }) {
     return (
         <div className="w-full">
             {permissionDenied && (
-                <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-700">Permiso de cámara denegado.</div>
+                <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-700">
+                    Permiso de cámara denegado.
+                </div>
             )}
-            <video ref={videoRef} className="w-full rounded-lg border-2 border-gray-300 bg-black" style={{ minHeight: '400px' }} />
+            <video
+                ref={videoRef}
+                className="w-full rounded-lg border-2 border-gray-300 bg-black"
+                style={{ minHeight: '400px' }}
+            />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
     );

@@ -1,19 +1,39 @@
-import Campo from '@/Components/formulario/Campo';
 import Badge from '@/Components/UI/Badge';
-import { FunnelIcon, InboxIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, CalendarIcon, UserIcon, HomeIcon } from '@heroicons/react/24/outline';
+import BarraBuscador from '@/Components/UI/BarraBuscador';
+import HeaderPanel from '@/Components/UI/HeaderPanel';
+import Paginacion from '@/Components/UI/Paginacion';
+import {
+    HomeIcon,
+    InboxIcon,
+    PencilIcon,
+    TrashIcon,
+    UserIcon,
+} from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
-    const [filtros, setFiltros] = useState({ status: 'todos', localizador: '', cliente: '', habitacion: '' });
+    const [filtros, setFiltros] = useState({
+        status: 'todos',
+        localizador: '',
+        cliente: '',
+        habitacion: '',
+    });
     const [refrescarTabla, setRefrescarTabla] = useState(0);
+    const [paginaActual, setPaginaActual] = useState(1);
+    const itemsPorPagina = 10;
 
     const actualizarFiltro = (campo, valor) => {
         setFiltros((prev) => ({ ...prev, [campo]: valor }));
     };
 
     const limpiarFiltros = () => {
-        setFiltros({ status: 'todos', localizador: '', cliente: '', habitacion: '' });
+        setFiltros({
+            status: 'todos',
+            localizador: '',
+            cliente: '',
+            habitacion: '',
+        });
     };
 
     useEffect(() => {
@@ -24,8 +44,14 @@ export default function IndexReserva({ reservas = [] }) {
                 cliente: filtros.cliente || undefined,
                 habitacion: filtros.habitacion || undefined,
             };
-            Object.keys(criterios).forEach((key) => criterios[key] === undefined && delete criterios[key]);
-            router.get(route('panel'), criterios, { preserveState: true, preserveScroll: true, replace: true });
+            Object.keys(criterios).forEach(
+                (key) => criterios[key] === undefined && delete criterios[key],
+            );
+            router.get(route('panel'), criterios, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
         }, 300);
         return () => clearTimeout(contador);
     }, [filtros, refrescarTabla]);
@@ -34,9 +60,15 @@ export default function IndexReserva({ reservas = [] }) {
         if (typeof window === 'undefined' || !window.Echo) return;
         const handler = () => setRefrescarTabla((prev) => prev + 1);
         const channel = window.Echo.private('reservas');
-        channel.listen('ReservaCreada', handler).listen('ReservaActualizada', handler).listen('ReservaBorrada', handler);
+        channel
+            .listen('ReservaCreada', handler)
+            .listen('ReservaActualizada', handler)
+            .listen('ReservaBorrada', handler);
         return () => {
-            channel.stopListening('ReservaCreada').stopListening('ReservaActualizada').stopListening('ReservaBorrada');
+            channel
+                .stopListening('ReservaCreada')
+                .stopListening('ReservaActualizada')
+                .stopListening('ReservaBorrada');
         };
     }, []);
 
@@ -46,208 +78,279 @@ export default function IndexReserva({ reservas = [] }) {
         }
     };
 
+    // Cálculo de paginación
+    const totalPaginas = Math.ceil(reservas.length / itemsPorPagina);
+    const inicio = (paginaActual - 1) * itemsPorPagina;
+    const fin = inicio + itemsPorPagina;
+    const reservasPaginadas = reservas.slice(inicio, fin);
+
+    // Resetear página cuando cambian las reservas
+    useEffect(() => {
+        setPaginaActual(1);
+    }, [reservas.length]);
+
     return (
         <div className="space-y-6">
+            <HeaderPanel
+                titulo="Reservas"
+                subtitulo="Panel de control y gestión de reservas"
+            />
 
-            {/* --- CABECERA --- */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                        Gestión de <span className="text-[#7a0202]">Reservas</span>
-                    </h1>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Panel de control y gestión de reservas</p>
-                </div>
-                <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
-                    <InboxIcon className="h-6 w-6 text-gray-400" />
-                </div>
-            </div>
-
-            {/* --- ÚNICA BARRA DE FILTROS PREMIUM --- */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full flex-1">
-                    {/* Localizador */}
-                    <div className="relative">
-                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Localizador..."
-                            className="w-full bg-gray-50 border-none rounded-xl pl-10 py-3 text-sm font-medium focus:ring-2 focus:ring-[#7a0202]/10 transition"
-                            value={filtros.localizador}
-                            onChange={(e) => actualizarFiltro('localizador', e.target.value)}
-                        />
-                    </div>
-
-                    {/* Cliente */}
-                    <div className="relative">
-                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Nombre del cliente..."
-                            className="w-full bg-gray-50 border-none rounded-xl pl-10 py-3 text-sm font-medium focus:ring-2 focus:ring-[#7a0202]/10 transition"
-                            value={filtros.cliente}
-                            onChange={(e) => actualizarFiltro('cliente', e.target.value)}
-                        />
-                    </div>
-
-                    {/* Habitación */}
-                    <div className="relative">
-                        <HomeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Nº Habitación..."
-                            className="w-full bg-gray-50 border-none rounded-xl pl-10 py-3 text-sm font-medium focus:ring-2 focus:ring-[#7a0202]/10 transition"
-                            value={filtros.habitacion}
-                            onChange={(e) => actualizarFiltro('habitacion', e.target.value)}
-                        />
-                    </div>
-
-                    {/* Estado */}
-                    <select
-                        value={filtros.status}
-                        onChange={(e) => actualizarFiltro('status', e.target.value)}
-                        className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#7a0202]/10"
-                    >
-                        <option value="todos">Todos los estados</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="confirmado">Confirmada</option>
-                        <option value="en_estancia">En Estancia</option>
-                        <option value="finalizado">Finalizada</option>
-                        <option value="cancelado">Cancelada</option>
-                        <option value="no_presentado">No Presentado</option>
-                        <option value="reembolso_parcial_pendiente">Reembolso Parcial Pendiente</option>
-                        <option value="reembolso_total_pendiente">Reembolso Total Pendiente</option>
-                        <option value="reembolso_parcial_confirmado">Reembolso Parcial Confirmado</option>
-                    </select>
-                </div>
-
-                <button
-                    onClick={limpiarFiltros}
-                    className="p-3 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition h-[46px]"
-                    title="Limpiar Filtros"
-                >
-                    <FunnelIcon className="h-5 w-5" />
-                </button>
-            </div>
+            {/* Barra de filtros */}
+            <BarraBuscador
+                filtros={filtros}
+                onActualizarFiltro={actualizarFiltro}
+                onLimpiarFiltros={limpiarFiltros}
+                placeholderBusqueda="Localizador..."
+                layout="grid"
+                filtrosAdicionales={[
+                    {
+                        tipo: 'input',
+                        nombre: 'cliente',
+                        placeholder: 'Nombre del cliente...',
+                        icono: <UserIcon className="h-4 w-4" />,
+                    },
+                    {
+                        tipo: 'input',
+                        nombre: 'habitacion',
+                        placeholder: 'Nº Habitación...',
+                        icono: <HomeIcon className="h-4 w-4" />,
+                    },
+                    {
+                        tipo: 'select',
+                        nombre: 'status',
+                        opciones: [
+                            { valor: 'todos', etiqueta: 'Todos los estados' },
+                            { valor: 'pendiente', etiqueta: 'Pendiente' },
+                            { valor: 'confirmado', etiqueta: 'Confirmada' },
+                            { valor: 'en_estancia', etiqueta: 'En Estancia' },
+                            { valor: 'finalizado', etiqueta: 'Finalizada' },
+                            { valor: 'cancelado', etiqueta: 'Cancelada' },
+                            { valor: 'no_presentado', etiqueta: 'No Presentado' },
+                            { valor: 'reembolso_parcial_pendiente', etiqueta: 'Reembolso Parcial Pendiente' },
+                            { valor: 'reembolso_total_pendiente', etiqueta: 'Reembolso Total Pendiente' },
+                            { valor: 'reembolso_parcial_confirmado', etiqueta: 'Reembolso Parcial Confirmado' },
+                        ],
+                    },
+                ]}
+            />
 
             {/* --- TABLA DE RESERVAS --- */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 {reservas.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
-                        <div className="bg-gray-50 p-8 rounded-full mb-4">
+                        <div className="mb-4 rounded-full bg-gray-50 p-8">
                             <InboxIcon className="h-12 w-12 text-gray-300" />
                         </div>
-                        <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Sin Reservas</h3>
-                        <p className="text-sm text-gray-400 mt-1 max-w-xs">No hay registros que coincidan con la búsqueda.</p>
-                        <button onClick={limpiarFiltros} className="mt-6 text-[#7a0202] font-black text-xs uppercase tracking-widest hover:underline">Ver todas</button>
+                        <h3 className="text-lg font-black uppercase tracking-tight text-gray-900">
+                            Sin Reservas
+                        </h3>
+                        <p className="mt-1 max-w-xs text-sm text-gray-400">
+                            No hay registros que coincidan con la búsqueda.
+                        </p>
+                        <button
+                            onClick={limpiarFiltros}
+                            className="mt-6 text-xs font-black uppercase tracking-widest text-[#7a0202] hover:underline"
+                        >
+                            Ver todas
+                        </button>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full border-collapse text-left">
                             <thead>
-                                <tr className="bg-gray-50/50 border-b border-gray-100">
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Localizador</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Cliente / Hab</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Estadía</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Finanzas</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Estado</th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Acciones</th>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Localizador
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Cliente
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Habitación
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Llegada
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Salida
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Precio
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Estado Pago
+                                    </th>
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                        Estado Reserva
+                                    </th>
+                                    <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        Acciones
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {reservas.map((reserva) => {
+                                {reservasPaginadas.map((reserva) => {
                                     return (
-                                        <tr key={reserva.id} className="group hover:bg-gray-50/50 transition-colors">
+                                        <tr
+                                            key={reserva.id}
+                                            className="group transition-colors hover:bg-gray-50/50"
+                                        >
                                             {/* Localizador Box */}
-                                            <td className="px-6 py-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-16 bg-gray-900 text-white rounded-xl flex items-center justify-center shadow-lg shadow-gray-200 group-hover:bg-[#7a0202] transition-colors">
-                                                        <span className="font-mono text-xs font-black tracking-tighter">{reserva.localizador}</span>
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="flex items-center justify-center gap-3">
+                                                    <div className="flex h-10 w-16 items-center justify-center rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-200 transition-colors group-hover:bg-[#7a0202]">
+                                                        <span className="font-mono text-xs font-black tracking-tighter">
+                                                            {
+                                                                reserva.localizador
+                                                            }
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            {/* Cliente / Habitación */}
-                                            <td className="px-6 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-gray-900 uppercase text-sm tracking-tight leading-none mb-1">
-                                                        {reserva.cliente_name || 'Anónimo'}
-                                                    </span>
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                        Hab: {reserva.habitacion_numero || '—'}
-                                                    </span>
-                                                </div>
+                                            {/* Cliente */}
+                                            <td className="px-6 py-6 text-center">
+                                                <span className="text-xs font-medium uppercase leading-none tracking-tight text-gray-900">
+                                                    {reserva.cliente_name ||
+                                                        'Anónimo'}
+                                                </span>
                                             </td>
 
-                                            {/* Fechas */}
-                                            <td className="px-6 py-6">
-                                                <div className="flex items-center gap-2 text-xs font-mono font-medium text-gray-600">
-                                                    <CalendarIcon className="h-3 w-3 text-gray-300" />
-                                                    <span>{new Date(reserva.check_in).toLocaleDateString('es-ES')}</span>
-                                                    <span className="text-gray-300">→</span>
-                                                    <span>{new Date(reserva.check_out).toLocaleDateString('es-ES')}</span>
-                                                </div>
+                                            {/* Habitación */}
+                                            <td className="px-6 py-6 text-center">
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    {reserva.habitacion_numero ||
+                                                        '—'}
+                                                </span>
                                             </td>
 
-                                            {/* Precio y Pago */}
-                                            <td className="px-6 py-6">
-                                                <div className="flex flex-col gap-1">
-                                                    {reserva.descuento_aplicado ? (
-                                                        <>
-                                                            <span className="text-sm font-black text-gray-900">
-                                                                {(parseFloat(reserva.precio_total || 0) - parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
-                                                            </span>
-                                                            <span className="text-xs text-gray-400 line-through">
-                                                                {parseFloat(reserva.precio_total || 0).toFixed(2)} €
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-sm font-black text-gray-900">{parseFloat(reserva.precio_total || 0).toFixed(2)} €</span>
+                                            {/* Llegada */}
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="font-mono text-xs font-medium text-gray-600">
+                                                    {new Date(
+                                                        reserva.check_in,
+                                                    ).toLocaleDateString(
+                                                        'es-ES',
                                                     )}
-                                                    <Badge
-                                                        label={
-                                                            reserva.pago === 'pagado' ? 'Pagado' :
-                                                            reserva.pago === 'devuelto' ? 'Devuelto' :
-                                                            reserva.pago === 'reembolso_pendiente' ? 'Reembolso Pendiente' :
-                                                            reserva.pago === 'reembolso_parcial_procesado' ? 'Parcialmente Reembolsado' :
-                                                            'Pendiente'
-                                                        }
-                                                        tipo={reserva.pago || 'pendiente'}
-                                                    />
                                                 </div>
+                                            </td>
+
+                                            {/* Salida */}
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="font-mono text-xs font-medium text-gray-600">
+                                                    {new Date(
+                                                        reserva.check_out,
+                                                    ).toLocaleDateString(
+                                                        'es-ES',
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Precio */}
+                                            <td className="px-6 py-6 text-center">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-medium text-gray-600">
+                                                        {(
+                                                            parseFloat(
+                                                                reserva.precio_total ||
+                                                                    0,
+                                                            ) -
+                                                            parseFloat(
+                                                                reserva.descuento_aplicado ||
+                                                                    0,
+                                                            )
+                                                        ).toFixed(2)}{' '}
+                                                        €
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            {/* Estado Pago */}
+                                            <td className="px-6 py-6 text-center">
+                                                <Badge
+                                                    label={
+                                                        reserva.pago ===
+                                                        'pagado'
+                                                            ? 'Pagado'
+                                                            : reserva.pago ===
+                                                                'devuelto'
+                                                              ? 'Devuelto'
+                                                              : reserva.pago ===
+                                                                  'reembolso_pendiente'
+                                                                ? 'Reembolso Pendiente'
+                                                                : reserva.pago ===
+                                                                    'reembolso_parcial_procesado'
+                                                                  ? 'Parcialmente Reembolsado'
+                                                                  : 'Pendiente'
+                                                    }
+                                                    tipo={
+                                                        reserva.pago ||
+                                                        'pendiente'
+                                                    }
+                                                />
                                             </td>
 
                                             {/* Estado Reserva */}
-                                            <td className="px-6 py-6">
+                                            <td className="px-6 py-6 text-center">
                                                 <Badge
                                                     label={
-                                                        reserva.status === 'confirmado' ? 'Confirmada' :
-                                                        reserva.status === 'en_estancia' ? 'En Estancia' :
-                                                        reserva.status === 'finalizado' ? 'Finalizada' :
-                                                        reserva.status === 'cancelado' ? 'Cancelada' :
-                                                        reserva.status === 'no_presentado' ? 'No Presentado' :
-                                                        reserva.status === 'pendiente' ? 'Pendiente' :
-                                                        reserva.status === 'reembolso_parcial_pendiente' ? 'Reembolso Parcial Pendiente' :
-                                                        reserva.status === 'reembolso_total_pendiente' ? 'Reembolso Total Pendiente' :
-                                                        reserva.status === 'reembolso_parcial_confirmado' ? 'Reembolso Parcial Confirmado' :
-                                                        'Pendiente'
+                                                        reserva.status ===
+                                                        'confirmado'
+                                                            ? 'Confirmada'
+                                                            : reserva.status ===
+                                                                'en_estancia'
+                                                              ? 'En Estancia'
+                                                              : reserva.status ===
+                                                                  'finalizado'
+                                                                ? 'Finalizada'
+                                                                : reserva.status ===
+                                                                    'cancelado'
+                                                                  ? 'Cancelada'
+                                                                  : reserva.status ===
+                                                                      'no_presentado'
+                                                                    ? 'No Presentado'
+                                                                    : reserva.status ===
+                                                                        'pendiente'
+                                                                      ? 'Pendiente'
+                                                                      : reserva.status ===
+                                                                          'reembolso_parcial_pendiente'
+                                                                        ? 'Reembolso Parcial Pendiente'
+                                                                        : reserva.status ===
+                                                                            'reembolso_total_pendiente'
+                                                                          ? 'Reembolso Total Pendiente'
+                                                                          : reserva.status ===
+                                                                              'reembolso_parcial_confirmado'
+                                                                            ? 'Reembolso Parcial Confirmado'
+                                                                            : 'Pendiente'
                                                     }
-                                                    tipo={reserva.status || 'pendiente'}
+                                                    tipo={
+                                                        reserva.status ||
+                                                        'pendiente'
+                                                    }
                                                 />
                                             </td>
 
                                             {/* Acciones */}
                                             <td className="px-6 py-6 text-right">
-                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                                <div className="flex translate-x-2 transform justify-end gap-2 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
                                                     <button
-                                                        onClick={() => router.visit(`/reservas/${reserva.id}/edit`)}
-                                                        className="p-2.5 bg-white text-gray-400 hover:text-[#7a0202] border border-gray-100 hover:border-red-100 rounded-xl shadow-sm transition-all"
+                                                        onClick={() =>
+                                                            router.visit(
+                                                                `/reservas/${reserva.id}/edit`,
+                                                            )
+                                                        }
+                                                        className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:border-red-100 hover:text-[#7a0202]"
                                                     >
                                                         <PencilIcon className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => eliminarReserva(reserva.id)}
-                                                        className="p-2.5 bg-white text-gray-400 hover:text-black border border-gray-100 rounded-xl shadow-sm transition-all"
+                                                        onClick={() =>
+                                                            eliminarReserva(
+                                                                reserva.id,
+                                                            )
+                                                        }
+                                                        className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black"
                                                     >
                                                         <TrashIcon className="h-4 w-4" />
                                                     </button>
@@ -260,16 +363,20 @@ export default function IndexReserva({ reservas = [] }) {
                         </table>
                     </div>
                 )}
-            </div>
 
-            {/* Contador de resultados minimalista */}
-            {reservas.length > 0 && (
-                <div className="text-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                        <span className="mx-2 text-gray-200">|</span> {reservas.length} Reservas Cargadas
-                    </span>
-                </div>
-            )}
+                {/* Paginación */}
+                {reservas.length > 0 && (
+                    <Paginacion
+                        paginaActual={paginaActual}
+                        totalPaginas={totalPaginas}
+                        inicio={inicio}
+                        fin={fin}
+                        total={reservas.length}
+                        onCambiarPagina={setPaginaActual}
+                        etiqueta="Reservas"
+                    />
+                )}
+            </div>
         </div>
     );
 }

@@ -1,8 +1,12 @@
+import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { useFormGenerico } from '@/hooks/useFormGenerico';
 
-export function useEmpleado(empleado = null, alGuardar, options = { reloadOnSave: true }) {
+export function useEmpleado(
+    empleado = null,
+    alGuardar,
+    options = { reloadOnSave: true },
+) {
     const obtenerRutas = () => {
         const rutaCrear = '/empleados';
         const rutaActualizar = empleado ? `/empleados/${empleado.id}` : '';
@@ -12,7 +16,22 @@ export function useEmpleado(empleado = null, alGuardar, options = { reloadOnSave
     const { rutaCrear, rutaActualizar } = obtenerRutas();
 
     const form = useFormGenerico(
-        { name: '', email: '', password: '', password_confirmation: '', numero_empleado: '', departamento: '', puesto: '', tipo_documento: 'dni', numero_documento: '', nacionalidad: '', direccion: '', ciudad: '', codigo_postal: '', telefono: ''},
+        {
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+            numero_empleado: '',
+            departamento: '',
+            puesto: '',
+            tipo_documento: 'dni',
+            numero_documento: '',
+            nacionalidad: '',
+            direccion: '',
+            ciudad: '',
+            codigo_postal: '',
+            telefono: '',
+        },
         rutaCrear,
         rutaActualizar,
         () => {
@@ -20,7 +39,7 @@ export function useEmpleado(empleado = null, alGuardar, options = { reloadOnSave
             if (options.reloadOnSave) {
                 router.reload({ only: ['empleados'] });
             }
-        }
+        },
     );
 
     useEffect(() => {
@@ -44,5 +63,12 @@ export function useEmpleado(empleado = null, alGuardar, options = { reloadOnSave
         }
     }, [empleado?.id]);
 
-    return { formulario: form.formulario, errores: form.errores, estaCargando: form.estaCargando, cambiar: form.cambiar, enviar: form.guardar, limpiar: form.limpiar };
+    return {
+        formulario: form.formulario,
+        errores: form.errores,
+        estaCargando: form.estaCargando,
+        cambiar: form.cambiar,
+        enviar: form.guardar,
+        limpiar: form.limpiar,
+    };
 }

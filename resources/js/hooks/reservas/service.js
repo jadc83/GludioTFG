@@ -4,59 +4,68 @@ import axios from 'axios';
 
 import * as api from '@/api/reservas';
 
-export const buscarReserva = async (localizador) => api.buscarReserva(localizador);
-export const modificarEstancia = async (localizador, payload) => api.modificarEstancia(localizador, payload);
-export const previewModificarEstancia = async (localizador, params) => api.previewModificarEstancia(localizador, params);
-export const solicitarReembolso = async (reservaId, payload) => api.solicitarReembolso(reservaId, payload);
-export const crearSolicitudReembolso = async (localizador, payload) => api.crearSolicitudReembolso(localizador, payload);
+export const buscarReserva = async (localizador) =>
+    api.buscarReserva(localizador);
+export const modificarEstancia = async (localizador, payload) =>
+    api.modificarEstancia(localizador, payload);
+export const previewModificarEstancia = async (localizador, params) =>
+    api.previewModificarEstancia(localizador, params);
+export const solicitarReembolso = async (reservaId, payload) =>
+    api.solicitarReembolso(reservaId, payload);
+export const crearSolicitudReembolso = async (localizador, payload) =>
+    api.crearSolicitudReembolso(localizador, payload);
 
 // funciones administrativas reexportadas
-export const listarSolicitudesReembolso = async (params = {}) => api.listarSolicitudesReembolso(params);
-export const aprobarSolicitud = async (id, payload = {}) => api.aprobarSolicitud(id, payload);
-export const rechazarSolicitud = async (id, payload = {}) => api.rechazarSolicitud(id, payload);
-export const eliminarSolicitud = async (id, payload = {}) => api.eliminarSolicitud(id, payload);
+export const listarSolicitudesReembolso = async (params = {}) =>
+    api.listarSolicitudesReembolso(params);
+export const aprobarSolicitud = async (id, payload = {}) =>
+    api.aprobarSolicitud(id, payload);
+export const rechazarSolicitud = async (id, payload = {}) =>
+    api.rechazarSolicitud(id, payload);
+export const eliminarSolicitud = async (id, payload = {}) =>
+    api.eliminarSolicitud(id, payload);
 
 // Funciones adicionales: calcular precio, crear reserva, info/extension, etc.
 export async function calcularPrecio(payload) {
-	try {
-		const res = await axios.post('/reservas/calcular-precio', payload);
-		return res?.data ?? null;
-	} catch (err) {
-		// Rethrow full axios error so callers can inspect status/code if needed
-		throw err;
-	}
-}
+    const res = await axios.post('/reservas/calcular-precio', payload);
+    return res?.data ?? null;
 
 export async function crearReserva(payload) {
-	try {
-		const res = await axios.post('/reservas', payload);
-		return res?.data ?? null;
-	} catch (err) {
-		// Normalize axios error into a predictable object for callers
-		if (err?.response) {
-			const payload = { status: err.response.status, ...(err.response.data || {}) };
-			throw payload;
-		}
-		throw err;
-	}
+    try {
+        const res = await axios.post('/reservas', payload);
+        return res?.data ?? null;
+    } catch (err) {
+        // Normalize axios error into a predictable object for callers
+        if (err?.response) {
+            const payload = {
+                status: err.response.status,
+                ...(err.response.data || {}),
+            };
+            throw payload;
+        }
+        throw err;
+    }
 }
 
 export async function infoExtension(localizador) {
-	try {
-		const res = await axios.get(`/reservas/${localizador}/info-extension`);
-		return res?.data ?? null;
-	} catch (err) {
-		throw err?.response?.data ?? err;
-	}
+    try {
+        const res = await axios.get(`/reservas/${localizador}/info-extension`);
+        return res?.data ?? null;
+    } catch (err) {
+        throw err?.response?.data ?? err;
+    }
 }
 
 export async function extenderReserva(localizador, payload) {
-	try {
-		const res = await axios.post(`/reservas/${localizador}/extender`, payload);
-		return res?.data ?? null;
-	} catch (err) {
-		throw err?.response?.data ?? err;
-	}
+    try {
+        const res = await axios.post(
+            `/reservas/${localizador}/extender`,
+            payload,
+        );
+        return res?.data ?? null;
+    } catch (err) {
+        throw err?.response?.data ?? err;
+    }
 }
 
 // Nota: si en el futuro queremos cambiar la fuente (fetch, cache, worker), modificar aquí.

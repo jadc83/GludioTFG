@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
 import { router } from '@inertiajs/react';
+import { useCallback, useState } from 'react';
 import { QRScannerService } from './qrScannerService';
 
 /**
@@ -11,44 +11,54 @@ export function useQRScanner(action = null) {
     const [assignDetails, setAssignDetails] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const handleScanSuccess = useCallback(async (decodedText) => {
-        if (isProcessing) return; // Evitar múltiples procesamientos simultáneos
+    const handleScanSuccess = useCallback(
+        async (decodedText) => {
+            if (isProcessing) return; // Evitar múltiples procesamientos simultáneos
 
-        setIsProcessing(true);
-        setError(null);
-        setAssignDetails(null);
+            setIsProcessing(true);
+            setError(null);
+            setAssignDetails(null);
 
-        try {
-            // Extraer localizador del texto escaneado
-            const localizador = QRScannerService.extractLocalizador(decodedText);
-            if (!localizador) return;
+            try {
+                // Extraer localizador del texto escaneado
+                const localizador =
+                    QRScannerService.extractLocalizador(decodedText);
+                if (!localizador) return;
 
-            setScannedData(localizador);
+                setScannedData(localizador);
 
-            // Procesar el escaneo
-            const response = await QRScannerService.processScan(localizador, action);
+                // Procesar el escaneo
+                const response = await QRScannerService.processScan(
+                    localizador,
+                    action,
+                );
 
-            // Determinar qué hacer después del escaneo
-            const postAction = QRScannerService.getPostScanAction(action, response, response?.reserva);
+                // Determinar qué hacer después del escaneo
+                const postAction = QRScannerService.getPostScanAction(
+                    action,
+                    response,
+                    response?.reserva,
+                );
 
-            if (postAction.type === 'redirect') {
-                router.visit(postAction.url);
-            } else if (postAction.type === 'modal') {
-                // Retornar información para que el componente maneje el modal
-                return {
-                    type: 'modal',
-                    modalType: postAction.modalType,
-                    reservaInfo: response?.reserva
-                };
+                if (postAction.type === 'redirect') {
+                    router.visit(postAction.url);
+                } else if (postAction.type === 'modal') {
+                    // Retornar información para que el componente maneje el modal
+                    return {
+                        type: 'modal',
+                        modalType: postAction.modalType,
+                        reservaInfo: response?.reserva,
+                    };
+                }
+            } catch (err) {
+                setError(err.message || 'Error procesando la reserva');
+                setAssignDetails(err.details || null);
+            } finally {
+                setIsProcessing(false);
             }
-
-        } catch (err) {
-            setError(err.message || 'Error procesando la reserva');
-            setAssignDetails(err.details || null);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [action, isProcessing]);
+        },
+        [action, isProcessing],
+    );
 
     const clearError = useCallback(() => {
         setError(null);
@@ -61,6 +71,6 @@ export function useQRScanner(action = null) {
         assignDetails,
         isProcessing,
         handleScanSuccess,
-        clearError
+        clearError,
     };
 }

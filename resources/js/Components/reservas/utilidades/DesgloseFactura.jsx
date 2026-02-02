@@ -9,54 +9,83 @@ export default function DesgloseFactura({
     tarifasAplicadas = [],
     cargoTarifas = 0,
     ultimoResultadoPrecio = null,
-    preciosPorTipo = {}
+    preciosPorTipo = {},
 }) {
     const numeroNoches = calcularNoches(rango?.from, rango?.to);
-    const habitacionesConCantidad = Object.entries(habitacionesSeleccionadas).filter(([, r]) => r.cantidad > 0);
+    const habitacionesConCantidad = Object.entries(
+        habitacionesSeleccionadas,
+    ).filter(([, r]) => r.cantidad > 0);
 
     const calcularPrecioTipo = (tipo) => {
-        if (preciosPorTipo && preciosPorTipo[tipo] !== undefined) return Number(preciosPorTipo[tipo] || 0);
+        if (preciosPorTipo && preciosPorTipo[tipo] !== undefined)
+            return Number(preciosPorTipo[tipo] || 0);
 
         try {
-            const list = Array.isArray(ultimoResultadoPrecio?.habitaciones) ? ultimoResultadoPrecio.habitaciones : [];
-            const match = list.find(h => String(h.tipo || '').toLowerCase() === String(tipo || '').toLowerCase());
-            if (match) return Number(match.precioAvg ?? match.precio ?? match.precioMinimo ?? 0);
+            const list = Array.isArray(ultimoResultadoPrecio?.habitaciones)
+                ? ultimoResultadoPrecio.habitaciones
+                : [];
+            const match = list.find(
+                (h) =>
+                    String(h.tipo || '').toLowerCase() ===
+                    String(tipo || '').toLowerCase(),
+            );
+            if (match)
+                return Number(
+                    match.precioAvg ?? match.precio ?? match.precioMinimo ?? 0,
+                );
         } catch (e) {}
 
         const datosHabitacion = agruparHabitacionesPorTipo()[tipo] || {};
-        return datosHabitacion?.precioEntreNoche ?? datosHabitacion?.precioNoche ?? datosHabitacion?.precioTipo ?? datosHabitacion?.precioMinimo ?? 0;
+        return (
+            datosHabitacion?.precioEntreNoche ??
+            datosHabitacion?.precioNoche ??
+            datosHabitacion?.precioTipo ??
+            datosHabitacion?.precioMinimo ??
+            0
+        );
     };
 
     return (
-        <div className="w-full max-w-sm mx-auto bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 text-center">Resumen</h3>
+        <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+                <h3 className="text-center text-xs font-bold uppercase tracking-wider text-gray-500">
+                    Resumen
+                </h3>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
                 {habitacionesConCantidad.length > 0 && (
                     <div className="space-y-3">
                         {habitacionesConCantidad.map(([tipo, r]) => {
                             const precioPorNoche = calcularPrecioTipo(tipo);
-                            const subtotal = precioPorNoche * numeroNoches * r.cantidad;
+                            const subtotal =
+                                precioPorNoche * numeroNoches * r.cantidad;
 
                             return (
                                 <div key={tipo} className="group">
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex items-start justify-between">
                                         <div>
-                                            <p className="text-sm font-semibold text-gray-900 capitalize">
+                                            <p className="text-sm font-semibold capitalize text-gray-900">
                                                 {tipo}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {r.cantidad} {r.cantidad === 1 ? 'Habitación' : 'Habitaciones'} × {numeroNoches} {numeroNoches === 1 ? 'noche' : 'noches'}
+                                                {r.cantidad}{' '}
+                                                {r.cantidad === 1
+                                                    ? 'Habitación'
+                                                    : 'Habitaciones'}{' '}
+                                                × {numeroNoches}{' '}
+                                                {numeroNoches === 1
+                                                    ? 'noche'
+                                                    : 'noches'}
                                             </p>
                                         </div>
                                         <p className="text-sm font-bold text-gray-900">
                                             {formatearMoneda(subtotal)}
                                         </p>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 mt-0.5 italic">
-                                        {formatearMoneda(precioPorNoche)} por noche
+                                    <p className="mt-0.5 text-[10px] italic text-gray-400">
+                                        {formatearMoneda(precioPorNoche)} por
+                                        noche
                                     </p>
                                 </div>
                             );
@@ -70,21 +99,36 @@ export default function DesgloseFactura({
                 {/* Sección: Tarifas y Suplementos */}
                 {tarifasAplicadas && tarifasAplicadas.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Suplementos</p>
-                        {tarifasAplicadas.map(t => {
+                        <p className="text-[10px] font-bold uppercase tracking-tight text-gray-400">
+                            Suplementos
+                        </p>
+                        {tarifasAplicadas.map((t) => {
                             const mod = Number(t.modificador_precio || 0);
-                            const isMedia = (t.slug?.toLowerCase().includes('media')) || (t.nombre?.toLowerCase().includes('media'));
-                            const valorFinal = isMedia ? mod * numeroNoches : mod;
+                            const isMedia =
+                                t.slug?.toLowerCase().includes('media') ||
+                                t.nombre?.toLowerCase().includes('media');
+                            const valorFinal = isMedia
+                                ? mod * numeroNoches
+                                : mod;
 
                             return (
-                                <div key={t.id} className="flex justify-between items-center text-xs text-gray-700">
+                                <div
+                                    key={t.id}
+                                    className="flex items-center justify-between text-xs text-gray-700"
+                                >
                                     <span className="flex items-center gap-1">
-                                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                        <span className="h-1 w-1 rounded-full bg-gray-300" />
                                         {t.nombre}
-                                        {isMedia && <span className="text-[10px] text-gray-400">({numeroNoches}n)</span>}
+                                        {isMedia && (
+                                            <span className="text-[10px] text-gray-400">
+                                                ({numeroNoches}n)
+                                            </span>
+                                        )}
                                     </span>
                                     <span className="font-medium">
-                                        {valorFinal === 0 ? 'Gratis' : `${valorFinal > 0 ? '+' : ''}${formatearMoneda(valorFinal)}`}
+                                        {valorFinal === 0
+                                            ? 'Gratis'
+                                            : `${valorFinal > 0 ? '+' : ''}${formatearMoneda(valorFinal)}`}
                                     </span>
                                 </div>
                             );
@@ -92,23 +136,35 @@ export default function DesgloseFactura({
                     </div>
                 )}
 
-                <div className="pt-4 mt-2 border-t-2 border-gray-50">
-                    <div className="flex justify-between items-end">
+                <div className="mt-2 border-t-2 border-gray-50 pt-4">
+                    <div className="flex items-end justify-between">
                         <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">Total</p>
+                            <p className="text-[10px] font-bold uppercase text-gray-400">
+                                Total
+                            </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-2xl font-black text-[#7a0202] leading-none">
+                            <p className="text-2xl font-black leading-none text-[#7a0202]">
                                 {formatearMoneda(monto)}
                             </p>
-                            <p className="text-[9px] text-gray-400 mt-1 uppercase">Impuestos incluidos</p>
+                            <p className="mt-1 text-[9px] uppercase text-gray-400">
+                                Impuestos incluidos
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Decoración inferior (opcional: efecto ticket) */}
-            <div className="h-1 w-full bg-repeat-x flex" style={{ backgroundImage: 'radial-gradient(circle, #f3f4f6 5px, transparent 5px)', backgroundSize: '15px 15px', backgroundPosition: '0 10px' }} />
+            <div
+                className="flex h-1 w-full bg-repeat-x"
+                style={{
+                    backgroundImage:
+                        'radial-gradient(circle, #f3f4f6 5px, transparent 5px)',
+                    backgroundSize: '15px 15px',
+                    backgroundPosition: '0 10px',
+                }}
+            />
         </div>
     );
 }

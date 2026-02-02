@@ -2,13 +2,14 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
-import { Head, useForm } from '@inertiajs/react';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { Head, useForm } from '@inertiajs/react';
 
 export default function ForgotPassword({ status }) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        email: '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            email: '',
+        });
 
     const submit = (e) => {
         e.preventDefault();

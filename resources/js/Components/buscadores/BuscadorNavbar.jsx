@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import Campo from '@/Components/formulario/Campo';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
-import Campo from '@/Components/formulario/Campo';
+import { useState } from 'react';
 
 export default function BuscadorNavbar() {
     const [localizador, setLocalizador] = useState('');
@@ -30,22 +30,24 @@ export default function BuscadorNavbar() {
     };
 
     return (
-        <form onSubmit={handleBuscar} className="hidden md:flex items-center">
+        <form onSubmit={handleBuscar} className="hidden items-center md:flex">
             <div className="relative">
                 <Campo
                     id="navbar_localizador"
                     name="localizador"
                     value={localizador}
-                    onChange={(e) => setLocalizador(e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                        setLocalizador(e.target.value.toUpperCase())
+                    }
                     placeholder="Busca tu reserva..."
-                    className="input input-sm input-bordered w-48 focus:outline-none"
+                    className="input-bordered input input-sm w-48 focus:outline-none"
                     disabled={buscando}
                 />
             </div>
             <button
                 type="submit"
                 disabled={buscando}
-                className="btn btn-sm btn-ghost p-1"
+                className="btn btn-ghost btn-sm p-1"
             >
                 <MagnifyingGlassIcon className="h-5 w-5" />
             </button>

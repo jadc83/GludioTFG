@@ -7,7 +7,10 @@ export async function buscarReserva(localizador) {
 
 export async function modificarEstancia(localizador, payload) {
     try {
-        const res = await axios.post(`/reservas/${localizador}/modificar-estancia`, payload);
+        const res = await axios.post(
+            `/reservas/${localizador}/modificar-estancia`,
+            payload,
+        );
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, message: err.message };
@@ -15,7 +18,10 @@ export async function modificarEstancia(localizador, payload) {
 }
 
 export async function previewModificarEstancia(localizador, params) {
-    const res = await axios.get(`/reservas/${localizador}/preview-modificar-estancia`, { params });
+    const res = await axios.get(
+        `/reservas/${localizador}/preview-modificar-estancia`,
+        { params },
+    );
     return res?.data ?? null;
 }
 
@@ -26,7 +32,10 @@ export async function solicitarReembolso(reservaId, payload) {
 
 export async function crearSolicitudReembolso(localizador, payload) {
     try {
-        const res = await axios.post(`/reservas/${localizador}/refund-requests`, payload);
+        const res = await axios.post(
+            `/reservas/${localizador}/refund-requests`,
+            payload,
+        );
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, message: err.message };

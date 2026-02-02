@@ -1,7 +1,6 @@
-import PrimaryButton from '@/Components/UI/PrimaryButton';
-import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
-import { IdentificationIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import { IdentificationIcon } from '@heroicons/react/24/outline';
+import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 
 export default function Paso3Datos({
     watch,
@@ -18,38 +17,42 @@ export default function Paso3Datos({
            - Altura ajustada para asegurar visibilidad total.
         */
         <div className="relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-
             {/* HEADER: Sin margen negativo, alineación corregida */}
             <header className="flex-none border-b border-gray-100 bg-white px-8 py-6 md:px-12">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
                     <div className="text-center md:text-left">
-                        <h1 className="text-2xl font-black leading-none text-gray-900 uppercase tracking-tighter">
-                            DATOS DEL <span className="text-[#7a0202]">TITULAR</span>
+                        <h1 className="text-2xl font-black uppercase leading-none tracking-tighter text-gray-900">
+                            DATOS DEL{' '}
+                            <span className="text-[#7a0202]">TITULAR</span>
                         </h1>
-                        <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
+                        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
                             Registro de Identidad / Step 03
                         </p>
                     </div>
-                    <ReservaBreadcrumbs activeIndex={2} separator="chevron" className="flex items-center gap-3" textClass="text-[10px]" />
+                    <ReservaBreadcrumbs
+                        activeIndex={2}
+                        separator="chevron"
+                        className="flex items-center gap-3"
+                        textClass="text-[10px]"
+                    />
                 </div>
             </header>
 
             {/* CUERPO: Scroll optimizado y padding superior corregido */}
-            <main className="flex-1 overflow-hidden bg-white flex flex-col items-center justify-start">
+            <main className="flex flex-1 flex-col items-center justify-start overflow-hidden bg-white">
                 <div className="custom-scrollbar w-full max-w-4xl overflow-y-auto px-6 py-8">
-
                     {/* Contenedor del Formulario con redondeo reducido */}
                     <div className="rounded-lg bg-transparent p-2 md:p-4">
-
                         {/* Indicador Industrial: Más sobrio */}
                         <div className="mb-8 flex items-center gap-5 border-l-4 border-[#7a0202] pl-6">
                             <IdentificationIcon className="h-6 w-6 text-gray-900 opacity-20" />
                             <div>
-                                <h2 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">
+                                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-900">
                                     Información de Registro
                                 </h2>
-                                <p className="mt-1 text-[10px] text-gray-400 uppercase tracking-widest">
-                                    Los datos se vincularán al activo seleccionado.
+                                <p className="mt-1 text-[10px] uppercase tracking-widest text-gray-400">
+                                    Los datos se vincularán al activo
+                                    seleccionado.
                                 </p>
                             </div>
                         </div>
@@ -63,7 +66,10 @@ export default function Paso3Datos({
                                     const { name, value } = e.target;
                                     setValue(name, value);
                                 }}
-                                onNext={(e) => { e.preventDefault(); avanzarPaso(); }}
+                                onNext={(e) => {
+                                    e.preventDefault();
+                                    avanzarPaso();
+                                }}
                                 hideDates={true}
                                 hideNextButton={true}
                             />
@@ -77,7 +83,7 @@ export default function Paso3Datos({
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
                     <button
                         onClick={retrocederPaso}
-                        className="text-[10px] font-black text-gray-400 transition-colors uppercase tracking-[0.2em] hover:text-[#7a0202]"
+                        className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-[#7a0202]"
                     >
                         ← Volver a Unidades
                     </button>
@@ -93,7 +99,7 @@ export default function Paso3Datos({
                             !formData.nacionalidad ||
                             !formData.direccion
                         }
-                        className="rounded-lg bg-[#7a0202] px-12 py-4 text-[11px] font-black text-white transition-all uppercase tracking-[0.3em] shadow-lg active:scale-95 disabled:opacity-20 hover:bg-black"
+                        className="rounded-lg bg-[#7a0202] px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] text-white shadow-lg transition-all hover:bg-black active:scale-95 disabled:opacity-20"
                     >
                         Revisar Reserva →
                     </button>

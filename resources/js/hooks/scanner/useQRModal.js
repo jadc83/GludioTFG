@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { router } from '@inertiajs/react';
+import { useState } from 'react';
 
 /**
  * Hook personalizado para manejar modales en el escáner QR
@@ -39,6 +39,6 @@ export function useQRModal() {
         modalType,
         reservaInfo,
         openModal,
-        closeModal
+        closeModal,
     };
 }

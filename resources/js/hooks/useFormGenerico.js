@@ -1,15 +1,29 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
 import { limpiarFormulario } from './useFormHelpers';
 
 /**
  * Hook generico para gestionar formularios Inertia
  * agrupa la lógica común de crear/editar registros
  */
-export function useFormGenerico( datosIniciales = {}, rutaCrear = '', rutaActualizar = '', alGuardar = null, metodoActualizacion = 'put') {
-
+export function useFormGenerico(
+    datosIniciales = {},
+    rutaCrear = '',
+    rutaActualizar = '',
+    alGuardar = null,
+    metodoActualizacion = 'put',
+) {
     const esEdicion = !!rutaActualizar;
-    const { data: formulario, setData, post, put, patch, processing: estaCargando, errors: errores, reset: resetFormulario, clearErrors } = useForm(datosIniciales);
+    const {
+        data: formulario,
+        setData,
+        post,
+        put,
+        patch,
+        processing: estaCargando,
+        errors: errores,
+        reset: resetFormulario,
+        clearErrors,
+    } = useForm(datosIniciales);
 
     /* Actualiza un campo del formulario */
     const cambiar = (evento) => {
@@ -66,7 +80,9 @@ export function useFormGenerico( datosIniciales = {}, rutaCrear = '', rutaActual
     /**
      * Actualiza un campo específico directamente
      */
-    const actualizarCampo = (campo, valor) => { setData(campo, valor); };
+    const actualizarCampo = (campo, valor) => {
+        setData(campo, valor);
+    };
 
     return {
         // Estado del formulario

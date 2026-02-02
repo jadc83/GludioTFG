@@ -29,9 +29,12 @@ export class QRScannerService {
      */
     static async processScan(localizador, action = null) {
         // Obtener CSRF token
-        const csrf = typeof document !== 'undefined'
-            ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            : null;
+        const csrf =
+            typeof document !== 'undefined'
+                ? document
+                      .querySelector('meta[name="csrf-token"]')
+                      ?.getAttribute('content')
+                : null;
 
         const payload = { localizador: localizador };
         if (action) {
@@ -45,7 +48,7 @@ export class QRScannerService {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrf || '',
-                'Accept': 'application/json'
+                Accept: 'application/json',
             },
             credentials: 'same-origin',
             body: JSON.stringify(payload),
@@ -54,7 +57,9 @@ export class QRScannerService {
         const body = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            throw new Error(body?.error || body?.message || 'Error procesando escaneo');
+            throw new Error(
+                body?.error || body?.message || 'Error procesando escaneo',
+            );
         }
 
         return body;
@@ -66,7 +71,11 @@ export class QRScannerService {
     static getPostScanAction(action, response, reservaInfo) {
         if (action === 'checkin') {
             if (response?.success === false) {
-                throw new Error(response?.error || response?.message || 'Error procesando check-in');
+                throw new Error(
+                    response?.error ||
+                        response?.message ||
+                        'Error procesando check-in',
+                );
             }
             // Mostrar modal de éxito antes de redirigir
             return { type: 'modal', modalType: 'checkin' };
@@ -74,7 +83,11 @@ export class QRScannerService {
 
         if (action === 'checkout') {
             if (response?.success === false) {
-                throw new Error(response?.error || response?.message || 'Error procesando check-out');
+                throw new Error(
+                    response?.error ||
+                        response?.message ||
+                        'Error procesando check-out',
+                );
             }
             return { type: 'modal', modalType: 'checkout' };
         }

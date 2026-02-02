@@ -1,31 +1,43 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
-import { UserIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, DocumentIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import {
+    EnvelopeIcon,
+    GlobeAltIcon,
+    LockClosedIcon,
+    PhoneIcon,
+    UserIcon,
+} from '@heroicons/react/24/outline';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-        tipo_documento: 'dni',
-        numero_documento: '',
-        nacionalidad: '',
-        direccion: '',
-        ciudad: '',
-        codigo_postal: '',
-        telefono: '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+            tipo_documento: 'dni',
+            numero_documento: '',
+            nacionalidad: '',
+            direccion: '',
+            ciudad: '',
+            codigo_postal: '',
+            telefono: '',
+        });
 
     const submit = (e) => {
         e.preventDefault();
         post(route('register'), {
-            onFinish: () => limpiarFormulario(reset, clearErrors, 'password', 'password_confirmation'),
+            onFinish: () =>
+                limpiarFormulario(
+                    reset,
+                    clearErrors,
+                    'password',
+                    'password_confirmation',
+                ),
         });
     };
 
@@ -39,13 +51,13 @@ export default function Register() {
                     <h2 className="text-2xl font-bold text-[#7a0202]">
                         Únete ahora
                     </h2>
-                    <p className="text-gray-600 text-xs mt-0.5">
+                    <p className="mt-0.5 text-xs text-gray-600">
                         Crea tu cuenta en 2 minutos
                     </p>
                 </div>
 
                 {/* Benefits Preview */}
-                <div className="mb-4 rounded-lg bg-gradient-to-r from-[#7a0202]/5 to-[#920303]/5 p-2.5 border border-[#E2E0DC]">
+                <div className="mb-4 rounded-lg border border-[#E2E0DC] bg-gradient-to-r from-[#7a0202]/5 to-[#920303]/5 p-2.5">
                     <div className="grid grid-cols-2 gap-1.5 text-xs">
                         <div className="flex items-center gap-1">
                             <span className="text-[#7a0202]">✓</span>
@@ -80,12 +92,17 @@ export default function Register() {
                                     clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="name"
                                     estaFocalizado={true}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('name', e.target.value)
+                                    }
                                     placeholder="Juan"
                                     required
                                 />
                             </div>
-                            <InputError message={errors.name} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.name}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
 
                         <div>
@@ -99,12 +116,17 @@ export default function Register() {
                                     value={data.email}
                                     clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="username"
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('email', e.target.value)
+                                    }
                                     placeholder="tu@email.com"
                                     required
                                 />
                             </div>
-                            <InputError message={errors.email} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.email}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
                     </div>
 
@@ -126,7 +148,10 @@ export default function Register() {
                                 <option value="pasaporte">Pasaporte</option>
                                 <option value="tie">TIE</option>
                             </select>
-                            <InputError message={errors.tipo_documento} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.tipo_documento}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
 
                         <div>
@@ -142,7 +167,10 @@ export default function Register() {
                                 placeholder="123456"
                                 required
                             />
-                            <InputError message={errors.numero_documento} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.numero_documento}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
                     </div>
 
@@ -164,7 +192,10 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError message={errors.nacionalidad} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.nacionalidad}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
 
                         <div>
@@ -184,7 +215,10 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError message={errors.telefono} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.telefono}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
                     </div>
 
@@ -196,12 +230,17 @@ export default function Register() {
                             name="direccion"
                             value={data.direccion}
                             className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
-                            onChange={(e) => setData('direccion', e.target.value)}
+                            onChange={(e) =>
+                                setData('direccion', e.target.value)
+                            }
                             placeholder="Calle Principal, 123"
                             rows="2"
                             required
                         />
-                        <InputError message={errors.direccion} className="mt-0.5 text-xs" />
+                        <InputError
+                            message={errors.direccion}
+                            className="mt-0.5 text-xs"
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
@@ -212,23 +251,36 @@ export default function Register() {
                                 name="ciudad"
                                 value={data.ciudad}
                                 clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
-                                onChange={(e) => setData('ciudad', e.target.value)}
+                                onChange={(e) =>
+                                    setData('ciudad', e.target.value)
+                                }
                                 placeholder="Madrid"
                             />
-                            <InputError message={errors.ciudad} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.ciudad}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="codigo_postal" value="Código Postal" />
+                            <InputLabel
+                                htmlFor="codigo_postal"
+                                value="Código Postal"
+                            />
                             <Campo
                                 id="codigo_postal"
                                 name="codigo_postal"
                                 value={data.codigo_postal}
                                 clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
-                                onChange={(e) => setData('codigo_postal', e.target.value)}
+                                onChange={(e) =>
+                                    setData('codigo_postal', e.target.value)
+                                }
                                 placeholder="28001"
                             />
-                            <InputError message={errors.codigo_postal} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.codigo_postal}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
                     </div>
 
@@ -252,11 +304,17 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError message={errors.password} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.password}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="password_confirmation" value="Confirmar" />
+                            <InputLabel
+                                htmlFor="password_confirmation"
+                                value="Confirmar"
+                            />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -267,13 +325,19 @@ export default function Register() {
                                     clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                     autoComplete="new-password"
                                     onChange={(e) =>
-                                        setData('password_confirmation', e.target.value)
+                                        setData(
+                                            'password_confirmation',
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="••••••"
                                     required
                                 />
                             </div>
-                            <InputError message={errors.password_confirmation} className="mt-0.5 text-xs" />
+                            <InputError
+                                message={errors.password_confirmation}
+                                className="mt-0.5 text-xs"
+                            />
                         </div>
                     </div>
 
@@ -281,13 +345,28 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={processing}
-                        className="w-full mt-3 rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] px-3 py-2 font-semibold text-sm text-white transition duration-200 hover:shadow-lg hover:shadow-[#7a0202]/20 focus:outline-none focus:ring-2 focus:ring-[#920303] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-3 w-full rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] px-3 py-2 text-sm font-semibold text-white transition duration-200 hover:shadow-lg hover:shadow-[#7a0202]/20 focus:outline-none focus:ring-2 focus:ring-[#920303] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {processing ? (
                             <span className="flex items-center justify-center">
-                                <svg className="animate-spin h-3.5 w-3.5 mr-1" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <svg
+                                    className="mr-1 h-3.5 w-3.5 animate-spin"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
                                 </svg>
                                 Creando...
                             </span>
@@ -298,20 +377,20 @@ export default function Register() {
                 </form>
 
                 {/* Login CTA */}
-                <div className="mt-3 pt-2.5 border-t border-[#E2E0DC]">
-                    <p className="text-center text-gray-700 text-xs mb-1.5">
+                <div className="mt-3 border-t border-[#E2E0DC] pt-2.5">
+                    <p className="mb-1.5 text-center text-xs text-gray-700">
                         ¿Tienes cuenta?
                     </p>
                     <Link
                         href={route('login')}
-                        className="block text-center text-[#7a0202] font-semibold text-xs hover:text-[#920303] transition"
+                        className="block text-center text-xs font-semibold text-[#7a0202] transition hover:text-[#920303]"
                     >
                         Inicia sesión
                     </Link>
                 </div>
 
                 {/* Terms */}
-                <p className="text-center text-xs text-gray-600 mt-3">
+                <p className="mt-3 text-center text-xs text-gray-600">
                     Al registrarte aceptas nuestros{' '}
                     <a href="#" className="text-[#7a0202] hover:underline">
                         términos

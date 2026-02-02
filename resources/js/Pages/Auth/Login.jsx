@@ -1,19 +1,19 @@
 import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/UI/PrimaryButton';
 import Campo from '@/Components/formulario/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        email: '',
-        password: '',
-        remember: false,
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            email: '',
+            password: '',
+            remember: false,
+        });
 
     const submit = (e) => {
         e.preventDefault();
@@ -33,14 +33,14 @@ export default function Login({ status, canResetPassword }) {
                     <h2 className="text-2xl font-bold text-[#7a0202]">
                         Hotel Gludio
                     </h2>
-                    <p className="text-gray-600 text-xs mt-0.5">
+                    <p className="mt-0.5 text-xs text-gray-600">
                         Accede a tu cuenta
                     </p>
                 </div>
 
                 {/* Status Message */}
                 {status && (
-                    <div className="mb-3 rounded-lg bg-gradient-to-r from-green-50 to-green-100 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200">
+                    <div className="mb-3 rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-green-100 px-3 py-1.5 text-xs font-medium text-green-700">
                         ✓ {status}
                     </div>
                 )}
@@ -60,11 +60,16 @@ export default function Login({ status, canResetPassword }) {
                                 clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 autoComplete="username"
                                 estaFocalizado={true}
-                                onChange={(e) => setData('email', e.target.value)}
+                                onChange={(e) =>
+                                    setData('email', e.target.value)
+                                }
                                 placeholder="tu@email.com"
                             />
                         </div>
-                        <InputError message={errors.email} className="mt-0.5 text-xs" />
+                        <InputError
+                            message={errors.email}
+                            className="mt-0.5 text-xs"
+                        />
                     </div>
 
                     {/* Password */}
@@ -79,23 +84,28 @@ export default function Login({ status, canResetPassword }) {
                                 value={data.password}
                                 clase="pl-8 block w-full rounded-lg border border-[#E2E0DC] px-3 py-1.5 text-sm text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 autoComplete="current-password"
-                                onChange={(e) => setData('password', e.target.value)}
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
                                 placeholder="••••••••"
                             />
                         </div>
-                        <InputError message={errors.password} className="mt-0.5 text-xs" />
+                        <InputError
+                            message={errors.password}
+                            className="mt-0.5 text-xs"
+                        />
                     </div>
 
                     {/* Remember me & Forgot password */}
                     <div className="flex items-center justify-between text-xs">
-                            {canResetPassword && (
-                                <Link
-                                    href={route('password.request')}
-                                    className="text-[#7a0202] hover:text-[#920303] font-medium transition"
-                                >
-                                    ¿Olvidaste tu contraseña?
-                                </Link>
-                            )}
+                        {canResetPassword && (
+                            <Link
+                                href={route('password.request')}
+                                className="font-medium text-[#7a0202] transition hover:text-[#920303]"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        )}
                         <label className="flex items-center">
                             <Checkbox
                                 name="remember"
@@ -107,16 +117,34 @@ export default function Login({ status, canResetPassword }) {
                             />
                             <span className="ms-1.5">Recuérdame</span>
                         </label>
-
                     </div>
 
                     {/* Submit Button */}
-                    <button type="submit" disabled={processing} className="w-full mt-3 rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] px-3 py-2 font-semibold text-sm text-white transition duration-200 hover:shadow-lg hover:shadow-[#7a0202]/20 focus:outline-none focus:ring-2 focus:ring-[#920303] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        className="mt-3 w-full rounded-lg bg-gradient-to-r from-[#7a0202] to-[#920303] px-3 py-2 text-sm font-semibold text-white transition duration-200 hover:shadow-lg hover:shadow-[#7a0202]/20 focus:outline-none focus:ring-2 focus:ring-[#920303] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                         {processing ? (
                             <span className="flex items-center justify-center">
-                                <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <svg
+                                    className="mr-1 h-4 w-4 animate-spin"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
                                 </svg>
                                 Iniciando...
                             </span>
@@ -136,13 +164,13 @@ export default function Login({ status, canResetPassword }) {
                 {/* Register CTA */}
                 <Link
                     href={route('register')}
-                    className="block w-full text-center rounded-lg border-2 border-[#E2E0DC] px-3 py-1.5 font-semibold text-sm text-[#7a0202] transition hover:border-[#7a0202] hover:bg-[#7a0202]/5"
+                    className="block w-full rounded-lg border-2 border-[#E2E0DC] px-3 py-1.5 text-center text-sm font-semibold text-[#7a0202] transition hover:border-[#7a0202] hover:bg-[#7a0202]/5"
                 >
                     Crear cuenta
                 </Link>
 
                 {/* Trust badges */}
-                <div className="mt-4 pt-3 border-t border-[#E2E0DC]">
+                <div className="mt-4 border-t border-[#E2E0DC] pt-3">
                     <div className="flex items-center justify-center gap-2 text-xs">
                         <span className="inline-flex items-center gap-0.5">
                             <span className="text-[#7a0202]">✓</span>

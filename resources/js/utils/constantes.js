@@ -106,8 +106,10 @@ export const RUTAS_PANEL = {
 // Errores comunes
 export const MENSAJES_ERROR = {
     FECHAS_INVALIDAS: 'Las fechas proporcionadas no son válidas',
-    FECHA_SALIDA_ANTERIOR: 'La fecha de salida debe ser posterior a la de entrada',
-    HABITACIONES_NO_DISPONIBLES: 'Las habitaciones seleccionadas no están disponibles para esas fechas',
+    FECHA_SALIDA_ANTERIOR:
+        'La fecha de salida debe ser posterior a la de entrada',
+    HABITACIONES_NO_DISPONIBLES:
+        'Las habitaciones seleccionadas no están disponibles para esas fechas',
     CLIENTE_NO_ENCONTRADO: 'El cliente no fue encontrado',
     RESERVA_NO_ENCONTRADA: 'La reserva no fue encontrada',
     ERROR_GENERAL: 'Ocurrió un error. Intenta nuevamente',

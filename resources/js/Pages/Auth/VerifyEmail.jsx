@@ -1,7 +1,7 @@
 import PrimaryButton from '@/Components/UI/PrimaryButton';
+import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { limpiarFormulario } from '@/hooks/useFormHelpers';
 
 export default function VerifyEmail({ status }) {
     const { post, processing, reset, clearErrors } = useForm({});

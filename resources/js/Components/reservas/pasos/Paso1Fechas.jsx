@@ -1,4 +1,4 @@
-﻿export default function Paso1Fechas({ rango, setRango, avanzarPaso, limpiarRango}) {
+﻿export default function Paso1Fechas() {
     return (
         <div className="w-full">
             <h3 className="text-center text-sm font-semibold text-gray-700">

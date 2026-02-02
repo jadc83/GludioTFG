@@ -26,8 +26,10 @@ export default function Badge({ label, tipo = 'default', className = '' }) {
         rechazado: 'bg-rose-50 text-rose-700 border border-rose-100',
 
         // Estados de reembolso
-        reembolso_pendiente: 'bg-amber-50 text-amber-700 border border-amber-100',
-        reembolso_parcial: 'bg-orange-50 text-orange-700 border border-orange-100',
+        reembolso_pendiente:
+            'bg-amber-50 text-amber-700 border border-amber-100',
+        reembolso_parcial:
+            'bg-orange-50 text-orange-700 border border-orange-100',
         reembolso_total: 'bg-blue-50 text-blue-700 border border-blue-100',
         devuelto: 'bg-sky-50 text-sky-700 border border-sky-100',
 
@@ -41,7 +43,9 @@ export default function Badge({ label, tipo = 'default', className = '' }) {
     const estilos = tiposDisponibles[tipo] || tiposDisponibles.default;
 
     return (
-        <span className={`inline-block text-xs px-2.5 py-1 rounded-lg font-medium whitespace-nowrap ${estilos} ${className}`}>
+        <span
+            className={`inline-block whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium ${estilos} ${className}`}
+        >
             {label}
         </span>
     );

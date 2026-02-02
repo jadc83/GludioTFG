@@ -9,7 +9,12 @@ export function formatearFecha(fecha, tipo = 'legible') {
     const opciones = {
         corta: { day: '2-digit', month: '2-digit', year: 'numeric' },
         legible: { day: 'numeric', month: 'long', year: 'numeric' },
-        completa: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+        completa: {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        },
         iso: null,
     };
 
@@ -50,7 +55,7 @@ export function obtenerNombreDocumento(tipo) {
         dni: 'DNI',
         nie: 'NIE',
         pasaporte: 'Pasaporte',
-        tie: 'TIE'
+        tie: 'TIE',
     };
 
     return nombres[tipo?.toLowerCase()] || tipo || '—';
@@ -64,7 +69,7 @@ export function obtenerColorDocumento(tipo) {
         dni: 'badge-success',
         nie: 'badge-info',
         pasaporte: 'badge-warning',
-        tie: 'badge-secondary'
+        tie: 'badge-secondary',
     };
 
     return colores[tipo?.toLowerCase()] || 'badge-neutral';
@@ -78,7 +83,7 @@ export function obtenerOpcionesDocumento() {
     return [
         { value: 'dni', label: 'DNI' },
         { value: 'pasaporte', label: 'Pasaporte' },
-        { value: 'tie', label: 'TIE' }
+        { value: 'tie', label: 'TIE' },
     ];
 }
 
@@ -90,7 +95,7 @@ export function formatearDocumento(numero, tipo) {
     if (!numero) return '—';
 
     // Eliminar espacios, guiones, puntos
-    const clean = numero.toUpperCase().replace(/[\s\-\.]/g, '');
+    const clean = numero.toUpperCase().replace(/[\s-.]/g, '');
 
     if (tipo === 'dni' || tipo === 'nie') {
         // Formato: 12345678A
@@ -119,7 +124,15 @@ export function calcularNoches(checkIn, checkOut) {
  */
 export function obtenerDiaDelaSemana(fecha) {
     const date = fecha instanceof Date ? fecha : new Date(fecha);
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dias = [
+        'Domingo',
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado',
+    ];
     return dias[date.getDay()];
 }
 
@@ -137,8 +150,18 @@ export function obtenerDiaNumero(fecha) {
 export function obtenerNombreMes(fecha) {
     const date = fecha instanceof Date ? fecha : new Date(fecha);
     const meses = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
     ];
     return meses[date.getMonth()];
 }

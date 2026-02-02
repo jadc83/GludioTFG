@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import * as api from '@/api/reservas';
 import IndexReembolsos from '@/Components/reembolsos/IndexReembolsos';
+import { useEffect, useState } from 'react';
 
 export default function TabReembolsos() {
     const [loading, setLoading] = useState(false);
@@ -13,7 +13,8 @@ export default function TabReembolsos() {
         try {
             const res = await api.listarSolicitudesReembolso({ page: p });
             const paginator = res?.data ?? res ?? null;
-            const rows = paginator?.data ?? (Array.isArray(paginator) ? paginator : []);
+            const rows =
+                paginator?.data ?? (Array.isArray(paginator) ? paginator : []);
             setItems(rows);
             setPagination(paginator);
         } catch (e) {
@@ -25,7 +26,9 @@ export default function TabReembolsos() {
         }
     };
 
-    useEffect(() => { fetchData(page); }, [page]);
+    useEffect(() => {
+        fetchData(page);
+    }, [page]);
 
     // Suscribirse a broadcasts para refrescar la tabla cuando una nueva solicitud llega
     useEffect(() => {
@@ -50,25 +53,36 @@ export default function TabReembolsos() {
             } else {
                 alert(res?.message || 'Error');
             }
-        } catch (e) { alert('Error ejecutando reembolso'); }
+        } catch (e) {
+            alert('Error ejecutando reembolso');
+        }
     };
 
     const rechazar = async (id) => {
         const motivo = prompt('Motivo de rechazo (requerido)');
         if (!motivo) return alert('Motivo requerido');
         try {
-            const res = await api.rechazarSolicitud(id, { admin_reason: motivo });
+            const res = await api.rechazarSolicitud(id, {
+                admin_reason: motivo,
+            });
             if (res?.success) {
                 alert('Solicitud rechazada');
                 fetchData(page);
             } else {
                 alert(res?.message || 'Error');
             }
-        } catch (e) { alert('Error rechazando solicitud'); }
+        } catch (e) {
+            alert('Error rechazando solicitud');
+        }
     };
 
     const borrar = async (id) => {
-        if (!confirm('¿Borrar esta solicitud de reembolso? Esta acción marcará la solicitud como eliminada.')) return;
+        if (
+            !confirm(
+                '¿Borrar esta solicitud de reembolso? Esta acción marcará la solicitud como eliminada.',
+            )
+        )
+            return;
         try {
             const res = await api.eliminarSolicitud(id);
             if (res?.success) {

@@ -8,17 +8,17 @@
  * Lanza: Error si la respuesta no es exitosa
  */
 export async function fetchPreciosPorDia(inicioISO, finISO) {
-  const params = new URLSearchParams({ inicio: inicioISO, fin: finISO });
-  const resp = await fetch(`/reservas/precios-por-dia?${params.toString()}`, {
-    headers: { Accept: 'application/json' },
-    credentials: 'include',
-  });
+    const params = new URLSearchParams({ inicio: inicioISO, fin: finISO });
+    const resp = await fetch(`/reservas/precios-por-dia?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+    });
 
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => null);
-    throw new Error(txt || `Error ${resp.status}`);
-  }
+    if (!resp.ok) {
+        const txt = await resp.text().catch(() => null);
+        throw new Error(txt || `Error ${resp.status}`);
+    }
 
-  const json = await resp.json();
-  return json;
+    const json = await resp.json();
+    return json;
 }
