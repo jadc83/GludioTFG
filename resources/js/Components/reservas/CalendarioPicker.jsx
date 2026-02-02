@@ -1,4 +1,4 @@
-import PrimaryButton from '@/Components/UI/PrimaryButton';
+import Boton from '@/Components/UI/Boton';
 import { es } from 'date-fns/locale';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
@@ -44,25 +44,32 @@ const BotonesCalendario = ({
         <div
             className={`flex items-center justify-between gap-2 ${!esMobile ? 'rounded-b-xl border-t border-gray-200 bg-gray-50 px-6 py-4' : 'mt-4 border-t border-gray-200 pt-4'}`}
         >
-            <button
+            <Boton
+                variant="outline"
+                size="sm"
                 onClick={() => {
                     formularioReserva.limpiarRango();
                 }}
-                className={`btn btn-outline btn-sm ${esMobile ? 'flex-1' : ''}`}
+                className={esMobile ? 'flex-1' : ''}
             >
                 Limpiar
-            </button>
-            <PrimaryButton
-                className={`${esMobile ? 'flex-1 px-3 py-1 text-xs' : 'px-3 py-1 text-xs'}`}
+            </Boton>
+            <Boton
+                variant="primary"
+                color="danger"
+                size="sm"
                 disabled={deshabilitarContinuar}
                 onClick={() => {
                     setCalendarioAbierto(null);
                     if (formularioReserva.pasoActual === 1)
                         formularioReserva.avanzarPaso();
                 }}
+                className={
+                    esMobile ? 'flex-1 px-3 py-1 text-xs' : 'px-3 py-1 text-xs'
+                }
             >
                 Continuar
-            </PrimaryButton>
+            </Boton>
         </div>
     );
 };

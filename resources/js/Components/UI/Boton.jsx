@@ -1,4 +1,5 @@
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
+import React from 'react';
 
 export default function Boton({
     children,
@@ -9,7 +10,7 @@ export default function Boton({
     loading = false,
     onClick,
     className = '',
-    icon: Icon = null,
+    icon = null,
     ...props
 }) {
     // Variantes de color
@@ -57,7 +58,8 @@ export default function Boton({
                 </>
             ) : (
                 <>
-                    {Icon && <Icon className="h-4 w-4" />}
+                    {icon &&
+                        React.createElement(icon, { className: 'h-4 w-4' })}
                     {children}
                 </>
             )}

@@ -1,4 +1,5 @@
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import Boton from '@/Components/UI/Boton';
 import { IdentificationIcon } from '@heroicons/react/24/outline';
 import FormularioDatosCliente from '../formularios/FormularioDatosCliente';
 
@@ -81,14 +82,14 @@ export default function Paso3Datos({
             {/* FOOTER: Botones con radio industrial corregido */}
             <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
-                    <button
-                        onClick={retrocederPaso}
-                        className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-[#7a0202]"
-                    >
+                    <Boton variant="ghost" size="sm" onClick={retrocederPaso}>
                         ← Volver a Unidades
-                    </button>
+                    </Boton>
 
-                    <button
+                    <Boton
+                        variant="primary"
+                        color="danger"
+                        size="md"
                         onClick={avanzarPaso}
                         disabled={
                             !formData.name ||
@@ -99,10 +100,9 @@ export default function Paso3Datos({
                             !formData.nacionalidad ||
                             !formData.direccion
                         }
-                        className="rounded-lg bg-[#7a0202] px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] text-white shadow-lg transition-all hover:bg-black active:scale-95 disabled:opacity-20"
                     >
                         Revisar Reserva →
-                    </button>
+                    </Boton>
                 </div>
             </footer>
         </div>

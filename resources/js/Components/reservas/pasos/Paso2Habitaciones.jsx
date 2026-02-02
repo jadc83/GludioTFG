@@ -3,6 +3,7 @@ import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
 import TarifasSelector from '@/Components/reservas/TarifasSelector';
 import TarjetaHabitacion from '@/Components/reservas/TarjetaHabitacion';
 import DetalleSubtotal from '@/Components/reservas/utilidades/DetalleSubtotal';
+import Boton from '@/Components/UI/Boton';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import { CONFIG_RESERVAS } from '@/utils/constantes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -152,19 +153,23 @@ export default function Paso2Habitaciones({
             {/* FOOTER: Reducido en padding vertical */}
             <footer className="flex-none border-t border-gray-100 bg-white px-10 py-5">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
-                    <button
+                    <Boton
+                        variant="ghost"
+                        size="sm"
+                        icon={ArrowLeftIcon}
                         onClick={retrocederPaso}
-                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-gray-900"
                     >
-                        <ArrowLeftIcon className="h-3 w-3" /> Volver
-                    </button>
-                    <button
+                        Volver
+                    </Boton>
+                    <Boton
+                        variant="primary"
+                        color="danger"
+                        size="md"
                         onClick={avanzarPaso}
                         disabled={totalSeleccionado === 0}
-                        className="rounded-lg bg-[#7a0202] px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] text-white shadow-xl shadow-red-900/20 transition-all hover:bg-black active:scale-95 disabled:opacity-20"
                     >
                         Siguiente Paso →
-                    </button>
+                    </Boton>
                 </div>
             </footer>
 

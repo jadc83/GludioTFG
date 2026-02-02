@@ -1,6 +1,7 @@
 import Modal from '@/Components/Modal';
 import CuponDescuento from '@/Components/reservas/CuponDescuento';
 import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import Boton from '@/Components/UI/Boton';
 import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches } from '@/utils/formatters';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -463,13 +464,14 @@ export default function Paso4Confirmacion({
             {/* FOOTER: Navegación final */}
             <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
-                    <button
+                    <Boton
+                        variant="ghost"
+                        size="sm"
+                        icon={ArrowLeftIcon}
                         onClick={retrocederPaso}
-                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-[#7a0202]"
                     >
-                        <ArrowLeftIcon className="h-3 w-3" /> Editar Datos del
-                        Titular
-                    </button>
+                        Editar Datos del Titular
+                    </Boton>
                 </div>
             </footer>
 
