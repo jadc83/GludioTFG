@@ -19,4 +19,9 @@ class Tarifa extends Model
     {
         return $this->hasMany(Reserva::class, 'tarifa_id');
     }
+
+    public function reservasMultiple()
+    {
+        return $this->belongsToMany(Reserva::class, 'reserva_tarifas');
+    }
 }

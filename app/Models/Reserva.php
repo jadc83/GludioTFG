@@ -15,7 +15,7 @@ class Reserva extends Model
     protected $fillable = [ 'localizador', 'user_id', 'booked_by_user_id', 'check_in', 'check_out', 'precio_total',
         'status', 'pago', 'notas', 'reservable_type', 'reservable_id', 'tarifa_id', 'cupon_id', 'descuento_aplicado'];
 
-    protected $casts = [ 'precio_total' => 'float'];
+    protected $casts = [ 'precio_total' => 'float', 'descuento_aplicado' => 'float'];
 
     public function reservable()
     {
@@ -51,6 +51,16 @@ class Reserva extends Model
     public function tarifa()
     {
         return $this->belongsTo(Tarifa::class, 'tarifa_id');
+    }
+
+    public function tarifas()
+    {
+        return $this->belongsToMany(Tarifa::class, 'reserva_tarifas');
+    }
+
+    public function cuponAplicado()
+    {
+        return $this->hasOne(CuponAplicado::class, 'reserva_id');
     }
 
     /** Scopes **/

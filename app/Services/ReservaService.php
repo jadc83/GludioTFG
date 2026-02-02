@@ -48,61 +48,27 @@ class ReservaService
             'email' => $datos['email'] ?? 'NULL'
         ]);
 
-        $checkIn = Carbon::parse($datos['check_in'] ?? null);
-        $checkOut = Carbon::parse($datos['check_out'] ?? null);
+        $checkIn = Carbon::parse($datos['check_in']);
+        $checkOut = Carbon::parse($datos['check_out']);
+        $habitaciones = $datos['habitaciones'];
 
-        if (!$checkIn || !$checkOut) {
-            throw new \Exception('Fechas inválidas proporcionadas.');
+        // Calcular precio completo usando el método unificado
+        $resultadoPrecio = $this->servicioPrecio->calcularPrecioCompleto(
+            $habitaciones,
+            $checkIn,
+            $checkOut,
+            $datos['tarifas'] ?? [],
+            $datos['cupon_id'] ?? null
+        );
+
+        if (isset($resultadoPrecio['error'])) {
+            throw new \Exception($resultadoPrecio['error']);
         }
 
-        if ($checkOut->lte($checkIn)) {
-            throw new \Exception('La fecha de salida debe ser posterior a la de entrada.');
-        }
-
-        $habitaciones = $this->validarHabitaciones($datos['habitaciones'] ?? []);
-
-        if (empty($habitaciones)) {
-            throw new \Exception('Debe seleccionar al menos una habitación.');
-        }
-
-        // Calcular precio total (sin tarifas)
-        $precioTotal = $this->calcularPrecioTotal($habitaciones, $checkIn, $checkOut);
-
-        // Si hay tarifas, sumarlas al precio total
-        $tarifaId = null;
-        if (!empty($datos['tarifas']) && is_array($datos['tarifas'])) {
-            // Procesar TODAS las tarifas seleccionadas
-            $tarifasIds = [];
-            foreach ($datos['tarifas'] as $tarifaIdInput) {
-                if ($tarifaIdInput) {
-                    $tarifa = \App\Models\Tarifa::find($tarifaIdInput);
-                    if ($tarifa) {
-                        // Usar el ID de la tarifa principal (primera no-desayuno o cualquiera)
-                        if (!$tarifaId) {
-                            $tarifaId = $tarifa->id;
-                        }
-                        // Sumar TODAS los modificadores de precio
-                        $precioTotal += ($tarifa->modificador_precio ?? 0);
-                        $tarifasIds[] = $tarifa->id;
-                    }
-                }
-            }
-        }
-
-        // Aplicar descuento de cupón si existe
-        $cuponId = null;
-        $descuentoAplicado = 0;
-        if (!empty($datos['cupon_id'])) {
-            $cupon = \App\Models\Cupon::find($datos['cupon_id']);
-            if ($cupon && $cupon->activo && now()->between($cupon->fecha_inicio, $cupon->fecha_fin)) {
-                $descuentoAplicado = $cupon->tipo === 'porcentaje'
-                    ? ($precioTotal * $cupon->valor / 100)
-                    : $cupon->valor;
-                $descuentoAplicado = min($descuentoAplicado, $precioTotal); // No permitir descuento negativo
-                // NO restar el descuento del precioTotal - mantener el precio original
-                $cuponId = $cupon->id;
-            }
-        }
+        $precioTotal = $resultadoPrecio['precio_total'];
+        $descuentoAplicado = $resultadoPrecio['descuento_aplicado'];
+        $tarifaIds = $resultadoPrecio['tarifa_ids'];
+        $cuponId = $datos['cupon_id'] ?? null;
 
         // Mapear método de pago del frontend a estado de pago del backend
         $metodoPago = $datos['metodo_pago'] ?? 'pendiente';
@@ -126,22 +92,22 @@ class ReservaService
             'check_out' => $checkOut,
             'habitaciones' => $habitaciones,
             'precio_total' => $precioTotal,
-            'tarifa_id' => $tarifaId,
+            'tarifa_ids' => $tarifaIds, // Cambiar a array
             'cupon_id' => $cuponId,
             'descuento_aplicado' => $descuentoAplicado,
             'reservable_id' => $datos['reservable_id'] ?? null,
-            'reservable_type' => $datos['reservable_type'] ?? null, // Preservar el tipo desde frontend
+            'reservable_type' => $datos['reservable_type'] ?? null,
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
             'pago' => $estadoPago,
-            'metodo_pago' => $metodoPago, // Guardar el método elegido
+            'metodo_pago' => $metodoPago,
             'notas' => $datos['notas'] ?? '',
         ];
 
-        \Illuminate\Support\Facades\Log::info('prepararDatosReserva - datosReturn:', [
-            'nombre' => $datosReturn['nombre'],
+        \Illuminate\Support\Facades\Log::info('prepararDatosReserva completado', [
             'email' => $datosReturn['email'],
-            'precio_total' => $datosReturn['precio_total']
+            'precio_total' => $datosReturn['precio_total'],
+            'tarifa_ids_count' => count($tarifaIds)
         ]);
 
         return $datosReturn;
@@ -344,41 +310,25 @@ class ReservaService
     {
         $datosPreparados = $this->prepararDatosReserva($datos);
 
-        // Verificar disponibilidad
-        $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
-
         // Resolver reservable (usuario o cliente)
-        // Si viene reservable_type desde el frontend, usarlo directamente
         if (!empty($datosPreparados['reservable_type']) && !empty($datosPreparados['reservable_id'])) {
             $reservableType = $datosPreparados['reservable_type'];
-            \Illuminate\Support\Facades\Log::info('crearReserva - usando reservable existente:', [
-                'reservable_id' => $datosPreparados['reservable_id'],
-                'reservable_type' => $reservableType
-            ]);
         } elseif (($datosPreparados['tipo_usuario'] ?? '') === 'usuario' && $usuario) {
             $datosPreparados['reservable_id'] = $usuario->id;
             $reservableType = User::class;
-            \Illuminate\Support\Facades\Log::info('crearReserva - usando usuario autenticado:', ['id' => $usuario->id]);
         } else {
             // Crear o buscar cliente
             $clienteId = $this->obtenerOCrearCliente($datosPreparados);
             $datosPreparados['reservable_id'] = $clienteId;
             $reservableType = Cliente::class;
             $datosPreparados['tipo_usuario'] = 'cliente';
-            \Illuminate\Support\Facades\Log::info('crearReserva - cliente obtenido/creado:', [
-                'cliente_id' => $clienteId,
-                'reservable_type' => $reservableType
-            ]);
         }
 
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
-            $localizador = $this->generarLocalizador();
+            // Verificar disponibilidad dentro de la transacción
+            $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
 
-            \Illuminate\Support\Facades\Log::info('crearReserva - datosPreparados:', [
-                'cupon_id' => $datosPreparados['cupon_id'] ?? 'NULL',
-                'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
-                'precio_total' => $datosPreparados['precio_total'] ?? 0,
-            ]);
+            $localizador = $this->generarLocalizador();
 
             $reserva = Reserva::create([
                 'localizador' => $localizador,
@@ -391,16 +341,18 @@ class ReservaService
                 'status' => $status,
                 'pago' => $datosPreparados['pago'] ?? 'pendiente',
                 'notas' => $datosPreparados['notas'] ?? 'Reserva creada',
-                'tarifa_id' => $datosPreparados['tarifa_id'] ?? null,
                 'cupon_id' => $datosPreparados['cupon_id'] ?? null,
                 'descuento_aplicado' => $datosPreparados['descuento_aplicado'] ?? 0,
             ]);
 
-            \Illuminate\Support\Facades\Log::info('crearReserva - reserva creada:', [
+            // Guardar relaciones con tarifas múltiples
+            if (!empty($datosPreparados['tarifa_ids'])) {
+                $reserva->tarifas()->attach($datosPreparados['tarifa_ids']);
+            }
+
+            \Illuminate\Support\Facades\Log::info('Reserva creada', [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
-                'reservable_id' => $reserva->reservable_id,
-                'reservable_type' => $reserva->reservable_type,
                 'precio_total' => $reserva->precio_total
             ]);
 
@@ -471,37 +423,17 @@ class ReservaService
             return $datos['reservable_id'];
         }
 
-        // Buscar cliente existente por DNI
-        if (!empty($datos['numero_documento'])) {
-
-            $clienteExistente = Cliente::where('numero_documento', $datos['numero_documento'])->first();
-
+        // Buscar cliente existente por email primero
+        if (!empty($datos['email'])) {
+            $clienteExistente = Cliente::where('email', $datos['email'])->first();
             if ($clienteExistente) {
-                // Caso 1: Datos coinciden exactamente → reutilizar
-                if ($this->datosCoinciden($clienteExistente, $datos)) {
-                    return $clienteExistente->id;
-                }
-
-                // Caso 2: DNI existe, datos diferentes
-                // Lanzar excepción especial para que frontend pueda pedir confirmación
-                throw new \Exception(
-                    json_encode([
-                        'codigo' => 'cliente_existe_sin_confirmacion',
-                        'cliente_existente' => [
-                            'id' => $clienteExistente->id,
-                            'name' => $clienteExistente->name,
-                            'email' => $clienteExistente->email,
-                            'numero_documento' => $clienteExistente->numero_documento,
-                        ],
-                    ])
-                );
+                return $clienteExistente->id;
             }
         }
 
-        // Buscar cliente existente por email
-        if (!empty($datos['email'])) {
-            $clienteExistente = Cliente::where('email', $datos['email'])->first();
-
+        // Buscar cliente existente por DNI si no encontró por email
+        if (!empty($datos['numero_documento'])) {
+            $clienteExistente = Cliente::where('numero_documento', $datos['numero_documento'])->first();
             if ($clienteExistente) {
                 return $clienteExistente->id;
             }
