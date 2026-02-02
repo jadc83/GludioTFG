@@ -9,7 +9,7 @@ const ElegirPrecio = React.lazy(
 
 export default function TabConfiguracion({ cupones, tiposHabitacion }) {
     return (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
             <HeaderPanel
                 titulo="Precios y Cupones"
                 subtitulo="Gestión de tarifas y códigos promocionales"

@@ -56,7 +56,7 @@ export default function IndexCliente({
     const noHayClientesEnAbsoluto = clientes.length === 0 && users.length === 0;
 
     return (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
             <HeaderPanel
                 titulo="Clientes"
                 subtitulo="Directorio y gestión de clientes"
@@ -112,7 +112,7 @@ export default function IndexCliente({
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left">
+                            <table className="w-full border-collapse text-left responsive-table">
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -141,7 +141,7 @@ export default function IndexCliente({
                                             key={`${cliente.tipo_usuario}-${cliente.id}`}
                                             className="group transition-colors hover:bg-gray-50/50"
                                         >
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" data-label="Nombre">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xs font-black text-gray-400">
                                                         {cliente.name.charAt(0)}
@@ -157,12 +157,12 @@ export default function IndexCliente({
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" data-label="Email">
                                                 <span className="font-mono text-xs text-gray-400">
                                                     {cliente.email}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" data-label="Documento">
                                                 {cliente.tipo_documento ? (
                                                     <div className="flex flex-col">
                                                         <span className="mb-1 text-[10px] font-bold uppercase leading-none text-[#7a0202]">
@@ -182,18 +182,18 @@ export default function IndexCliente({
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" data-label="Teléfono">
                                                 <div className="text-sm font-bold text-gray-700">
                                                     {cliente.telefono || '—'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" data-label="Dirección">
                                                 <div className="max-w-[150px] truncate text-[10px] font-bold uppercase text-gray-400">
                                                     {cliente.direccion ||
                                                         'No hay dirección'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-6 py-4 text-right" data-label="Acciones">
                                                 <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                                                     <button className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
                                                         <EyeIcon className="h-5 w-5" />

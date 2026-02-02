@@ -109,7 +109,7 @@ export default function Navbar() {
                             </div>
                         )}
 
-                        <div className="flex sm:hidden">
+                        <div className="flex lg:hidden">
                             <button
                                 onClick={() => setAbrir(!AbrirDesplegable)}
                                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
@@ -144,50 +144,50 @@ export default function Navbar() {
             </div>
 
             <div
-                className={`${AbrirDesplegable ? 'block' : 'hidden'} bg-red-500 sm:hidden`}
+                className={`${AbrirDesplegable ? 'block' : 'hidden'} lg:hidden bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm`}
             >
-                <div className="flex flex-col space-y-1 px-4 py-2">
+                <div className="flex flex-col space-y-1 px-4 py-3">
                     <ResponsiveNavLink
                         href={route('dashboard')}
                         active={route().current('dashboard')}
-                        className="block rounded px-3 py-2 hover:bg-red-600"
+                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                     >
                         HABITACIONES
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href={route('home')}
                         active={route().current('home')}
-                        className="block rounded px-3 py-2 hover:bg-red-600"
+                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                     >
                         EXPERIENCIA
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href={route('home')}
                         active={route().current('home')}
-                        className="block rounded px-3 py-2 hover:bg-red-600"
+                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                     >
                         SERVICIOS
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         href={route('home')}
                         active={route().current('home')}
-                        className="block rounded px-3 py-2 hover:bg-red-600"
+                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                     >
                         CONTACTO
                     </ResponsiveNavLink>
                 </div>
-                <div className="border-t border-red-600 px-4 py-4">
+                <div className="border-t border-gray-200 px-4 py-4">
                     {user ? (
                         <>
-                            <div className="text-base font-medium text-white">
+                            <div className="text-base font-semibold text-gray-900">
                                 {user.name}
                             </div>
-                            <div className="mb-3 text-sm font-medium text-red-300">
+                            <div className="mb-3 text-sm font-medium text-gray-500">
                                 {user.email}
                             </div>
                             <ResponsiveNavLink
                                 href={route('profile.edit')}
-                                className="block rounded px-3 py-2 hover:bg-red-600"
+                                className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                             >
                                 Perfil
                             </ResponsiveNavLink>
@@ -195,7 +195,7 @@ export default function Navbar() {
                                 method="post"
                                 href={route('logout')}
                                 as="button"
-                                className="block rounded px-3 py-2 hover:bg-red-600"
+                                className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                             >
                                 Log Out
                             </ResponsiveNavLink>
@@ -204,13 +204,13 @@ export default function Navbar() {
                         <>
                             <ResponsiveNavLink
                                 href={route('login')}
-                                className="block rounded px-3 py-2 text-black hover:bg-red-600"
+                                className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                             >
                                 Log in
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 href={route('register')}
-                                className="block rounded px-3 py-2 hover:bg-red-600"
+                                className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
                             >
                                 Registrarse
                             </ResponsiveNavLink>

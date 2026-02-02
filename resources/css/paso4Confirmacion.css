@@ -1,0 +1,84 @@
+/* Estilos específicos para el Paso 4 - Confirmación */
+
+.paso4-confirmacion {
+    border-radius: 0.75rem;
+    scroll-behavior: smooth;
+}
+
+.paso4-confirmacion .resumen-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.paso4-confirmacion .col-detalle,
+.paso4-confirmacion .col-pago {
+    width: 100%;
+}
+
+.paso4-confirmacion .custom-scrollbar {
+    max-height: none;
+}
+
+.paso4-confirmacion .footer-cta {
+    gap: 0.75rem;
+}
+
+.paso4-confirmacion .footer-cta button {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Mobile refinements */
+@media (max-width: 768px) {
+    .paso4-confirmacion header {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .paso4-confirmacion h1 {
+        font-size: 1.5rem; /* text-2xl is 1.5rem usually, might want smaller on mobile */
+    }
+
+    .paso4-confirmacion .resumen-grid {
+        gap: 1.25rem;
+    }
+}
+
+/* Tablet refinements */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .paso4-confirmacion header {
+        padding: 1.5rem 2rem;
+    }
+
+    .paso4-confirmacion .resumen-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .paso4-confirmacion .footer-cta {
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .paso4-confirmacion .resumen-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 2rem;
+    }
+
+    .paso4-confirmacion .col-detalle { grid-column: span 5 / span 5; }
+    .paso4-confirmacion .col-pago { grid-column: span 7 / span 7; }
+
+    .paso4-confirmacion .footer-cta {
+        justify-content: flex-end;
+    }
+
+    .paso4-confirmacion .footer-cta button {
+        width: auto;
+    }
+}

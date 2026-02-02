@@ -160,7 +160,7 @@ export default function TabCupones({ cupones = {} }) {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm responsive-table">
                             <thead className="border-b border-gray-100 bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left font-semibold text-gray-700">
@@ -192,34 +192,34 @@ export default function TabCupones({ cupones = {} }) {
                                         key={cupon.id}
                                         className="transition-colors hover:bg-gray-50"
                                     >
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" data-label="Código">
                                             <span className="font-mono text-base font-bold text-[#7a0202]">
                                                 {cupon.codigo}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" data-label="Tipo">
                                             <span className="inline-block rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                                                 {cupon.tipo === 'porcentaje'
                                                     ? 'Porcentaje'
                                                     : 'Monto Fijo'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 font-semibold text-gray-900">
+                                        <td className="px-6 py-4 font-semibold text-gray-900" data-label="Valor">
                                             {getValorTexto(cupon)}
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600">
+                                        <td className="px-6 py-4 text-gray-600" data-label="Usos">
                                             {cupon.usos_realizados}/
                                             {cupon.usos_maximos || '∞'}
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600">
+                                        <td className="px-6 py-4 text-gray-600" data-label="Válido Hasta">
                                             {new Date(
                                                 cupon.fecha_fin,
                                             ).toLocaleDateString('es-ES')}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" data-label="Estado">
                                             {getEstadoBadge(cupon)}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" data-label="Acciones">
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => {

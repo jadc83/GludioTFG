@@ -223,10 +223,10 @@ export default function UpdateProfileInformation({
                     {/* VERIFICACIÓN (Alerta sutil) */}
 
                     {/* --- ACCIONES --- */}
-                    <div className="flex items-center gap-6 border-t border-gray-50 pt-6">
+                    <div className="perfil-form-actions flex items-center gap-6 border-t border-gray-50 pt-6">
                         <button
                             disabled={processing}
-                            className="rounded-2xl bg-[#7a0202] px-10 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                            className="rounded-2xl bg-gray-900 px-10 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-gray-200 transition hover:bg-black disabled:opacity-50"
                         >
                             {processing ? 'Procesando...' : 'Actualizar Perfil'}
                         </button>

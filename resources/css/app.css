@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import 'responsive.css';
+@import 'paso4Confirmacion.css';
+
 /* Mejoras tipográficas globales */
 @layer base {
   body {

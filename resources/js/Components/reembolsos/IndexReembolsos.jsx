@@ -76,7 +76,7 @@ export default function IndexReembolsos({
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left">
+                            <table className="w-full border-collapse text-left responsive-table">
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -110,7 +110,7 @@ export default function IndexReembolsos({
                                                 className="group transition-colors hover:bg-gray-50/50"
                                             >
                                                 {/* ID / Ticket */}
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Referencia">
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-100">
                                                             <span className="font-mono text-xs font-black text-gray-500">
@@ -131,7 +131,7 @@ export default function IndexReembolsos({
                                                 </td>
 
                                                 {/* Reserva / Solicitante */}
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Reserva / Usuario">
                                                     <div className="flex flex-col">
                                                         <div className="mb-1 flex items-center gap-2">
                                                             <div className="rounded bg-gray-900 px-2 py-0.5 font-mono text-[10px] font-black tracking-tighter text-white">
@@ -148,7 +148,7 @@ export default function IndexReembolsos({
                                                 </td>
 
                                                 {/* Montos */}
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Monto Solicitado">
                                                     <div className="flex flex-col">
                                                         <span className="text-base font-black text-[#7a0202]">
                                                             {r.requested_amount_cents
@@ -170,7 +170,7 @@ export default function IndexReembolsos({
                                                 </td>
 
                                                 {/* Motivo */}
-                                                <td className="px-6 py-6">
+                                                <td className="px-6 py-6" data-label="Motivo y Notas">
                                                     <div className="max-w-[200px]">
                                                         <span className="mb-1 block text-[10px] font-black uppercase leading-none text-gray-400">
                                                             {r.reason_code?.replace(
@@ -189,7 +189,7 @@ export default function IndexReembolsos({
                                                 </td>
 
                                                 {/* Estado */}
-                                                <td className="px-6 py-6 text-center">
+                                                <td className="px-6 py-6 text-center" data-label="Estado">
                                                     <span
                                                         className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm ${estado.clase}`}
                                                     >
@@ -198,7 +198,7 @@ export default function IndexReembolsos({
                                                 </td>
 
                                                 {/* Acciones */}
-                                                <td className="px-6 py-6 text-right">
+                                                <td className="px-6 py-6 text-right" data-label="Acciones">
                                                     {r.status === 'pending' ? (
                                                         <div className="flex justify-end gap-2">
                                                             <button

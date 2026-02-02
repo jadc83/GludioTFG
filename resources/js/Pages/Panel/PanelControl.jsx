@@ -1,3 +1,4 @@
+import React, { Suspense, useEffect, useState } from 'react';
 import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
 import IndexCliente from '@/Components/clientes/IndexCliente';
 import CreateCupon from '@/Components/cupones/formulario/CreateCupon';
@@ -5,27 +6,27 @@ import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
 import IndexEmpleados from '@/Components/empleados/IndexEmpleados';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import IndexHabitacion from '@/Components/habitaciones/IndexHabitacion';
+import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
 import IndexReserva from '@/Components/reservas/listado/IndexReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Link } from '@inertiajs/react';
 import {
-    BriefcaseIcon,
     ChartBarIcon,
     Cog6ToothIcon,
-    HomeIcon,
+    InboxIcon,
+    BriefcaseIcon,
     UsersIcon,
+    HomeIcon,
 } from '@heroicons/react/24/outline';
-import { Link } from '@inertiajs/react';
-import React, { Suspense, useEffect, useState } from 'react';
-import '../../../css/estiloPanelControl.css';
 
 const TABS = [
-    { id: 'habitaciones', icon: HomeIcon, label: 'Habitaciones' },
-    { id: 'clientes', icon: UsersIcon, label: 'Clientes' },
-    { id: 'empleados', icon: BriefcaseIcon, label: 'Empleados' },
-    { id: 'reservas', icon: BriefcaseIcon, label: 'Reservas' },
-    { id: 'configuracion', icon: Cog6ToothIcon, label: 'Configuración' },
-    { id: 'reembolsos', icon: BriefcaseIcon, label: 'Reembolsos' },
-    { id: 'estadisticas', icon: ChartBarIcon, label: 'Estadísticas' },
+    { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
+    { id: 'clientes', label: 'Clientes', icon: UsersIcon },
+    { id: 'empleados', label: 'Empleados', icon: BriefcaseIcon },
+    { id: 'reservas', label: 'Reservas', icon: InboxIcon },
+    { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
+    { id: 'reembolsos', label: 'Reembolsos', icon: ChartBarIcon },
+    { id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon },
 ];
 
 function BotonTab({ id, icon: Icon, label, activa, onClick }) {
@@ -154,45 +155,6 @@ export default function PanelControl({
     return (
         <AuthenticatedLayout>
             <div className="contenedorPrincipal">
-                <div className="seccionEncabezado">
-                    <div className="contenidoEncabezado">
-                        <div className="flexEncabezado">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <h1 className="tituloEncabezado">
-                                        Panel de Control
-                                    </h1>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Link
-                                        href={route('scan-qr')}
-                                        className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                    >
-                                        <svg
-                                            className="h-5 w-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 4v16m8-8H4"
-                                            />
-                                        </svg>
-                                        Escáner QR
-                                    </Link>
-                                    <CreateCliente iconOnly />
-                                    <CreateHabitacion iconOnly />
-                                    <CreateEmpleado iconOnly />
-                                    <CreateCupon iconOnly />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
                         <div className="mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1">
@@ -208,6 +170,14 @@ export default function PanelControl({
                                     />
                                 ))}
                             </div>
+                        </div>
+
+                        <div className="mb-6 flex flex-wrap items-center justify-center gap-3 acciones-rapidas-panel">
+                            <CreateReserva iconOnly />
+                            <CreateCliente iconOnly />
+                            <CreateHabitacion iconOnly />
+                            <CreateEmpleado iconOnly />
+                            <CreateCupon iconOnly />
                         </div>
 
                         <div className="contenedorContenido bg-gris">

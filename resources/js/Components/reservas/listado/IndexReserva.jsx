@@ -103,13 +103,11 @@ export default function IndexReserva({ reservas = [] }) {
     }, [reservas.length]);
 
     return (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
             <HeaderPanel
                 titulo="Reservas"
                 subtitulo="Panel de control y gestión de reservas"
-            >
-                <CreateReserva />
-            </HeaderPanel>
+            />
 
             {/* Barra de filtros */}
             <BarraBuscador
@@ -184,7 +182,7 @@ export default function IndexReserva({ reservas = [] }) {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
+                        <table className="w-full border-collapse text-left responsive-table">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50/50">
                                     <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -224,8 +222,8 @@ export default function IndexReserva({ reservas = [] }) {
                                             className="group transition-colors hover:bg-gray-50/50"
                                         >
                                             {/* Localizador Box */}
-                                            <td className="px-6 py-6 text-center">
-                                                <div className="flex items-center justify-center gap-3">
+                                            <td className="px-6 py-6 text-center" data-label="Localizador">
+                                                <div className="flex items-center justify-center gap-3 md:justify-center justify-end w-full">
                                                     <div className="flex h-10 w-16 items-center justify-center rounded-xl bg-gray-900 text-white shadow-lg shadow-gray-200 transition-colors group-hover:bg-[#7a0202]">
                                                         <span className="font-mono text-xs font-black tracking-tighter">
                                                             {
@@ -237,7 +235,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Cliente */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Cliente">
                                                 <span className="text-xs font-medium uppercase leading-none tracking-tight text-gray-900">
                                                     {reserva.cliente_name ||
                                                         'Anónimo'}
@@ -245,7 +243,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Habitación */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Habitación">
                                                 <span className="text-sm font-medium text-gray-600">
                                                     {reserva.habitacion_numero ||
                                                         '—'}
@@ -253,7 +251,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Llegada */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Llegada">
                                                 <div className="font-mono text-xs font-medium text-gray-600">
                                                     {new Date(
                                                         reserva.check_in,
@@ -264,7 +262,7 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Salida */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Salida">
                                                 <div className="font-mono text-xs font-medium text-gray-600">
                                                     {new Date(
                                                         reserva.check_out,
@@ -275,8 +273,8 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Precio */}
-                                            <td className="px-6 py-6 text-center">
-                                                <div className="flex flex-col">
+                                            <td className="px-6 py-6 text-center" data-label="Precio">
+                                                <div className="flex flex-col items-end md:items-center w-full">
                                                     <span className="text-xs text-gray-400 line-through">
                                                         {(parseFloat(reserva.precio_total || 0) + parseFloat(reserva.descuento_aplicado || 0)).toFixed(2)} €
                                                     </span>
@@ -287,7 +285,8 @@ export default function IndexReserva({ reservas = [] }) {
                                             </td>
 
                                             {/* Estado Pago */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Estado Pago">
+                                                <div className="flex justify-end md:justify-center w-full">
                                                 <Badge
                                                     label={
                                                         reserva.pago ===
@@ -309,10 +308,12 @@ export default function IndexReserva({ reservas = [] }) {
                                                         'pendiente'
                                                     }
                                                 />
+                                                </div>
                                             </td>
 
                                             {/* Estado Reserva */}
-                                            <td className="px-6 py-6 text-center">
+                                            <td className="px-6 py-6 text-center" data-label="Estado Reserva">
+                                                <div className="flex justify-end md:justify-center w-full">
                                                 <Badge
                                                     label={
                                                         reserva.status ===
@@ -349,11 +350,12 @@ export default function IndexReserva({ reservas = [] }) {
                                                         'pendiente'
                                                     }
                                                 />
+                                                </div>
                                             </td>
 
                                             {/* Acciones */}
-                                            <td className="px-6 py-6 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="px-6 py-6 text-right full-width mt-2 md:mt-0" data-label="Acciones">
+                                                <div className="flex justify-end gap-2 w-full">
                                                     <button
                                                         onClick={() =>
                                                             router.visit(

@@ -36,7 +36,7 @@ class ScannerController extends Controller
 
             if ($accion === 'checkin') {
                 // Hacer check-in solo si no se hizo ya
-                if ($reserva->status === 'checked_in') {
+                if ($reserva->status === 'en_estancia') {
                     return response()->json(['success' => true, 'message' => 'Reserva ya marcada como check-in', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
                 }
 
@@ -59,7 +59,7 @@ class ScannerController extends Controller
                     return response()->json([ 'success' => false, 'error' => 'Error al asignar habitaciones en check-in: ' . $e->getMessage() ], 500);
                 }
 
-                $reserva->status = 'checked_in';
+                $reserva->status = 'en_estancia';
                 $reserva->save();
 
                 try { event(new ReservaActualizada($reserva, null)); } catch (\Throwable $e) { /* ignore */ }
@@ -75,11 +75,11 @@ class ScannerController extends Controller
                     return response()->json(['success' => false, 'error' => 'No se puede hacer check-out, la fecha de salida ya ha pasado.'], 400);
                 }
 
-                if ($reserva->status !== 'checked_in') {
+                if ($reserva->status !== 'en_estancia') {
                     return response()->json(['success' => false, 'error' => 'La reserva no está marcada como check-in.'], 400);
                 }
 
-                $reserva->status = 'checked_out';
+                $reserva->status = 'finalizado';
                 $reserva->save();
 
                 // Marcar las habitaciones asignadas como 'limpieza' para que recepción/protocolos las procesen

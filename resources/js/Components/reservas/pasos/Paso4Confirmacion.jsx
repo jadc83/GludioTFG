@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import OpcionesPago from '../modales/OpcionesPago';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
+import '../../../../css/paso4Confirmacion.css';
 
 export default function Paso4Confirmacion({
     rango,
@@ -269,11 +270,11 @@ export default function Paso4Confirmacion({
     };
 
     return (
-        <div className="sishadow-2xl relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-gris">
-            <header className="flex-none border-b border-gray-100 bg-gris px-8 py-6 md:px-12">
+        <div className="paso4-confirmacion shadow-2xl relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-gris">
+            <header className="flex-none border-b border-gray-100 bg-gris px-6 py-5 md:px-10 md:py-6">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
                     <div className="text-center md:text-left">
-                        <h1 className="text-2xl font-black uppercase leading-none tracking-tighter text-gray-900">
+                        <h1 className="text-xl font-black uppercase leading-none tracking-tighter text-gray-900 md:text-2xl">
                             RESUMEN
                         </h1>
                         <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
@@ -291,10 +292,10 @@ export default function Paso4Confirmacion({
 
             {/* CUERPO: Grid de 12 columnas para maximizar el espacio */}
             <main className="flex flex-1 flex-col items-center justify-start overflow-hidden bg-gris">
-                <div className="custom-scrollbar w-full max-w-full overflow-y-auto px-6 py-8 md:px-12">
-                    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+                <div className="custom-scrollbar w-full max-w-full overflow-y-auto px-4 py-6 sm:px-6 md:px-10 md:py-8">
+                    <div className="resumen-grid grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
                         {/* COLUMNA DETALLES: 5/12 del ancho total */}
-                        <div className="space-y-8 lg:col-span-5">
+                        <div className="col-detalle space-y-6 lg:col-span-5">
                             {localizador && (
                                 <div className="flex items-center justify-between rounded-lg bg-gris p-5 shadow-sm">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -370,7 +371,7 @@ export default function Paso4Confirmacion({
                         </div>
 
                         {/* COLUMNA PAGO: 7/12 del ancho total */}
-                        <div className="space-y-8 lg:col-span-7">
+                        <div className="col-pago space-y-6 lg:col-span-7">
                             {/* Componente de Opciones de Pago con el formulario corregido */}
                             <div className="px-2">
                                 <OpcionesPago
@@ -462,8 +463,8 @@ export default function Paso4Confirmacion({
             </Modal>
 
             {/* FOOTER: Navegación final */}
-            <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
-                <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <footer className="flex-none border-t border-gray-100 bg-white px-6 py-5 md:px-10">
+                <div className="footer-cta mx-auto flex max-w-5xl items-center justify-between">
                     <Boton
                         variant="ghost"
                         size="sm"

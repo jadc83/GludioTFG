@@ -58,7 +58,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
             </h2>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 responsive-table">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
@@ -86,7 +86,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                             >
                                 {editando === tipo.id ? (
                                     <>
-                                        <td className="whitespace-nowrap px-6 py-4">
+                                        <td className="whitespace-nowrap px-6 py-4" data-label="Tipo">
                                             <input
                                                 type="text"
                                                 name="nombre"
@@ -95,7 +95,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                 className="rounded border border-gray-300 px-2 py-1 text-sm"
                                             />
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4">
+                                        <td className="whitespace-nowrap px-6 py-4" data-label="Slug">
                                             <input
                                                 type="text"
                                                 name="slug"
@@ -105,7 +105,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                 className="rounded border border-gray-300 bg-gray-100 px-2 py-1 text-sm"
                                             />
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4">
+                                        <td className="whitespace-nowrap px-6 py-4" data-label="Capacidad">
                                             <input
                                                 type="number"
                                                 name="capacidad"
@@ -114,7 +114,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                 className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
                                             />
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4">
+                                        <td className="whitespace-nowrap px-6 py-4" data-label="Precio Base">
                                             <input
                                                 type="number"
                                                 name="precio_base"
@@ -124,7 +124,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                 className="w-32 rounded border border-gray-300 px-2 py-1 text-sm"
                                             />
                                         </td>
-                                        <td className="flex gap-2 whitespace-nowrap px-6 py-4">
+                                        <td className="flex gap-2 whitespace-nowrap px-6 py-4" data-label="Acciones">
                                             <button
                                                 onClick={() =>
                                                     guardarCambios(tipo.id)
@@ -145,22 +145,22 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                     </>
                                 ) : (
                                     <>
-                                        <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
+                                        <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900" data-label="Tipo">
                                             {tipo.nombre}
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                                        <td className="whitespace-nowrap px-6 py-4 text-gray-600" data-label="Slug">
                                             {tipo.slug}
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                                        <td className="whitespace-nowrap px-6 py-4 text-gray-600" data-label="Capacidad">
                                             {tipo.capacidad} personas
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4 font-semibold text-[#920303]">
+                                        <td className="whitespace-nowrap px-6 py-4 font-semibold text-[#920303]" data-label="Precio Base">
                                             {parseFloat(
                                                 tipo.precio_base,
                                             ).toFixed(2)}
                                             €
                                         </td>
-                                        <td className="whitespace-nowrap px-6 py-4">
+                                        <td className="whitespace-nowrap px-6 py-4" data-label="Acciones">
                                             <button
                                                 onClick={() =>
                                                     iniciarEdicion(tipo)
