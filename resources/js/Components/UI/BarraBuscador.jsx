@@ -1,4 +1,4 @@
-import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 /**
  * Componente de barra de búsqueda y filtros reutilizable
@@ -41,17 +41,25 @@ export default function BarraBuscador({
 
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div className={esGrid
-                ? 'flex flex-col gap-3 xl:flex-row xl:items-start xl:gap-4'
-                : 'flex flex-col gap-4 md:flex-row md:items-center'
-            }>
+            <div
+                className={
+                    esGrid
+                        ? 'flex flex-col gap-3 xl:flex-row xl:items-start xl:gap-4'
+                        : 'flex flex-col gap-4 md:flex-row md:items-center'
+                }
+            >
                 {/* Contenedor de campos */}
-                <div className={esGrid
-                    ? 'grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 xl:flex-1'
-                    : 'flex w-full flex-col gap-4 md:flex-row md:items-center'
-                }>
+                <div
+                    className={
+                        esGrid
+                            ? 'grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 xl:flex-1'
+                            : 'flex w-full flex-col gap-4 md:flex-row md:items-center'
+                    }
+                >
                     {/* Campo de búsqueda principal */}
-                    <div className={`relative ${esGrid ? '' : 'w-full md:flex-1'}`}>
+                    <div
+                        className={`relative ${esGrid ? '' : 'w-full md:flex-1'}`}
+                    >
                         <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
@@ -93,7 +101,10 @@ export default function BarraBuscador({
 
                         if (filtro.tipo === 'input') {
                             return (
-                                <div key={index} className={`relative ${!esGrid ? 'w-full md:flex-1' : ''}`}>
+                                <div
+                                    key={index}
+                                    className={`relative ${!esGrid ? 'w-full md:flex-1' : ''}`}
+                                >
                                     {filtro.icono && (
                                         <div className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400">
                                             {filtro.icono}

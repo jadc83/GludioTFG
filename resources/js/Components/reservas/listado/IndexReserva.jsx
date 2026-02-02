@@ -1,6 +1,7 @@
 import Badge from '@/Components/UI/Badge';
 import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
+import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import Paginacion from '@/Components/UI/Paginacion';
 import {
     HomeIcon,
@@ -9,10 +10,11 @@ import {
     TrashIcon,
     UserIcon,
 } from '@heroicons/react/24/outline';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
+    const { props } = usePage();
     const [filtros, setFiltros] = useState({
         status: 'todos',
         localizador: '',
@@ -21,6 +23,7 @@ export default function IndexReserva({ reservas = [] }) {
     });
     const [refrescarTabla, setRefrescarTabla] = useState(0);
     const [paginaActual, setPaginaActual] = useState(1);
+    const [eliminandoId, setEliminandoId] = useState(null);
     const itemsPorPagina = 10;
 
     const actualizarFiltro = (campo, valor) => {
@@ -72,9 +75,16 @@ export default function IndexReserva({ reservas = [] }) {
         };
     }, []);
 
-    const eliminarReserva = (id) => {
+    const eliminarReserva = async (id) => {
         if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
-            router.delete(`/reservas/${id}`, { preserveScroll: true });
+            setEliminandoId(id);
+
+            try {
+                await router.delete(`/reservas/${id}`, { preserveScroll: true });
+            } finally {
+                // Delay extendido para asegurar que el spinner sea bien perceptible
+                setTimeout(() => setEliminandoId(null), 3000);
+            }
         }
     };
 
@@ -126,10 +136,22 @@ export default function IndexReserva({ reservas = [] }) {
                             { valor: 'en_estancia', etiqueta: 'En Estancia' },
                             { valor: 'finalizado', etiqueta: 'Finalizada' },
                             { valor: 'cancelado', etiqueta: 'Cancelada' },
-                            { valor: 'no_presentado', etiqueta: 'No Presentado' },
-                            { valor: 'reembolso_parcial_pendiente', etiqueta: 'Reembolso Parcial Pendiente' },
-                            { valor: 'reembolso_total_pendiente', etiqueta: 'Reembolso Total Pendiente' },
-                            { valor: 'reembolso_parcial_confirmado', etiqueta: 'Reembolso Parcial Confirmado' },
+                            {
+                                valor: 'no_presentado',
+                                etiqueta: 'No Presentado',
+                            },
+                            {
+                                valor: 'reembolso_parcial_pendiente',
+                                etiqueta: 'Reembolso Parcial Pendiente',
+                            },
+                            {
+                                valor: 'reembolso_total_pendiente',
+                                etiqueta: 'Reembolso Total Pendiente',
+                            },
+                            {
+                                valor: 'reembolso_parcial_confirmado',
+                                etiqueta: 'Reembolso Parcial',
+                            },
                         ],
                     },
                 ]}
@@ -160,28 +182,28 @@ export default function IndexReserva({ reservas = [] }) {
                         <table className="w-full border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50/50">
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Localizador
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Cliente
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Habitación
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Llegada
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Salida
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Precio
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Estado Pago
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
+                                    <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Estado Reserva
                                     </th>
                                     <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -321,7 +343,7 @@ export default function IndexReserva({ reservas = [] }) {
                                                                           ? 'Reembolso Total Pendiente'
                                                                           : reserva.status ===
                                                                               'reembolso_parcial_confirmado'
-                                                                            ? 'Reembolso Parcial Confirmado'
+                                                                            ? 'Reembolso Parcial'
                                                                             : 'Pendiente'
                                                     }
                                                     tipo={
@@ -333,7 +355,7 @@ export default function IndexReserva({ reservas = [] }) {
 
                                             {/* Acciones */}
                                             <td className="px-6 py-6 text-right">
-                                                <div className="flex translate-x-2 transform justify-end gap-2 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
+                                                <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() =>
                                                             router.visit(
@@ -350,9 +372,14 @@ export default function IndexReserva({ reservas = [] }) {
                                                                 reserva.id,
                                                             )
                                                         }
-                                                        className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black"
+                                                        disabled={eliminandoId === reserva.id}
+                                                        className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black disabled:opacity-50"
                                                     >
-                                                        <TrashIcon className="h-4 w-4" />
+                                                        {eliminandoId === reserva.id ? (
+                                                            <LoadingSpinner />
+                                                        ) : (
+                                                            <TrashIcon className="h-4 w-4" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>

@@ -40,8 +40,8 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
     );
 }
 
-import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 import TabConfiguracion from '@/Pages/Panel/TabConfiguracion';
+import TabReembolsos from '@/Pages/Panel/TabReembolsos';
 const TabEstadisticas = React.lazy(
     () => import('@/Pages/Panel/TabEstadisticas'),
 );

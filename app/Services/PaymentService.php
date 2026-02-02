@@ -32,7 +32,7 @@ class PaymentService
 	protected function getStripe(): StripeClient
 	{
 		if ($this->stripe === null) {
-			$stripeSecret = env('STRIPE_SECRET_KEY');
+			$stripeSecret = config('services.stripe.secret');
 			if (!$stripeSecret) {
 				throw new \RuntimeException('STRIPE_SECRET_KEY no está configurada en el archivo .env. Por favor, configura la clave de Stripe.');
 			}

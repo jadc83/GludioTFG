@@ -3,11 +3,7 @@ import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
-import {
-    EyeIcon,
-    InboxIcon,
-    PencilIcon,
-} from '@heroicons/react/24/outline';
+import { EyeIcon, InboxIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function IndexEmpleados({ empleados = [] }) {

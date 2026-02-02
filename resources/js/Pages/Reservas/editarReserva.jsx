@@ -1,5 +1,6 @@
 import ErrorBoundary from '@/Components/ErrorBoundary';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import useReserva from '@/hooks/reservas/useReserva';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import usePreview from '@/hooks/usePreview';
@@ -351,7 +352,11 @@ export default function EditarReserva({
                                                         className="rounded-lg bg-red-50 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                                                         title="Quitar asignación de habitación"
                                                     >
-                                                        ✕
+                                                        {savingHabitaciones ? (
+                                                            <LoadingSpinner />
+                                                        ) : (
+                                                            '✕'
+                                                        )}
                                                     </button>
                                                 </div>
                                             )}
@@ -610,8 +615,11 @@ export default function EditarReserva({
 
                                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
                                     {previewLoading ? (
-                                        <div className="flex animate-pulse items-center justify-center py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
-                                            Calculando cambios...
+                                        <div className="py-4 text-center">
+                                            <LoadingSpinner />
+                                            <div className="mt-2 text-xs font-bold uppercase tracking-widest text-gray-400">
+                                                Calculando cambios...
+                                            </div>
                                         </div>
                                     ) : previewError ? (
                                         <div className="py-4 text-center text-sm font-bold text-red-500">

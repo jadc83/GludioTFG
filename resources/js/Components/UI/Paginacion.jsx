@@ -37,8 +37,7 @@ export default function Paginacion({
         <div className="flex flex-col items-center justify-between gap-6 border-t border-gray-100 bg-gray-50/50 px-8 py-6 sm:flex-row">
             {/* Información de registros */}
             <div className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
-                Mostrando{' '}
-                <span className="text-gray-900">{inicio + 1}</span> —{' '}
+                Mostrando <span className="text-gray-900">{inicio + 1}</span> —{' '}
                 <span className="text-gray-900">{Math.min(fin, total)}</span>{' '}
                 <span className="mx-2 text-gray-200">|</span> Total{' '}
                 <span className="text-gray-900">{total}</span> {etiqueta}

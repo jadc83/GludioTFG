@@ -73,7 +73,10 @@ export default function IndexCliente({
                         tipo: 'select',
                         nombre: 'tipo_documento',
                         opciones: [
-                            { valor: 'todos', etiqueta: 'Todos los documentos' },
+                            {
+                                valor: 'todos',
+                                etiqueta: 'Todos los documentos',
+                            },
                             { valor: 'dni', etiqueta: 'DNI' },
                             { valor: 'pasaporte', etiqueta: 'Pasaporte' },
                             { valor: 'tie', etiqueta: 'TIE' },

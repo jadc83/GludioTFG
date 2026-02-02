@@ -3,11 +3,7 @@ import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
-import {
-    InboxIcon,
-    PencilIcon,
-    UsersIcon,
-} from '@heroicons/react/24/outline';
+import { InboxIcon, PencilIcon, UsersIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
@@ -60,18 +56,21 @@ export default function IndexHabitacion({ habitaciones = [] }) {
         },
     };
 
-    const { habitacionesPaginadas, habitacionesFiltradas, totalPaginas, inicio, fin } = useMemo(() => {
+    const {
+        habitacionesPaginadas,
+        habitacionesFiltradas,
+        totalPaginas,
+        inicio,
+        fin,
+    } = useMemo(() => {
         // Aplicar filtros
         const filtradas = habitaciones.filter((hab) => {
             // Filtro de búsqueda
             if (filtros.busqueda) {
                 const q = filtros.busqueda.toLowerCase();
-                const coincide = [
-                    hab.numero,
-                    hab.tipo,
-                    hab.descripcion,
-                ].some((field) =>
-                    (field || '').toString().toLowerCase().includes(q)
+                const coincide = [hab.numero, hab.tipo, hab.descripcion].some(
+                    (field) =>
+                        (field || '').toString().toLowerCase().includes(q),
                 );
                 if (!coincide) return false;
             }
@@ -93,7 +92,13 @@ export default function IndexHabitacion({ habitaciones = [] }) {
         const inicio = (paginaActual - 1) * itemsPorPagina;
         const fin = inicio + itemsPorPagina;
         const habitacionesPaginadas = filtradas.slice(inicio, fin);
-        return { habitacionesPaginadas, habitacionesFiltradas: filtradas, totalPaginas, inicio, fin };
+        return {
+            habitacionesPaginadas,
+            habitacionesFiltradas: filtradas,
+            totalPaginas,
+            inicio,
+            fin,
+        };
     }, [habitaciones, paginaActual, filtros]);
 
     return (
@@ -117,7 +122,10 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             { valor: 'todos', etiqueta: 'Todos los estados' },
                             { valor: 'disponible', etiqueta: 'Disponible' },
                             { valor: 'ocupada', etiqueta: 'Ocupada' },
-                            { valor: 'mantenimiento', etiqueta: 'Mantenimiento' },
+                            {
+                                valor: 'mantenimiento',
+                                etiqueta: 'Mantenimiento',
+                            },
                             { valor: 'limpieza', etiqueta: 'Limpieza' },
                         ],
                     },
@@ -143,13 +151,14 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                             <InboxIcon className="h-12 w-12 text-gray-300" />
                         </div>
                         <h3 className="text-xl font-black uppercase tracking-tight text-gray-900">
-                            {habitaciones.length === 0 ? 'Inventario Vacío' : 'Sin resultados'}
+                            {habitaciones.length === 0
+                                ? 'Inventario Vacío'
+                                : 'Sin resultados'}
                         </h3>
                         <p className="mt-2 max-w-xs text-sm text-gray-400">
                             {habitaciones.length === 0
                                 ? 'No hay habitaciones registradas en el sistema.'
-                                : 'No hay habitaciones que coincidan con los filtros aplicados.'
-                            }
+                                : 'No hay habitaciones que coincidan con los filtros aplicados.'}
                         </p>
                         {habitaciones.length > 0 && (
                             <button
@@ -214,7 +223,8 @@ export default function IndexHabitacion({ habitaciones = [] }) {
                                                     <div className="flex items-center gap-1.5 text-gray-400">
                                                         <UsersIcon className="h-3 w-3" />
                                                         <span className="text-xs font-bold uppercase tracking-widest">
-                                                            {hab.capacidad} plazas
+                                                            {hab.capacidad}{' '}
+                                                            plazas
                                                         </span>
                                                     </div>
                                                 </td>

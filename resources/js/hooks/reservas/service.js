@@ -29,6 +29,7 @@ export const eliminarSolicitud = async (id, payload = {}) =>
 export async function calcularPrecio(payload) {
     const res = await axios.post('/reservas/calcular-precio', payload);
     return res?.data ?? null;
+}
 
 export async function crearReserva(payload) {
     try {

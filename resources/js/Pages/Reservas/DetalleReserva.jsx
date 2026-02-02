@@ -1,5 +1,6 @@
 import ErrorBoundary from '@/Components/ErrorBoundary';
 import FormularioPago from '@/Components/pagos/FormularioPago';
+import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import useReserva from '@/hooks/reservas/useReserva';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import usePreview from '@/hooks/usePreview';
@@ -443,8 +444,11 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
                                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
                                     {previewLoading ? (
-                                        <div className="animate-pulse py-4 text-center text-xs font-bold uppercase text-gray-400">
-                                            Calculando impacto...
+                                        <div className="py-4 text-center">
+                                            <LoadingSpinner />
+                                            <div className="mt-2 text-xs font-bold uppercase text-gray-400">
+                                                Calculando impacto...
+                                            </div>
                                         </div>
                                     ) : (
                                         preview && (

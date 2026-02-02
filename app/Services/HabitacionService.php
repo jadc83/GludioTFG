@@ -27,6 +27,8 @@ class HabitacionService
      */
     private function formatearHabitaciones($habitaciones, Carbon $checkIn, Carbon $checkOut): array
     {
+        // Obtener capacidades por tipo desde la tabla tipos_habitacion
+        $capacidadesPorTipo = \App\Models\TipoHabitacion::pluck('capacidad', 'slug')->toArray();
 
         $grupos = [];
 
@@ -42,9 +44,12 @@ class HabitacionService
             }
 
             $grupos[$tipo]['cantidad']++;
-            $grupos[$tipo]['capacidadMaxima'] = max($grupos[$tipo]['capacidadMaxima'], $habitacion->capacidad ?? 1);
+            // Usar capacidad del tipo como capacidad máxima, con fallback a la capacidad de la habitación
+            $capacidadTipo = $capacidadesPorTipo[$tipo] ?? 2; // Default a 2 si no se encuentra
+            $capacidadHabitacion = $habitacion->capacidad ?? $capacidadTipo;
+            $grupos[$tipo]['capacidadMaxima'] = max($grupos[$tipo]['capacidadMaxima'], $capacidadTipo);
             $grupos[$tipo]['habitaciones'][] = [ 'id' => $habitacion->id, 'numero' => $habitacion->numero,
-                'tipo' => $habitacion->tipo, 'capacidad' => $habitacion->capacidad, 'descripcion' => $habitacion->descripcion ];
+                'tipo' => $habitacion->tipo, 'capacidad' => $capacidadHabitacion, 'descripcion' => $habitacion->descripcion ];
         }
 
         foreach ($grupos as $tipo => &$grupo) {

@@ -66,36 +66,41 @@ export default function TabCupones({ cupones = {} }) {
         return 'activo';
     };
 
-    const { cuponesPaginados, cuponesFiltrados, totalPaginas, inicio, fin } = useMemo(() => {
-        const filtrados = cuponesData.filter((cupon) => {
-            if (filtros.busqueda) {
-                const q = filtros.busqueda.toLowerCase();
-                const coincide = [
-                    cupon.codigo,
-                    cupon.descripcion,
-                ].some((field) =>
-                    (field || '').toString().toLowerCase().includes(q)
-                );
-                if (!coincide) return false;
-            }
+    const { cuponesPaginados, cuponesFiltrados, totalPaginas, inicio, fin } =
+        useMemo(() => {
+            const filtrados = cuponesData.filter((cupon) => {
+                if (filtros.busqueda) {
+                    const q = filtros.busqueda.toLowerCase();
+                    const coincide = [cupon.codigo, cupon.descripcion].some(
+                        (field) =>
+                            (field || '').toString().toLowerCase().includes(q),
+                    );
+                    if (!coincide) return false;
+                }
 
-            if (filtros.estado && filtros.estado !== 'todos') {
-                if (getEstadoCupon(cupon) !== filtros.estado) return false;
-            }
+                if (filtros.estado && filtros.estado !== 'todos') {
+                    if (getEstadoCupon(cupon) !== filtros.estado) return false;
+                }
 
-            if (filtros.tipo && filtros.tipo !== 'todos') {
-                if (cupon.tipo !== filtros.tipo) return false;
-            }
+                if (filtros.tipo && filtros.tipo !== 'todos') {
+                    if (cupon.tipo !== filtros.tipo) return false;
+                }
 
-            return true;
-        });
+                return true;
+            });
 
-        const totalPaginas = Math.ceil(filtrados.length / itemsPorPagina);
-        const inicio = (paginaActual - 1) * itemsPorPagina;
-        const fin = inicio + itemsPorPagina;
-        const cuponesPaginados = filtrados.slice(inicio, fin);
-        return { cuponesPaginados, cuponesFiltrados: filtrados, totalPaginas, inicio, fin };
-    }, [cuponesData, paginaActual, filtros]);
+            const totalPaginas = Math.ceil(filtrados.length / itemsPorPagina);
+            const inicio = (paginaActual - 1) * itemsPorPagina;
+            const fin = inicio + itemsPorPagina;
+            const cuponesPaginados = filtrados.slice(inicio, fin);
+            return {
+                cuponesPaginados,
+                cuponesFiltrados: filtrados,
+                totalPaginas,
+                inicio,
+                fin,
+            };
+        }, [cuponesData, paginaActual, filtros]);
 
     return (
         <div className="space-y-6">
@@ -135,13 +140,14 @@ export default function TabCupones({ cupones = {} }) {
                     <div className="p-12 text-center">
                         <TicketIcon className="mx-auto mb-3 h-12 w-12 text-gray-300" />
                         <p className="font-medium text-gray-500">
-                            {cuponesData.length === 0 ? 'No hay cupones registrados' : 'Sin resultados'}
+                            {cuponesData.length === 0
+                                ? 'No hay cupones registrados'
+                                : 'Sin resultados'}
                         </p>
                         <p className="mt-1 text-sm text-gray-400">
                             {cuponesData.length === 0
                                 ? 'Crea el primero para comenzar'
-                                : 'No hay cupones que coincidan con los filtros aplicados'
-                            }
+                                : 'No hay cupones que coincidan con los filtros aplicados'}
                         </p>
                         {cuponesData.length > 0 && (
                             <button

@@ -1,3 +1,4 @@
+import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import {
     ArrowTrendingUpIcon,
     CalendarIcon,
@@ -200,8 +201,9 @@ export default function IndexEstadisticas({
 
             {/* --- CONTENIDO DINÁMICO --- */}
             {cargando ? (
-                <div className="animate-pulse py-20 text-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
+                <div className="py-20 text-center">
+                    <LoadingSpinner />
+                    <span className="mt-4 block text-[10px] font-black uppercase tracking-widest text-gray-300">
                         Consultando métricas...
                     </span>
                 </div>

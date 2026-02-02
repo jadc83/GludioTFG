@@ -47,6 +47,7 @@ export default function useReservaForm() {
     const [tarifasLookup, setTarifasLookup] = useState({});
     const [ultimoPrecio, setUltimoPrecio] = useState(null);
     const [preciosPorTipo, setPreciosPorTipo] = useState({});
+    const [tarifas, setTarifas] = useState([]);
 
     const [idReserva, setIdReserva] = useState(flash.reserva_id);
     const [localizador, setLocalizador] = useState(flash.localizador);
@@ -75,6 +76,18 @@ export default function useReservaForm() {
         window.addEventListener('tarifasLista', onLista);
         return () => {
             window.removeEventListener('tarifasLista', onLista);
+        };
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        fetch('/api/tarifas')
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => {
+                if (mounted) setTarifas(data || []);
+            });
+        return () => {
+            mounted = false;
         };
     }, []);
 
@@ -540,5 +553,6 @@ export default function useReservaForm() {
         selectedTarifas,
         tarifasLookup,
         actualizarTarifas,
+        tarifas,
     };
 }

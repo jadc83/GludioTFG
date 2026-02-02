@@ -20,7 +20,9 @@ export default function TabConfiguracion({ cupones, tiposHabitacion }) {
                 <div>
                     <Suspense
                         fallback={
-                            <div className="p-6 text-center">Cargando precios…</div>
+                            <div className="p-6 text-center">
+                                Cargando precios…
+                            </div>
                         }
                     >
                         <ElegirPrecio tiposHabitacion={tiposHabitacion} />
@@ -30,7 +32,9 @@ export default function TabConfiguracion({ cupones, tiposHabitacion }) {
                 <div>
                     <Suspense
                         fallback={
-                            <div className="p-6 text-center">Cargando cupones…</div>
+                            <div className="p-6 text-center">
+                                Cargando cupones…
+                            </div>
                         }
                     >
                         <TabCupones cupones={cupones} />

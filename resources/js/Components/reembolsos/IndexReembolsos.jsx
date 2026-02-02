@@ -1,4 +1,5 @@
 import HeaderPanel from '@/Components/UI/HeaderPanel';
+import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import Paginacion from '@/Components/UI/Paginacion';
 import {
     BanknotesIcon,
@@ -53,9 +54,9 @@ export default function IndexReembolsos({
             {/* --- CONTENEDOR PRINCIPAL --- */}
             <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 {loading ? (
-                    <div className="flex animate-pulse flex-col items-center justify-center py-32">
-                        <div className="mb-4 h-12 w-12 rounded-full bg-gray-100"></div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    <div className="flex flex-col items-center justify-center py-32">
+                        <LoadingSpinner />
+                        <span className="mt-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
                             Sincronizando transacciones...
                         </span>
                     </div>
@@ -255,10 +256,18 @@ export default function IndexReembolsos({
                             <Paginacion
                                 paginaActual={pagination.current_page}
                                 totalPaginas={pagination.last_page}
-                                inicio={pagination.per_page * (pagination.current_page - 1)}
-                                fin={pagination.per_page * pagination.current_page}
+                                inicio={
+                                    pagination.per_page *
+                                    (pagination.current_page - 1)
+                                }
+                                fin={
+                                    pagination.per_page *
+                                    pagination.current_page
+                                }
                                 total={pagination.total}
-                                onCambiarPagina={(page) => onPageChange && onPageChange(page)}
+                                onCambiarPagina={(page) =>
+                                    onPageChange && onPageChange(page)
+                                }
                                 etiqueta="Solicitudes"
                             />
                         )}
