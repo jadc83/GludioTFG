@@ -157,7 +157,7 @@ export default function PanelControl({
             <div className="contenedorPrincipal">
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
-                        <div className="mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1">
+                        <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md">
                             <div className="flex flex-wrap justify-center gap-1 md:gap-2">
                                 {TABS.map((tab) => (
                                     <BotonTab

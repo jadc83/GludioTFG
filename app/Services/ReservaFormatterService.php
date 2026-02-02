@@ -102,8 +102,8 @@ class ReservaFormatterService
             ],
             'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches) {
                 return [
-                    'habitacion_id' => $hr->habitacion?->id ?? $hr->id,
-                    'id' => $hr->habitacion?->id ?? $hr->id,
+                    'habitacion_id' => $hr->habitacion_id, // Usar directamente el ID de la habitación física (puede ser null)
+                    'slot_id' => $hr->id, // Agregar explícitamente el ID del registro de la tabla pivot
                     'numero' => $hr->habitacion?->numero ?? null,
                     'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
                     'precio_noche' => $hr->precio ? round($hr->precio / max(1, $noches), 2) : null,

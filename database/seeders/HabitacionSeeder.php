@@ -53,9 +53,9 @@ class HabitacionSeeder extends Seeder
             ];
         }
 
-        // Insertar todas las habitaciones
+        // Insertar todas las habitaciones (idempotente)
         foreach ($habitaciones as $habitacion) {
-            Habitacion::create($habitacion);
+            Habitacion::firstOrCreate(['numero' => $habitacion['numero']], $habitacion);
         }
     }
 }

@@ -49,14 +49,10 @@ export default function EditarReserva({
 
     useEffect(() => {
         if (reserva?.habitaciones) {
-            const currentIds = reserva.habitaciones.map(
-                (h) => h.habitacion_id || h.id,
+            const currentPhysicalIds = reserva.habitaciones.map(
+                (h) => h.habitacion_id || null,
             );
-            setSelectedHabitacionIds((prev) => {
-                const newIds = [...prev];
-                newIds.length = currentIds.length;
-                return newIds;
-            });
+            setSelectedHabitacionIds(currentPhysicalIds);
         }
         if (habitaciones) {
             setAvailableHabitaciones(habitaciones);
@@ -122,26 +118,9 @@ export default function EditarReserva({
         setSavingHabitaciones(true);
 
         try {
-            const asignarIds = selectedHabitacionIds.filter(
-                (id) => id !== null && id !== undefined,
-            );
-
-            // Validar que el número de habitaciones seleccionadas coincida con los slots requeridos
-            const slotsRequeridos = reserva.habitaciones?.length || 0;
-            if (asignarIds.length !== slotsRequeridos) {
-                showToast(
-                    `Debes asignar exactamente ${slotsRequeridos} habitación${slotsRequeridos !== 1 ? 'es' : ''} (tienes ${asignarIds.length} seleccionada${asignarIds.length !== 1 ? 's' : ''})`,
-                    'warning',
-                );
-                setSavingHabitaciones(false);
-                return;
-            }
-
-            if (asignarIds.length === 0) {
-                showToast('Selecciona al menos una habitación', 'warning');
-                setSavingHabitaciones(false);
-                return;
-            }
+            // Enviamos el array completo (incluyendo nulls) para que el backend
+            // sepa exactamente qué habitación física va en cada slot.
+            const habitacionIds = [...selectedHabitacionIds];
 
             // Hacer el POST al servidor
             const response = await fetch(
@@ -155,7 +134,7 @@ export default function EditarReserva({
                             document.querySelector('meta[name="csrf-token"]')
                                 ?.content || '',
                     },
-                    body: JSON.stringify({ habitacion_ids: asignarIds }),
+                    body: JSON.stringify({ habitacion_ids: habitacionIds }),
                 },
             );
 
@@ -167,13 +146,13 @@ export default function EditarReserva({
                 setSelectedHabitacionIds(
                     data.reserva.habitaciones.map((h) => h.habitacion_id),
                 );
-                showToast('Habitaciones asignadas con éxito', 'success');
+                showToast('Habitaciones actualizadas con éxito', 'success');
             } else {
-                showToast(data.error || 'Error al asignar', 'error');
+                showToast(data.error || 'Error al actualizar', 'error');
             }
         } catch (error) {
-            console.error('Error asignando:', error);
-            showToast('Error al asignar habitaciones', 'error');
+            console.error('Error actualizando:', error);
+            showToast('Error al actualizar habitaciones', 'error');
         } finally {
             setSavingHabitaciones(false);
         }
@@ -326,8 +305,7 @@ export default function EditarReserva({
                                     {reserva.habitaciones.map((hab, idx) => (
                                         <div
                                             key={
-                                                hab.habitacion_id ||
-                                                hab.id ||
+                                                hab.slot_id ||
                                                 `hab-${idx}`
                                             }
                                             className="flex items-center justify-between p-6 transition hover:bg-gray-50"
@@ -353,8 +331,7 @@ export default function EditarReserva({
                                                     <button
                                                         onClick={() =>
                                                             handleDesasignarHabitacion(
-                                                                hab.habitacion_id ||
-                                                                    hab.id,
+                                                                hab.habitacion_id,
                                                             )
                                                         }
                                                         disabled={
@@ -395,14 +372,14 @@ export default function EditarReserva({
                                         className="rounded-lg bg-gray-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-black disabled:opacity-50"
                                     >
                                         {savingHabitaciones
-                                            ? 'Asignando...'
-                                            : 'Asignar Seleccionadas'}
+                                            ? 'Guardando...'
+                                            : 'Guardar Cambios'}
                                     </button>
                                 </div>
                                 <div className="space-y-10 p-6">
                                     {reserva.habitaciones.map((hSlot, idx) => (
                                         <div
-                                            key={hSlot.id || `slot-${idx}`}
+                                            key={hSlot.slot_id || `slot-${idx}`}
                                             className="space-y-4"
                                         >
                                             {/* Header del slot con información de la habitación */}
@@ -417,7 +394,7 @@ export default function EditarReserva({
                                                         </span>
                                                         {hSlot.habitacion_id && (
                                                             <span className="text-xs text-gray-500">
-                                                                (Habitación {hSlot.habitacion_numero || hSlot.habitacion_id})
+                                                                (Habitación {hSlot.numero || hSlot.habitacion_id})
                                                             </span>
                                                         )}
                                                     </div>

@@ -275,7 +275,7 @@ class ReservaController extends Controller
     {
         $request->validate([
             'habitacion_ids' => 'required|array|min:1',
-            'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
+            'habitacion_ids.*' => 'nullable|integer|exists:habitaciones,id'
         ]);
 
         // Detectar si es solicitud JSON/AJAX por headers

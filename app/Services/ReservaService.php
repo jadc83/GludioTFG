@@ -748,53 +748,43 @@ class ReservaService
         $checkIn = Carbon::parse($reserva->check_in);
         $checkOut = Carbon::parse($reserva->check_out);
 
-        // Verificar disponibilidad de todas las habitaciones
+        // Verificar disponibilidad de las habitaciones seleccionadas (las que no son null)
         foreach ($habitacionIds as $habitacionId) {
-            if (!$this->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
+            if ($habitacionId !== null && !$this->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
                 $habitacion = Habitacion::find($habitacionId);
                 $numero = $habitacion ? $habitacion->numero : $habitacionId;
                 throw new \Exception("La habitación {$numero} no está disponible en las fechas seleccionadas.");
             }
         }
 
-        $precioTotal = 0;
+        DB::transaction(function () use ($reserva, $habitacionIds, $checkIn, $checkOut) {
+            // Obtener los slots existentes (HabitacionReserva) ordenados para asignar por orden
+            $slots = $reserva->habitaciones()->orderBy('id')->get();
 
-        DB::transaction(function () use ($reserva, $habitacionIds, $checkIn, $checkOut, &$precioTotal) {
-            // Eliminar asignaciones anteriores
-            $reserva->habitaciones()->delete();
+            foreach ($habitacionIds as $idx => $habitacionId) {
+                if (isset($slots[$idx])) {
+                    $slot = $slots[$idx];
 
-            // Crear nuevas asignaciones con habitaciones específicas
-            foreach ($habitacionIds as $habitacionId) {
-                $habitacion = Habitacion::findOrFail($habitacionId);
+                    if ($habitacionId === null) {
+                        $slot->update(['habitacion_id' => null]);
+                    } else {
+                        $habitacion = Habitacion::findOrFail($habitacionId);
 
-                // Calcular precio para esta habitación específica
-                $precioHabitacion = $this->servicioPrecio->precioEntreFechas(
-                    $habitacion->tipo,
-                    $checkIn,
-                    $checkOut
-                );
-
-                HabitacionReserva::create([
-                    'reserva_id' => $reserva->id,
-                    'habitacion_id' => $habitacionId,
-                    'precio' => $precioHabitacion,
-                    'check_in' => $checkIn,
-                    'check_out' => $checkOut,
-                ]);
-
-                $precioTotal += $precioHabitacion;
+                        // Actualizar el slot con la habitación física
+                        // Mantener el precio que ya tenía el slot originalmente
+                        $slot->update([
+                            'habitacion_id' => $habitacionId,
+                            'tipo' => $habitacion->tipo // Opcional: actualizar tipo si la física difiere del slot
+                        ]);
+                    }
+                }
             }
-
-            // NO actualizar precio_total aquí porque ya incluye tarifas y otros modificadores
-            // Solo actualizamos los precios individuales de las habitaciones asignadas
-            // El precio_total se estableció al crear la reserva y debe mantenerse
         });
 
         return [
             'success' => true,
-            'message' => 'Habitaciones asignadas correctamente',
-            'precio_total' => $precioTotal,
-            'habitaciones_asignadas' => count($habitacionIds)
+            'message' => 'Habitaciones actualizadas correctamente',
+            'habitaciones_asignadas' => count(array_filter($habitacionIds))
         ];
     }
 
