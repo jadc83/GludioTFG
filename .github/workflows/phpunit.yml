@@ -40,23 +40,30 @@ jobs:
       - name: Install Node dependencies
         run: npm ci --no-audit --prefer-offline
 
+      - name: Prepare build directory
+        run: |
+          mkdir -p public/build
+          echo "Build directory prepared"
+          ls -la public/
+
       - name: Build assets (Vite)
         run: |
+          echo "Starting Vite build..."
           npm run build
+          echo "Vite build completed"
 
-      - name: Show build output and manifest
+      - name: Verify manifest
         run: |
-          echo "Listing public/"
-          ls -la public || true
-          echo "Listing public/build/"
-          ls -la public/build || true
+          echo "=== Checking build output ==="
+          ls -la public/build/
           if [ -f public/build/manifest.json ]; then
-            echo "manifest exists"
-            echo "---- manifest head ----"
-            head -n 30 public/build/manifest.json || true
-            echo "---- end manifest ----"
+            echo "✓ manifest.json exists"
+            cat public/build/manifest.json
           else
-            echo "manifest missing"; exit 1
+            echo "✗ manifest.json NOT FOUND"
+            echo "Files in public/build/:"
+            ls -la public/build/ || echo "Directory does not exist"
+            exit 1
           fi
 
       - name: Run migrations and seed
