@@ -82,3 +82,71 @@
         width: auto;
     }
 }
+
+/* Compactar paddings y tipografías solo para alturas entre 600px y 650px
+   sin alterar la distribución (mantener grid/columnas). */
+@media (min-height: 600px) and (max-height: 650px) {
+    .paso4-confirmacion header {
+        padding: 0.4rem 0.75rem;
+    }
+
+    .paso4-confirmacion h1 {
+        font-size: 1rem;
+        line-height: 1.05;
+        margin-bottom: 0.2rem;
+    }
+
+    .paso4-confirmacion .resumen-grid {
+        gap: 0.35rem;
+    }
+
+    .paso4-confirmacion .col-detalle,
+    .paso4-confirmacion .col-pago {
+        padding: 0.3rem 0.5rem;
+    }
+
+    /* Subir ligeramente el contenido reduciendo el padding superior y dejando más alto útil */
+    .paso4-confirmacion .custom-scrollbar {
+        max-height: calc(100vh - 165px);
+        padding-top: 0.1rem !important;
+        padding-right: 0.4rem;
+    }
+
+    .paso4-confirmacion .footer-cta {
+        gap: 0.35rem;
+        padding: 0.35rem 0;
+    }
+
+    .paso4-confirmacion .footer-cta button {
+        padding: 0.4rem 0.55rem;
+        font-size: 0.9rem;
+    }
+
+    /* Reducir altura del botón principal de pago/confirmación en flujo recepción */
+    .paso4-confirmacion button[class*="py-7"] {
+        padding-top: 0.45rem !important;
+        padding-bottom: 0.45rem !important;
+        font-size: 11px !important;
+    }
+
+    /* Reducir márgenes y textos auxiliares dentro de los bloques de detalle */
+    .paso4-confirmacion .resumen-grid .detalle-item {
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    /* Reducir ligeramente todas las fuentes internas del paso 4 para ganar altura */
+    .paso4-confirmacion .col-detalle,
+    .paso4-confirmacion .col-detalle p,
+    .paso4-confirmacion .col-detalle span,
+    .paso4-confirmacion .col-pago,
+    .paso4-confirmacion .col-pago p,
+    .paso4-confirmacion .col-pago span,
+    .paso4-confirmacion .col-pago label {
+        font-size: 0.9em;
+    }
+
+    .paso4-confirmacion .col-detalle .text-xl {
+        font-size: 1.1rem;
+    }
+}

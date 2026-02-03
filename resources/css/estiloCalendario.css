@@ -411,7 +411,7 @@
   background-color: rgba(122,2,2,0.10) !important;
   color: #1f2937 !important;
   border: none !important;
-  border-radius: 0.35rem !important;
+  border-radius: 0.5rem !important;
   box-shadow: none;
 }
 
@@ -480,11 +480,23 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: inherit;
+  border-radius: 0.5rem !important;
   background-color: transparent;
   transition: all 0.12s ease;
   z-index: -1;
   pointer-events: none;
+}
+
+/* Asegurar que las celdas de rango/inicio/fin y la celda seleccionada tengan bordes completamente redondeados */
+.rdp-range_start .rdp-day_button,
+.rdp-range_end .rdp-day_button,
+.rdp-selected .rdp-day_button {
+  border-radius: 0.5rem !important;
+}
+
+/* Evitar recorte del pseudo-elemento por el contenedor de la celda */
+.rdp-day {
+  overflow: visible !important;
 }
 
 .rdp-day_button > * {
@@ -637,4 +649,61 @@
   [data-calendario] {
     max-height: calc(100vh - 140px);
   }
+}
+
+/* Ajustes específicos para pantallas con altura entre 600px y 650px (ej. 1376x600) */
+@media (min-height: 600px) and (max-height: 650px) {
+  /* Valores moderados para pantallas de altura limitada. Evitamos reglas excesivas que
+     desplazan otros elementos fuera del flujo. */
+  :root {
+    --rdp-day-height: 8vh;
+    --rdp-day-width: 8vh;
+    --rdp-day_button-height: 8vh;
+    --rdp-day_button-width: 8vh;
+    --rdp-nav-height: 4.25vh;
+    --rdp-months-gap: 0.75rem;
+  }
+
+  /* Limitar la altura total del calendario para dejar espacio al header/footer */
+  [data-calendario] {
+    max-height: calc(100vh - 160px);
+    width: min(40rem, calc(100% - 2rem));
+  }
+
+  /* Ajustes internos: mantener el footer fijo y el cuerpo desplazable sin usar tantos !important */
+  .calendar-pos-1366 {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 160px);
+    top: 120px;
+  }
+
+  .calendar-pos-1366 > .w-full.p-6 {
+    padding: 0.6rem;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .calendar-pos-1366 > .flex.items-center.justify-between.px-6.py-4 {
+    flex: 0 0 auto;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Ajustar la altura del mes de forma proporcionada */
+  .rdp-month {
+    height: calc(var(--rdp-nav-height) + 1.9rem + (var(--rdp-day_button-height) * 6));
+  }
+
+  .rdp-months { gap: var(--rdp-months-gap); }
+
+  .rdp-month_grid tbody tr {
+    height: var(--rdp-day_button-height);
+  }
+
+  /* Reducir espaciados y tipografías ligeramente para alturas limitadas */
+  .rdp-caption_label { font-size: 0.95rem; }
+  .rdp-weekday { font-size: 0.78rem; padding: calc(var(--rdp-weekday-padding) * 0.85); }
+  .rdp-day_button { font-size: 0.85rem; }
+  .rdp-day_price { font-size: 0.5rem; top: 7%; }
+  .rdp-months { gap: calc(var(--rdp-months-gap) * 0.85); }
 }

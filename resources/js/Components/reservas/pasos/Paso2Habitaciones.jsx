@@ -130,7 +130,7 @@ export default function Paso2Habitaciones({
                             </p>
                         </div>
 
-                        <div className="rounded-xl border border-white/10 bg-white/60 p-5 shadow-sm transition-all hover:bg-white hover:shadow-md">
+                        <div className="rounded-xl border border-white/10 bg-transparent p-5 shadow-sm transition-all hover:bg-white hover:shadow-md">
                             <TarifasSelector
                                 tarifas={tarifas}
                                 seleccion={selectedTarifas}

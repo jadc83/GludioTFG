@@ -121,3 +121,34 @@
         padding-right: 4rem;
     }
 }
+
+/* Mantener ocultos los subtítulos bajo las opciones de pago en altura limitada (600-650px) */
+@media (min-height: 600px) and (max-height: 650px) {
+    .space-y-8 .grid > div span.mt-1 {
+        display: none !important;
+    }
+
+    /* Reducir altura de las tarjetas de opción de pago (Tarjeta / Recepción) */
+    .space-y-8 .grid > div.rounded-xl {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        gap: 0.4rem !important;
+        align-items: center !important;
+        min-height: 2.2rem !important;
+    }
+
+    /* Ajustar texto/iconos dentro de las tarjetas para mantener compacto el alto */
+    .space-y-8 .grid > div.rounded-xl .h-6,
+    .space-y-8 .grid > div.rounded-xl .w-6 {
+        height: 1.25rem !important;
+        width: 1.25rem !important;
+    }
+
+    .space-y-8 .grid > div.rounded-xl .text-[11px] {
+        font-size: 10px !important;
+    }
+}
+
+

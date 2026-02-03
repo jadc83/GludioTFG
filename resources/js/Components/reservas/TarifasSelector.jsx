@@ -13,8 +13,8 @@ export default function TarifasSelector({
 
     return (
         <aside>
-            <div className="sticky top-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="border-b border-gray-200 bg-gray-50 p-4">
+            <div className="sticky top-6 overflow-hidden rounded-xl bg-white shadow-sm">
+                <div className="border-b border-gray-200 bg-gray-50 p-4 rounded-t-xl">
                     <h4 className="text-sm font-bold text-gray-900">
                         Servicios disponibles
                     </h4>
@@ -41,7 +41,7 @@ export default function TarifasSelector({
                                     return (
                                         <label
                                             key={t.id}
-                                            className={`flex cursor-pointer items-center justify-between rounded-md border p-1 transition-colors ${checked ? 'border-red-200 bg-red-50' : 'border-gray-100 hover:bg-gray-50'}`}
+                                            className={`flex cursor-pointer items-center justify-between rounded-md p-1`}
                                         >
                                             <div className="flex min-w-0 items-center gap-2">
                                                 <input
@@ -72,17 +72,7 @@ export default function TarifasSelector({
                             </div>
                         </>
                     )}
-                    <button
-                        type="button"
-                        onClick={() =>
-                            window.dispatchEvent(
-                                new CustomEvent('abrirInfoTarifas'),
-                            )
-                        }
-                        className="mt-4 w-full rounded-lg border border-[#7a0202] py-2 text-[11px] font-bold text-[#7a0202] transition-colors hover:bg-[#7a0202] hover:text-white"
-                    >
-                        Información detallada
-                    </button>
+                    {/* Información detallada eliminada por petición del usuario */}
                 </div>
             </div>
         </aside>
