@@ -45,6 +45,23 @@ export function formatearMoneda(cantidad, moneda = 'EUR') {
 }
 
 /**
+ * Formatea modificadores de tarifa (porcentaje o fijo)
+ * Ejemplos: +€35, -€15, €0, +10%
+ */
+export function formatearModificador(valor, tipo = 'fijo') {
+    const v = Number(valor ?? 0);
+
+    if (tipo === 'porcentaje') {
+        return `${v > 0 ? '+' : ''}${v}%`;
+    }
+
+    const sign = v > 0 ? '+' : v < 0 ? '-' : '';
+    const abs = Math.abs(v);
+    const display = abs % 1 === 0 ? abs.toString() : abs.toFixed(2);
+    return `${sign}€${display}`;
+}
+
+/**
  * Obtiene el nombre completo de un tipo de documento
  * Se repite en 3 componentes
  * @param {string} tipo - 'dni' | 'nie' | 'pasaporte' | 'tie'

@@ -1,4 +1,4 @@
-import { calcularNoches, formatearMoneda } from '@/utils/formatters';
+import { calcularNoches, formatearMoneda, formatearModificador } from '@/utils/formatters';
 
 export default function DesgloseFactura({
     habitacionesSeleccionadas,
@@ -128,7 +128,7 @@ export default function DesgloseFactura({
                                     <span className="font-medium">
                                         {valorFinal === 0
                                             ? 'Gratis'
-                                            : `${valorFinal > 0 ? '+' : ''}${formatearMoneda(valorFinal)}`}
+                                            : formatearModificador(valorFinal, 'fijo')}
                                     </span>
                                 </div>
                             );

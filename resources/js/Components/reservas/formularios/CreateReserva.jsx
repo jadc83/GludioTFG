@@ -20,6 +20,7 @@ import {
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
+import { formatearModificador } from '@/utils/formatters';
 
 export default function CreateReserva({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
@@ -96,6 +97,15 @@ export default function CreateReserva({ iconOnly = false }) {
         obtenerTarifas().then((data) => {
             console.log('Tarifas cargadas:', data);
             setTarifas(data || []);
+
+            // Seleccionar automáticamente tarifas con valor 0 y bloquearlas
+            const iniciales = (data || [])
+                .filter((t) => Number(t.valor ?? t.modificador_precio ?? 0) === 0)
+                .map((t) => t.id);
+
+            setTarifasSeleccionadas((prev) =>
+                Array.from(new Set([...(prev || []), ...iniciales])),
+            );
         });
     }, [abierto]);
 
@@ -386,6 +396,11 @@ export default function CreateReserva({ iconOnly = false }) {
     };
 
     const toggleTarifa = (tarifaId) => {
+        const tarifa = tarifas.find((t) => t.id === tarifaId) || {};
+        const valor = Number(tarifa.valor ?? tarifa.modificador_precio ?? 0);
+        // No permitir togglear tarifas gratuitas (valor === 0)
+        if (valor === 0) return;
+
         setTarifasSeleccionadas((prev) =>
             prev.includes(tarifaId)
                 ? prev.filter((id) => id !== tarifaId)
@@ -726,7 +741,7 @@ export default function CreateReserva({ iconOnly = false }) {
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
-                                            {tarifas.map((tarifa) => (
+                                            {tarifas.filter((t) => Number(t.valor ?? t.modificador_precio ?? 0) !== 0).map((tarifa) => (
                                                 <div
                                                     key={tarifa.id}
                                                     className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
@@ -736,9 +751,7 @@ export default function CreateReserva({ iconOnly = false }) {
                                                             ? 'border-[#7a0202] bg-red-50'
                                                             : 'border-gray-200 bg-white hover:border-gray-300'
                                                     }`}
-                                                    onClick={() =>
-                                                        toggleTarifa(tarifa.id)
-                                                    }
+                                                    onClick={() => { if (Number(tarifa.valor ?? tarifa.modificador_precio ?? 0) !== 0) toggleTarifa(tarifa.id); }}
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <input
@@ -751,6 +764,7 @@ export default function CreateReserva({ iconOnly = false }) {
                                                                     tarifa.id,
                                                                 )
                                                             }
+                                                            disabled={Number(tarifa.valor ?? tarifa.modificador_precio ?? 0) === 0}
                                                             className="mt-1 h-5 w-5 rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202]"
                                                         />
                                                         <div className="flex-1">
@@ -767,16 +781,13 @@ export default function CreateReserva({ iconOnly = false }) {
                                                             <div className="mt-2 flex items-center gap-2">
                                                                 <span
                                                                     className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
-                                                                        tarifa.tipo_modificador ===
+                                                                        (tarifa.tipo_modificador || 'fijo') ===
                                                                         'porcentaje'
                                                                             ? 'bg-blue-100 text-blue-700'
                                                                             : 'bg-green-100 text-green-700'
                                                                     }`}
                                                                 >
-                                                                    {tarifa.tipo_modificador ===
-                                                                    'porcentaje'
-                                                                        ? `${tarifa.valor > 0 ? '+' : ''}${tarifa.valor}%`
-                                                                        : `${tarifa.valor > 0 ? '+' : ''}€${Math.abs(tarifa.valor)}`}
+                                                                    {formatearModificador(tarifa.valor ?? tarifa.modificador_precio, tarifa.tipo_modificador ?? (tarifa.modificador_precio !== undefined ? 'fijo' : 'porcentaje'))}
                                                                 </span>
                                                             </div>
                                                         </div>

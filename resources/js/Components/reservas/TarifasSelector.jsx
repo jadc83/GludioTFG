@@ -1,4 +1,5 @@
 import useTarifasSelector from '@/hooks/reservas/useTarifasSelector';
+import { formatearModificador } from '@/utils/formatters';
 
 export default function TarifasSelector({
     tarifas = [],
@@ -36,7 +37,7 @@ export default function TarifasSelector({
                                     const checked = isChecked(t);
                                     const priceText = breakfast
                                         ? 'Gratis'
-                                        : `${Number(t.modificador_precio) >= 0 ? '+' : ''}${Number(t.modificador_precio).toFixed(0)}€`;
+                                        : formatearModificador(t.modificador_precio ?? 0, 'fijo');
 
                                     return (
                                         <label
