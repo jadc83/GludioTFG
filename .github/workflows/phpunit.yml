@@ -27,8 +27,10 @@ jobs:
       - name: Prepare environment
         run: |
           php -r "file_exists('.env') || copy('.env.example', '.env');"
-          php artisan key:generate
+          php artisan key:generate --ansi --no-interaction --force
+          php artisan config:clear
           php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+          php -r "echo getenv('APP_KEY') ? 'APP_KEY set' : 'APP_KEY missing';"
 
       - name: Run migrations and seed
         run: php artisan migrate:fresh --seed --force
