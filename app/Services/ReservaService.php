@@ -643,10 +643,12 @@ class ReservaService
         foreach ($habitacionesRequeridas as $requerida) {
             $tipo = $requerida['tipo'];
             $cantidad = $requerida['cantidad'];
+            $check_in = Carbon::parse($reserva->check_in);
+            $check_out = Carbon::parse($reserva->check_out);
 
-            $this->verificarDisponibilidad($tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out), $cantidad, function () use ($reserva, $tipo, $cantidad) {
-                $precioPorHabitacion = $this->servicioPrecio->precioEntreFechas(
-                    $tipo, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+            $this->verificarDisponibilidad($tipo, $check_in, $check_out, $cantidad, function () use ($reserva, $tipo, $cantidad, $check_in, $check_out) {
+
+                $precioPorHabitacion = $this->servicioPrecio->precioEntreFechas( $tipo, $check_in, $check_out);
 
                 if (!is_numeric($precioPorHabitacion)) {
 
