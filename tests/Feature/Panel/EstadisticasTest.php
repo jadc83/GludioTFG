@@ -84,7 +84,7 @@ it('devuelve estadisticas con desglose por tipo (doble, familiar, suite)', funct
 
     // Doble: 1 ocupada (asignada) de 2 => 50%
     expect($fila['por_tipo']['doble']['ocupadas'])->toBe(1);
-    expect($fila['por_tipo']['doble']['porcentaje'])->toBe(50.0);
+    expect($fila['por_tipo']['doble']['porcentaje'])->toBe(50);
 
     // Familiar y Suite a 0
     expect($fila['por_tipo']['familiar']['ocupadas'])->toBe(0);

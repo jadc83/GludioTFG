@@ -12,6 +12,11 @@ test('new users can register', function () {
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'tipo_documento' => 'dni',
+        'numero_documento' => '12345678A',
+        'nacionalidad' => 'España',
+        'direccion' => 'Calle Falsa 123',
+        'telefono' => '600000000'
     ]);
 
     $this->assertAuthenticated();

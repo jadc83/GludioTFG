@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('telefono');
-            $table->enum('tipo_documento', ['dni', 'pasaporte', 'tie']);
-            $table->string('numero_documento')->unique();
-            $table->string('nacionalidad');
-            $table->text('direccion');
+            $table->string('telefono')->nullable();
+            $table->enum('tipo_documento', ['dni', 'pasaporte', 'tie'])->nullable();
+            $table->string('numero_documento')->unique()->nullable();
+            $table->string('nacionalidad')->nullable();
+            $table->text('direccion')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

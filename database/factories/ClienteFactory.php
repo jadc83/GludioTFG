@@ -17,7 +17,13 @@ class ClienteFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'telefono' => fake()->numerify('6########'),
+            'tipo_documento' => fake()->randomElement(['dni', 'pasaporte', 'tie']),
+            'numero_documento' => fake()->bothify('########?'),
+            'nacionalidad' => fake()->country(),
+            'direccion' => fake()->address(),
         ];
     }
 }

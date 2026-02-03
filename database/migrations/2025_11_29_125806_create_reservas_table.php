@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('reservas', function (Blueprint $table) {
             $table->id();
             $table->string('localizador')->unique();
-            $table->morphs('reservable');
+            $table->nullableMorphs('reservable');
             $table->date('check_in');
             $table->date('check_out');
-            $table->decimal('precio_total', 10, 2);
+            $table->decimal('precio_total', 10, 2)->nullable();
             $table->enum('status', ['pendiente', 'confirmado', 'checked_in', 'checked_out', 'cancelado', 'no_presentado'])->default('pendiente');
             $table->enum('pago', ['pendiente', 'pagado', 'parcial', 'devuelto'])->default('pendiente');
             $table->text('notas')->nullable();
