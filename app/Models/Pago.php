@@ -15,6 +15,7 @@ class Pago extends Model
         'descripcion',
         'stripe_response',
         'pagado_en',
+        'reembolso_estado',
     ];
 
     protected $casts = [

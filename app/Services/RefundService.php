@@ -56,27 +56,22 @@ class RefundService
             ->where('status', 'pending')  // Solo 'pending', no 'approved'
             ->exists();
 
-        // Lógica de transición de estado
+        // Lógica de transición de estado (usar solo estados válidos para la columna `status`)
         if ($refundsPendientesAprobacion) {
-            // Hay reembolsos esperando aprobación
-            if ($totalReembolsado >= $precioTotal && $precioTotal > 0) {
-                // Reembolso completo pendiente de aprobación
-                $nuevoEstado = 'reembolso_total_pendiente';
-            } else {
-                // Reembolso parcial pendiente de aprobación
-                $nuevoEstado = 'reembolso_parcial_pendiente';
-            }
+            // Si hay reembolsos pendientes de aprobación no forzamos estados nuevos en la tabla `reservas`:
+            // dejamos el estado actual (la UI puede mostrar "Reembolso pendiente" basado en refundRequests)
+            $nuevoEstado = $reserva->status;
         } else if ($totalReembolsado > 0) {
             // Reembolsos ya procesados
             if ($totalReembolsado >= $precioTotal && $precioTotal > 0) {
-                // Reembolso completo procesado - CANCELAR AUTOMÁTICAMENTE
+                // Si está completamente reembolsada, cancelar la reserva
                 $nuevoEstado = 'cancelado';
             } else {
-                // Reembolso parcial procesado
-                $nuevoEstado = 'reembolso_parcial_confirmado';
+                // Reembolso parcial procesado: mantener un estado válido (confirmado)
+                $nuevoEstado = 'confirmado';
             }
         } else {
-            // Sin reembolsos, estado normal
+            // Sin reembolsos, restaurar estado normal si veníamos de un estado temporal
             if ($reserva->status === 'reembolso_parcial_pendiente' || $reserva->status === 'reembolso_total_pendiente') {
                 $nuevoEstado = 'confirmado';
             } else {
@@ -107,22 +102,39 @@ class RefundService
         $precioTotal = (float)($reserva->precio_total ?? 0);
         $totalReembolsado = (float)(($reserva->reembolsos()->sum('amount_cents') ?? 0) / 100);
 
-        // Determinar nuevo estado del pago
+        // Determinar nuevo estado del pago y detalles de reembolso
+        $reembolsoEstado = null;
         if ($totalReembolsado > 0) {
             if ($totalReembolsado >= $precioTotal && $precioTotal > 0) {
-                // Reembolso completo
-                $nuevoEstadoPago = 'devuelto';
+                // Reembolso completo: dejar 'estado' como 'completado' (pagado originalmente) y marcar reembolso_estado
+                $nuevoEstadoPago = 'completado';
+                $reembolsoEstado = 'completo';
             } else {
-                // Reembolso parcial
-                $nuevoEstadoPago = 'reembolso_parcial_procesado';
+                // Reembolso parcial: mantener 'completado' y usar la columna reembolso_estado para detallar
+                $nuevoEstadoPago = 'completado';
+                $reembolsoEstado = 'parcial_procesado';
             }
         } else {
-            // Sin reembolsos
-            $nuevoEstadoPago = 'pagado';
+            // Sin reembolsos, no tocar reembolso_estado y estado pasa a 'pagado' si procede
+            $nuevoEstadoPago = $pago->estado ?: 'pagado';
         }
 
-        if ($nuevoEstadoPago !== $pago->estado) {
-            $pago->update(['estado' => $nuevoEstadoPago]);
+        $updates = ['estado' => $nuevoEstadoPago];
+        if ($reembolsoEstado !== null) {
+            $updates['reembolso_estado'] = $reembolsoEstado;
+        }
+
+        // Solo actualizar si hay cambios (evita write innecesario)
+        $shouldUpdate = false;
+        foreach ($updates as $k => $v) {
+            if ($pago->{$k} !== $v) {
+                $shouldUpdate = true;
+                break;
+            }
+        }
+
+        if ($shouldUpdate) {
+            $pago->update($updates);
         }
     }
 
