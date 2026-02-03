@@ -46,10 +46,11 @@ class ReservaActualizada extends Mailable
         }
 
         $mail = $this->subject('Reserva actualizada - ' . ($this->reserva->localizador ?? ''))
-            ->view('emails.reserva_completada')
+            ->view('emails.reserva_actualizada')
             ->with([
                 'reserva' => $this->reserva,
                 'pago_texto' => $pago_texto,
+                'comprobante' => $this->comprobantePath,
             ]);
 
         if ($this->comprobantePath) {
