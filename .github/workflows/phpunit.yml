@@ -24,5 +24,14 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-suggest -o
 
+      - name: Prepare environment
+        run: |
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          php artisan key:generate
+          php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+
+      - name: Run migrations and seed
+        run: php artisan migrate:fresh --seed --force
+
       - name: Run tests
         run: vendor/bin/pest --testdox
