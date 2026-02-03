@@ -19,7 +19,7 @@ export default function EditarReserva({
     const { reserva, setReserva, refresh, aplicarCambioFechas } =
         useReserva(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [toast, setToast] = useState(null);
+    // toasts are emitted via global events and handled by the shared Toast component
     const [showDateModal, setShowDateModal] = useState(false);
     const [modalCheckIn, setModalCheckIn] = useState('');
     const [modalCheckOut, setModalCheckOut] = useState('');
@@ -76,8 +76,7 @@ export default function EditarReserva({
 
     // --- MANEJADORES ---
     const showToast = (message, type = 'info') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4500);
+        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
     };
 
 
@@ -836,19 +835,7 @@ export default function EditarReserva({
                     </div>
                 )}
 
-                {/* --- NOTIFICACIONES (TOAST) --- */}
-                {toast && (
-                    <div
-                        className={`animate-in slide-in-from-bottom-10 fixed bottom-8 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-4 rounded-2xl px-6 py-4 shadow-2xl duration-500 ${toast.type === 'error' ? 'bg-red-900 text-white' : 'bg-gray-900 text-white'}`}
-                    >
-                        <div
-                            className={`h-2 w-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-green-400'} animate-pulse`}
-                        />
-                        <span className="text-sm font-black uppercase tracking-widest">
-                            {toast.message}
-                        </span>
-                    </div>
-                )}
+                {/* Toasts handled by shared `Toast` component in layout */}
             </div>
         </AuthenticatedLayout>
     );

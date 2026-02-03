@@ -206,6 +206,48 @@ export default function CreateReserva({ iconOnly = false }) {
         }));
     };
 
+    // Validar si el formulario está completo para habilitar el botón
+    const esFormularioCompleto = () => {
+        // Fechas requeridas
+        if (!formulario.check_in || !formulario.check_out) {
+            console.log('Faltan fechas');
+            return false;
+        }
+
+        // Al menos una habitación seleccionada
+        if (!Object.values(habitacionesPorTipo).some((info) => info.cantidad > 0)) {
+            console.log('No hay habitaciones seleccionadas');
+            return false;
+        }
+
+        // Datos del cliente requeridos (solo nombre, email y documento por ahora)
+        if (!formulario.nombre_cliente || !formulario.email_cliente) {
+            console.log('Faltan datos del cliente:', { nombre: formulario.nombre_cliente, email: formulario.email_cliente });
+            return false;
+        }
+
+        // Documento requerido
+        if (!formulario.numero_documento) {
+            console.log('Falta número de documento');
+            return false;
+        }
+
+        // Método de pago seleccionado
+        if (!formulario.metodo_pago) {
+            console.log('Falta método de pago');
+            return false;
+        }
+
+        // Aceptación de términos (solo si es visible)
+        if (formulario.metodo_pago === 'tarjeta' && !aceptaTerminos) {
+            console.log('No aceptó términos para tarjeta');
+            return false;
+        }
+
+        console.log('Formulario completo');
+        return true;
+    };
+
     const handleSeleccionarCliente = (cliente) => {
         setClienteSeleccionado(cliente);
 
@@ -958,11 +1000,7 @@ export default function CreateReserva({ iconOnly = false }) {
                                     }
                                     disabled={
                                         estaCargando ||
-                                        !formulario.check_in ||
-                                        !formulario.check_out ||
-                                        !Object.values(
-                                            habitacionesPorTipo,
-                                        ).some((info) => info.cantidad > 0)
+                                        !esFormularioCompleto()
                                     }
                                 >
                                     {formulario.metodo_pago === 'tarjeta' && !import.meta.env.VITE_STRIPE_PUBLIC_KEY

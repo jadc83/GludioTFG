@@ -12,7 +12,7 @@ const Campo = forwardRef(
             hijos,
             claseContenedor = 'flex flex-col gap-1',
             claseEtiqueta = 'text-xs font-semibold text-gray-700',
-            claseError = 'text-xs text-red-500',
+            claseError = 'text-sm font-semibold text-red-600 bg-red-50 p-2 rounded border border-red-200 mt-1',
             sinEstilosPorDefecto = false,
             estaFocalizado = false,
             ...props

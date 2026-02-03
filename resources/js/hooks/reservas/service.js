@@ -71,8 +71,6 @@ export async function obtenerClientes() {
                 Accept: 'application/json',
             },
         });
-        console.log('Respuesta completa de clientes:', res);
-        console.log('res.data:', res.data);
         return res?.data ?? [];
     } catch (err) {
         console.error('Error obteniendo clientes:', err);

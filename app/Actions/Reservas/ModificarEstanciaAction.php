@@ -74,7 +74,7 @@ class ModificarEstanciaAction
 					'reserva_id' => $reserva->id,
 					'pago_id' => $pagoForRequest?->id ?? null,
 					'requested_amount_cents' => (int)round($requestedAmountAfterPenalty * 100),
-					'reason_code' => 'auto_adjust',
+					'reason_code' => 'automatic',
 					'notes' => 'Reduccion de dias. Penalizacion aplicada: ' . number_format($penaltyApplied, 2) . ' EUR',
 					'user_id' => Auth::id(),
 					'status' => 'pending',

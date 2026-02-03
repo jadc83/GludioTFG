@@ -8,21 +8,19 @@ import { useEffect, useState } from 'react';
 
 export default function GuestLayout({ children }) {
     const page = usePage();
-    const [toastMsg, setToastMsg] = useState(null);
-
     useEffect(() => {
         const errors = page?.props?.errors || {};
         if (errors && Object.keys(errors).length > 0) {
             const first = Object.keys(errors)[0];
             const msg = errors[first] && errors[first][0];
-            if (msg) setToastMsg(msg);
+            if (msg) window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: msg, type: 'error' } }));
         }
 
         // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            setToastMsg(`Se ha solicitado un reembolso parcial de ${amt}€`);
+            window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: `Se ha solicitado un reembolso parcial de ${amt}€`, type: 'success' } }));
         }
     }, [page.props.errors, page.props.flash]);
 
@@ -38,7 +36,7 @@ export default function GuestLayout({ children }) {
 
             <CookieBanner />
 
-            <Toast message={toastMsg} />
+            <Toast />
         </div>
     );
 }

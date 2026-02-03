@@ -83,7 +83,7 @@ export default function IndexReembolsos({
                                             Referencia
                                         </th>
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                            Reserva / Usuario
+                                            Reserva
                                         </th>
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                             Monto Solicitado
@@ -146,10 +146,6 @@ export default function IndexReembolsos({
                                                                     r.reserva_id}
                                                             </div>
                                                         </div>
-                                                        <span className="text-xs font-bold uppercase leading-none tracking-tight text-gray-500">
-                                                            {r.user?.name ??
-                                                                'Cliente Externo'}
-                                                        </span>
                                                     </div>
                                                 </td>
 
@@ -184,12 +180,7 @@ export default function IndexReembolsos({
                                                     data-label="Motivo y Notas"
                                                 >
                                                     <div className="max-w-[200px]">
-                                                        <span className="mb-1 block text-[10px] font-black uppercase leading-none text-gray-400">
-                                                            {r.reason_code?.replace(
-                                                                '_',
-                                                                ' ',
-                                                            )}
-                                                        </span>
+
                                                         <p
                                                             className="truncate text-xs italic text-gray-500"
                                                             title={r.notes}

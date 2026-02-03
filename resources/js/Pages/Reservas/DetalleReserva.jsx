@@ -22,7 +22,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     const { reserva, setReserva, refresh, aplicarCambioFechas } =
         useReserva(initialReserva);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [toast, setToast] = useState(null);
+    // toasts are emitted via global events and handled by the shared Toast component
 
     // --- ESTADOS MODAL FECHAS ---
     const [showDateModal, setShowDateModal] = useState(false);
@@ -51,8 +51,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
     useReservaEvents(reserva, { onRefresh: refresh });
 
     const showToast = (message, type = 'info') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4500);
+        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
     };
 
     const refundableAmount = useMemo(() => {
@@ -574,17 +573,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                     </div>
                 )}
 
-                {/* --- TOAST --- */}
-                {toast && (
-                    <div className="animate-in slide-in-from-bottom-10 fixed bottom-8 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-4 rounded-2xl bg-gray-900 px-6 py-4 text-white shadow-2xl duration-500">
-                        <div
-                            className={`h-2 w-2 rounded-full ${toast.type === 'error' ? 'bg-red-400' : 'bg-green-400'} animate-pulse`}
-                        />
-                        <span className="text-sm font-black uppercase tracking-widest">
-                            {toast.message}
-                        </span>
-                    </div>
-                )}
+                {/* Toasts handled by shared `Toast` component in layout */}
             </div>
         </GuestLayout>
     );
