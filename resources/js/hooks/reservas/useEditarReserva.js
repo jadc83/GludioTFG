@@ -31,6 +31,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const [mostrarModalFechas, setMostrarModalFechas] = useState(false);
     const [fechaModalCheckIn, setFechaModalCheckIn] = useState('');
     const [fechaModalCheckOut, setFechaModalCheckOut] = useState('');
+    const [vistaPreviaCargada, setVistaPreviaCargada] = useState(false);
     const [mostrarModalPago, setMostrarModalPago] = useState(false);
     const [montoPago, setMontoPago] = useState(0);
     const [pendienteAplicarTrasPago, setPendienteAplicarTrasPago] = useState(false);
@@ -74,14 +75,47 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         const co = dayjs(reserva.check_out).format('YYYY-MM-DD');
         setFechaModalCheckIn(ci);
         setFechaModalCheckOut(co);
+        setVistaPreviaCargada(false);
         setMostrarModalFechas(true);
-        // Intentar obtener preview para esas fechas, preferir `obtenerPreview` inyectado
-        if (obtenerPreview) {
-            obtenerPreview(ci, co).catch(() => {
-                // ignorar - la UI mostrará estado de carga
-            });
-        }
+        // No obtener preview inmediatamente: sólo se calculará cuando el usuario cambie las fechas a nuevas
     };
+
+    // Ejecutar preview sólo cuando las fechas del modal cambien respecto a las originales
+    useEffect(() => {
+        let mounted = true;
+        const esFechaOriginal = (ci, co) => {
+            const originalCi = reserva?.check_in ? dayjs(reserva.check_in).format('YYYY-MM-DD') : null;
+            const originalCo = reserva?.check_out ? dayjs(reserva.check_out).format('YYYY-MM-DD') : null;
+            return ci === originalCi && co === originalCo;
+        };
+
+        const tryFetch = async () => {
+            if (!mostrarModalFechas) return;
+            if (!fechaModalCheckIn || !fechaModalCheckOut) {
+                setVistaPreviaCargada(false);
+                return;
+            }
+            if (esFechaOriginal(fechaModalCheckIn, fechaModalCheckOut)) {
+                setVistaPreviaCargada(false);
+                return;
+            }
+
+            if (!obtenerPreview) return;
+            setVistaPreviaCargada(false);
+            try {
+                await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut);
+                if (mounted) setVistaPreviaCargada(true);
+            } catch (e) {
+                if (mounted) setVistaPreviaCargada(false);
+            }
+        };
+
+        tryFetch();
+
+        return () => {
+            mounted = false;
+        };
+    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut, obtenerPreview, reserva]);
 
     const confirmarModalFechas = async () => {
         try {
@@ -100,13 +134,25 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             }
 
             if (ultimoPreview?.estimate_charge > 0) {
-                setMontoPago(ultimoPreview.estimate_charge);
-                setPendienteAplicarTrasPago(true);
-                setMostrarModalPago(true);
-                return { success: true, pendingPayment: true };
+                // Si la reserva ya está pagada, abrir modal de pago; si no, aplicar el cambio sin modal (sumar al total)
+                if (reserva?.pago === 'pagado') {
+                    setMontoPago(ultimoPreview.estimate_charge);
+                    setPendienteAplicarTrasPago(true);
+                    setMostrarModalPago(true);
+                    return { success: true, pendingPayment: true };
+                }
+
+                // No está pagada: aplicar el cambio directamente (no abrir modal de pago)
+                if (aplicarCambioFechas) {
+                    const res = await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut);
+                    showToast?.(res?.message || 'Fechas actualizadas (importe añadido al total)', 'success');
+                    setMostrarModalFechas(false);
+                    refresh?.();
+                    return { success: true, res };
+                }
             }
 
-            // Aplicar cambio de fechas inmediatamente
+            // Aplicar cambio de fechas inmediatamente (reducción o sin cargo)
             if (aplicarCambioFechas) {
                 const res = await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut);
                 showToast?.(res?.message || 'Fechas actualizadas', 'success');
@@ -210,8 +256,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         fechaModalCheckIn,
         setFechaModalCheckIn,
         fechaModalCheckOut,
-        setFechaModalCheckOut,
-        mostrarModalPago,
+        setFechaModalCheckOut,        vistaPreviaCargada,        mostrarModalPago,
         setMostrarModalPago,
         montoPago,
         setMontoPago,

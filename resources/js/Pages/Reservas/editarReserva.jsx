@@ -51,7 +51,7 @@ export default function EditarReserva({
         setNotasReembolso, montoReembolso, setMontoReembolso,
 
         abrirModalFechas, confirmarModalFechas, mostrarModalFechas, setMostrarModalFechas, fechaModalCheckIn, setFechaModalCheckIn, fechaModalCheckOut,
-        setFechaModalCheckOut,
+        setFechaModalCheckOut, vistaPreviaCargada,
 
         mostrarModalPago, setMostrarModalPago, montoPago, setMontoPago, pendienteAplicarTrasPago, setPendienteAplicTrasPago, aceptaTerminosPago,
         setAceptaTerminosPago, procesando, pagoExitoso
@@ -111,6 +111,7 @@ export default function EditarReserva({
                     vistaPrevia={preview}
                     cargandoVistaPrevia={previewLoading}
                     errorVistaPrevia={previewError}
+                    vistaPreviaCargada={vistaPreviaCargada}
                     onCerrar={() => setMostrarModalFechas(false)}
                     onConfirmar={confirmarModalFechas}
                     procesando={procesando}
