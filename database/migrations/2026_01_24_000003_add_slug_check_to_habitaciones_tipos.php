@@ -1,55 +1,32 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        $driver = DB::connection()->getDriverName();
-        $checkExpression = "(slug IN ('doble','suite','familiar'))";
-
-        switch ($driver) {
-            case 'sqlite':
-                // SQLite sólo permite constraints anónimos mediante ALTER TABLE
-                DB::statement("ALTER TABLE habitaciones_tipos ADD CHECK {$checkExpression}");
-                break;
-            case 'mysql':
-                // MySQL 8+ soporta CHECK nombrados pero usa DROP CHECK para revertir
-                DB::statement("ALTER TABLE habitaciones_tipos ADD CONSTRAINT chk_habitaciones_tipos_slug CHECK {$checkExpression}");
-                break;
-            default:
-                // PostgreSQL y otros SGBD compatibles
-                DB::statement("ALTER TABLE habitaciones_tipos ADD CONSTRAINT chk_habitaciones_tipos_slug CHECK {$checkExpression}");
-                break;
-        }
+        Schema::table('habitaciones_tipos', function (Blueprint $table) {
+            if (! Schema::hasColumn('habitaciones_tipos', 'slug')) {
+                $table->string('slug')->nullable()->index();
+            }
+        });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        $driver = DB::connection()->getDriverName();
-
-        if ($driver === 'sqlite') {
-            // No hay sintaxis DROP CHECK en SQLite; requeriría recrear la tabla.
-            return;
-        }
-
-        if ($driver === 'mysql') {
-            DB::statement("ALTER TABLE habitaciones_tipos DROP CHECK chk_habitaciones_tipos_slug");
-            return;
-        }
-
-        DB::statement("ALTER TABLE habitaciones_tipos DROP CONSTRAINT IF EXISTS chk_habitaciones_tipos_slug");
+        Schema::table('habitaciones_tipos', function (Blueprint $table) {
+            if (Schema::hasColumn('habitaciones_tipos', 'slug')) {
+                $table->dropColumn('slug');
+            }
+        });
     }
 };

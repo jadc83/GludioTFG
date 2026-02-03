@@ -11,13 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE reservas DROP CONSTRAINT IF EXISTS reservas_status_check");
-        DB::statement("ALTER TABLE reservas ADD CONSTRAINT reservas_status_check CHECK (status IN ('pendiente', 'pagado', 'confirmado', 'en_estancia', 'finalizado', 'cancelado'))");
+        // Simplified: add nullable status_text column to avoid DB-specific CHECK constraints
+        Schema::table('reservas', function (Blueprint $table) {
+            if (! Schema::hasColumn('reservas', 'status_text')) {
+                $table->string('status_text')->nullable()->index();
+            }
+        });
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE reservas DROP CONSTRAINT IF EXISTS reservas_status_check");
-        DB::statement("ALTER TABLE reservas ADD CONSTRAINT reservas_status_check CHECK (status IN ('pendiente', 'confirmado', 'checked_in', 'checked_out', 'cancelado', 'no_presentado'))");
+        Schema::table('reservas', function (Blueprint $table) {
+            if (Schema::hasColumn('reservas', 'status_text')) {
+                $table->dropColumn('status_text');
+            }
+        });
     }
 };

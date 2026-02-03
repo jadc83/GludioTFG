@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,31 +13,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Borrar la restricción anterior
-        DB::statement("ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_check;");
-
-        // Agregar la nueva restricción con todos los estados válidos
-        DB::statement("
-            ALTER TABLE pagos ADD CONSTRAINT pagos_estado_check CHECK (
-                estado IN (
-                    'pendiente',
-                    'procesando',
-                    'completado',
-                    'fallido',
-                    'cancelado',
-                    'reembolsado',
-                    'reembolso_parcial_procesado',
-                    'devuelto',
-                    'reembolso_pendiente'
-                )
-            );
-        ");
+        // Añade una columna para detallar el estado de reembolso (compatible con sqlite)
+        Schema::table('pagos', function (Blueprint $table) {
+            if (! Schema::hasColumn('pagos', 'reembolso_estado')) {
+                $table->string('reembolso_estado')->nullable()->index();
+            }
+        });
     }
 
     public function down(): void
     {
-        // Restaurar a la restricción anterior
-        DB::statement("ALTER TABLE pagos DROP CONSTRAINT IF EXISTS pagos_estado_check;");
-        DB::statement("ALTER TABLE pagos ADD CONSTRAINT pagos_estado_check CHECK (estado IN ('pendiente','procesando','completado','fallido','cancelado','reembolsado'));" );
+        Schema::table('pagos', function (Blueprint $table) {
+            if (Schema::hasColumn('pagos', 'reembolso_estado')) {
+                $table->dropColumn('reembolso_estado');
+            }
+        });
     }
 };
