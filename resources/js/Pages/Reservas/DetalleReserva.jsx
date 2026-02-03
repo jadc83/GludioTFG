@@ -171,7 +171,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
         .toLowerCase()
         .includes('cancelado');
     const isCheckedIn =
-        String(reserva.status || '').toLowerCase() === 'en_estancia';
+        String(reserva.status || '').toLowerCase() === 'checked_in';
 
     return (
         <GuestLayout>
@@ -340,7 +340,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                         )}
 
                                     {!isCancelled &&
-                                        reserva.status !== 'finalizado' && (
+                                        reserva.status !== 'checked_out' && (
                                             <button
                                                 onClick={() =>
                                                     (window.location.href =

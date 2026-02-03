@@ -227,7 +227,7 @@ export default function EditarReserva({
     };
 
     const isCancelled = reserva.status?.toLowerCase().includes('cancelado');
-    const isCheckedIn = reserva.status?.toLowerCase() === 'en_estancia';
+    const isCheckedIn = reserva.status?.toLowerCase() === 'checked_in';
 
     return (
         <AuthenticatedLayout>
@@ -539,7 +539,7 @@ export default function EditarReserva({
                                         )}
 
                                     {!isCancelled &&
-                                        reserva.status !== 'finalizado' && (
+                                        reserva.status !== 'checked_out' && (
                                             <button
                                                 onClick={() =>
                                                     (window.location.href =

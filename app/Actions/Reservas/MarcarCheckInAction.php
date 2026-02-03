@@ -48,7 +48,7 @@ class MarcarCheckInAction
             return ['success' => false, 'message' => 'No se pudieron asignar todas las habitaciones en el check-in. Contacte recepción.', 'details' => $asignaciones];
         }
 
-        $reserva->status = 'en_estancia';
+        $reserva->status = 'checked_in';
         $reserva->save();
 
         try { event(new \App\Events\ReservaActualizada($reserva)); } catch (\Throwable $e) { /* ignore */ }

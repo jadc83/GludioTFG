@@ -21,11 +21,11 @@ class MarcarCheckOutAction
             return [ 'success' => false, 'error' => 'No se puede hacer check-out: la fecha de salida ya ha pasado.' ];
         }
 
-        if ($reserva->status !== 'en_estancia') {
+        if ($reserva->status !== 'checked_in') {
             return [ 'success' => false, 'error' => 'La reserva no está marcada como check-in.' ];
         }
 
-        $reserva->status = 'finalizado';
+        $reserva->status = 'checked_out';
         $reserva->save();
 
         // Cambiar el estado de las habitaciones relacionadas a 'limpieza'

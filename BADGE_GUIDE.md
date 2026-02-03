@@ -26,7 +26,7 @@
  * - completado: Para tareas completadas
  * 
  * ESTADOS EN PROGRESO (Ámbar/Púrpura):
- * - en_estancia: Para huéspedes en la habitación
+ * - checked_in: Para huéspedes en la habitación (Etiqueta: En Estancia)
  * - proximo: Para eventos próximos
  * - pendiente: Para tareas pendientes
  * - procesando: Para acciones en proceso

@@ -21,7 +21,7 @@ class RefundService
      * - confirmado: normal, sin reembolso
      * - reembolso_parcial_pendiente: cambio de fechas, esperando aprobación del reembolso
      * - reembolso_total_pendiente: cancelación, esperando aprobación del reembolso
-     * - en_estancia: check-in realizado
+     * - checked_in: check-in realizado
      * - finalizado: check-out realizado
      * - cancelado: cancelada sin reembolso o reembolso completamente procesado
      * - no_presentado: no se presentó

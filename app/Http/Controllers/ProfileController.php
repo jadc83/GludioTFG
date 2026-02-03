@@ -59,7 +59,7 @@ class ProfileController extends Controller
         $estados = [
             'pendiente' => 'Pendiente',
             'confirmado' => 'Confirmada',
-            'en_estancia' => 'En curso',
+            'checked_in' => 'En curso',
             'finalizado' => 'Completada',
             'cancelado' => 'Cancelada',
             'no_presentado' => 'No presentada',

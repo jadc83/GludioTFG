@@ -13,7 +13,8 @@ export default function Badge({ label, tipo = 'default', className = '' }) {
         completado: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
 
         // Estados en progreso
-        en_estancia: 'bg-amber-50 text-amber-700 border border-amber-100',
+        'checked_in': 'bg-amber-50 text-amber-700 border border-amber-100',
+        'checked_out': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
         proximo: 'bg-amber-50 text-amber-700 border border-amber-100',
         pendiente: 'bg-purple-50 text-purple-700 border border-purple-100',
         procesando: 'bg-purple-50 text-purple-700 border border-purple-100',

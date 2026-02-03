@@ -135,8 +135,8 @@ export default function IndexReserva({ reservas = [] }) {
                             { valor: 'todos', etiqueta: 'Todos los estados' },
                             { valor: 'pendiente', etiqueta: 'Pendiente' },
                             { valor: 'confirmado', etiqueta: 'Confirmada' },
-                            { valor: 'en_estancia', etiqueta: 'En Estancia' },
-                            { valor: 'finalizado', etiqueta: 'Finalizada' },
+                            { valor: 'checked_in', etiqueta: 'En Estancia' },
+                            { valor: 'checked_out', etiqueta: 'Finalizada' },
                             { valor: 'cancelado', etiqueta: 'Cancelada' },
                             {
                                 valor: 'no_presentado',
@@ -357,10 +357,10 @@ export default function IndexReserva({ reservas = [] }) {
                                                             'confirmado'
                                                                 ? 'Confirmada'
                                                                 : reserva.status ===
-                                                                    'en_estancia'
+                                                                    'checked_in'
                                                                   ? 'En Estancia'
                                                                   : reserva.status ===
-                                                                      'finalizado'
+                                                                      'checked_out'
                                                                     ? 'Finalizada'
                                                                     : reserva.status ===
                                                                         'cancelado'
