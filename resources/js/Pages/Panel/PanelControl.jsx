@@ -5,7 +5,7 @@ import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
 import IndexEmpleados from '@/Components/empleados/IndexEmpleados';
 import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
 import IndexHabitacion from '@/Components/habitaciones/IndexHabitacion';
-import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
+import CreateReserva from '@/Components/reservas/formularios/pms/CreateReserva';
 import IndexReserva from '@/Components/reservas/listado/IndexReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {

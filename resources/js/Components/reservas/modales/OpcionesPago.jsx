@@ -146,7 +146,7 @@ export default function OpcionesPago({
                                                 monto={monto}
                                                 aceptaTerminos={aceptaTerminos}
                                                 mostrarAceptacion={true} // El formulario de pago ya gestiona su aceptación
-                                                onAceptaChange={
+                                                onCambioAceptaTerminos={
                                                     setAceptaTerminos
                                                 }
                                                 onPagoExitoso={(data) => {

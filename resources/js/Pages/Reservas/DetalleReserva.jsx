@@ -559,7 +559,7 @@ export default function DetalleReserva({ reserva: initialReserva }) {
                                     }}
                                     aceptaTerminos={aceptaTerminosPago}
                                     mostrarAceptacion={true}
-                                    onAceptaChange={setAceptaTerminosPago}
+                                    onCambioAceptaTerminos={setAceptaTerminosPago}
                                 />
                             </ErrorBoundary>
 

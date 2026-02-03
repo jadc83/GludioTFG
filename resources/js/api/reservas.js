@@ -62,3 +62,28 @@ export async function eliminarSolicitud(id, payload = {}) {
     const res = await axios.delete(`/refund-requests/${id}`, { data: payload });
     return res?.data ?? null;
 }
+
+// asignar/desasignar habitaciones (admin)
+export async function asignarHabitaciones(reservaId, habitacionIds = []) {
+    try {
+        const res = await axios.post(
+            `/reservas/${reservaId}/asignar-habitaciones`,
+            { habitacion_ids: habitacionIds },
+        );
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err.message };
+    }
+}
+
+export async function desasignarHabitaciones(reservaId, habitacionIds = []) {
+    try {
+        const res = await axios.post(
+            `/reservas/${reservaId}/desasignar-habitaciones`,
+            { habitacion_ids: habitacionIds },
+        );
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err.message };
+    }
+}

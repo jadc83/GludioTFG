@@ -33,6 +33,9 @@ export function formatearFecha(fecha, tipo = 'legible') {
  */
 export function formatearMoneda(cantidad, moneda = 'EUR') {
     if (cantidad === null || cantidad === undefined) return '—';
+    // Evitamos NaN si la cantidad no es un número válido
+    const numero = Number(cantidad);
+    if (Number.isNaN(numero)) return '—';
 
     const formateadores = {
         EUR: (n) => `${n.toFixed(2)}€`,
@@ -41,7 +44,7 @@ export function formatearMoneda(cantidad, moneda = 'EUR') {
     };
 
     const formateador = formateadores[moneda] || formateadores.EUR;
-    return formateador(Number(cantidad));
+    return formateador(numero);
 }
 
 /**

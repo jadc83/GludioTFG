@@ -18,7 +18,7 @@ function FormularioPagoInterno({
     onError = () => {},
     aceptaTerminos = false,
     mostrarAceptacion = false,
-    onAceptaChange = null,
+    onCambioAceptaTerminos = null,
 }) {
     const page = usePage();
     const csrfToken =
@@ -580,7 +580,7 @@ function FormularioPagoInterno({
                                 checked={acepta}
                                 onChange={(e) => {
                                     setAcepta(e.target.checked);
-                                    onAceptaChange?.(e.target.checked);
+                                    onCambioAceptaTerminos?.(e.target.checked);
                                 }}
                                 className="mt-0.5 h-5 w-5 cursor-pointer rounded border-gray-300 text-black focus:ring-black"
                             />
