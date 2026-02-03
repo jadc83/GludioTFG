@@ -38,13 +38,26 @@ jobs:
           node-version: '20'
 
       - name: Install Node dependencies
-        run: npm ci --silent
+        run: npm ci --no-audit --prefer-offline
 
-      - name: Build assets
-        run: npm run build --silent
+      - name: Build assets (Vite)
+        run: |
+          npm run build
 
-      - name: Check built assets
-        run: ls -la public/build || true
+      - name: Show build output and manifest
+        run: |
+          echo "Listing public/"
+          ls -la public || true
+          echo "Listing public/build/"
+          ls -la public/build || true
+          if [ -f public/build/manifest.json ]; then
+            echo "manifest exists"
+            echo "---- manifest head ----"
+            head -n 30 public/build/manifest.json || true
+            echo "---- end manifest ----"
+          else
+            echo "manifest missing"; exit 1
+          fi
 
       - name: Run migrations and seed
         run: php artisan migrate:fresh --seed --force
