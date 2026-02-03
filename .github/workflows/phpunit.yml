@@ -32,6 +32,20 @@ jobs:
           php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
           php -r "echo getenv('APP_KEY') ? 'APP_KEY set' : 'APP_KEY missing';"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm ci --silent
+
+      - name: Build assets
+        run: npm run build --silent
+
+      - name: Check built assets
+        run: ls -la public/build || true
+
       - name: Run migrations and seed
         run: php artisan migrate:fresh --seed --force
 
