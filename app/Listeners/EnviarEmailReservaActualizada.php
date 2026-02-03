@@ -5,15 +5,12 @@ namespace App\Listeners;
 use App\Events\ReservaActualizada;
 use App\Mail\ReservaActualizada as ReservaActualizadaMail;
 use App\Mail\ReservaCancelada;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\ReservaActualizadaNotification;
 use App\Notifications\ReservaCanceladaNotification;
 
-class EnviarEmailReservaActualizada implements ShouldQueue
+class EnviarEmailReservaActualizada
 {
-    use InteractsWithQueue;
 
     public function handle(ReservaActualizada $event)
     {
