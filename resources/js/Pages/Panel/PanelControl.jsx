@@ -17,6 +17,7 @@ import {
     UsersIcon,
 } from '@heroicons/react/24/outline';
 import React, { Suspense, useEffect, useState } from 'react';
+import Tabs from '@/Components/UI/Tabs';
 
 const TABS = [
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
@@ -158,16 +159,7 @@ export default function PanelControl({
                     <div className="envoltorioContenido">
                         <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md">
                             <div className="flex flex-wrap justify-center gap-1 md:gap-2">
-                                {TABS.map((tab) => (
-                                    <BotonTab
-                                        key={tab.id}
-                                        id={tab.id}
-                                        icon={tab.icon}
-                                        label={tab.label}
-                                        activa={tabActiva === tab.id}
-                                        onClick={cambiarTab}
-                                    />
-                                ))}
+                                <Tabs tabs={TABS} active={tabActiva} onChange={cambiarTab} variant="panel" />
                             </div>
                         </div>
 

@@ -25,7 +25,7 @@
 /* En su lugar, usar clases específicas en JSX cuando necesitemos forzar un comportamiento. */
 
 /* Asegurar que el card no crezca y permita scroll interno */
-.paso3-datos .rounded-\[2.5rem\] {
+.paso3-datos .rounded-lg {
   min-height: 0;
 }
 

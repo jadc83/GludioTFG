@@ -60,9 +60,13 @@ class ProfileController extends Controller
             'pendiente' => 'Pendiente',
             'confirmado' => 'Confirmada',
             'checked_in' => 'En curso',
-            'finalizado' => 'Completada',
+            'checked_out' => 'Completada',
             'cancelado' => 'Cancelada',
             'no_presentado' => 'No presentada',
+            'Reembolso parcial pendiente' => 'Reembolso Parcial Pendiente',
+            'Reembolso completo pendiente' => 'Reembolso Completo Pendiente',
+            'Reembolso parcial confirmado' => 'Reembolso Parcial Confirmado',
+            'Reembolso completo confirmado' => 'Reembolso Completo Confirmado',
         ];
         return $estados[$status] ?? $status;
     }
