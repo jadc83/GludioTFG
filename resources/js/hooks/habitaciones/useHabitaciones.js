@@ -1,4 +1,3 @@
-import IconSvg from '@/components/icons/RoomIcons';
 import { formatearFecha } from '@/utils/fecha';
 import React, { useEffect, useMemo, useState } from 'react';
 import { fetchHabitacionesDisponibles } from './service';

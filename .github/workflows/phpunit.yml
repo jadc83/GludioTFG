@@ -11,6 +11,7 @@ jobs:
 
     env:
       APP_ENV: testing
+      VITE_DEV_SERVER_URL: ''
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -28,6 +29,7 @@ jobs:
         run: |
           php -r "file_exists('.env') || copy('.env.example', '.env');"
           php artisan key:generate --ansi --no-interaction --force
+          echo "VITE_DEV_SERVER_URL=" >> .env
           php artisan config:clear
           php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
           php -r "echo getenv('APP_KEY') ? 'APP_KEY set' : 'APP_KEY missing';"
