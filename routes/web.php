@@ -78,7 +78,8 @@ Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name(
 Route::get('/pagos/check-session', [PagoController::class, 'checkSession'])->name('pagos.check-session');
 // Endpoint para marcar pago manualmente (recepción)
 Route::post('/pagos/{pago}/marcar-como-pagado', [PagoController::class, 'marcarComoPagado'])->name('pagos.marcar-como-pagado')->middleware('auth');
-Route::post('/webhooks/stripe', [PagoController::class, 'webhook'])->withoutMiddleware('VerifyCsrfToken');
+// Stripe webhook endpoint — exclude CSRF middleware to allow external POSTs
+Route::post('/webhooks/stripe', [PagoController::class, 'webhook'])->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsarReserva'])->name('reservas.reembolsar');
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');

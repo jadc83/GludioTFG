@@ -275,31 +275,47 @@ class PaymentService
 			$montoCents = (int)round($monto * 100);
 			$successUrl = route('reserva.show', $reserva->localizador) . '?session_id={CHECKOUT_SESSION_ID}';
 
-			$session = $this->getStripe()->checkout->sessions->create([
-				'payment_method_types' => ['card'],
-				'mode' => 'payment',
-				'line_items' => [[
-					'price_data' => [
-						'currency' => 'eur',
-						'product_data' => ['name' => "Pago reserva {$reserva->localizador}"],
-						'unit_amount' => $montoCents,
-					],
-					'quantity' => 1,
-				]],
-				'success_url' => $successUrl,
-				'cancel_url' => route('reserva.show', $reserva->localizador) . '?checkout=cancel',
-				'metadata' => ['reserva_id' => $reserva->id],
-			]);
-
+			// Crear registro de Pago primero para poder pasar su id a metadata del PaymentIntent
 			$pago = Pago::create([
 				'reserva_id' => $reserva->id,
-				'stripe_checkout_session_id' => $session->id,
 				'monto' => $monto,
 				'moneda' => 'eur',
 				'estado' => 'procesando',
 				'descripcion' => "Pago por Checkout (reserva {$reserva->localizador})",
-				'stripe_response' => ['checkout_session_id' => $session->id, 'session' => $session->toArray()],
+				'stripe_response' => [],
 			]);
+
+			try {
+				$session = $this->getStripe()->checkout->sessions->create([
+					'payment_method_types' => ['card'],
+					'mode' => 'payment',
+					'line_items' => [[
+						'price_data' => [
+							'currency' => 'eur',
+							'product_data' => ['name' => "Pago reserva {$reserva->localizador}"],
+							'unit_amount' => $montoCents,
+						],
+						'quantity' => 1,
+					]],
+					'success_url' => $successUrl,
+					'cancel_url' => route('reserva.show', $reserva->localizador) . '?checkout=cancel',
+					'metadata' => ['reserva_id' => $reserva->id],
+					// Añadir metadata al PaymentIntent que se cree automáticamente para poder mapear desde webhooks
+					'payment_intent_data' => ['metadata' => ['pago_id' => $pago->id, 'reserva_id' => $reserva->id]],
+				]);
+
+				// Actualizar pago con información de la sesión creada
+				$pago->update([
+					'stripe_checkout_session_id' => $session->id,
+					'stripe_response' => array_merge($pago->stripe_response ?? [], ['checkout_session_id' => $session->id, 'session' => $session->toArray()]),
+					'stripe_payment_intent_id' => is_object($session->payment_intent) ? ($session->payment_intent->id ?? null) : (is_string($session->payment_intent) ? $session->payment_intent : $pago->stripe_payment_intent_id)
+				]);
+			} catch (\Throwable $e) {
+				// Si falla crear la sesión, marcar pago como fallido y registrar error
+				$pago->update(['estado' => 'fallido', 'stripe_response' => array_merge($pago->stripe_response ?? [], ['error' => $e->getMessage()])]);
+				Log::error('Error creating checkout session after creating Pago: ' . $e->getMessage());
+				return ['success' => false, 'error' => $e->getMessage()];
+			}
 
 			return [
 				'success' => true,
@@ -328,42 +344,61 @@ class PaymentService
 				return;
 			}
 
-			DB::transaction(function() use ($pago, $session, $checkoutId) {
-				$paymentIntent = is_object($session) ? ($session->payment_intent ?? null) : ($session['payment_intent'] ?? null);
-				$paymentIntentId = null;
-				$paymentIntentData = null;
-				if (is_object($paymentIntent)) {
-					$paymentIntentId = $paymentIntent->id ?? null;
-					$paymentIntentData = method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent;
-				} elseif (is_string($paymentIntent) || is_numeric($paymentIntent)) {
-					$paymentIntentId = (string)$paymentIntent;
-					$paymentIntentData = ['id' => $paymentIntentId];
+			// Actualizar datos dentro de una transacción y dejar notificaciones fuera
+			try {
+				DB::transaction(function() use ($pago, $session) {
+					$paymentIntent = is_object($session) ? ($session->payment_intent ?? null) : ($session['payment_intent'] ?? null);
+					$paymentIntentId = null;
+					$paymentIntentData = null;
+					if (is_object($paymentIntent)) {
+						$paymentIntentId = $paymentIntent->id ?? null;
+						$paymentIntentData = method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent;
+					} elseif (is_string($paymentIntent) || is_numeric($paymentIntent)) {
+						$paymentIntentId = (string)$paymentIntent;
+						$paymentIntentData = ['id' => $paymentIntentId];
+					}
+
+					$pago->update([
+						'estado' => 'completado',
+						'pagado_en' => now(),
+						'stripe_payment_intent_id' => $paymentIntentId ?? $pago->stripe_payment_intent_id,
+						'stripe_response' => array_merge($pago->stripe_response ?? [], ['checkout_session' => is_object($session) ? (method_exists($session, 'toArray') ? $session->toArray() : (array)$session) : $session, 'payment_intent' => $paymentIntentData])
+					]);
+
+					$pago->reserva->update(['pago' => 'pagado']);
+				});
+
+				Log::info('handleCheckoutSessionCompleted: pago actualizado (transaction committed)', ['pago_id' => $pago->id, 'checkout_id' => $checkoutId]);
+
+				// Fuera de la transacción: notificar e emitir evento idempotentemente
+				try {
+					$pago = $pago->fresh(['reserva', 'reserva.reservable', 'reserva.pagos']);
+					$notifiable = $pago->reserva->reservable;
+
+					$exists = DB::table('notifications')
+						->where('type', \App\Notifications\PagoConfirmadoNotification::class)
+						->where('data', 'like', '%"pago_id":' . $pago->id . '%')
+						->exists();
+
+					if (! $exists) {
+						if ($notifiable && method_exists($notifiable, 'notify')) {
+							$notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+						} else {
+							\Illuminate\Support\Facades\Notification::route('mail', $pago->reserva->reservable?->email ?? null)
+								->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
+						}
+					}
+
+					try { event(new ReservaActualizada($pago->reserva->fresh(['reservable', 'pagos']), null)); } catch (\Throwable $e) { Log::warning('Emitir ReservaActualizada failed: ' . $e->getMessage()); }
+
+				} catch (\Throwable $e) {
+					Log::warning('EnviarEmailReservaActualizada failed: ' . $e->getMessage());
 				}
 
-				$pago->update([
-					'estado' => 'completado',
-					'pagado_en' => now(),
-					'stripe_payment_intent_id' => $paymentIntentId ?? $pago->stripe_payment_intent_id,
-					'stripe_response' => array_merge($pago->stripe_response ?? [], ['checkout_session' => is_object($session) ? (method_exists($session, 'toArray') ? $session->toArray() : (array)$session) : $session, 'payment_intent' => $paymentIntentData])
-				]);
-
-				$pago->reserva->update(['pago' => 'pagado']);
-
-				// Notificación idempotente
-				$notifiable = $pago->reserva->reservable;
-				$exists = DB::table('notifications')
-					->where('type', \App\Notifications\PagoConfirmadoNotification::class)
-					->where('data', 'like', '%"pago_id":' . $pago->id . '%')
-					->exists();
-
-				if (!$exists && $notifiable) {
-					$notifiable->notify(new \App\Notifications\PagoConfirmadoNotification($pago));
-				}
-
-				Log::info('handleCheckoutSessionCompleted: pago actualizado', ['pago_id' => $pago->id, 'checkout_id' => $checkoutId]);
-
-				event(new ReservaActualizada($pago->reserva->fresh(['reservable', 'pagos']), null));
-			});
+			} catch (\Throwable $e) {
+				Log::error('Error processing checkout session completed (transaction): ' . $e->getMessage());
+				return;
+			}
 		} catch (\Throwable $e) {
 			Log::error('Error processing checkout session completed: ' . $e->getMessage());
 		}
@@ -389,7 +424,7 @@ class PaymentService
 		}
 
 		$paymentIntentId = is_string($paymentIntentId) ? trim(preg_replace('/[[:cntrl:]]+/', '', $paymentIntentId)) : '';
-		Log::info('confirmarPaymentIntent called', ['raw_input' => $raw, 'payment_intent_id' => $paymentIntentId]);
+		Log::debug('confirmarPaymentIntent called', ['raw_input' => $raw, 'payment_intent_id' => $paymentIntentId]);
 
 		if (!preg_match('/^pi_[A-Za-z0-9_]+$/', $paymentIntentId)) {
 			Log::warning('confirmarPaymentIntent: id inválido', ['payment_intent_id' => $paymentIntentId, 'raw_input' => $raw]);
@@ -399,6 +434,13 @@ class PaymentService
 		try {
 			$paymentIntent = $this->getStripe()->paymentIntents->retrieve($paymentIntentId);
 			$status = $paymentIntent->status ?? null;
+			// Log basic payment intent info and metadata for debugging fallback mapping
+			try {
+				$piMeta = isset($paymentIntent->metadata) ? (array)$paymentIntent->metadata : null;
+			} catch (\Throwable $e) {
+				$piMeta = null;
+			}
+			Log::debug('confirmarPaymentIntent: retrieved payment_intent', ['id' => $paymentIntentId, 'status' => $status, 'metadata' => $piMeta]);
 
 			if (!$pago) {
 				$pago = Pago::where('stripe_payment_intent_id', $paymentIntentId)->first()
@@ -406,27 +448,133 @@ class PaymentService
 			}
 
 			if (!$pago) {
-				Log::warning('confirmarPaymentIntent: Pago no encontrado para payment_intent', ['payment_intent_id' => $paymentIntentId]);
-				return ['success' => false, 'error' => 'Pago no encontrado'];
+				// Intentar fallback: buscar Checkout Session asociada al PaymentIntent y mapear al Pago
+				try {
+					Log::debug('confirmarPaymentIntent: attempting fallback - listing checkout sessions', ['payment_intent_id' => $paymentIntentId]);
+					$sessions = $this->getStripe()->checkout->sessions->all(['payment_intent' => $paymentIntentId, 'limit' => 1]);
+
+					$sessionPreviews = [];
+					if (!empty($sessions->data) && count($sessions->data) > 0) {
+						foreach ($sessions->data as $s) {
+							$sessionPreviews[] = [
+								'id' => is_object($s) ? ($s->id ?? null) : ($s['id'] ?? null),
+								'metadata' => is_object($s) && property_exists($s, 'metadata') ? (array)$s->metadata : (is_array($s) && isset($s['metadata']) ? (array)$s['metadata'] : []),
+							];
+						}
+					}
+
+					Log::debug('confirmarPaymentIntent: sessions list result', ['count' => count($sessions->data ?? []), 'sessions_preview' => $sessionPreviews]);
+
+					if (!empty($sessions->data) && count($sessions->data) > 0) {
+						$session = $sessions->data[0];
+						$meta = [];
+						if (is_object($session) && property_exists($session, 'metadata')) {
+							$meta = (array)$session->metadata;
+						} elseif (is_array($session) && isset($session['metadata'])) {
+							$meta = (array)$session['metadata'];
+						}
+
+						Log::debug('confirmarPaymentIntent: session metadata found', ['payment_intent_id' => $paymentIntentId, 'session_id' => is_object($session) ? ($session->id ?? null) : ($session['id'] ?? null), 'metadata' => $meta]);
+
+						// Si la metadata de la session está vacía, intentar usar la metadata del PaymentIntent
+						if (empty($meta)) {
+							try {
+								$piMetaCandidate = [];
+								if (is_object($paymentIntent) && property_exists($paymentIntent, 'metadata')) {
+									// Normalizar metadata robustamente: usar json encode/decode para evitar estructuras internas de Stripe SDK
+									try {
+										$piMetaCandidate = json_decode(json_encode($paymentIntent->metadata), true) ?: [];
+									} catch (\Throwable $_e) {
+										$piMetaCandidate = is_array($paymentIntent->metadata) ? (array)$paymentIntent->metadata : [];
+									}
+								}
+
+								// Si aún no encontramos claves directas, buscar recursivamente en el array por 'pago_id'/'reserva_id'
+								if (!empty($piMetaCandidate)) {
+									// flatten possible nested structures
+									$flat = [];
+									$iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($piMetaCandidate));
+									foreach ($iterator as $k => $v) {
+										// recursive iterator gives values; we need keys mapping — instead, check top-level keys first
+									}
+
+									Log::debug('confirmarPaymentIntent: usando metadata desde PaymentIntent porque session metadata está vacía', ['payment_intent_id' => $paymentIntentId, 'pi_metadata' => $piMetaCandidate]);
+									$meta = array_merge($meta, $piMetaCandidate);
+								}
+							} catch (\Throwable $e) {
+								Log::warning('confirmarPaymentIntent: error extrayendo metadata del PaymentIntent: ' . $e->getMessage());
+							}
+						}
+
+						// Si la metadata incluye pago_id, usarla
+						if (!empty($meta['pago_id'])) {
+							$foundPago = Pago::find((int)$meta['pago_id']);
+							if ($foundPago) {
+								$pago = $foundPago;
+								Log::info('confirmarPaymentIntent: Pago encontrado por pago_id metadata', ['pago_id' => $pago->id]);
+							} else {
+								Log::warning('confirmarPaymentIntent: pago_id metadata presente pero no existe en DB', ['pago_id' => $meta['pago_id']]);
+							}
+						}
+
+						// Si no hay pago_id pero hay reserva_id, intentar localizar pago por reserva y session id
+						if (!$pago && !empty($meta['reserva_id'])) {
+							$lookupSessionId = is_object($session) ? ($session->id ?? null) : ($session['id'] ?? null);
+							$foundPago = Pago::where('reserva_id', (int)$meta['reserva_id'])
+								->where('stripe_checkout_session_id', $lookupSessionId)
+								->first();
+							if ($foundPago) {
+								$pago = $foundPago;
+								Log::info('confirmarPaymentIntent: Pago encontrado por reserva_id + session_id', ['pago_id' => $pago->id]);
+							} else {
+								Log::warning('confirmarPaymentIntent: no se encontró Pago por reserva_id + session_id', ['reserva_id' => $meta['reserva_id'], 'session_id' => $lookupSessionId]);
+							}
+						}
+
+						// Si encontramos pago, asegurarnos de persistir el stripe_payment_intent_id
+						if ($pago) {
+							$pago->update(['stripe_payment_intent_id' => $paymentIntentId, 'stripe_response' => array_merge($pago->stripe_response ?? [], ['checkout_session' => is_object($session) ? (method_exists($session, 'toArray') ? $session->toArray() : (array)$session) : (array)$session])]);
+							Log::info('confirmarPaymentIntent: Pago encontrado vía Checkout Session', ['payment_intent_id' => $paymentIntentId, 'pago_id' => $pago->id]);
+						}
+					}
+				} catch (\Throwable $e) {
+					Log::warning('confirmarPaymentIntent fallback: error buscando Checkout Session: ' . $e->getMessage());
+				}
+
+				if (!$pago) {
+					// Añadir contexto extra en el log: metadata del PaymentIntent si existe
+					$piMetaForLog = null;
+					try { $piMetaForLog = isset($paymentIntent->metadata) ? (array)$paymentIntent->metadata : null; } catch (\Throwable $__e) { $piMetaForLog = null; }
+					Log::warning('confirmarPaymentIntent: Pago no encontrado para payment_intent', ['payment_intent_id' => $paymentIntentId, 'payment_intent_metadata' => $piMetaForLog]);
+					return ['success' => false, 'error' => 'Pago no encontrado'];
+				}
 			}
 
 			$reserva = $pago->reserva;
 
+			// Actualizar dentro de transacción pero emitir eventos fuera para evitar rollback por fallos de broadcast
 			DB::transaction(function() use ($pago, $paymentIntent, $status, $reserva) {
 				if ($status === 'succeeded') {
 					$pago->update([
 						'estado' => 'completado',
 						'pagado_en' => now(),
-						'stripe_response' => array_merge($pago->stripe_response ?? [], ['payment_intent' => $paymentIntent->toArray()])
+						'stripe_response' => array_merge($pago->stripe_response ?? [], ['payment_intent' => method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent])
 					]);
 					if ($reserva) {
 						$reserva->update(['pago' => 'pagado']);
-						event(new ReservaActualizada($reserva->fresh(['reservable', 'pagos']), null));
 					}
 				} else {
 					$pago->update(['estado' => 'fallido']);
 				}
 			});
+
+			// Fuera de la transacción: emitir evento y notificaciones de forma segura (no deben hacer rollback)
+			try {
+				$pago = $pago->fresh(['reserva', 'reserva.reservable', 'reserva.pagos']);
+				try { event(new ReservaActualizada($pago->reserva->fresh(['reservable', 'pagos']), null)); } catch (\Throwable $e) { Log::warning('Emitir ReservaActualizada failed (confirmarPaymentIntent): ' . $e->getMessage()); }
+			} catch (\Throwable $e) {
+				Log::warning('confirmarPaymentIntent: fallo tras actualizar pago al refrescar datos para evento: ' . $e->getMessage());
+			}
 
 			Log::info('confirmarPaymentIntent: pago procesado', ['pago_id' => $pago->id, 'status' => $status]);
 
@@ -462,8 +610,7 @@ class PaymentService
 
 			if ($paymentStatus === 'paid') {
 				$this->handleCheckoutSessionCompleted($session);
-				$pago = Pago::where('stripe_checkout_session_id', $sessionId)->first();
-				return ['success' => true, 'paid' => true, 'status' => 'paid', 'pago_id' => $pago->id ?? null];
+				$pago = Pago::where('stripe_checkout_session_id', $sessionId)->first();			Log::debug('checkSession: found pago for session', ['session_id' => $sessionId, 'pago_id' => $pago->id ?? null]);				return ['success' => true, 'paid' => true, 'status' => 'paid', 'pago_id' => $pago->id ?? null];
 			}
 
 			return ['success' => true, 'paid' => false, 'status' => $paymentStatus];
