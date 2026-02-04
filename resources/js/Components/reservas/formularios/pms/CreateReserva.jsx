@@ -3,6 +3,8 @@ import FormularioPago from '@/Components/pagos/FormularioPago';
 import BusquedaClientes from '@/Components/reservas/formularios/pms/BusquedaClientes';
 import Boton from '@/Components/UI/Boton';
 import useCreateReserva from '@/hooks/reservas/useCreateReserva';
+import { usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 import {
     CalendarIcon,
@@ -63,7 +65,21 @@ export default function CreateReserva({ iconOnly = false }) {
         esFormularioCompleto,
         guardarReserva,
         onPagoExitoso,
+        // Admin checkout helpers
+        crearReservaConCheckout,
+        creandoConCheckout,
+        // Guard while saving
+        estaGuardando,
     } = useCreateReserva();
+
+    const page = usePage();
+
+    useEffect(() => {
+        const errors = page?.props?.errors || {};
+        if (errors && errors.habitaciones) {
+            setTabActiva('fechas');
+        }
+    }, [page?.props?.errors]);
 
 
 
@@ -173,14 +189,17 @@ export default function CreateReserva({ iconOnly = false }) {
                             )}
                         </div>
 
-                        {/* Footer con botones */}
-                        <CreateReservaFooter
-                            precioCalculado={precioCalculado}
-                            estaCargando={estaCargando}
-                            esFormularioCompleto={esFormularioCompleto}
-                            handleCerrar={handleCerrar}
-                            formulario={formulario}
-                        />
+                        {/* Footer con botones - oculto cuando pago con tarjeta y Stripe está configurado */}
+                        {!(formulario.metodo_pago === 'tarjeta' && import.meta.env.VITE_STRIPE_PUBLIC_KEY) && (
+                            <CreateReservaFooter
+                                precioCalculado={precioCalculado}
+                                estaCargando={estaCargando}
+                                esFormularioCompleto={esFormularioCompleto}
+                                handleCerrar={handleCerrar}
+                                formulario={formulario}
+                                estaGuardando={estaGuardando}
+                            />
+                        )}
                     </form>
                 </div>
             </div>

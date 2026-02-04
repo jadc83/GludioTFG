@@ -1,6 +1,9 @@
 import ErrorBoundary from '@/Components/ErrorBoundary';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import { formatearMoneda } from '@/utils/formatters';
+import { loadStripe } from '@stripe/stripe-js';
+import { crearCheckoutSession } from '@/api/pagos';
+import { useState } from 'react';
 
 export default function ModalPago({
     mostrar,
@@ -13,7 +16,37 @@ export default function ModalPago({
     mostrarAceptacion,
     onCambioAceptaTerminos,
 }) {
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+
     if (!mostrar) return null;
+
+    const handleCheckout = async () => {
+        try {
+            setCheckoutLoading(true);
+            const res = await crearCheckoutSession(reservaData.reserva_id, { monto });
+            if (!res || (!res.sessionUrl && !res.sessionId)) {
+                throw new Error(res?.error || 'No se pudo crear sesión de Checkout');
+            }
+
+            // Nuevo flujo: Stripe ya no soporta redirectToCheckout; usar la URL de sesión si está presente.
+            if (res.sessionUrl) {
+                window.location.href = res.sessionUrl;
+                return;
+            }
+
+            // Compatibilidad antigua (fallback)
+            const stripe = await loadStripe(res.publicKey);
+            const { error } = await stripe.redirectToCheckout({ sessionId: res.sessionId });
+            if (error) throw error;
+        } catch (e) {
+            console.error('Error creando checkout session:', e);
+            onError?.(e);
+        } finally {
+            setCheckoutLoading(false);
+        }
+    };
+
+    const canCheckout = !(mostrarAceptacion && !aceptaTerminos) && !checkoutLoading;
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
@@ -43,7 +76,13 @@ export default function ModalPago({
                     />
                 </ErrorBoundary>
 
-                <button onClick={onCerrar} className="mt-6 w-full py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 transition hover:text-gray-600">Cancelar operación</button>
+                <div className="mt-6 space-y-3">
+                    <button onClick={handleCheckout} disabled={!canCheckout} className="w-full rounded-2xl bg-yellow-600 py-4 text-xs font-black uppercase tracking-widest text-white transition hover:bg-yellow-700 disabled:opacity-50">
+                        {checkoutLoading ? 'Redirigiendo...' : 'Pagar con Stripe (Checkout)'}
+                    </button>
+
+                    <button onClick={onCerrar} className="w-full py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 transition hover:text-gray-600">Cancelar operación</button>
+                </div>
             </div>
         </div>
     );

@@ -10,6 +10,7 @@ import axios from 'axios';
 import '../../../../css/paso4Confirmacion.css';
 import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
 import OpcionesPago from '../modales/OpcionesPago';
+import { emitToast } from '@/utils/toast';
 import DesgloseFactura from '../utilidades/DesgloseFactura';
 
 export default function Paso4Confirmacion({
@@ -57,9 +58,6 @@ export default function Paso4Confirmacion({
     const fechasRef = useRef(null);
     const [highlightFechas, setHighlightFechas] = useState(false);
 
-    useEffect(() => {
-        console.log('Paso4 - selectedTarifas recibido:', selectedTarifas);
-    }, [selectedTarifas]);
 
     useEffect(() => {
         const cargarPrecio = async () => {
@@ -185,7 +183,7 @@ export default function Paso4Confirmacion({
                 setCuponValido(null);
             }
         } catch (error) {
-            console.error('Error validando cupón:', error?.response || error);
+            emitToast('Error validando cupón', 'error');
             setErrorPagoLocal('Error validando cupón');
             setCuponValido(null);
         }

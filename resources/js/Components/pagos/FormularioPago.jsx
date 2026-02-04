@@ -1,13 +1,9 @@
 import Campo from '@/Components/formulario/Campo';
 import Modal from '@/Components/Modal';
 import { usePage } from '@inertiajs/react';
-import {
-    CardElement,
-    Elements,
-    useElements,
-    useStripe,
-} from '@stripe/react-stripe-js';
+
 import { loadStripe } from '@stripe/stripe-js';
+import { crearCheckoutSession } from '@/api/pagos';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 
@@ -25,8 +21,7 @@ function FormularioPagoInterno({
         page?.props?.csrf_token ||
         document.querySelector('meta[name="csrf-token"]')?.content ||
         '';
-    const stripe = useStripe();
-    const elements = useElements();
+
 
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
@@ -102,122 +97,7 @@ function FormularioPagoInterno({
             }
         }
 
-        const { paymentIntent, error } = await stripe.confirmCardPayment(
-            dataPI.clientSecret,
-            {
-                payment_method: {
-                    card: elements.getElement(CardElement),
-                    billing_details: { name, email },
-                },
-            },
-        );
 
-        if (error) throw new Error(error.message);
-
-        if (paymentIntent.status === 'succeeded') {
-            try {
-                const resConfirm = await axios.post('/pagos/confirmar', {
-                    payment_intent_id: paymentIntent.id,
-                    pago_id: dataPI.pago_id,
-                }, {
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
-                });
-                const confirmJson = resConfirm.data;
-                onPagoExitoso({ pago_id: dataPI.pago_id, confirmData: confirmJson });
-            } catch (err) {
-                const jd = err?.response?.data;
-                let errText = err?.message || 'Error confirmando pago';
-                if (jd) errText = jd?.message || jd?.error || errText;
-                throw new Error(errText);
-            }
-        }
-    };
-
-    const procesarPago = async (e) => {
-        if (e && typeof e.preventDefault === 'function') e.preventDefault();
-        if (!stripe || !elements || !acepta) {
-            console.error('❌ Validación inicial fallida:', {
-                stripe: !!stripe,
-                elements: !!elements,
-                acepta,
-            });
-            return;
-        }
-
-        // Validar que CardElement tenga datos
-        const cardElement = elements.getElement(CardElement);
-        if (!cardElement) {
-            console.error('❌ CardElement no encontrado');
-            setMensaje('Error: elemento de tarjeta no encontrado.');
-            return;
-        }
-
-        console.log('🔍 Validando tarjeta...');
-
-        // Crear un payment method para validar que la tarjeta está completa
-        const { paymentMethod, error: pmError } =
-            await stripe.createPaymentMethod({
-                type: 'card',
-                card: cardElement,
-                billing_details: { name, email },
-            });
-
-        if (pmError) {
-            console.error('❌ Error tarjeta:', pmError);
-            setMensaje(`Tarjeta inválida: ${pmError.message}`);
-            return;
-        }
-
-        if (!paymentMethod) {
-            console.error('❌ No se creó payment method');
-            setMensaje(
-                'Por favor, completa los datos de tu tarjeta correctamente.',
-            );
-            return;
-        }
-
-        console.log('✅ Tarjeta válida, procediendo con pago');
-
-        // Guard: evitar enviar si faltan fechas u habitaciones en el payload
-        if (!reservaData || !reservaData.check_in || !reservaData.check_out) {
-            setMensaje('Selecciona fechas de entrada y salida.');
-            try {
-                if (typeof window !== 'undefined')
-                    window.dispatchEvent(new CustomEvent('faltanFechas'));
-            } catch (e) {}
-            setProcesando(false);
-            return;
-        }
-        if (
-            !Array.isArray(reservaData.habitaciones) ||
-            reservaData.habitaciones.length === 0
-        ) {
-            setMensaje('Selecciona al menos una habitación.');
-            try {
-                if (typeof window !== 'undefined')
-                    window.dispatchEvent(new CustomEvent('faltanHabitaciones'));
-            } catch (e) {}
-            setProcesando(false);
-            return;
-        }
-
-        // Validar campos de formulario
-        if (!name || !name.trim()) {
-            setMensaje('Por favor, ingresa tu nombre.');
-            nameRef.current?.focus();
-            setProcesando(false);
-            return;
-        }
-        if (
-            !email ||
-            !email.trim() ||
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ) {
-            setMensaje('Por favor, ingresa un email válido.');
-            emailRef.current?.focus();
-            setProcesando(false);
-            return;
-        }
         if (!telefono || !telefono.trim()) {
             setMensaje('Por favor, ingresa tu teléfono.');
             telefonoRef.current?.focus();
@@ -535,41 +415,7 @@ function FormularioPagoInterno({
                     </div>
                 </div>
 
-                {/* SECCIÓN: TARJETA */}
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 border-l-4 border-black pl-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900">
-                            Tarjeta Bancaria
-                        </h4>
-                    </div>
-                    {/* Mostrar aviso si Stripe no está inicializado */}
-                    {(!stripe || !elements) && (
-                        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
-                            <strong className="block font-bold">Pasarela de pagos no disponible</strong>
-                            <p className="mt-1">No es posible procesar pagos con tarjeta en este momento. Cambia el método de pago o intenta más tarde.</p>
-                        </div>
-                    )}
-                    <div className="rounded-xl border-2 border-gray-100 bg-white p-4 shadow-sm transition-all focus-within:border-black">
-                        <CardElement
-                            options={{
-                                style: {
-                                    base: {
-                                        fontSize: '14px',
-                                        color: '#111827',
-                                        fontFamily: 'system-ui, sans-serif',
-                                        letterSpacing: '0.025em',
-                                        fontSmoothing: 'antialiased',
-                                        '::placeholder': { color: '#9ca3af' },
-                                    },
-                                    invalid: {
-                                        color: '#dc2626',
-                                        iconColor: '#dc2626',
-                                    },
-                                },
-                            }}
-                        />
-                    </div>
-                </div>
+
 
                 {/* ACEPTACIÓN Y ACCIÓN */}
                 <div className="space-y-6">
@@ -595,29 +441,61 @@ function FormularioPagoInterno({
                     )}
 
                     <div className="flex flex-col gap-3">
-                        <button
-                            type="button"
-                            onClick={procesarPago}
-                            disabled={
-                                procesando ||
-                                !stripe ||
-                                !elements ||
-                                !acepta ||
-                                !name?.trim() ||
-                                !email?.trim() ||
-                                !telefono?.trim()
-                            }
-                            className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-black py-4 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-gray-900 active:scale-[0.98] disabled:opacity-20 disabled:grayscale"
-                        >
-                            {procesando ? (
-                                <span className="flex items-center gap-2">
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-                                    Procesando...
-                                </span>
-                            ) : (
-                                `Pagar y Confirmar €${Number(monto).toFixed(2)}`
-                            )}
-                        </button>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        if (!acepta) {
+                                            setMensaje('Acepta los términos para continuar.');
+                                            return;
+                                        }
+                                        setProcesando(true);
+
+                                        const esExtension = Boolean(
+                                            reservaData?.es_extension || reservaData?.es_edicion_pago,
+                                        );
+                                        let resId = reservaData?.reserva_id;
+
+                                        if (!esExtension) {
+                                            const service = await import('@/hooks/reservas/service');
+                                            const nuevoPayload = { ...reservaData, name, email, telefono };
+                                            try {
+                                                const dataReserva = await service.crearReserva(nuevoPayload);
+                                                if (!dataReserva || dataReserva.success === false) {
+                                                    throw new Error(dataReserva?.error || dataReserva?.message || 'Error creando reserva');
+                                                }
+                                                resId = dataReserva.reserva_id ?? dataReserva.reserva?.id ?? resId;
+                                            } catch (e) {
+                                                setMensaje(e?.message || 'Error creando la reserva');
+                                                throw e;
+                                            }
+                                        }
+
+                                        // Crear checkout session y redirigir (nueva forma: usar session.url)
+                                        const ck = await crearCheckoutSession(resId, { monto });
+                                        if (!ck || (!ck.sessionUrl && !ck.sessionId)) {
+                                            throw new Error(ck?.error || 'No se pudo iniciar Stripe Checkout');
+                                        }
+
+                                        if (ck.sessionUrl) {
+                                            window.location.href = ck.sessionUrl;
+                                        } else {
+                                            // Fallback antiguo: usar redirectToCheckout si aún disponible
+                                            const stripe = await loadStripe(ck.publicKey);
+                                            await stripe.redirectToCheckout({ sessionId: ck.sessionId });
+                                        }
+                                    } catch (e) {
+                                        console.error('Error checkout:', e);
+                                        setMensaje(e?.message || e?.error || 'Error al iniciar Checkout');
+                                    } finally {
+                                        setProcesando(false);
+                                    }
+                                }}
+                                disabled={procesando || !name?.trim() || !email?.trim() || !telefono?.trim()}
+                                className="flex w-full items-center justify-center rounded-xl bg-yellow-600 py-3 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-yellow-700 disabled:opacity-50"
+                            >Pagar con Stripe (Checkout)</button>
+                        </div>
 
                         <p className="text-center text-[10px] font-medium text-gray-400">
                             Transacción segura encriptada vía Stripe
@@ -684,13 +562,6 @@ function FormularioPagoInterno({
 }
 
 export default function FormularioPago(props) {
-    const stripePromise = useMemo(
-        () => loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY),
-        [],
-    );
-    return (
-        <Elements stripe={stripePromise}>
-            <FormularioPagoInterno {...props} />
-        </Elements>
-    );
+    // Ahora utilizamos exclusivamente Stripe Checkout (session.url). No es necesario el wrapper de Elements.
+    return <FormularioPagoInterno {...props} />;
 }

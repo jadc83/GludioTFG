@@ -62,7 +62,6 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 showToast?.(data?.error || 'Error al desasignar', 'error');
             }
         } catch (error) {
-            console.error('Error desasignando:', error?.response || error);
             showToast?.('Error al desasignar habitación', 'error');
         } finally {
             setGuardandoHabitaciones(false);
@@ -202,7 +201,6 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 showToast?.(data?.error || 'Error al actualizar', 'error');
             }
         } catch (error) {
-            console.error('Error actualizando:', error?.response || error);
             showToast?.('Error al actualizar habitaciones', 'error');
         } finally {
             setGuardandoHabitaciones(false);

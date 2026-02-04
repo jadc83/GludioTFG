@@ -54,7 +54,6 @@ export default function useReservaForm() {
 
     // Método público para actualizar tarifas desde componentes
     const actualizarTarifas = useCallback((nuevasTarifas) => {
-        console.log('📋 actualizarTarifas:', nuevasTarifas);
         setSelectedTarifas(nuevasTarifas);
     }, []);
 

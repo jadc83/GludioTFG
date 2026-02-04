@@ -5,6 +5,7 @@ import useReserva from '@/hooks/reservas/useReserva';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import usePreview from '@/hooks/usePreview';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { emitToast } from '@/utils/toast';
 import { formatearFecha, formatearMoneda } from '@/utils/formatters';
 import {
     ArrowDownOnSquareIcon,
@@ -15,7 +16,7 @@ import {
     PhoneIcon,
 } from '@heroicons/react/24/outline';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 export default function DetalleReserva({ reserva: initialReserva }) {
     // --- HOOKS Y ESTADOS PRINCIPALES ---
@@ -50,8 +51,51 @@ export default function DetalleReserva({ reserva: initialReserva }) {
 
     useReservaEvents(reserva, { onRefresh: refresh });
 
+    // Comprobar si llegamos desde Stripe con session_id en la URL y confirmar inmediatamente
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        if (!sessionId) return;
+
+        let attempts = 0;
+        let stopped = false;
+
+        const check = async () => {
+            try {
+                attempts += 1;
+                const api = await import('@/api/pagos');
+                const resp = await api.checkSession(sessionId);
+                if (resp?.success && resp?.paid) {
+                    emitToast('Pago confirmado. Actualizando reserva...', 'success');
+                    await refresh();
+                    stopped = true;
+                    // limpiar session_id de la URL para evitar reintentos
+                    params.delete('session_id');
+                    const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+                    window.history.replaceState({}, document.title, newUrl);
+                    return;
+                }
+
+                if (!stopped && attempts < 5) {
+                    // esperar y reintentar (3s, 6s, 12s... exponential)
+                    const wait = 3000 * Math.pow(2, attempts - 1);
+                    setTimeout(check, wait);
+                } else if (!stopped) {
+                    emitToast('Pago en proceso. Se confirmará en breve.', 'info');
+                }
+            } catch (e) {
+                // noop pero registrar en consola para depuración
+                console.warn('checkSession error', e);
+            }
+        };
+
+        check();
+
+        return () => { stopped = true; };
+    }, []);
+
     const showToast = (message, type = 'info') => {
-        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
+        emitToast(message, type);
     };
 
     const refundableAmount = useMemo(() => {

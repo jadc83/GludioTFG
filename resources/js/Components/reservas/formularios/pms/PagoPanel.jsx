@@ -3,6 +3,7 @@ import Campo from '@/Components/formulario/Campo';
 import FormularioPago from '@/Components/pagos/FormularioPago';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
+import { emitToast } from '@/utils/toast';
 
 export default function PagoPanel({
     formulario,
@@ -87,13 +88,6 @@ export default function PagoPanel({
             {/* FORMULARIO DE PAGO STRIPE */}
             {formulario.metodo_pago === 'tarjeta' && precioCalculado > 0 && (
                 <div className="animate-in slide-in-from-top-4 duration-500">
-                    <div className="mb-4 flex items-center gap-3 border-l-4 border-black pl-4">
-                        <CreditCardIcon className="h-5 w-5 text-black" />
-                        <h4 className="text-sm font-black uppercase tracking-widest text-gray-900">
-                            Datos de la Tarjeta
-                        </h4>
-                    </div>
-
                     <FormularioPago
                         monto={precioCalculado}
                         reservaData={reservaData}
@@ -101,7 +95,7 @@ export default function PagoPanel({
                         mostrarAceptacion={true}
                         onCambioAceptaTerminos={setAceptaTerminos}
                         onPagoExitoso={onPagoExitoso}
-                        onError={(err) => console.error('Error en pago:', err)}
+                        onError={(err) => emitToast('Error en pago: ' + (err?.message || ''), 'error')}
                     />
                 </div>
             )}

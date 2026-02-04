@@ -5,8 +5,7 @@
 
 // Emit a console warning at import time so leftover imports are obvious at runtime.
 if (typeof globalThis !== 'undefined' && !globalThis.__createReservaCompatWarned) {
-    // eslint-disable-next-line no-console
-    console.warn("DEPRECATION: import from '@/Components/reservas/formularios/CreateReserva' is deprecated. Use '@/Components/reservas/formularios/pms/CreateReserva' instead.");
+    // Compatibility import used elsewhere; deprecation warning removed to avoid noisy console output
     globalThis.__createReservaCompatWarned = true;
 }
 

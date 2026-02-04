@@ -7,7 +7,9 @@ export default function CreateReservaFooter({
     esFormularioCompleto,
     handleCerrar,
     formulario,
+    estaGuardando = false,
 }) {
+    const disabled = estaCargando || estaGuardando || !esFormularioCompleto();
     return (
         <footer className="flex flex-none items-center justify-between border-t border-gray-100 bg-gray-50 p-6">
             <div className="flex items-center gap-2">
@@ -25,22 +27,17 @@ export default function CreateReservaFooter({
                     type="button"
                     variant="outline"
                     onClick={handleCerrar}
-                    disabled={estaCargando}
+                    disabled={disabled}
                 >
                     Cancelar
                 </Boton>
-                {/* Mostrar botón 'Crear Reserva' como fallback si Stripe no está configurado */}
+
                 <Boton
                     type="submit"
                     variant="primary"
                     color="danger"
-                    loading={estaCargando}
-                    className={
-                        formulario.metodo_pago === 'tarjeta' && import.meta.env.VITE_STRIPE_PUBLIC_KEY
-                            ? 'hidden'
-                            : ''
-                    }
-                    disabled={estaCargando || !esFormularioCompleto()}
+                    loading={estaGuardando}
+                    disabled={disabled}
                 >
                     {formulario.metodo_pago === 'tarjeta' && !import.meta.env.VITE_STRIPE_PUBLIC_KEY
                         ? 'Crear Reserva (Pago en Recepción)'

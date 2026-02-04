@@ -15,6 +15,9 @@ import { useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
     const { props } = usePage();
+    // Local copy of reservas so we can update payment status client-side
+    const [reservasLocal, setReservasLocal] = useState(reservas);
+
     const [filtros, setFiltros] = useState({
         status: 'todos',
         localizador: '',
@@ -75,6 +78,46 @@ export default function IndexReserva({ reservas = [] }) {
         };
     }, []);
 
+    // Polling fallback: si no hay broadcasting conectado, consultar estados de pago visibles cada 10s
+    useEffect(() => {
+        let intervalId;
+        const tick = async () => {
+            try {
+                if (!reservasPaginadas || reservasPaginadas.length === 0) return;
+                const locs = reservasPaginadas.map(r => r.localizador).filter(Boolean).join(',');
+                if (!locs) return;
+
+                const url = route('api.reservas.estados') + '?localizadores=' + encodeURIComponent(locs);
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const json = await res.json();
+                if (json.success && json.data) {
+                    // Solo actualizar si hay cambios para evitar re-renders que re-lancen el efecto
+                    setReservasLocal(prev => {
+                        let changed = false;
+                        const updated = prev.map(r => {
+                            const newPago = json.data[r.localizador] ?? r.pago;
+                            if (newPago !== r.pago) {
+                                changed = true;
+                                return { ...r, pago: newPago };
+                            }
+                            return r;
+                        });
+                        return changed ? updated : prev;
+                    });
+                }
+            } catch (e) {
+                // noop
+            }
+        };
+
+        // Ejecutar inmediatamente y luego cada 10s
+        tick();
+        intervalId = setInterval(tick, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [paginaActual, reservas]);
+
     const eliminarReserva = async (id) => {
         if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
             setEliminandoId(id);
@@ -90,16 +133,17 @@ export default function IndexReserva({ reservas = [] }) {
         }
     };
 
+    // Usar la copia local para paginación y render
+    useEffect(() => {
+        setReservasLocal(reservas);
+        setPaginaActual(1);
+    }, [reservas]);
+
     // Cálculo de paginación
-    const totalPaginas = Math.ceil(reservas.length / itemsPorPagina);
+    const totalPaginas = Math.ceil(reservasLocal.length / itemsPorPagina);
     const inicio = (paginaActual - 1) * itemsPorPagina;
     const fin = inicio + itemsPorPagina;
-    const reservasPaginadas = reservas.slice(inicio, fin);
-
-    // Resetear página cuando cambian las reservas
-    useEffect(() => {
-        setPaginaActual(1);
-    }, [reservas.length]);
+    const reservasPaginadas = reservasLocal.slice(inicio, fin);
 
     return (
         <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
@@ -215,6 +259,9 @@ export default function IndexReserva({ reservas = [] }) {
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {reservasPaginadas.map((reserva) => {
+                                    const visiblePrice = (typeof reserva.ultimo_pago_monto === 'number' && reserva.ultimo_pago_monto !== null)
+                                        ? parseFloat(reserva.ultimo_pago_monto)
+                                        : (reserva.pagos && reserva.pagos.length ? parseFloat(reserva.pagos[reserva.pagos.length - 1].monto) : parseFloat(reserva.precio_total || 0));
                                     return (
                                         <tr
                                             key={reserva.id}
@@ -306,10 +353,7 @@ export default function IndexReserva({ reservas = [] }) {
                                                         €
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-900">
-                                                        {parseFloat(
-                                                            reserva.precio_total ||
-                                                                0,
-                                                        ).toFixed(2)}{' '}
+                                                        {visiblePrice.toFixed(2)}{' '}
                                                         €
                                                     </span>
                                                 </div>

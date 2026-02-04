@@ -2,6 +2,7 @@ import useReserva from '@/hooks/reservas/useReserva';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import usePreview from '@/hooks/usePreview';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { emitToast } from '@/utils/toast';
 import { useEffect, useState } from 'react';
 import useEditarReserva from '@/hooks/reservas/useEditarReserva';
 import AssignedHabitaciones from '@/Pages/reservas/pms/AssignedHabitaciones';
@@ -39,7 +40,7 @@ export default function EditarReserva({
     useReservaEvents(reserva, { onRefresh: refresh });
 
     const showToast = (message, type = 'info') => {
-        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
+        emitToast(message, type);
     };
 
     const {
