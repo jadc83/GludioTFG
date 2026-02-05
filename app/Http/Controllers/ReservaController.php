@@ -322,7 +322,7 @@ class ReservaController extends Controller
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
 
-        return inertia('Reservas/DetalleReserva', [
+        return inertia('Reservas/EditReservaUsuario', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -354,7 +354,7 @@ class ReservaController extends Controller
         $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $this->formatterService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('Reservas/editarReserva', [
+        return inertia('Reservas/EditReservaPMS', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);

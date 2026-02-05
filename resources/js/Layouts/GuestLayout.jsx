@@ -1,4 +1,5 @@
-import BarraReservas from '@/Components/reservas/BarraReservas';
+import React from 'react';
+import BarraReservas from '@/Components/buscadores/BarraReservas';
 import CookieBanner from '@/Components/UI/CookieBanner';
 import Footer from '@/Components/UI/Footer';
 import Navbar from '@/Components/UI/Nav';

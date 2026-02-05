@@ -1,5 +1,5 @@
 import ErrorBoundary from '@/Components/ErrorBoundary';
-import FormularioPago from '@/Components/pagos/FormularioPago';
+import FormularioPago from '@/Components/formularios/create/FormularioPago';
 import {
     BuildingLibraryIcon,
     CheckCircleIcon,

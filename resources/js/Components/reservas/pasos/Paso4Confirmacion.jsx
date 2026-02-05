@@ -1,6 +1,6 @@
 import Modal from '@/Components/Modal';
-import CuponDescuento from '@/Components/reservas/CuponDescuento';
-import ReservaBreadcrumbs from '@/Components/reservas/ReservaBreadcrumbs';
+import CuponDescuento from '@/Components/reservas/utilidades/CuponDescuento';
+import ReservaBreadcrumbs from '@/Components/reservas/utilidades/ReservaBreadcrumbs';
 import Boton from '@/Components/UI/Boton';
 import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { calcularNoches } from '@/utils/formatters';
@@ -8,10 +8,10 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import '../../../../css/paso4Confirmacion.css';
-import ModalConfirmacionReserva from '../modales/ModalConfirmacionReserva';
-import OpcionesPago from '../modales/OpcionesPago';
+import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
+import OpcionesPago from '@/Components/reservas/modales/OpcionesPago';
 import { emitToast } from '@/utils/toast';
-import DesgloseFactura from '../utilidades/DesgloseFactura';
+import DesgloseFactura from '@/Components/reservas/utilidades/DesgloseFactura';
 
 export default function Paso4Confirmacion({
     rango,

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { emitToast } from '@/utils/toast';
 
 const debounce = (fn, wait = 300) => {
     let t;
@@ -11,9 +12,8 @@ const debounce = (fn, wait = 300) => {
 
 export default function useReservaEvents(
     reserva,
-    { onRefresh = () => {}, onDeleted = () => {} } = {},
+    { onRefresh = () => {}, onDeleted = () => {}, onUpdated = null, suppressToast = false } = {},
 ) {
-    // Read Inertia page props at top-level (valid hook call)
     const { props } = usePage();
 
     useEffect(() => {
@@ -23,7 +23,18 @@ export default function useReservaEvents(
         if (!echo || !id) return;
 
         const canal = `reservas.${id}`;
-        const refresh = debounce(onRefresh, 250);
+        const refresh = debounce(async () => {
+            try {
+                const updated = await onRefresh();
+                if (updated && typeof onUpdated === 'function') {
+                    try { onUpdated(updated); } catch (e) { /* noop */ }
+                }
+
+                if (!suppressToast) emitToast('Reserva actualizada', 'success');
+            } catch (e) {
+                if (!suppressToast) emitToast('Error al actualizar la reserva', 'error');
+            }
+        }, 250);
 
         const isAuthed = Boolean(props?.auth?.user);
         const subscribeMethod = isAuthed && echo.private ? 'private' : 'channel';
@@ -43,5 +54,5 @@ export default function useReservaEvents(
             listener.stopListening('ReservaCreada');
             listener.stopListening('ReservaBorrada');
         };
-    }, [reserva?.id, reserva?.localizador, onRefresh, onDeleted, props]);
+    }, [reserva?.id, reserva?.localizador, onRefresh, onDeleted, props, onUpdated, suppressToast]);
 }

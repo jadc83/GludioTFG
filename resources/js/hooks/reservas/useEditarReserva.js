@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import * as reservasApi from '@/api/reservas';
+import usePayments from '@/hooks/pagos/usePayments';
+import usePaymentCheck from '@/hooks/pagos/usePaymentCheck';
+import usePaymentModal from '@/hooks/pagos/usePaymentModal';
 
 export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview }) {
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState([]);
@@ -32,11 +35,21 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const [fechaModalCheckIn, setFechaModalCheckIn] = useState('');
     const [fechaModalCheckOut, setFechaModalCheckOut] = useState('');
     const [vistaPreviaCargada, setVistaPreviaCargada] = useState(false);
-    const [mostrarModalPago, setMostrarModalPago] = useState(false);
-    const [montoPago, setMontoPago] = useState(0);
-    const [pendienteAplicarTrasPago, setPendienteAplicarTrasPago] = useState(false);
-    const [aceptaTerminosPago, setAceptaTerminosPago] = useState(false);
-    const [procesando, setProcesando] = useState(false);
+
+    // Reuse `usePaymentModal` to orchestrate payment modal behavior and keep the public API
+    const paymentModal = usePaymentModal({ aplicarCambioFechas, refresh, showToast });
+
+    const mostrarModalPago = paymentModal.mostrar;
+    const setMostrarModalPago = (val) => { if (val) paymentModal.open(paymentModal.monto, { pendingApply: paymentModal.pendienteAplicar }); else paymentModal.close(); };
+    const montoPago = paymentModal.monto;
+    const setMontoPago = (v) => paymentModal.open(v, { pendingApply: paymentModal.pendienteAplicar });
+    const pendienteAplicarTrasPago = paymentModal.pendienteAplicar;
+    const setPendienteAplicTrasPago = (v) => paymentModal.open(paymentModal.monto, { pendingApply: v });
+    const aceptaTerminosPago = paymentModal.aceptaTerminos;
+    const setAceptaTerminosPago = (v) => paymentModal.setAceptaTerminos(v);
+    // Local processing state for date-change operations (separate from payment modal processing)
+    // Unified name: use `isProcessing` across hooks/components for consistency
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         if (reserva?.habitaciones) {
@@ -116,9 +129,32 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         };
     }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut, obtenerPreview, reserva]);
 
+    // Use centralized hybrid listener/polling for Checkout redirect + realtime update
+    const sessionIdParam = new URLSearchParams(window.location.search).get('session_id');
+    usePaymentCheck({
+        reservaId: reserva.id,
+        sessionId: sessionIdParam,
+        onConfirmed: async (resp) => {
+            showToast?.('Pago confirmado. Actualizando reserva...', 'success');
+            if (pendienteAplicarTrasPago) {
+                try {
+                    await pagoExitoso({ pago_id: resp?.pago_id });
+                } catch (e) {
+                    await refresh?.();
+                }
+            } else {
+                await refresh?.();
+            }
+            const params = new URLSearchParams(window.location.search);
+            params.delete('session_id');
+            const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+            window.history.replaceState({}, document.title, newUrl);
+        },
+    });
+
     const confirmarModalFechas = async () => {
         try {
-            setProcesando(true);
+            setIsProcessing(true);
             // obtener último preview
             let ultimoPreview = null;
             if (obtenerPreview) {
@@ -135,9 +171,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             if (ultimoPreview?.estimate_charge > 0) {
                 // Si la reserva ya está pagada, abrir modal de pago; si no, aplicar el cambio sin modal (sumar al total)
                 if (reserva?.pago === 'pagado') {
-                    setMontoPago(ultimoPreview.estimate_charge);
-                    setPendienteAplicarTrasPago(true);
-                    setMostrarModalPago(true);
+                    paymentModal.open(ultimoPreview.estimate_charge, { pendingApply: true, requireAcceptance: true, meta: { check_in: fechaModalCheckIn, check_out: fechaModalCheckOut } });
                     return { success: true, pendingPayment: true };
                 }
 
@@ -165,7 +199,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             showToast?.(err?.message || 'Error al cambiar fechas', 'error');
             return { success: false, err };
         } finally {
-            setProcesando(false);
+            setIsProcessing(false);
         }
     };
 
@@ -173,7 +207,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         setMostrarModalPago(false);
         if (!pendienteAplicarTrasPago) return { success: false, reason: 'no_pending' };
         try {
-            setProcesando(true);
+            setIsProcessing(true);
             if (!aplicarCambioFechas) return { success: false, message: 'aplicarCambioFechas missing' };
             await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut, paymentResult?.pago_id);
             showToast?.('Cambio aplicado tras pago.', 'success');
@@ -185,7 +219,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             return { success: false, err };
         } finally {
             setPendienteAplicarTrasPago(false);
-            setProcesando(false);
+            setIsProcessing(false);
         }
     };
     const actualizarHabitaciones = async () => {
@@ -254,17 +288,19 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         fechaModalCheckIn,
         setFechaModalCheckIn,
         fechaModalCheckOut,
-        setFechaModalCheckOut,        vistaPreviaCargada,        mostrarModalPago,
+        setFechaModalCheckOut,
+        vistaPreviaCargada,
+        mostrarModalPago,
         setMostrarModalPago,
         montoPago,
         setMontoPago,
         pendienteAplicarTrasPago,
-        setPendienteAplicarTrasPago,
+        setPendienteAplicTrasPago: (v) => paymentModal.open(paymentModal.monto, { pendingApply: v }),
         aceptaTerminosPago,
         setAceptaTerminosPago,
-        procesando,
+        isProcessing,
         abrirModalFechas,
         confirmarModalFechas,
-        pagoExitoso,
+        pagoExitoso: paymentModal.onPagoExitoso,
     };
 }
