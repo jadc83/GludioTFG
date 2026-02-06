@@ -18,14 +18,25 @@ import ReservationsTable from '@/Components/Profile/ReservationsTable';
 import Tabs from '@/Components/UI/Tabs';
 
 import EmpleadoProfile from '@/Components/Profile/EmpleadoProfile';
+import TareasList from '@/Components/Profile/TareasList';
 
-export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [] }) {
-    const [activeTab, setActiveTab] = useState('informacion');
+export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [], can_view_reservas = false, can_view_tareas = false }) {
+    // Inicializar tab según query param ?tab=... o por defecto 'informacion'
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            return tab || 'informacion';
+        } catch (e) {
+            return 'informacion';
+        }
+    });
 
+    // Construir tabs dinámicamente según permisos (Spatie)
     const tabs = [
         { id: 'informacion', label: 'Mi Perfil', icon: UserIcon },
-        { id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon },
-        { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
+        ...(can_view_reservas ? [{ id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon }] : []),
+        ...(can_view_tareas ? [{ id: 'tareas', label: 'Tareas', icon: BriefcaseIcon }] : []),
         { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
     ];
 
@@ -71,7 +82,18 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
                         {/* TAB: TAREAS */}
                         {activeTab === 'tareas' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <EmpleadoProfile habitaciones={habitacionesLimpieza} />
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                    <div className="col-span-1">
+                                        <div className="rounded-xl border border-gray-100 p-4 bg-white">
+                                            <div className="mt-3">
+                                                <TareasList />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <EmpleadoProfile habitaciones={habitacionesLimpieza} />
+                                    </div>
+                                </div>
                             </div>
                         )}
 

@@ -55,6 +55,27 @@ Route::get('/api/departamentos', function() {
     return \App\Models\Departamento::select('id','name')->orderBy('name')->get();
 })->middleware('auth');
 
+// API: tareas para empleado logueado
+Route::get('/api/tareas', [\App\Http\Controllers\TareaController::class, 'index'])->middleware('auth');
+Route::post('/api/tareas/assign-room', [\App\Http\Controllers\TareaController::class, 'assignRoom'])->middleware('auth');
+Route::post('/api/tareas/{tarea}/complete', [\App\Http\Controllers\TareaController::class, 'complete'])->middleware('auth');
+Route::post('/api/tareas/{tarea}/cancel', [\App\Http\Controllers\TareaController::class, 'cancel'])->middleware('auth');
+Route::get('/api/tareas/completed', [\App\Http\Controllers\TareaController::class, 'completedByUser'])->middleware('auth');
+
+// API: habitaciones en limpieza (excluye habitaciones con tareas activas)
+Route::get('/api/habitaciones/limpieza', function (Illuminate\Http\Request $request) {
+    $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
+        ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
+        ->with('fotos')
+        ->limit(200)
+        ->get();
+    $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
+    return response()->json(['habitaciones' => $action->handle($habitaciones)]);
+})->middleware('auth');
+
+// Vista: historial de tareas completadas por el usuario
+Route::get('/profile/tareas/completadas', [\App\Http\Controllers\ProfileController::class, 'tareasCompleted'])->name('profile.tareas.completed')->middleware('auth');
+
 // API: detalle de departamento con empleados
 Route::get('/api/departamentos/{departamento}', function (App\Models\Departamento $departamento) {
     $departamento->load(['empleados.user']);

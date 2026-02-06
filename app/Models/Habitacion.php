@@ -79,16 +79,22 @@ public function servicios()
     }
 
     public function scopeDisponiblesEntre($query, $entrada, $salida, $ignoreReservaId = null)
-{
-    return $query->whereDoesntHave('reservas', function ($q) use ($entrada, $salida, $ignoreReservaId) {
-        $q->where(function ($sub) use ($entrada, $salida) {
-            $sub->where('check_in', '<', $salida)
-                ->where('check_out', '>', $entrada);
-        });
+    {
+        return $query->whereDoesntHave('reservas', function ($q) use ($entrada, $salida, $ignoreReservaId) {
+            $q->where(function ($sub) use ($entrada, $salida) {
+                $sub->where('check_in', '<', $salida)
+                    ->where('check_out', '>', $entrada);
+            });
 
-        if ($ignoreReservaId) {
-            $q->where('reserva_id', '!=', $ignoreReservaId);
-        }
-    });
+            if ($ignoreReservaId) {
+                $q->where('reserva_id', '!=', $ignoreReservaId);
+            }
+        });
+    }
+
+    public function tareas()
+    {
+        return $this->hasMany(\App\Models\Tarea::class, 'habitacion_id');
+    }
 }
-}
+

@@ -68,7 +68,12 @@ class ProfileController extends Controller
             ];
 
             // Cargar habitaciones en estado 'limpieza' para mostrar en el perfil de empleado
-            $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')->with('fotos')->limit(100)->get();
+            // Excluir habitaciones que ya tienen una tarea activa (pendiente|en_progreso)
+            $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
+                ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
+                ->with('fotos')
+                ->limit(100)
+                ->get();
             $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
             $habitacionesLimpieza = $action->handle($habitaciones);
         }
@@ -79,6 +84,10 @@ class ProfileController extends Controller
             'reservas' => $reservasFormateadas,
             'empleado' => $empleadoData,
             'habitacionesLimpieza' => $habitacionesLimpieza,
+            // Usar Spatie para indicar si el usuario puede ver "Mis Reservas"
+            'can_view_reservas' => $user->hasAnyRole(['user','admin']),
+            // Mostrar la pestaña Tareas solo para usuarios con rol limpieza o mantenimiento
+            'can_view_tareas' => $user->hasAnyRole(['limpieza','mantenimiento']),
         ]);
     }
 
@@ -116,6 +125,72 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit');
+    }
+
+    /**
+     * Mostrar vista de historial de tareas completadas por el usuario
+     */
+    public function tareasCompleted(Request $request)
+    {
+        $user = $request->user();
+        $tareas = \App\Models\Tarea::where('completed_by', $user->id)
+            ->with('habitacion')
+            ->orderBy('completed_at', 'desc')
+            ->get()
+            ->map(function ($t) {
+                $completedAt = null;
+                if ($t->completed_at) {
+                    try {
+                        $completedAt = \Carbon\Carbon::parse($t->completed_at)->toDateTimeString();
+                    } catch (\Throwable $e) {
+                        $completedAt = (string) $t->completed_at;
+                    }
+                }
+
+                // Calcular duración (segundos) entre asignación (created_at) y completado (completed_at)
+                $durationSeconds = null;
+                $durationHuman = null;
+                if ($t->completed_at && $t->created_at) {
+                    try {
+                        // Use absolute difference of timestamps to avoid negative diffs
+                        try {
+                            $completedTs = \Carbon\Carbon::parse($t->completed_at)->getTimestamp();
+                            $createdTs = \Carbon\Carbon::parse($t->created_at)->getTimestamp();
+                            $durationSeconds = (int) abs($completedTs - $createdTs);
+                            \Log::info('Tarea duration calc', ['id' => $t->id, 'created_at' => (string)$t->created_at, 'completed_at' => (string)$t->completed_at, 'seconds' => $durationSeconds]);
+                            $interval = \Carbon\CarbonInterval::seconds($durationSeconds)->cascade();
+                            $durationHuman = $interval->forHumans(['join' => true, 'parts' => 2, 'short' => false, 'locale' => 'es']);
+                            \Log::info('Tarea duration human', ['id' => $t->id, 'human' => $durationHuman]);
+                        } catch (\Throwable $e) {
+                            $durationSeconds = null;
+                            $durationHuman = null;
+                            \Log::error('Error computing duration timestamps', ['id' => $t->id, 'error' => (string)$e]);
+                        }
+                    } catch (\Throwable $e) {
+                        $durationHuman = null;
+                        \Log::error('Error computing duration', ['id' => $t->id, 'error' => (string)$e]);
+                    }
+                }
+
+                // Si la descripción termina en un número y ya tenemos habitación, eliminar el número repetido
+                $desc = $t->descripcion;
+                if ($t->habitacion && is_string($desc) && preg_match('/\d+$/', trim($desc))) {
+                    $desc = preg_replace('/\s*\d+$/', '', $desc);
+                }
+
+                return [
+                    'id' => $t->id,
+                    'descripcion' => $desc,
+                    'habitacion' => $t->habitacion ? ['id' => $t->habitacion->id, 'numero' => $t->habitacion->numero] : null,
+                    'assigned_at' => $t->created_at ? (\Carbon\Carbon::parse($t->created_at)->toDateTimeString() ?? (string) $t->created_at) : null,
+                    'completed_at' => $completedAt,
+                    'duration' => $durationHuman,
+                ];
+            });
+
+        return Inertia::render('Profile/CompletedTasks', [
+            'tareas' => $tareas,
+        ]);
     }
 
     /**
