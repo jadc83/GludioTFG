@@ -6,6 +6,7 @@ import Paginacion from '@/Components/UI/Paginacion';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { EyeIcon, InboxIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
+import { usePage, router } from '@inertiajs/react';
 
 export default function IndexEmpleados({ empleados = [] }) {
     const [paginaActual, setPaginaActual] = useState(1);
@@ -28,6 +29,7 @@ export default function IndexEmpleados({ empleados = [] }) {
     };
 
     const abrirDetalle = (emp) => {
+        // Abrir el drawer de detalle (no redirigir al profile)
         setEmpleadoDetalle(emp);
         setDetalleAbierto(true);
     };

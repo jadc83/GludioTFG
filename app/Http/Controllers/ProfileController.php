@@ -44,10 +44,41 @@ class ProfileController extends Controller
             ) ? 'Reembolsado' : $this->mapearEstado($reserva->status),
         ]);
 
+        // Si el usuario tiene un empleado asociado, preparar datos para el perfil
+        $empleadoData = null;
+        $habitacionesLimpieza = [];
+
+        if ($user->empleado) {
+            $user->empleado->load('departamento');
+            $empleadoData = [
+                'id' => $user->empleado->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'puesto' => $user->empleado->puesto,
+                'departamento' => $user->empleado->departamento?->name ?? null,
+                // Incluir datos de perfil del usuario para mostrarlos en el perfil de empleado
+                'role' => $user->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $user->getRoleNames()->first())) : null,
+                'telefono' => $user->telefono ?? null,
+                'direccion' => $user->direccion ?? null,
+                'ciudad' => $user->ciudad ?? null,
+                'codigo_postal' => $user->codigo_postal ?? null,
+                'nacionalidad' => $user->nacionalidad ?? null,
+                'tipo_documento' => $user->tipo_documento ?? null,
+                'numero_documento' => $user->numero_documento ?? null,
+            ];
+
+            // Cargar habitaciones en estado 'limpieza' para mostrar en el perfil de empleado
+            $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')->with('fotos')->limit(100)->get();
+            $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
+            $habitacionesLimpieza = $action->handle($habitaciones);
+        }
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'reservas' => $reservasFormateadas,
+            'empleado' => $empleadoData,
+            'habitacionesLimpieza' => $habitacionesLimpieza,
         ]);
     }
 

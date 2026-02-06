@@ -6,6 +6,7 @@ import {
     LockClosedIcon,
     TicketIcon,
     UserIcon,
+    BriefcaseIcon,
 } from '@heroicons/react/24/outline';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -16,12 +17,15 @@ import HeaderPanel from '@/Components/UI/HeaderPanel';
 import ReservationsTable from '@/Components/Profile/ReservationsTable';
 import Tabs from '@/Components/UI/Tabs';
 
-export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
+import EmpleadoProfile from '@/Components/Profile/EmpleadoProfile';
+
+export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [] }) {
     const [activeTab, setActiveTab] = useState('informacion');
 
     const tabs = [
         { id: 'informacion', label: 'Mi Perfil', icon: UserIcon },
         { id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon },
+        { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
         { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
     ];
 
@@ -64,6 +68,13 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                             </div>
                         )}
 
+                        {/* TAB: TAREAS */}
+                        {activeTab === 'tareas' && (
+                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <EmpleadoProfile habitaciones={habitacionesLimpieza} />
+                            </div>
+                        )}
+
                         {/* TAB: MIS RESERVAS */}
                         {activeTab === 'reservas' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -83,6 +94,7 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [] }) {
                                 )}
                             </div>
                         )}
+
 
                         {/* TAB: SEGURIDAD */}
                         {activeTab === 'seguridad' && (
