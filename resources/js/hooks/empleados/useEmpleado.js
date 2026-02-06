@@ -21,7 +21,7 @@ export function useEmpleado(
             email: '',
             password: '',
             password_confirmation: '',
-
+            numero_empleado: '',
             departamento: '',
             puesto: '',
             tipo_documento: 'dni',
@@ -47,8 +47,8 @@ export function useEmpleado(
             form.cargarDatos({
                 name: empleado.name || '',
                 email: empleado.email || '',
-
-                departamento_id: empleado.departamento_id || null,
+                numero_empleado: empleado.numero_empleado || '',
+                departamento: empleado.departamento || '',
                 puesto: empleado.puesto || '',
                 tipo_documento: empleado.tipo_documento || 'dni',
                 numero_documento: empleado.numero_documento || '',

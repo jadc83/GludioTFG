@@ -12,17 +12,13 @@ class Empleado extends Model
 
     protected $fillable = [
         'user_id',
-        'departamento_id',
+        'numero_empleado',
+        'departamento',
         'puesto',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function departamento()
-    {
-        return $this->belongsTo(Departamento::class, 'departamento_id');
     }
 }

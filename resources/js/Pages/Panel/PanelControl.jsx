@@ -5,7 +5,6 @@ import CreateEmpleado from '@/Components/formularios/create/CreateEmpleado';
 import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
 import CreateHabitacion from '@/Components/formularios/create/CreateHabitacion';
 import IndexHabitacion from '@/Components/indexes/IndexHabitacion';
-import IndexDepartamentos from '@/Components/indexes/IndexDepartamentos';
 import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
 import IndexReserva from '@/Components/indexes/IndexReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -24,7 +23,6 @@ const TABS = [
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
     { id: 'clientes', label: 'Clientes', icon: UsersIcon },
     { id: 'empleados', label: 'Empleados', icon: BriefcaseIcon },
-    { id: 'departamentos', label: 'Departamentos', icon: ChartBarIcon },
     { id: 'reservas', label: 'Reservas', icon: InboxIcon },
     { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
     { id: 'reembolsos', label: 'Reembolsos', icon: ChartBarIcon },
@@ -96,12 +94,6 @@ function TabContenido({
             return (
                 <TabWrapper>
                     <IndexEmpleados empleados={empleados} />
-                </TabWrapper>
-            );
-        case 'departamentos':
-            return (
-                <TabWrapper>
-                    <IndexDepartamentos />
                 </TabWrapper>
             );
         case 'configuracion':

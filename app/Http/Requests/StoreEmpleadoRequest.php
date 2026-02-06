@@ -19,9 +19,8 @@ class StoreEmpleadoRequest extends FormRequest
             'password' => ['nullable','string','min:8','confirmed'],
 
             // Campos de empleado
-            // numero_empleado removed - not required anymore
-            // departamento ahora referenciado por id
-            'departamento_id' => ['nullable','integer','exists:departamentos,id'],
+            'numero_empleado' => ['required','string','max:50','unique:empleados,numero_empleado'],
+            'departamento' => ['nullable','string','max:255'],
             'puesto' => ['nullable','string','max:255'],
 
             // Campos adicionales del usuario para evitar violaciones NOT NULL en la tabla users
@@ -32,8 +31,6 @@ class StoreEmpleadoRequest extends FormRequest
             'ciudad' => ['nullable','string','max:255'],
             'codigo_postal' => ['nullable','string','max:20'],
             'telefono' => ['nullable','string','max:50'],
-            // bloquear asignación de roles reservados (admin,user)
-            'role' => ['nullable','string','exists:roles,name','not_in:admin,user'],
         ];
     }
 }
