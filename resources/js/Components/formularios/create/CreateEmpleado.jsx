@@ -9,16 +9,17 @@ import {
     UserIcon,
     XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const INITIAL_DATA = {
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    numero_empleado: '',
+
     departamento: '',
     puesto: '',
+    role: '',
     tipo_documento: 'dni',
     numero_documento: '',
     nacionalidad: '',
@@ -29,6 +30,21 @@ const INITIAL_DATA = {
 };
 
 export default function CreateEmpleado({ iconOnly = false }) {
+    const [roles, setRoles] = useState([]);
+    const [departamentos, setDepartamentos] = useState([]);
+
+    useEffect(() => {
+        fetch('/api/roles', { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setRoles((data || []).filter((r) => !['admin','user'].includes((r||'').toString().trim().toLowerCase()))))
+            .catch(() => setRoles([]));
+
+        fetch('/api/departamentos', { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setDepartamentos(Array.isArray(data) ? data : []))
+            .catch(() => setDepartamentos([]));
+    }, []);
+
     const [abierto, setAbierto] = useState(false);
     const [tabActiva, setTabActiva] = useState('personal');
 
@@ -137,7 +153,6 @@ export default function CreateEmpleado({ iconOnly = false }) {
                         <button
                             type="button"
                             className={getTabClass('laboral', [
-                                'numero_empleado',
                                 'departamento',
                                 'puesto',
                             ])}
@@ -242,22 +257,34 @@ export default function CreateEmpleado({ iconOnly = false }) {
                             {/* Pestaña: Información Laboral */}
                             {tabActiva === 'laboral' && (
                                 <div className="animate-in fade-in space-y-6 duration-300">
-                                    <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-2 gap-4">
                                         <Campo
-                                            id="numero_empleado"
-                                            label="ID Empleado"
-                                            value={formulario.numero_empleado}
-                                            onChange={cambiar}
-                                            error={errores.numero_empleado}
-                                            required
-                                        />
-                                        <Campo
-                                            id="departamento"
+                                            id="departamento_id"
+                                            name="departamento_id"
                                             label="Departamento"
-                                            value={formulario.departamento}
+                                            as="select"
+                                            value={formulario.departamento_id}
                                             onChange={cambiar}
-                                            error={errores.departamento}
-                                        />
+                                            error={errores.departamento_id}
+                                        >
+                                            <option value="">Seleccionar departamento</option>
+                                            {Array.isArray(departamentos) && departamentos.map((d) => (
+                                                <option key={d.id} value={d.id}>{d.name.toUpperCase()}</option>
+                                            ))}
+                                        </Campo>
+                                        <Campo
+                                            id="role"
+                                            label="Rol"
+                                            as="select"
+                                            value={formulario.role}
+                                            onChange={cambiar}
+                                            error={errores.role}
+                                        >
+                                            <option value="">Seleccionar rol</option>
+                                            {Array.isArray(roles) && roles.map((r) => (
+                                                <option key={r} value={r}>{r.toUpperCase()}</option>
+                                            ))}
+                                        </Campo>
                                     </div>
                                     <Campo
                                         id="puesto"
@@ -266,12 +293,15 @@ export default function CreateEmpleado({ iconOnly = false }) {
                                         onChange={cambiar}
                                         error={errores.puesto}
                                     />
-                                    <Campo
-                                        id="nacionalidad"
-                                        label="Nacionalidad"
-                                        value={formulario.nacionalidad}
-                                        onChange={cambiar}
-                                    />
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Campo
+                                            id="nacionalidad"
+                                            label="Nacionalidad"
+                                            value={formulario.nacionalidad}
+                                            onChange={cambiar}
+                                        />
+                                    </div>
                                 </div>
                             )}
 

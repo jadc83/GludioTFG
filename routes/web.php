@@ -44,6 +44,31 @@ Route::get('/reservas/precios-por-dia', [ReservaController::class, 'preciosPorDi
 Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
 Route::put('/api/tipos-habitacion/{tipoHabitacion}', [TipoHabitacionController::class, 'update'])->middleware('auth');
 Route::get('/api/tarifas', [TarifaController::class, 'index']);
+
+// API: roles disponibles para asignar a empleados (excluye admin/user)
+Route::get('/api/roles', function() {
+    return \Spatie\Permission\Models\Role::whereNotIn('name', ['admin','user'])->pluck('name');
+})->middleware('auth');
+
+// API: departamentos
+Route::get('/api/departamentos', function() {
+    return \App\Models\Departamento::select('id','name')->orderBy('name')->get();
+})->middleware('auth');
+
+// API: detalle de departamento con empleados
+Route::get('/api/departamentos/{departamento}', function (App\Models\Departamento $departamento) {
+    $departamento->load(['empleados.user']);
+    $empleados = $departamento->empleados->map(function ($e) {
+        return [
+            'id' => $e->id,
+            'name' => $e->user->name ?? null,
+            'email' => $e->user->email ?? null,
+            'puesto' => $e->puesto ?? null,
+            'role' => $e->user ? ($e->user->getRoleNames()->first() ?? null) : null,
+        ];
+    });
+    return response()->json(['id' => $departamento->id, 'name' => $departamento->name, 'empleados' => $empleados]);
+})->middleware('auth');
 Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'preciosMes'])->name('reservas.precios-mes');
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.buscar-localizador');
 Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])->where('localizador', '[A-Z0-9]+')->name('reservas.descargar-comprobante');

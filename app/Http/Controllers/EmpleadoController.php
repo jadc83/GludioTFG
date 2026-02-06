@@ -49,8 +49,16 @@ class EmpleadoController extends Controller
         //Crear el usuario
         $user = User::create([ ...$payload, 'password' => Hash::make($password) ]);
 
-        //Crear el empleado vinculado al usuario
-        $user->empleado()->create([ 'numero_empleado' => $request->numero_empleado, 'departamento' => $request->departamento, 'puesto' => $request->puesto ]);
+        //Asignar rol si fue seleccionado
+        if ($request->filled('role')) {
+            $user->assignRole($request->role);
+        }
+
+        //Crear el empleado vinculado al usuario (usar FK departamento_id)
+        $user->empleado()->create([
+            'departamento_id' => $request->departamento_id,
+            'puesto' => $request->puesto,
+        ]);
 
         //Enviar enlace para crear contraseña si no se proporcionó
         if (!$request->filled('password')) {
@@ -69,7 +77,13 @@ class EmpleadoController extends Controller
     {
         $user = $empleado->user;
         $user->update($request->only(['name','email','tipo_documento','numero_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono']));
-        $empleado->update($request->only(['numero_empleado','departamento','puesto']));
+
+        // Actualizar rol si se indica
+        if ($request->filled('role')) {
+            $user->syncRoles([$request->role]);
+        }
+
+        $empleado->update($request->only(['departamento_id','puesto']));
 
         return redirect()->route('empleados.index')->with('status', 'Empleado actualizado correctamente.');
     }
