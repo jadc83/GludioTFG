@@ -9,6 +9,7 @@ class Pago extends Model
     protected $fillable = [
         'reserva_id',
         'stripe_payment_intent_id',
+        'stripe_checkout_session_id',
         'monto',
         'moneda',
         'estado',

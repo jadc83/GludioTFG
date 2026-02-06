@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import {
     obtenerTarifas,
     obtenerHabitacionesDisponibles,
     calcularPrecio,
 } from './service';
+import { emitToast } from '@/utils/toast';
+import * as reservasApi from '@/api/reservas';
+import { getReservaPayload } from '@/utils/reservaPayload';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
 
 export default function useCreateReserva() {
@@ -49,10 +52,15 @@ export default function useCreateReserva() {
         actualizarCampo,
         setData,
         guardar: guardarForm,
-    } = useFormGenerico(datosIniciales, '/reservas', '', () => {
+    } = useFormGenerico(datosIniciales, '/reservas', '', (page) => {
         // On success: close modal (delegated to hook state)
+        // Default behavior: close modal. If it's a checkout flow, the caller will handle redirect.
         handleCerrar();
     });
+
+    const [creandoConCheckout, setCreandoConCheckout] = useState(false);
+    // Ref para debounce de calcular precio
+    const calcularTimerRefGlobal = useRef({ current: null });
 
     const handleCerrar = () => {
         setAbierto(false);
@@ -141,15 +149,27 @@ export default function useCreateReserva() {
             tarifas: tarifasSeleccionadas,
         };
 
-        calcularPrecio(payload)
-            .then((data) => {
-                const total = data?.data?.total || 0;
-                setPrecioCalculado(total);
-                actualizarCampo('precio_total', total);
-            })
-            .catch((err) => {
-                console.error('Error calculando precio:', err);
-            });
+        // Debounce para evitar llamadas duplicadas cuando el usuario ajusta rápidamente la UI
+        // Usar Ref en lugar de `this` (hooks functional component)
+        const calcularTimerRef = calcularTimerRefGlobal;
+        if (calcularTimerRef.current) clearTimeout(calcularTimerRef.current);
+        calcularTimerRef.current = setTimeout(() => {
+            calcularPrecio(payload)
+                .then((data) => {
+                    const total = data?.data?.total || 0;
+                    setPrecioCalculado(total);
+                    actualizarCampo('precio_total', total);
+                })
+                .catch((err) => {
+                    // Error handled by user-facing toast; removed console logging for cleanliness
+                    const msg = err?.error || err?.message || err?.response?.data?.error || 'Error calculando precio';
+                    emitToast(msg, 'error');
+                });
+        }, 350);
+
+        return () => {
+            if (calcularTimerRef.current) clearTimeout(calcularTimerRef.current);
+        };
     }, [habitacionesPorTipo, formulario.check_in, formulario.check_out, tarifasSeleccionadas]);
 
     // Cambiar cantidad de habitaciones por tipo
@@ -185,32 +205,34 @@ export default function useCreateReserva() {
     const handleSeleccionarCliente = (cliente) => {
         setClienteSeleccionado(cliente);
 
-        if (cliente) {
-            actualizarCampo('reservable_id', cliente.id);
-            actualizarCampo(
-                'reservable_type',
-                cliente.tipo_usuario === 'user'
-                    ? 'App\\Models\\User'
-                    : 'App\\Models\\Cliente',
-            );
-            actualizarCampo('nombre_cliente', cliente.name);
-            actualizarCampo('email_cliente', cliente.email);
-            actualizarCampo('telefono_cliente', cliente.telefono || '');
-            actualizarCampo('tipo_documento', cliente.tipo_documento || 'dni');
-            actualizarCampo('numero_documento', cliente.numero_documento || '');
-            actualizarCampo('nacionalidad', cliente.nacionalidad || '');
-            actualizarCampo('direccion', cliente.direccion || '');
+            if (cliente) {
+            // Actualizar todos los campos de una vez para evitar actualizaciones parciales
+            setData({
+                ...formulario,
+                reservable_id: cliente.id,
+                reservable_type: cliente.tipo_usuario === 'user' ? 'App\\Models\\User' : 'App\\Models\\Cliente',
+                nombre_cliente: cliente.name || formulario.nombre_cliente,
+                email_cliente: cliente.email || formulario.email_cliente,
+                telefono_cliente: cliente.telefono || formulario.telefono_cliente,
+                tipo_documento: cliente.tipo_documento || formulario.tipo_documento || 'dni',
+                numero_documento: cliente.numero_documento || formulario.numero_documento,
+                nacionalidad: cliente.nacionalidad || formulario.nacionalidad,
+                direccion: cliente.direccion || formulario.direccion,
+            });
         } else {
             // Limpiar campos cuando se deselecciona
-            actualizarCampo('reservable_id', '');
-            actualizarCampo('reservable_type', 'cliente');
-            actualizarCampo('nombre_cliente', '');
-            actualizarCampo('email_cliente', '');
-            actualizarCampo('telefono_cliente', '');
-            actualizarCampo('tipo_documento', 'dni');
-            actualizarCampo('numero_documento', '');
-            actualizarCampo('nacionalidad', '');
-            actualizarCampo('direccion', '');
+            setData({
+                ...formulario,
+                reservable_id: '',
+                reservable_type: 'cliente',
+                nombre_cliente: '',
+                email_cliente: '',
+                telefono_cliente: '',
+                tipo_documento: 'dni',
+                numero_documento: '',
+                nacionalidad: '',
+                direccion: '',
+            });
         }
     };
 
@@ -225,13 +247,141 @@ export default function useCreateReserva() {
     };
 
     // Envía la reserva al servidor usando el helper de useFormGenerico
-    const guardarReserva = (e = null) => {
+    const [estaGuardando, setEstaGuardando] = useState(false);
+
+    const guardarReserva = async (e = null) => {
         if (e && e.preventDefault) e.preventDefault();
 
+        const habitacionesConCantidad = Object.entries(habitacionesPorTipo).filter(([_, info]) => Number(info.cantidad) > 0);
+
+        if (habitacionesConCantidad.length === 0) {
+            setTabActiva('fechas');
+            const counts = Object.entries(habitacionesPorTipo).map(([t, i]) => `${t}:${i.cantidad}`).join(', ');
+            if (import.meta.env.DEV && counts && counts.length) {
+                emitToast(`Debes seleccionar al menos una habitación (actual: ${counts})`, 'error');
+            } else {
+                emitToast('Debes seleccionar al menos una habitación', 'error');
+            }
+            return;
+        }
+
+        // Construir objeto habitacionesSeleccionadas compatible con getReservaPayload
+        const habitacionesSeleccionadas = {};
+        habitacionesConCantidad.forEach(([tipo, info]) => {
+            habitacionesSeleccionadas[tipo] = { cantidad: info.cantidad, personas: info.personas || 1 };
+        });
+
+        // Preparar valores para getReservaPayload
+        const getValues = () => ({
+            name: formulario.nombre_cliente,
+            email: formulario.email_cliente,
+            telefono: formulario.telefono_cliente,
+            tipo_documento: formulario.tipo_documento || 'dni',
+            numero_documento: formulario.numero_documento,
+            nacionalidad: formulario.nacionalidad,
+            direccion: formulario.direccion,
+        });
+
+        const rango = { from: formulario.check_in, to: formulario.check_out };
+
+        // Reutilizar getReservaPayload para normalizar payload
+        let payload = getReservaPayload({
+            getValues,
+            rango,
+            habitacionesSeleccionadas,
+            tarifasSeleccionadas: tarifasSeleccionadas,
+            idClienteSeleccionado: formulario.reservable_id || null,
+            tipoClienteSeleccionado: formulario.reservable_type || 'cliente',
+        });
+
+        // Añadir campos adicionales requeridos por el formulario/panel
+        payload = {
+            ...payload,
+            precio_total: formulario.precio_total || 0,
+            metodo_pago: formulario.metodo_pago || 'recepcion',
+            num_huespedes: formulario.num_huespedes || 1,
+            notas: formulario.notas || undefined,
+        };
+
+        Object.keys(payload).forEach((key) => {
+            if (payload[key] === undefined) delete payload[key];
+        });
+
+        // Intentar calcular precio si no está presente
+        if (!payload.precio_total || payload.precio_total <= 0) {
+            try {
+                setEstaGuardando(true);
+                const precioRes = await calcularPrecio({
+                    check_in: payload.check_in,
+                    check_out: payload.check_out,
+                    habitaciones: Object.entries(habitacionesSeleccionadas).map(([tipo, r]) => ({ tipo, cantidad: r.cantidad })),
+                    tarifas: payload.tarifas,
+                });
+
+                if (!precioRes || precioRes?.success === false) {
+                    const msg = precioRes?.error || precioRes?.message || 'No se pudo calcular el precio';
+                    emitToast(msg, 'error');
+                    setEstaGuardando(false);
+                    return;
+                }
+
+                const total = precioRes?.data?.total || precioRes?.data || 0;
+                setPrecioCalculado(total);
+                actualizarCampo('precio_total', total);
+                payload.precio_total = total;
+            } catch (err) {
+                const msg = err?.error || err?.message || 'Error calculando precio';
+                emitToast(msg, 'error');
+                setEstaGuardando(false);
+                return;
+            } finally {
+                setEstaGuardando(false);
+            }
+        }
+
+        try {
+            setEstaGuardando(true);
+
+            router.post('/reservas', payload, {
+                onSuccess: (resp) => {
+                    // Cerrar y recargar para que la UI muestre la nueva reserva
+                    try {
+                        handleCerrar();
+                        router.reload();
+                    } catch (e) {
+                        window.location.reload();
+                    }
+                },
+                onError: (errors) => {
+                    setEstaGuardando(false);
+                    if (errors && errors.habitaciones) {
+                        setTabActiva('fechas');
+                    }
+                },
+                onFinish: () => {
+                    setEstaGuardando(false);
+                }
+            });
+        } catch (err) {
+            const msg = err?.message || 'Error creando la reserva';
+            emitToast(msg, 'error');
+            setEstaGuardando(false);
+        }
+    };
+
+    // Crea reserva y abre Stripe Checkout en una sola operación (admin)
+    const crearReservaConCheckout = async () => {
         const habitacionesConCantidad = Object.entries(habitacionesPorTipo).filter(([_, info]) => info.cantidad > 0);
 
         if (habitacionesConCantidad.length === 0) {
-            alert('Debes seleccionar al menos una habitación');
+            emitToast('Debes seleccionar al menos una habitación', 'error');
+            return;
+        }
+
+        // Si el método de pago es "recepcion", usar el flujo normal (crear reserva sin checkout)
+        if ((formulario.metodo_pago || 'recepcion') === 'recepcion') {
+            // Reutilizar el guardado normal para crear la reserva
+            await guardarReserva();
             return;
         }
 
@@ -260,14 +410,29 @@ export default function useCreateReserva() {
             metodo_pago: formulario.metodo_pago || 'recepcion',
             notas: formulario.notas || undefined,
             precio_total: formulario.precio_total || 0,
+            monto: formulario.precio_total || 0,
         };
 
         Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) delete payload[key];
         });
 
-        setData(payload);
-        guardarForm(); // submit via useFormGenerico (post/put)
+        try {
+            setCreandoConCheckout(true);
+            const res = await reservasApi.crearReservaConCheckout(payload);
+
+            if (res && res.success && res.sessionUrl) {
+                handleCerrar();
+                window.location.href = res.sessionUrl;
+            } else {
+                emitToast(res?.message || res?.error || 'No se pudo iniciar el checkout', 'error');
+            }
+        } catch (err) {
+            // Error handled by user-facing toast; removed console logging for cleanliness
+            emitToast('Error iniciando Checkout: ' + (err?.message || ''), 'error');
+        } finally {
+            setCreandoConCheckout(false);
+        }
     };
 
     const onPagoExitoso = (data) => {
@@ -290,7 +455,6 @@ export default function useCreateReserva() {
             setDatosReservaConfirmada(datosConfirmacion);
             setMostrarModalConfirmacion(true);
         } catch (err) {
-            console.error('Error preparando confirmación:', err);
             handleCerrar();
             try {
                 router.reload({ only: ['reservas'] });

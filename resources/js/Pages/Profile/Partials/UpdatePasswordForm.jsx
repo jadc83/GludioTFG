@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/UI/PrimaryButton';
-import Campo from '@/Components/formulario/Campo';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';

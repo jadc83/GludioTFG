@@ -1,6 +1,6 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import Campo from '@/Components/formulario/Campo';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import {

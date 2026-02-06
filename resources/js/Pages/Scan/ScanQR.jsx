@@ -1,4 +1,4 @@
-import QRScanner from '@/Components/utilidades/QRScanner';
+import QRScanner from '@/Components/reservas/utilidades/QRScanner';
 import { useQRModal } from '@/hooks/scanner/useQRModal';
 import { useQRScanner } from '@/hooks/scanner/useQRScanner';
 import GuestLayout from '@/Layouts/GuestLayout';

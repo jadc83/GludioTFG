@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -29,9 +30,16 @@ class ReservaActualizada implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
+        // Broadcast both as private channels (for authenticated users)
+        // and as public channels (for unauthenticated clients) so
+        // guest views (DetalleReserva) can receive updates without auth.
         return [
+            // Private channels for authenticated clients
             new PrivateChannel('reservas'),
             new PrivateChannel('reservas.' . $this->reserva->id),
+            // Public channels for unauthenticated clients
+            new Channel('reservas'),
+            new Channel('reservas.' . $this->reserva->id),
         ];
     }
 

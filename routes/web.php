@@ -37,6 +37,7 @@ Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marca
 Route::post('/reservas/{localizador}/checkout', [ReservaController::class, 'marcarCheckOut'])->where('localizador', '[A-Z0-9]+')->name('reservas.checkout');
 Route::post('/scan/procesar', [ScannerController::class, 'procesar'])->name('scan.procesar');
 Route::get('/reserva/{reserva:localizador}', [ReservaController::class, 'show'])->where('reserva', '[A-Z0-9]+')->name('reserva.show');
+
 Route::get('/reservas/disponibles', [ReservaController::class, 'habitacionesDisponibles'])->name('reservas.disponibles');
 Route::get('/habitaciones/disponibles', [HabitacionController::class, 'getDisponibles'])->name('habitaciones.disponibles');
 Route::get('/reservas/precios-por-dia', [ReservaController::class, 'preciosPorDia'])->name('reservas.precios-por-dia');
@@ -47,12 +48,17 @@ Route::get('/reservas/precios/mes/{yyyy}/{mm}', [ReservaController::class, 'prec
 Route::get('/reservas/buscar/{localizador}', [ReservaController::class, 'buscarPorLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.buscar-localizador');
 Route::get('/reservas/{localizador}/pdf', [ReservaController::class, 'descargarComprobante'])->where('localizador', '[A-Z0-9]+')->name('reservas.descargar-comprobante');
 Route::post('/reservas/calcular-precio', [ReservaController::class, 'calcularPrecio'])->name('reservas.calcular-precio');
+// Proteger contra llamadas por GET (posibles navegaciones manuales o herramientas que abren la URL)
 Route::get('/reservas/calcular-precio', function() {
+    \Illuminate\Support\Facades\Log::warning('GET /reservas/calcular-precio called; method not allowed');
     return response()->json([
         'success' => false,
-        'error' => 'Endpoint de cálculo de precios: use POST con payload JSON {check_in,check_out,habitaciones,tarifas}'
-    ], 200);
+        'error' => 'Method Not Allowed. Use POST /reservas/calcular-precio with JSON payload {check_in,check_out,habitaciones,tarifas}'
+    ], 405);
 });
+
+// Endpoint para obtener estados de pago por localizadores (usado por el panel para refrescar)
+Route::get('/api/reservas/estados', [ReservaController::class, 'estados'])->name('api.reservas.estados');
 Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])->where('localizador', '[A-Z0-9]+')->name('reservas.extender');
 Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::class, 'modificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.modificar-estancia');
 Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.preview-modificar-estancia');
@@ -64,9 +70,16 @@ Route::post('/refund-requests/{refundRequest}/approve', [\App\Http\Controllers\R
 Route::post('/refund-requests/{refundRequest}/reject', [\App\Http\Controllers\RefundRequestController::class, 'reject'])->name('refund-requests.reject')->middleware('auth');
 Route::delete('/refund-requests/{refundRequest}', [\App\Http\Controllers\RefundRequestController::class, 'destroy'])->name('refund-requests.destroy')->middleware('auth');
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
+Route::post('/reservas/crear-con-checkout', [ReservaController::class, 'storeConCheckout'])->name('reservas.store.con_checkout');
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
+Route::post('/pagos/crear-checkout-session', [PagoController::class, 'crearCheckoutSession'])->name('pagos.crear-checkout-session');
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');
-Route::post('/webhooks/stripe', [PagoController::class, 'webhook'])->withoutMiddleware('VerifyCsrfToken');
+// Endpoint para comprobar estado de una Checkout Session (usado por success_url UX)
+Route::get('/pagos/check-session', [PagoController::class, 'checkSession'])->name('pagos.check-session');
+// Endpoint para marcar pago manualmente (recepción)
+Route::post('/pagos/{pago}/marcar-como-pagado', [PagoController::class, 'marcarComoPagado'])->name('pagos.marcar-como-pagado')->middleware('auth');
+// Stripe webhook endpoint — exclude CSRF middleware to allow external POSTs
+Route::post('/webhooks/stripe', [PagoController::class, 'webhook'])->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsarReserva'])->name('reservas.reembolsar');
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');

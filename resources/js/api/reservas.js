@@ -87,3 +87,13 @@ export async function desasignarHabitaciones(reservaId, habitacionIds = []) {
         return err?.response?.data ?? { success: false, message: err.message };
     }
 }
+
+// Crear reserva y abrir Stripe Checkout en una sola operación
+export async function crearReservaConCheckout(payload) {
+    try {
+        const res = await axios.post('/reservas/crear-con-checkout', payload);
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err.message };
+    }
+}

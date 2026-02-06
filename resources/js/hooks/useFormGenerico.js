@@ -49,31 +49,87 @@ export function useFormGenerico(
     /**
      * Envía el formulario al servidor
      */
-    const guardar = (evento = null) => {
-        if (evento) {
+    const guardar = (evento = null, options = {}) => {
+        // Support calling guardar(payload, options) to submit a given payload directly
+        // If "evento" is a DOM event, prevent Default as usual.
+        // If it's a plain object (no preventDefault) we treat it as a data override.
+        let dataOverride = null;
+        if (evento && typeof evento === 'object' && typeof evento.preventDefault === 'function') {
             evento.preventDefault();
+        } else if (evento && typeof evento === 'object' && typeof evento.preventDefault === 'undefined') {
+            dataOverride = evento;
+            evento = null;
         }
+
+        const mergedOptions = Object.assign({}, options);
 
         if (esEdicion) {
             // Actualizar registro
             const metodo = metodoActualizacion === 'patch' ? patch : put;
-            metodo(rutaActualizar, {
-                onSuccess: () => {
-                    if (alGuardar) {
-                        alGuardar();
+
+            if (dataOverride) {
+                // post/put with explicit data override (inertia supports post/put(url, data, options))
+                metodo(rutaActualizar, dataOverride, Object.assign({}, mergedOptions, {
+                    onSuccess: (page) => {
+                        if (alGuardar) {
+                            alGuardar(page);
+                        }
+                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
                     }
-                },
-            });
+                }));
+            } else {
+                metodo(rutaActualizar, Object.assign({}, mergedOptions, {
+                    onSuccess: (page) => {
+                        if (alGuardar) {
+                            alGuardar(page);
+                        }
+                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                    }
+                }));
+            }
         } else {
             // Crear nuevo registro
-            post(rutaCrear, {
-                onSuccess: () => {
-                    limpiar();
-                    if (alGuardar) {
-                        alGuardar();
+            if (dataOverride) {
+                post(rutaCrear, dataOverride, Object.assign({}, mergedOptions, {
+                    onSuccess: (page) => {
+                        // Si el llamante proporcionó un callback 'alGuardar', delegamos la lógica
+                        // (por ejemplo cerrar el modal o limpiar), para evitar borrar campos
+                        // inesperadamente en flujos compuestos como CreateReserva.
+                        if (alGuardar) {
+                            alGuardar(page);
+                        } else {
+                            limpiar();
+                        }
+                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                    },
+                    onError: (errors) => {
+                        if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                    },
+                    onFinish: () => {
+                        if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
                     }
-                },
-            });
+                }));
+            } else {
+                post(rutaCrear, Object.assign({}, mergedOptions, {
+                    onSuccess: (page) => {
+                        // Si el llamante proporcionó un callback 'alGuardar', delegamos la lógica
+                        // (por ejemplo cerrar el modal o limpiar), para evitar borrar campos
+                        // inesperadamente en flujos compuestos como CreateReserva.
+                        if (alGuardar) {
+                            alGuardar(page);
+                        } else {
+                            limpiar();
+                        }
+                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                    },
+                    onError: (errors) => {
+                        if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                    },
+                    onFinish: () => {
+                        if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
+                    }
+                }));
+            }
         }
     };
 

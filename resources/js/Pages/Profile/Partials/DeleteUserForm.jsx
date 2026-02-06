@@ -3,7 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/UI/SecondaryButton';
-import Campo from '@/Components/formulario/Campo';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';

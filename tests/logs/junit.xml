@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="C:\Users\ohayo\Documents\GludioTFG\phpunit.xml" tests="1" assertions="0" errors="1" failures="0" skipped="0" time="0.841715">
+    <testsuite name="Feature" tests="1" assertions="0" errors="1" failures="0" skipped="0" time="0.841715">
+      <testsuite name="Tests\Feature\PaymentServiceTest" file="Payment Service (Tests\Feature\PaymentService)" tests="1" assertions="0" errors="1" failures="0" skipped="0" time="0.841715">
+        <testcase name="Handle checkout session completed marks pago and reserva as paid" file="Payment Service (Tests\Feature\PaymentService)::Handle checkout session completed marks pago and reserva as paid" class="Tests\Feature\PaymentServiceTest" classname="Tests.Feature.PaymentServiceTest" assertions="0" time="0.841715">
+          <error type="Illuminate\Database\QueryException">Handle checkout session completed marks pago and reserva as paidIlluminate\Database\QueryException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: pagos.stripe_payment_intent_id (Connection: sqlite, Database: :memory:, SQL: insert into "pagos" ("reserva_id", "stripe_checkout_session_id", "monto", "moneda", "estado", "descripcion", "updated_at", "created_at") values (1, cs_test_123, 10, eur, procesando, Test checkout, 2026-02-03 23:49:01, 2026-02-03 23:49:01))&#13;
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:794
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:573
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:537
+at vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+at vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:4054
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1219
+at vendor\laravel\framework\src\Illuminate\Support\helpers.php:390
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1218
+at vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php:23
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2540
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2556
+at tests\Feature\PaymentServiceTest.php:35
+Caused by
+PDOException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: pagos.stripe_payment_intent_id
+
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:794
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:573
+at vendor\laravel\framework\src\Illuminate\Database\Connection.php:537
+at vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+at vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:4054
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1219
+at vendor\laravel\framework\src\Illuminate\Support\helpers.php:390
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1218
+at vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php:23
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2540
+at vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2556
+at tests\Feature\PaymentServiceTest.php:35</error>
+        </testcase>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

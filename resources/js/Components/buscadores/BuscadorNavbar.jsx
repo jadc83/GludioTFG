@@ -1,4 +1,4 @@
-import Campo from '@/Components/formulario/Campo';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';

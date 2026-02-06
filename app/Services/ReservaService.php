@@ -834,10 +834,12 @@ class ReservaService
      * Usado por: controladores de listado de reservas
      * Retorna: array formateado de reservas
      */
+
     public function formatearReservas($reservas): array
     {
         return $reservas->map(function ($reserva) {
             $nombreCliente = 'Sin cliente';
+
             if ($reserva->reservable) {
                 $nombreCliente = $reserva->reservable->name ?? 'Sin cliente';
             }
@@ -858,6 +860,14 @@ class ReservaService
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
                 'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
+                // Exponer pagos resumidos y último pago para UI (evita N+1 ya que los controllers hacen eager-load)
+                'pagos' => $reserva->pagos->map(function($p) { return [
+                    'id' => $p->id,
+                    'monto' => (float) ($p->monto ?? 0),
+                    'estado' => $p->estado,
+                    'created_at' => $p->created_at?->toIso8601String() ?? null,
+                ]; })->values()->toArray(),
+                'ultimo_pago_monto' => $reserva->pagos->count() ? (float) $reserva->pagos->last()->monto : null,
                 'habitacion_numero' => (function() use ($reserva) {
                     $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
                     return $nums->count() ? $nums->implode(', ') : 's/a';

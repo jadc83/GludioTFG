@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ReservaActualizada;
+use App\Helpers\ErrorHelper;
 use App\Http\Requests\StoreReservaRequest;
 use App\Http\Requests\UpdateReservaRequest;
 use App\Models\Reserva;
@@ -12,14 +12,14 @@ use App\Services\PrecioService;
 use App\Services\ReservaFormatterService;
 use App\Services\ReservaExtensionService;
 use App\Http\Traits\JsonResponse;
-use Carbon\Carbon;
+use App\Models\Cupon;
+use App\Models\CuponAplicado;
+use App\Services\PaymentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ReservaCompletada;
-use App\Models\Pago;
+
 
 class ReservaController extends Controller
 {
@@ -30,36 +30,35 @@ class ReservaController extends Controller
     protected HabitacionService $habitacionService;
     protected ReservaFormatterService $formatterService;
     protected ReservaExtensionService $extensionService;
+    protected PaymentService $paymentService;
 
-    /**
-     * Constructor del controlador de reservas
-     * Inyecta servicios necesarios para gestión de reservas
-     * Servicios: ReservaService, PrecioService, HabitacionService, ReservaFormatterService, ReservaExtensionService
-     */
+    /* Constructor del controlador de reservas */
     public function __construct(
         ReservaService $reservaService,
         PrecioService $precioService,
         HabitacionService $habitacionService,
         ReservaFormatterService $formatterService,
-        ReservaExtensionService $extensionService
+        ReservaExtensionService $extensionService,
+        PaymentService $paymentService
     ) {
         $this->reservaService = $reservaService;
         $this->precioService = $precioService;
         $this->habitacionService = $habitacionService;
         $this->formatterService = $formatterService;
         $this->extensionService = $extensionService;
+        $this->paymentService = $paymentService;
     }
 
     /**
      * Lista reservas con filtros y paginación
      * GET /reservas - Panel de administración de reservas
      * Filtros: status, localizador, cliente, habitación
-     * Retorna: vista con reservas paginadas
+     * Devuelve: vista con reservas paginadas
      */
     public function index(Request $request)
     {
         $reservas = Reserva::withReservable()
-            ->with(['habitaciones.habitacion', 'bookedBy'])
+            ->with(['habitaciones.habitacion', 'bookedBy', 'pagos'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
@@ -76,32 +75,94 @@ class ReservaController extends Controller
         return ['reservas' => $reservasJson];
     }
 
+
+
     /**
      * Crea nueva reserva desde formulario
      * POST /reservas - Procesa datos del formulario de reserva
      * Valida datos, crea reserva y envía email de confirmación
-     * Retorna: redirección con mensaje de éxito
+     * Devuelve: redirección con mensaje de éxito
      */
     public function store(StoreReservaRequest $request)
     {
 
         try {
+
+            try {
+                if ($request->has('numero_doocumento') && !$request->has('numero_documento')) {
+                    Log::warning('ReservaController::store - normalizing misspelled numero_doocumento', ['original' => $request->input('numero_doocumento')]);
+                    $request->merge(['numero_documento' => $request->input('numero_doocumento')]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ReservaController::store - normalization failed: ' . $e->getMessage());
+            }
+
+            try {
+                Log::info('ReservaController::store - incoming payload summary', [
+                    'metodo_pago' => $request->input('metodo_pago'),
+                    'habitaciones_present' => $request->has('habitaciones'),
+                    'habitaciones' => $request->input('habitaciones'),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('ReservaController::store - could not log incoming payload: ' . $e->getMessage());
+            }
+
             $action = app(\App\Actions\Reservas\CreateReservaAction::class);
             $result = $action->handle($request->all(), Auth::user(), $request->status ?? 'pendiente');
+
+            $mensaje = isset($result['reserva']) ? "Reserva {$result['reserva']->localizador} creada (Total: €{$result['reserva']->precio_total})" : 'Reserva creada';
+            if (!is_string($mensaje)) {
+                $mensaje = is_scalar($mensaje) ? (string)$mensaje : json_encode($mensaje);
+            }
 
             $respuesta = [
                 'success' => true,
                 'localizador' => $result['localizador'] ?? null,
                 'reserva_id' => $result['reserva_id'] ?? null,
-                'message' => isset($result['reserva']) ? "Reserva {$result['reserva']->localizador} creada (Total: €{$result['reserva']->precio_total})" : 'Reserva creada',
+                'message' => $mensaje,
             ];
+
+            try {
+                if (($request->input('metodo_pago') ?? '') === 'recepcion') {
+                    Log::info('Reserva creada (recepcion) payload', [
+                        'payload' => $request->only(['name', 'email', 'telefono', 'numero_documento', 'nacionalidad', 'direccion', 'habitaciones', 'metodo_pago']),
+                        'resultado' => $respuesta,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('No se pudo loggear payload recepcion: ' . $e->getMessage());
+            }
 
             if ($request->wantsJson()) {
                 return response()->json($respuesta);
             }
 
+            // Si el método de pago es 'recepcion', redirigir al detalle de la reserva (flujo de pago en recepción)
+            try {
+                if (($request->input('metodo_pago') ?? '') === 'recepcion') {
+                    return redirect()->route('reserva.show', $respuesta['localizador'])
+                        ->with('success', $mensaje)
+                        ->with('reserva_id', $respuesta['reserva_id'])
+                        ->with('localizador', $respuesta['localizador']);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ReservaController::store - fallo redirigiendo recepcion: ' . $e->getMessage());
+            }
+
+            // Log session/flash/request for debugging intermittent short toasts and field loss
+            try {
+                Log::info('ReservaController::store - about to redirect back with success', [
+                    'mensaje' => $mensaje,
+                    'request' => $request->only(['metodo_pago', 'name', 'email', 'numero_documento', 'reservable_id']),
+                    'session' => session()->all(),
+                    'flash' => session()->get('flash', null),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('ReservaController::store - could not log session: ' . $e->getMessage());
+            }
+
             return redirect()->back()
-                ->with('success', $respuesta['message'])
+                ->with('success', $mensaje)
                 ->with('reserva_id', $respuesta['reserva_id'])
                 ->with('localizador', $respuesta['localizador']);
 
@@ -123,13 +184,113 @@ class ReservaController extends Controller
                 }
             }
 
-            $mensajeAmigable = \App\Helpers\ErrorHelper::obtenerMensajeAmigable($e);
+            $mensajeAmigable = ErrorHelper::obtenerMensajeAmigable($e);
 
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => $mensajeAmigable], 400);
             }
 
+            // Log session/flash/request on error path to assist debugging
+            try {
+                Log::info('ReservaController::store - returning back with errors', [
+                    'mensajeAmigable' => $mensajeAmigable,
+                    'request' => $request->all(),
+                    'session' => session()->all(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('ReservaController::store - could not log session on error: ' . $e->getMessage());
+            }
+
             return back()->withErrors(['error' => $mensajeAmigable]);
+        }
+    }
+
+    /* Crea una reserva y, opcionalmente, inicia un Checkout de Stripe en la misma operación */
+    public function storeConCheckout(StoreReservaRequest $request)
+    {
+        try {
+            $action = app(\App\Actions\Reservas\CreateReservaAction::class);
+            $result = $action->handle($request->all(), Auth::user(), $request->status ?? 'pendiente');
+
+            $reservaId = $result['reserva_id'] ?? null;
+            if (!$reservaId) {
+                return response()->json(['success' => false, 'error' => 'No se pudo crear la reserva'], 400);
+            }
+
+            $reserva = \App\Models\Reserva::find($reservaId);
+            $monto = $request->input('monto', $reserva->precio_total ?? 0);
+
+            // Si el método de pago es "recepcion", no iniciar Checkout de Stripe
+            if (($request->input('metodo_pago') ?? '') === 'recepcion') {
+                Log::info('storeConCheckout: metodo_pago=recepcion; omitiendo creación de Checkout', ['reserva_id' => $reserva->id]);
+                return response()->json([
+                    'success' => true,
+                    'sessionUrl' => null,
+                    'reserva_id' => $reserva->id,
+                    'localizador' => $reserva->localizador
+                ]);
+            }
+
+            $checkout = $this->paymentService->crearCheckoutSessionParaReserva($reserva, (float)$monto);
+
+            try {
+                if ($request->has('cupon_id')) {
+                    $incomingMonto = (float) $request->input('monto', $reserva->precio_total);
+                    $oldTotal = (float) $reserva->precio_total;
+                    $descuento = max(0, round($oldTotal - $incomingMonto, 2));
+
+                    $reserva->update([
+                        'cupon_id' => $request->input('cupon_id'),
+                        'descuento_aplicado' => $descuento,
+                        'precio_total' => $incomingMonto,
+                    ]);
+
+                    // También actualizar el URL de success de cualquier sesión ya creada (si existe un pago recien creado)
+                    try {
+                        $ultimoPago = $reserva->pagos()->whereNotNull('stripe_checkout_session_id')->orderByDesc('created_at')->first();
+                        if ($ultimoPago && !empty($ultimoPago->stripe_response['session']['id'] ?? null)) {
+                            $sessionId = $ultimoPago->stripe_response['session']['id'];
+                            // Intentar actualizar la session en Stripe para añadir query params si fuera necesario (no todas las propiedades son mutables)
+                            // En la práctica, recordamos que la sesión de checkout ya tiene success_url asignado en la creación desde panel.
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo actualizar session existente tras aplicar cupón: ' . $e->getMessage());
+                    }
+
+                    // Registrar uso del cupón en auditoría si no existe ya
+                    try {
+                        CuponAplicado::create([
+                            'reserva_id' => $reserva->id,
+                            'cupon_id' => $request->input('cupon_id'),
+                            'codigo' => Cupon::find($request->input('cupon_id'))->codigo ?? '',
+                            'descuento_aplicado' => $descuento,
+                            'usuario_email' => $request->input('email') ?? $reserva->reservable?->email ?? null,
+                            'ip_address' => $request->ip(),
+                        ]);
+                        Cupon::find($request->input('cupon_id'))->increment('usos_realizados');
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo registrar CuponAplicado tras checkout: ' . $e->getMessage());
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Error al persistir cupón tras checkout: ' . $e->getMessage());
+            }
+
+            if (!empty($checkout['success']) && !empty($checkout['sessionUrl'])) {
+                return response()->json([
+                    'success' => true,
+                    'sessionUrl' => $checkout['sessionUrl'],
+                    'reserva_id' => $reserva->id,
+                    'localizador' => $reserva->localizador
+                ]);
+            } else {
+                return response()->json(['success' => false, 'error' => $checkout['error'] ?? 'Error creating checkout session'], 400);
+            }
+
+            return response()->json(['success' => false, 'error' => $checkout['error'] ?? 'Error creating checkout session'], 400);
+        } catch (\Exception $e) {
+            Log::error('Error en ReservaController::storeConCheckout', ['mensaje' => $e->getMessage(), 'archivo' => $e->getFile(), 'linea' => $e->getLine()]);
+            return response()->json(['success' => false, 'error' => 'Error creando reserva o checkout'], 400);
         }
     }
 
@@ -137,7 +298,7 @@ class ReservaController extends Controller
      * Obtiene habitaciones disponibles para fechas específicas
      * GET /api/habitaciones-disponibles - Endpoint AJAX para calendario
      * Parámetros: check_in, check_out
-     * Retorna: JSON con habitaciones disponibles por tipo
+     * Devuelve: JSON con habitaciones disponibles por tipo
      */
     public function habitacionesDisponibles(Request $request)
     {
@@ -161,7 +322,7 @@ class ReservaController extends Controller
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
 
-        return inertia('Reservas/DetalleReserva', [
+        return inertia('Reservas/EditReservaUsuario', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -193,7 +354,7 @@ class ReservaController extends Controller
         $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $this->formatterService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('Reservas/editarReserva', [
+        return inertia('Reservas/EditReservaPMS', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
@@ -381,6 +542,11 @@ class ReservaController extends Controller
     public function calcularPrecio(\App\Http\Requests\CalcularPrecioRequest $request)
     {
         try {
+            \Illuminate\Support\Facades\Log::info('calcularPrecio - incoming request', ['method' => request()->method(), 'payload' => $request->all(), 'headers' => [
+                'x-requested-with' => $request->header('X-Requested-With'),
+                'content-type' => $request->header('Content-Type'),
+                'accept' => $request->header('Accept'),
+            ]]);
             $action = app(\App\Actions\Reservas\CalcularPrecioAction::class);
             $resultado = $action->handle($request->validated());
 
@@ -413,6 +579,28 @@ class ReservaController extends Controller
         } catch (\Exception $e) {
             return $this->error('Error al buscar reserva: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Devuelve estados de pago para un conjunto de localizadores (query param `localizadores` coma-separados)
+     * Ej: GET /api/reservas/estados?localizadores=GKS6BC3,G1KIR63
+     */
+    public function estados(\Illuminate\Http\Request $request)
+    {
+        $localizadores = $request->query('localizadores');
+        if (! $localizadores) {
+            return response()->json(['success' => false, 'error' => 'Falta parámetro localizadores'], 400);
+        }
+
+        $keys = array_filter(array_map('trim', explode(',', $localizadores)));
+        $reservas = \App\Models\Reserva::whereIn('localizador', $keys)->get(['localizador', 'pago']);
+
+        $data = [];
+        foreach ($reservas as $r) {
+            $data[$r->localizador] = $r->pago;
+        }
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
     /* Descarga un comprobante de reserva en PDF */
@@ -471,7 +659,7 @@ class ReservaController extends Controller
 
     /**
      * Preview de modificación de estancia: comprueba disponibilidad y estima precio/ajuste.
-     * Retorna: available (bool), nuevo_total, viejo_total, nights_old, nights_new, estimate_refund, estimate_charge
+     * Devuelve: available (bool), nuevo_total, viejo_total, nights_old, nights_new, estimate_refund, estimate_charge
      */
     public function previewModificarEstancia(\App\Http\Requests\ModificarEstanciaRequest $request, $localizador)
     {
@@ -491,7 +679,7 @@ class ReservaController extends Controller
      * Obtiene precios y ocupación por día para calendario
      * GET /reservas/precios-por-dia - Endpoint para componente calendario
      * Parámetros: inicio, fin (fechas en formato YYYY-MM-DD)
-     * Retorna: JSON con precios y ocupación diaria
+     * Devuelve: JSON con precios y ocupación diaria
      */
     public function preciosPorDia(Request $request)
     {
@@ -533,7 +721,7 @@ class ReservaController extends Controller
      * Realiza check-in de una reserva
      * POST /reservas/{localizador}/check-in - Procesa check-in desde panel
     * Asigna habitaciones físicas y cambia estado a checked_in
-     * Retorna: JSON con resultado del check-in
+     * Devuelve: JSON con resultado del check-in
      */
     public function marcarCheckIn(Request $request, $localizador)
     {

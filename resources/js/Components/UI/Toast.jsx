@@ -21,6 +21,10 @@ export default function Toast({ duration: defaultDuration = 4500, onClose, }) {
         // Listen for global toasts only
         const handler = (e) => {
             const d = e?.detail || {};
+            // Debug suspicious short messages: print stack to see where dispatch came from
+            if (typeof d.message === 'string' && d.message.length <= 1) {
+                console.warn('DEBUG: app-toast with short message', { detail: d, stack: new Error().stack });
+            }
             show(d.message, d.type || d.tipo || 'info', d.duration ?? defaultDuration);
         };
         window.addEventListener('app-toast', handler);
@@ -32,7 +36,8 @@ export default function Toast({ duration: defaultDuration = 4500, onClose, }) {
 
     if (!visible || !payload.message) return null;
 
-    const bg = payload.tipo === 'error' ? 'bg-red-600' : 'bg-indigo-600';
+    // Map background color by toast type: error -> black, success -> green, others -> burgundy
+    const bg = payload.tipo === 'error' ? 'bg-black' : payload.tipo === 'success' ? 'bg-green-600' : 'bg-[#6b021c]';
 
     return (
         <div className="fixed right-4 top-4 z-50">

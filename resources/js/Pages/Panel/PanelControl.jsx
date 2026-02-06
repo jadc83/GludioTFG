@@ -1,12 +1,12 @@
-import CreateCliente from '@/Components/clientes/formulario/CreateCliente';
-import IndexCliente from '@/Components/clientes/IndexCliente';
-import CreateCupon from '@/Components/cupones/formulario/CreateCupon';
-import CreateEmpleado from '@/Components/empleados/formulario/CreateEmpleado';
-import IndexEmpleados from '@/Components/empleados/IndexEmpleados';
-import CreateHabitacion from '@/Components/habitaciones/formulario/CreateHabitacion';
-import IndexHabitacion from '@/Components/habitaciones/IndexHabitacion';
-import CreateReserva from '@/Components/reservas/formularios/pms/CreateReserva';
-import IndexReserva from '@/Components/reservas/listado/IndexReserva';
+import CreateCliente from '@/Components/formularios/create/CreateCliente';
+import IndexCliente from '@/Components/indexes/IndexCliente';
+import CreateCupon from '@/Components/formularios/create/CreateCupon';
+import CreateEmpleado from '@/Components/formularios/create/CreateEmpleado';
+import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
+import CreateHabitacion from '@/Components/formularios/create/CreateHabitacion';
+import IndexHabitacion from '@/Components/indexes/IndexHabitacion';
+import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
+import IndexReserva from '@/Components/indexes/IndexReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     BriefcaseIcon,
@@ -41,10 +41,10 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
     );
 }
 
-import TabConfiguracion from '@/Pages/Panel/TabConfiguracion';
-import TabReembolsos from '@/Pages/Panel/TabReembolsos';
+import TabConfiguracion from '@/Components/tabs/TabConfiguracion';
+import TabReembolsos from '@/Components/tabs/TabReembolsos';
 const TabEstadisticas = React.lazy(
-    () => import('@/Pages/Panel/TabEstadisticas'),
+    () => import('@/Components/tabs/TabEstadisticas'),
 );
 
 // Wrapper simple para añadir padding a los contenidos de las tabs
