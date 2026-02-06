@@ -73,6 +73,13 @@ Route::get('/api/habitaciones/limpieza', function (Illuminate\Http\Request $requ
     return response()->json(['habitaciones' => $action->handle($habitaciones)]);
 })->middleware('auth');
 
+// API: turnos (PoC) - para empleado logueado
+Route::get('/api/turnos', [\App\Http\Controllers\TurnoController::class, 'index'])->middleware('auth');
+Route::post('/api/turnos', [\App\Http\Controllers\TurnoController::class, 'store'])->middleware('auth');
+Route::put('/api/turnos/{turno}', [\App\Http\Controllers\TurnoController::class, 'update'])->middleware('auth');
+Route::delete('/api/turnos/{turno}', [\App\Http\Controllers\TurnoController::class, 'destroy'])->middleware('auth');
+Route::post('/api/turnos/clear', [\App\Http\Controllers\TurnoController::class, 'clear'])->middleware('auth');
+
 // Vista: historial de tareas completadas por el usuario
 Route::get('/profile/tareas/completadas', [\App\Http\Controllers\ProfileController::class, 'tareasCompleted'])->name('profile.tareas.completed')->middleware('auth');
 

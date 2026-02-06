@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function EmpleadoProfile({ habitaciones = [] }) {
+export default function EmpleadoProfile({ habitaciones = [], showAssignState = true }) {
     // Use state so we can refresh without recargar la página
     const [rooms, setRooms] = useState(Array.isArray(habitaciones) ? habitaciones : []);
     const [loading, setLoading] = useState(false);
@@ -95,8 +95,8 @@ export default function EmpleadoProfile({ habitaciones = [] }) {
                                                     console.error(e);
                                                 }
                                             }}
-                                        >
-                                            {hasActiveTask ? 'Tarea activa' : 'Asignarme'}
+>
+                                            {showAssignState ? (hasActiveTask ? 'Tarea activa' : 'Asignarme') : 'Asignarme'}
                                         </button>
                                     </div>
                                 </div>

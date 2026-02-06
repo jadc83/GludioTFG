@@ -43,6 +43,20 @@ export default function Toast({ duration: defaultDuration = 4500, onClose, }) {
         <div className="fixed right-4 top-4 z-50">
             <div className={`${bg} flex items-center rounded px-4 py-2 text-white shadow-lg`}>
                 <div className="mr-3">{payload.message}</div>
+                {payload.action && payload.action.label && (
+                    <button
+                        onClick={() => {
+                            // Dispatch a global action event with action payload
+                            window.dispatchEvent(new CustomEvent('app-toast-action', { detail: payload.action }));
+                            setVisible(false);
+                            setPayload({ message: null, tipo: 'info', duration: defaultDuration });
+                            if (typeof onClose === 'function') onClose();
+                        }}
+                        className="ml-2 mr-2 bg-white text-[#6b021c] rounded px-3 py-1 text-xs font-semibold"
+                    >
+                        {payload.action.label}
+                    </button>
+                )}
                 <button
                     onClick={() => {
                         setVisible(false);

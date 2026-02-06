@@ -19,6 +19,9 @@ import Tabs from '@/Components/UI/Tabs';
 
 import EmpleadoProfile from '@/Components/Profile/EmpleadoProfile';
 import TareasList from '@/Components/Profile/TareasList';
+import TurnosCalendar from '@/Components/Profile/TurnosCalendar';
+import ProfileDashboard from '@/Components/Profile/ProfileDashboard';
+import ErrorBoundary from '@/Components/UI/ErrorBoundary';
 
 export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [], can_view_reservas = false, can_view_tareas = false }) {
     // Inicializar tab según query param ?tab=... o por defecto 'informacion'
@@ -36,7 +39,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
     const tabs = [
         { id: 'informacion', label: 'Mi Perfil', icon: UserIcon },
         ...(can_view_reservas ? [{ id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon }] : []),
-        ...(can_view_tareas ? [{ id: 'tareas', label: 'Tareas', icon: BriefcaseIcon }] : []),
+        ...(can_view_tareas ? [
+            { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
+            { id: 'turnos', label: 'Turnos', icon: CalendarIcon },
+        ] : []),
         { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
     ];
 
@@ -71,11 +77,25 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
                         {/* TAB: INFORMACIÓN PERSONAL */}
                         {activeTab === 'informacion' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <UpdateProfileInformationForm
-                                    mustVerifyEmail={mustVerifyEmail}
-                                    status={status}
-                                    className="max-w-none"
-                                />
+                                <div className="mb-6">
+                                    <h2 className="font-extrabold text-lg">Panel de control</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Resumen rápido: información personal, próximos turnos y últimas tareas completadas.</p>
+                                </div>
+
+                                <ErrorBoundary>
+                                    <ProfileDashboard empleado={empleado} habitaciones={habitacionesLimpieza} />
+                                </ErrorBoundary>
+
+                                <div className="mt-6 rounded-xl border border-gray-100 p-4 bg-white">
+                                    <h3 className="font-semibold text-sm text-gray-700">Editar información</h3>
+                                    <div className="mt-3">
+                                        <UpdateProfileInformationForm
+                                            mustVerifyEmail={mustVerifyEmail}
+                                            status={status}
+                                            className="max-w-none"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -90,34 +110,20 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-span-2">
+                                    <div className="col-span-2 space-y-6">
                                         <EmpleadoProfile habitaciones={habitacionesLimpieza} />
                                     </div>
                                 </div>
                             </div>
                         )}
-
-                        {/* TAB: MIS RESERVAS */}
-                        {activeTab === 'reservas' && (
+                        {/* TAB: TURNOS */}
+                        {activeTab === 'turnos' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {reservas.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50">
-                                            <TicketIcon className="h-8 w-8 text-gray-200" />
-                                        </div>
-                                        <h4 className="text-sm font-black uppercase tracking-widest text-gray-900">
-                                            No hay registros
-                                        </h4>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <ReservationsTable reservas={reservas} configEstado={configEstado} />
-                                    </div>
-                                )}
+                                <div className="rounded-xl border border-gray-100 p-4 bg-white">
+                                    <TurnosCalendar />
+                                </div>
                             </div>
                         )}
-
-
                         {/* TAB: SEGURIDAD */}
                         {activeTab === 'seguridad' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
