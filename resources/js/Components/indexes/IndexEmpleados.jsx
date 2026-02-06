@@ -1,4 +1,5 @@
 import EditEmpleado from '@/Components/formularios/edit/EditEmpleado';
+import ShowEmpleado from '@/Components/formularios/show/ShowEmpleado';
 import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
@@ -13,6 +14,10 @@ export default function IndexEmpleados({ empleados = [] }) {
     const [empleadoEditar, setEmpleadoEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
 
+    // Show empleado (detalle)
+    const [empleadoDetalle, setEmpleadoDetalle] = useState(null);
+    const [detalleAbierto, setDetalleAbierto] = useState(false);
+
     const abrirEdicion = (emp) => {
         setEmpleadoEditar(emp);
         setDrawerAbierto(true);
@@ -20,6 +25,15 @@ export default function IndexEmpleados({ empleados = [] }) {
     const cerrarEdicion = () => {
         setDrawerAbierto(false);
         setEmpleadoEditar(null);
+    };
+
+    const abrirDetalle = (emp) => {
+        setEmpleadoDetalle(emp);
+        setDetalleAbierto(true);
+    };
+    const cerrarDetalle = () => {
+        setDetalleAbierto(false);
+        setEmpleadoDetalle(null);
     };
 
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
@@ -39,7 +53,6 @@ export default function IndexEmpleados({ empleados = [] }) {
             return [
                 e.name,
                 e.email,
-                e.numero_empleado,
                 e.departamento,
                 e.puesto,
             ].some((field) =>
@@ -69,7 +82,7 @@ export default function IndexEmpleados({ empleados = [] }) {
                 filtros={filtros}
                 onActualizarFiltro={actualizarFiltro}
                 onLimpiarFiltros={limpiarFiltros}
-                placeholderBusqueda="Buscar por nombre, email, número o departamento..."
+                placeholderBusqueda="Buscar por nombre, email o departamento..."
             />
 
             {/* TABLA DE RESULTADOS */}
@@ -95,16 +108,15 @@ export default function IndexEmpleados({ empleados = [] }) {
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                             Empleado
                                         </th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                            Número
-                                        </th>
+
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                             Departamento
                                         </th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                             Puesto
-                                        </th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        </th>                                        <th className="px-6 py-4 text-sm font-bold uppercase tracking-[0.2em] text-gray-400">
+                                            Rol
+                                        </th>                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                             Acciones
                                         </th>
                                     </tr>
@@ -133,12 +145,7 @@ export default function IndexEmpleados({ empleados = [] }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td
-                                                className="px-6 py-4 font-mono text-sm font-medium text-gray-700"
-                                                data-label="Número"
-                                            >
-                                                {e.numero_empleado}
-                                            </td>
+
                                             <td
                                                 className="px-6 py-4 text-sm font-bold uppercase tracking-tight text-gray-700"
                                                 data-label="Departamento"
@@ -152,11 +159,17 @@ export default function IndexEmpleados({ empleados = [] }) {
                                                 {e.puesto || '—'}
                                             </td>
                                             <td
+                                                className="px-6 py-4 text-sm font-medium uppercase tracking-tight text-gray-700"
+                                                data-label="Rol"
+                                            >
+                                                {(e.role || e.roles?.[0]) ? (e.role || e.roles?.[0]).toUpperCase() : '—'}
+                                            </td>
+                                            <td
                                                 className="px-6 py-4 text-right"
                                                 data-label="Acciones"
                                             >
                                                 <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                                    <button className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
+                                                    <button onClick={() => abrirDetalle(e)} className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
                                                         <EyeIcon className="h-5 w-5" />
                                                     </button>
                                                     <button
@@ -192,6 +205,11 @@ export default function IndexEmpleados({ empleados = [] }) {
                 empleado={empleadoEditar}
                 abierto={drawerAbierto}
                 onCerrar={cerrarEdicion}
+            />
+            <ShowEmpleado
+                empleado={empleadoDetalle}
+                abierto={detalleAbierto}
+                onCerrar={cerrarDetalle}
             />
         </div>
     );

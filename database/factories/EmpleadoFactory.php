@@ -16,7 +16,7 @@ class EmpleadoFactory extends Factory
 
         return [
             'user_id' => $user->id,
-            'numero_empleado' => $this->faker->unique()->bothify('EMP###'),
+            // 'numero_empleado' removed - no longer used for employees
             'departamento' => $this->faker->randomElement(['Recepción','Mantenimiento','Administración']),
             'puesto' => $this->faker->randomElement(['Recepcionista','Conserje','Gerente']),
         ];

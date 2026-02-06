@@ -53,7 +53,7 @@ class PanelController extends Controller
             ->get();
 
         // Empleados (unimos algunos campos del usuario para simplificar el front)
-        $empleados = Empleado::with('user')->orderBy('id')->get()->map(function ($empleado) {
+        $empleados = Empleado::with(['user','departamento'])->orderBy('id')->get()->map(function ($empleado) {
             $data = $empleado->toArray();
             if ($empleado->user) {
                 $data['name'] = $empleado->user->name;
@@ -65,6 +65,19 @@ class PanelController extends Controller
                 $data['ciudad'] = $empleado->user->ciudad;
                 $data['codigo_postal'] = $empleado->user->codigo_postal;
                 $data['telefono'] = $empleado->user->telefono;
+                // roles/role: exponer el primer rol y la lista completa para uso en el front
+                try {
+                    $roles = $empleado->user->getRoleNames()->toArray();
+                } catch (\Throwable $e) {
+                    $roles = [];
+                }
+                $data['roles'] = $roles;
+                $data['role'] = $roles[0] ?? null;
+
+                // departamento (relación a departamentos)
+                $depModel = $empleado->relationLoaded('departamento') ? $empleado->getRelation('departamento') : (\App\Models\Departamento::find($empleado->departamento_id));
+                $data['departamento'] = $depModel ? $depModel->name : null;
+                $data['departamento_id'] = $empleado->departamento_id ?? null;
             }
             return $data;
         });
