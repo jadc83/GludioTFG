@@ -2,7 +2,7 @@ import Campo from '@/Components/reservas/utilidades/Campo';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
 import { TIPOS_DOCUMENTO } from '@/utils/constantes';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function EditEmpleado({ empleado, abierto, onCerrar }) {
     const INITIAL_DATA = {
@@ -10,9 +10,10 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         email: '',
         password: '',
         password_confirmation: '',
-        numero_empleado: '',
-        departamento: '',
+
+        departamento_id: null,
         puesto: '',
+        role: '',
         tipo_documento: 'dni',
         numero_documento: '',
         nacionalidad: '',
@@ -38,14 +39,30 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         limpiar();
     });
 
+    const [roles, setRoles] = useState([]);
+    const [departamentos, setDepartamentos] = useState([]);
+
     useEffect(() => {
+        // cargar lista de roles disponibles
+        fetch('/api/roles', { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setRoles((Array.isArray(data) ? data : []).filter((r) => !['admin','user'].includes((r||'').toString().trim().toLowerCase()))))
+            .catch(() => setRoles([]));
+
+        // cargar lista de departamentos
+        fetch('/api/departamentos', { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setDepartamentos(Array.isArray(data) ? data : []))
+            .catch(() => setDepartamentos([]));
+
         if (empleado) {
             cargarDatos({
                 name: empleado.name || '',
                 email: empleado.email || '',
-                numero_empleado: empleado.numero_empleado || '',
-                departamento: empleado.departamento || '',
+
+                departamento_id: empleado.departamento_id || null,
                 puesto: empleado.puesto || '',
+                role: empleado.role || (empleado.roles && empleado.roles.length ? empleado.roles[0] : ''),
                 tipo_documento: empleado.tipo_documento || 'dni',
                 numero_documento: empleado.numero_documento || '',
                 nacionalidad: empleado.nacionalidad || '',
@@ -147,30 +164,52 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
+
                                 <Campo
-                                    id="numero_empleado"
-                                    label="Número de empleado"
-                                    value={formulario.numero_empleado || ''}
-                                    onChange={cambiar}
-                                    error={errores.numero_empleado}
-                                    required
-                                />
-                                <Campo
-                                    id="departamento"
+                                    id="departamento_id"
+                                    name="departamento_id"
                                     label="Departamento"
-                                    value={formulario.departamento || ''}
+                                    as="select"
+                                    value={formulario.departamento_id || ''}
                                     onChange={cambiar}
-                                    error={errores.departamento}
+                                >
+                                    <option value="">Sin departamento</option>
+                                    {Array.isArray(departamentos) && departamentos.map((d) => (
+                                        <option key={d.id} value={d.id}>{d.name.toUpperCase()}</option>
+                                    ))}
+                                </Campo>
+
+                                <Campo
+                                    id="puesto"
+                                    label="Puesto"
+                                    value={formulario.puesto || ''}
+                                    onChange={cambiar}
+                                    error={errores.puesto}
                                 />
                             </div>
 
-                            <Campo
-                                id="puesto"
-                                label="Puesto"
-                                value={formulario.puesto || ''}
-                                onChange={cambiar}
-                                error={errores.puesto}
-                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Campo
+                                    id="role"
+                                    label="Rol"
+                                    as="select"
+                                    value={formulario.role || ''}
+                                    onChange={cambiar}
+                                >
+                                    <option value="">Sin rol</option>
+                                    {Array.isArray(roles) && roles.map((r) => (
+                                        <option key={r} value={r}>{r.toUpperCase()}</option>
+                                    ))}
+                                </Campo>
+
+                                <Campo
+                                    id="nacionalidad"
+                                    label="Nacionalidad"
+                                    value={formulario.nacionalidad || ''}
+                                    onChange={cambiar}
+                                    error={errores.nacionalidad}
+                                />
+                            </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Campo
