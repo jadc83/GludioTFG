@@ -25,6 +25,7 @@ export default function IndexReserva({ reservas = [] }) {
         localizador: '',
         cliente: '',
         habitacion: '',
+        trashed: 'none',
     });
     const [refrescarTabla, setRefrescarTabla] = useState(0);
     const [paginaActual, setPaginaActual] = useState(1);
@@ -51,6 +52,7 @@ export default function IndexReserva({ reservas = [] }) {
                 localizador: filtros.localizador || undefined,
                 cliente: filtros.cliente || undefined,
                 habitacion: filtros.habitacion || undefined,
+                trashed: filtros.trashed && filtros.trashed !== 'none' ? filtros.trashed : undefined,
             };
             Object.keys(criterios).forEach(
                 (key) => criterios[key] === undefined && delete criterios[key],
@@ -292,6 +294,15 @@ export default function IndexReserva({ reservas = [] }) {
                                 valor: 'reembolso_parcial_confirmado',
                                 etiqueta: 'Reembolso Parcial',
                             },
+                        ],
+                    },
+                    {
+                        tipo: 'select',
+                        nombre: 'trashed',
+                        opciones: [
+                            { valor: 'none', etiqueta: 'No incluir borradas' },
+                            { valor: 'with', etiqueta: 'Incluir borradas' },
+                            { valor: 'only', etiqueta: 'Sólo borradas' },
                         ],
                     },
                 ]}

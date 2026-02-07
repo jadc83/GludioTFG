@@ -40,13 +40,20 @@ class PanelController extends Controller
             ->orderBy('name')
             ->get();
 
-        $reservas = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
+        $query = Reserva::with(['reservable', 'habitaciones.habitacion', 'pagos'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
-            ->habitacion($request->habitacion)
-            ->orderBy('check_in', 'desc')
-            ->get();
+            ->habitacion($request->habitacion);
+
+        // Soporte para mostrar registros eliminados (soft deletes) desde el panel
+        if (($request->input('trashed') ?? '') === 'with') {
+            $query = $query->withTrashed();
+        } elseif (($request->input('trashed') ?? '') === 'only') {
+            $query = $query->onlyTrashed();
+        }
+
+        $reservas = $query->orderBy('check_in', 'desc')->get();
 
         $habitaciones = Habitacion::with('fotos')
             ->buscar($request->busqueda)

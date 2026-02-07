@@ -60,14 +60,24 @@ class ReservaController extends Controller
      */
     public function index(Request $request)
     {
-        $reservas = Reserva::withReservable()
+        $query = Reserva::withReservable()
             ->with(['habitaciones.habitacion', 'bookedBy', 'pagos'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
-            ->habitacion($request->habitacion)
-            ->orderBy('check_in', 'desc')
-            ->get();
+            ->habitacion($request->habitacion);
+
+        // Soporte para mostrar registros eliminados (soft deletes).
+        // Parámetro request 'trashed' puede ser:
+        //  - 'with' -> incluir registros borrados (withTrashed)
+        //  - 'only' -> sólo registros borrados (onlyTrashed)
+        if (($request->input('trashed') ?? '') === 'with') {
+            $query = $query->withTrashed();
+        } elseif (($request->input('trashed') ?? '') === 'only') {
+            $query = $query->onlyTrashed();
+        }
+
+        $reservas = $query->orderBy('check_in', 'desc')->get();
 
         $reservasJson = $this->formatterService->formatearReservas($reservas);
 
