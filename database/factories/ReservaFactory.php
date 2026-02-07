@@ -23,7 +23,6 @@ class ReservaFactory extends Factory
 
         return [
             'localizador' => strtoupper(fake()->bothify('????##')),
-            'user_id' => null,
             'booked_by_user_id' => null,
             'check_in' => $checkIn->toDateString(),
             'check_out' => $checkOut->toDateString(),

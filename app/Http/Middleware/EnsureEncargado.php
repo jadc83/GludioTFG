@@ -13,8 +13,18 @@ class EnsureEncargado
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
-        // Allow both 'encargado' and 'admin' to access the panel
-        if (!$user || !method_exists($user, 'hasAnyRole') || !$user->hasAnyRole(['encargado', 'admin'])) {
+        // Allow panel access to admin, encargado, operarios/auxiliares of certain departments
+        if (!$user) {
+            abort(403);
+        }
+
+        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
+
+        $isAdminOrEncargado = method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin', 'encargado']);
+        $isOperario = method_exists($user, 'hasRole') && $user->hasRole('operario') && in_array($departamento, ['mantenimiento','recepcion']);
+        $isAuxiliarRecepcion = method_exists($user, 'hasRole') && $user->hasRole('auxiliar') && $departamento === 'recepcion';
+
+        if (!($isAdminOrEncargado || $isOperario || $isAuxiliarRecepcion)) {
             abort(403);
         }
         return $next($request);

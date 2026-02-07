@@ -101,6 +101,11 @@ class RefundRequestController extends Controller
 
     public function approve(Request $request, RefundRequest $refundRequest, PaymentService $paymentService, PrecioService $precioService)
     {
+        // Only admins can approve refunds
+        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
         if ($refundRequest->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Ya procesada.'], 400);
         }
@@ -188,6 +193,11 @@ class RefundRequestController extends Controller
     {
         $request->validate(['admin_reason' => 'required|string']);
 
+        // Only admins can reject refunds
+        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
         $refundRequest->update([
             'status' => 'rejected',
             'admin_id' => Auth::id() ?? null,
@@ -215,6 +225,11 @@ class RefundRequestController extends Controller
 
     public function destroy(RefundRequest $refundRequest)
     {
+        // Only admins can delete refund requests
+        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
+
         try {
             $refundRequest->delete();
             return response()->json(['success' => true]);

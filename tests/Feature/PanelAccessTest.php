@@ -38,6 +38,42 @@ class PanelAccessTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_operario_mantenimiento_can_access_panel()
+    {
+        Role::firstOrCreate(['name' => 'operario']);
+        $user = User::factory()->create();
+        $user->assignRole('operario');
+        $dep = \App\Models\Departamento::create(['name' => 'Mantenimiento']);
+        $user->empleado()->create(['departamento_id' => $dep->id, 'role' => 'operario']);
+
+        $response = $this->actingAs($user)->get('/panel');
+        $response->assertStatus(200);
+    }
+
+    public function test_operario_recepcion_can_access_panel()
+    {
+        Role::firstOrCreate(['name' => 'operario']);
+        $user = User::factory()->create();
+        $user->assignRole('operario');
+        $dep = \App\Models\Departamento::create(['name' => 'Recepcion']);
+        $user->empleado()->create(['departamento_id' => $dep->id, 'role' => 'operario']);
+
+        $response = $this->actingAs($user)->get('/panel');
+        $response->assertStatus(200);
+    }
+
+    public function test_auxiliar_recepcion_can_access_panel()
+    {
+        Role::firstOrCreate(['name' => 'auxiliar']);
+        $user = User::factory()->create();
+        $user->assignRole('auxiliar');
+        $dep = \App\Models\Departamento::create(['name' => 'Recepcion']);
+        $user->empleado()->create(['departamento_id' => $dep->id, 'role' => 'auxiliar']);
+
+        $response = $this->actingAs($user)->get('/panel');
+        $response->assertStatus(200);
+    }
+
     public function test_non_encargado_cannot_access_panel()
     {
         $user = User::factory()->create();

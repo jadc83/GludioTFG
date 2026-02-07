@@ -31,7 +31,7 @@ export default function Navbar() {
 
                     <div className="hidden lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2 lg:transform lg:items-center">
                         <div className="flex w-full max-w-7xl justify-center px-4 sm:px-6 lg:space-x-8 lg:px-8">
-                            {(user?.is_encargado || (user?.roles || []).includes('admin')) ? (
+                            {usePage().props?.auth?.user?.can_view_panel ? (
                                 <NavLink
                                     href={route('panel')}
                                     active={route().current('panel')}
@@ -171,6 +171,15 @@ export default function Navbar() {
                     >
                         CONTACTO
                     </ResponsiveNavLink>
+                    {usePage().props?.auth?.user?.can_view_panel && (
+                        <ResponsiveNavLink
+                            href={route('panel')}
+                            active={route().current('panel')}
+                            className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
+                        >
+                            Panel de Control
+                        </ResponsiveNavLink>
+                    )}
                 </div>
                 <div className="border-t border-gray-200 px-4 py-4">
                     {user ? (

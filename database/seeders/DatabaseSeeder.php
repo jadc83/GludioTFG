@@ -33,6 +33,11 @@ class DatabaseSeeder extends Seeder
 
         // Asegurar que existan roles y permisos antes de crear un admin
         $this->call(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        // Normalize and canonicalize departamentos first, then seed empleados
+        $this->call(\Database\Seeders\NormalizeDepartamentosSeeder::class);
+        $this->call(\Database\Seeders\EmpleadosSeeder::class);
+        // Fix: ensure one encargado per departamento and sync roles
+        $this->call(\Database\Seeders\FixEncargadosSeeder::class);
 
         // Crear roles sencillos para el hotel (mantenimiento, recepcion, limpieza)
         $this->call(\Database\Seeders\HotelRolesSeeder::class);
