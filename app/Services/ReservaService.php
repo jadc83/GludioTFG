@@ -17,6 +17,8 @@ use App\Events\ReservaActualizada;
 
 class ReservaService
 {
+    // El método de cambio de fechas se eliminó: el sistema antiguo de extensión y el servicio
+    // especializado `ReservaExtensionService` gestionan ahora las extensiones de estancia.
     private PrecioService $servicioPrecio;
     private \App\Services\PaymentService $servicioPago;
     private \App\Services\PdfService $servicioPDF;
@@ -55,46 +57,42 @@ class ReservaService
         $habitaciones = $datos['habitaciones'];
 
         // Calcular precio completo usando el método unificado
+        $tarifas = $datos['tarifas'] ?? [];
+        $cuponId = $datos['cupon_id'] ?? null;
+
         $resultadoPrecio = $this->servicioPrecio->calcularPrecioCompleto(
             $habitaciones,
             $checkIn,
             $checkOut,
-            $datos['tarifas'] ?? [],
-            $datos['cupon_id'] ?? null
+            $tarifas,
+            $cuponId
         );
 
         if (isset($resultadoPrecio['error'])) {
-            throw new \Exception($resultadoPrecio['error']);
+            throw new \Exception('Error calculando precio: ' . ($resultadoPrecio['error'] ?? 'desconocido'));
         }
 
-        $precioTotal = $resultadoPrecio['precio_total'];
-        $descuentoAplicado = $resultadoPrecio['descuento_aplicado'];
-        $tarifaIds = $resultadoPrecio['tarifa_ids'];
-        $cuponId = $datos['cupon_id'] ?? null;
+        $precioTotal = $resultadoPrecio['precio_total'] ?? 0;
+        $descuentoAplicado = $resultadoPrecio['descuento_aplicado'] ?? 0;
+        $tarifaIds = $resultadoPrecio['tarifa_ids'] ?? [];
 
-        // Mapear método de pago del frontend a estado de pago del backend
-        $metodoPago = $datos['metodo_pago'] ?? 'pendiente';
-        $estadoPago = 'pendiente'; // Por defecto
+        $estadoPago = $datos['pago'] ?? 'pendiente';
+        $metodoPago = $datos['metodo_pago'] ?? null;
 
-        // Si el método es tarjeta y hay un payment intent ID, considerarlo pagado
-        if ($metodoPago === 'tarjeta' && !empty($datos['payment_intent_id'])) {
-            $estadoPago = 'pagado';
-        }
-        // Para otros métodos (recepcion, transferencia), mantener pendiente
-
+        // Preparar estructura de retorno esperada por crearReserva()
         $datosReturn = [
-            'nombre' => $datos['name'] ?? null,
+            'name' => $datos['name'] ?? null,
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
-            'tipo_documento' => $datos['tipo_documento'] ?? 'dni',
             'numero_documento' => $datos['numero_documento'] ?? null,
-            'nacionalidad' => $datos['nacionalidad'] ?? '',
+            'tipo_documento' => $datos['tipo_documento'] ?? null,
+            'nacionalidad' => $datos['nacionalidad'] ?? null,
             'direccion' => $datos['direccion'] ?? null,
-            'check_in' => $checkIn,
-            'check_out' => $checkOut,
+            'check_in' => $checkIn->toDateString(),
+            'check_out' => $checkOut->toDateString(),
             'habitaciones' => $habitaciones,
             'precio_total' => $precioTotal,
-            'tarifa_ids' => $tarifaIds, // Cambiar a array
+            'tarifa_ids' => $tarifaIds,
             'cupon_id' => $cuponId,
             'descuento_aplicado' => $descuentoAplicado,
             'reservable_id' => $datos['reservable_id'] ?? null,
@@ -103,7 +101,7 @@ class ReservaService
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
             'pago' => $estadoPago,
             'metodo_pago' => $metodoPago,
-            'notas' => $datos['notas'] ?? '',
+            'notas' => $datos['notas'] ?? null,
         ];
 
         \Illuminate\Support\Facades\Log::info('prepararDatosReserva completado', [
@@ -967,158 +965,10 @@ class ReservaService
         return ['refund' => $refundInfo];
     }
 
+    // Métodos de extensión eliminados.
     /**
-     * Obtiene información sobre la posibilidad de extender una reserva
-     * Verifica tiempo hasta checkout y estado de la reserva
-     * Usado por: interfaces de extensión de reserva
-     * Retorna: array con información de extensión disponible
+     * Nota: las funciones relacionadas con la extensión de reservas fueron retiradas.
      */
-    public function obtenerInfoExtension(Reserva $reserva): array
-    {
-        $checkOut = Carbon::parse($reserva->check_out);
-        $horasHastaCheckout = now()->diffInHours($checkOut, false);
-        $puedeExtender = $horasHastaCheckout < 24 && $reserva->status !== 'cancelada';
-
-        $razon = null;
-        if (!$puedeExtender) {
-            if ($reserva->status === 'cancelada') {
-                $razon = 'No se pueden extender reservas canceladas';
-            } else {
-                $razon = 'Solo puedes extender 24 horas antes del checkout';
-            }
-        }
-
-        return [
-            'puede_extender' => $puedeExtender,
-            'horas_hasta_checkout' => max(0, (int)$horasHastaCheckout),
-            'max_dias' => 3,
-            'razon' => $razon,
-            'check_out_actual' => $checkOut->format('Y-m-d'),
-        ];
-    }
-
-    /**
-     * Verifica disponibilidad de habitaciones para extensión de reserva
-     * Comprueba que las habitaciones asignadas estén libres en el período de extensión
-     * Usado por: procesos de extensión de reserva
-     * Retorna: array con números de habitaciones no disponibles
-     */
-    public function verificarDisponibilidadExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): array
-    {
-        $habitacionesNoDisponibles = [];
-        $checkOutDate = $checkOutActual->format('Y-m-d');
-        $nuevoCheckOutDate = $nuevoCheckOut->format('Y-m-d');
-
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacion = $habitacionReserva->habitacion;
-
-            $conflictivas = HabitacionReserva::where('habitacion_id', $habitacion->id)
-                ->where('reserva_id', '!=', $reserva->id)
-                ->whereRaw("check_in < ? AND check_out > ?", [$nuevoCheckOutDate, $checkOutDate])
-                ->count();
-
-            if ($conflictivas > 0) {
-                $habitacionesNoDisponibles[] = $habitacion->numero;
-            }
-        }
-
-        return $habitacionesNoDisponibles;
-    }
-
-    /**
-     * Calcula el precio de extensión de una reserva
-     * Suma precios de todas las habitaciones por el período de extensión
-     * Usado por: procesos de extensión de reserva
-     * Retorna: precio total de la extensión (float)
-     */
-    public function calcularPrecioExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): float
-    {
-        $precioExtension = 0;
-
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacion = $habitacionReserva->habitacion;
-            $precioExtension += $this->servicioPrecio->precioEntreFechas(
-                $habitacion->tipo,
-                $checkOutActual,
-                $nuevoCheckOut
-            );
-        }
-
-        return $precioExtension;
-    }
-
-    /**
-     * Aplica la extensión a una reserva
-     * Actualiza fechas de checkout y recalcula precio total
-     * Usado por: acciones de extensión de reserva
-     * Retorna: void
-     */
-    public function aplicarExtension(Reserva $reserva, Carbon $nuevoCheckOut, float $precioExtension): void
-    {
-        $reserva->check_out = $nuevoCheckOut;
-        $reserva->precio_total += $precioExtension;
-        $reserva->save();
-
-        // Actualizar las fechas en las relaciones HabitacionReserva
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacionReserva->check_out = $nuevoCheckOut;
-            $habitacionReserva->save();
-        }
-    }
-
-    /**
-     * Extiende una reserva: valida, calcula precio y aplica si se confirma
-     * Verifica disponibilidad, calcula precio y aplica extensión si se confirma
-     * Usado por: acciones de extensión de reserva desde panel de control
-     * Retorna: array con resultado de la extensión
-     */
-    public function extenderReserva(string $localizador, int $numeroDias, bool $confirmar = false): array
-    {
-        $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])->where('localizador', $localizador)->first();
-        if (!$reserva) {
-            throw new \Exception('Reserva no encontrada');
-        }
-
-        $checkOut = Carbon::parse($reserva->check_out);
-        $horas = now()->diffInHours($checkOut);
-
-        if ($horas >= 24) {
-            throw new \Exception('La extensión solo está disponible 24 horas antes del checkout');
-        }
-
-        if ($reserva->status === 'cancelada') {
-            throw new \Exception('No se puede extender una reserva cancelada');
-        }
-
-        if ($numeroDias < 1 || $numeroDias > 3) {
-            throw new \Exception('Debes seleccionar entre 1 y 3 días de extensión');
-        }
-
-        $nuevoCheckOut = $checkOut->copy()->addDays($numeroDias);
-
-        // Verificar disponibilidad
-        $habitacionesNoDisponibles = $this->verificarDisponibilidadExtension($reserva, $checkOut, $nuevoCheckOut);
-        if (!empty($habitacionesNoDisponibles)) {
-            return [ 'success' => false, 'error' => 'Las habitaciones no están disponibles para la extensión seleccionada', 'habitaciones_no_disponibles' => $habitacionesNoDisponibles ];
-        }
-
-        $precioExtension = $this->calcularPrecioExtension($reserva, $checkOut, $nuevoCheckOut);
-        $necesitaPago = $reserva->pago === 'pagado';
-
-        if ($confirmar) {
-            $this->aplicarExtension($reserva, $nuevoCheckOut, $precioExtension);
-            try {
-                event(new ReservaActualizada($reserva, null));
-            } catch (\Throwable $e) {
-                // ignore
-            }
-            return [ 'success' => true, 'aplicada' => true, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
-        }
-
-        return [ 'success' => true, 'aplicada' => false, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
-    }
-
-
 }
 
 

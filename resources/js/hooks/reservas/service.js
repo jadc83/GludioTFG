@@ -59,16 +59,10 @@ export async function crearReserva(payload) {
     }
 }
 
-export async function extenderReserva(localizador, payload) {
-    try {
-        const res = await axios.post(
-            `/reservas/${localizador}/extender`,
-            payload,
-        );
-        return res?.data ?? null;
-    } catch (err) {
-        throw err?.response?.data ?? err;
-    }
+export async function extenderReserva(/* localizador, payload */) {
+    // Esta funcionalidad fue eliminada intencionalmente.
+    // Si algún componente aún la invoca, devolvemos un error controlado para evitar llamadas al backend.
+    throw { status: 410, error: 'La funcionalidad de cambio de fechas ha sido eliminada' };
 }
 
 export async function obtenerClientes() {

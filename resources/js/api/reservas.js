@@ -6,23 +6,13 @@ export async function buscarReserva(localizador) {
 }
 
 export async function modificarEstancia(localizador, payload) {
-    try {
-        const res = await axios.post(
-            `/reservas/${localizador}/modificar-estancia`,
-            payload,
-        );
-        return res?.data ?? null;
-    } catch (err) {
-        return err?.response?.data ?? { success: false, message: err.message };
-    }
+    // Endpoint removed server-side. Return controlled error to avoid accidental calls.
+    return { success: false, error: 'funcionalidad_eliminada', message: 'La modificación de estancia ha sido eliminada', status: 410 };
 }
 
 export async function previewModificarEstancia(localizador, params) {
-    const res = await axios.get(
-        `/reservas/${localizador}/preview-modificar-estancia`,
-        { params },
-    );
-    return res?.data ?? null;
+    // Endpoint removed server-side. Return controlled response.
+    return { success: false, error: 'funcionalidad_eliminada', message: 'La vista previa de modificación de estancia ha sido eliminada', status: 410 };
 }
 
 export async function solicitarReembolso(reservaId, payload) {

@@ -27,19 +27,8 @@ export default function useReserva(initialReserva) {
 
     const aplicarCambioFechas = useCallback(
         async (newCheckIn, newCheckOut, pagoId = null) => {
-            const fmt = (d) => {
-                if (!d) return null;
-                if (typeof d.format === 'function')
-                    return d.format('YYYY-MM-DD');
-                if (typeof d === 'string') return d;
-                return String(d);
-            };
-            const payload = {
-                check_in: fmt(newCheckIn),
-                check_out: fmt(newCheckOut),
-            };
-            if (pagoId) payload.pago_id = pagoId;
-            return api.modificarEstancia(reserva.localizador, payload);
+            // Funcionalidad eliminada. Devolver error controlado para evitar llamadas al backend.
+            throw { status: 410, error: 'La funcionalidad de cambio de fechas ha sido eliminada' };
         },
         [reserva],
     );

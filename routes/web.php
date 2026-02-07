@@ -112,9 +112,7 @@ Route::get('/reservas/calcular-precio', function() {
 
 // Endpoint para obtener estados de pago por localizadores (usado por el panel para refrescar)
 Route::get('/api/reservas/estados', [ReservaController::class, 'estados'])->name('api.reservas.estados');
-Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])->where('localizador', '[A-Z0-9]+')->name('reservas.extender');
-Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::class, 'modificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.modificar-estancia');
-Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.preview-modificar-estancia');
+// Cambio de fechas eliminado: rutas de modificación/preview retiradas.
 Route::post('/reservas/{reserva}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'store'])->name('reservas.refund-requests.store')->where('reserva', '[0-9]+')->middleware('auth');
 Route::post('/reservas/{localizador}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'storeByLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.refund-requests.store.by_localizador')->middleware('auth');
 Route::get('/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'index'])->name('refund-requests.index')->middleware('auth');

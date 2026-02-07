@@ -10,7 +10,6 @@ use App\Services\ReservaService;
 use App\Services\HabitacionService;
 use App\Services\PrecioService;
 use App\Services\ReservaFormatterService;
-use App\Services\ReservaExtensionService;
 use App\Http\Traits\JsonResponse;
 use App\Models\Cupon;
 use App\Models\CuponAplicado;
@@ -29,7 +28,6 @@ class ReservaController extends Controller
     protected PrecioService $precioService;
     protected HabitacionService $habitacionService;
     protected ReservaFormatterService $formatterService;
-    protected ReservaExtensionService $extensionService;
     protected PaymentService $paymentService;
 
     /* Constructor del controlador de reservas */
@@ -38,16 +36,16 @@ class ReservaController extends Controller
         PrecioService $precioService,
         HabitacionService $habitacionService,
         ReservaFormatterService $formatterService,
-        ReservaExtensionService $extensionService,
         PaymentService $paymentService
     ) {
         $this->reservaService = $reservaService;
         $this->precioService = $precioService;
         $this->habitacionService = $habitacionService;
         $this->formatterService = $formatterService;
-        $this->extensionService = $extensionService;
         $this->paymentService = $paymentService;
     }
+
+    // El endpoint de cambio de fechas fue eliminado; las extensiones deben usar el flujo existente de extensión.
 
     /**
      * Lista reservas con filtros y paginación
@@ -350,7 +348,7 @@ class ReservaController extends Controller
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
 
-        return inertia('Reservas/EditReservaUsuario', [
+        return inertia('Reservas/EditReserva', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -389,7 +387,7 @@ class ReservaController extends Controller
         $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $this->formatterService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('Reservas/EditReservaPMS', [
+        return inertia('Reservas/EditReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
@@ -699,89 +697,7 @@ class ReservaController extends Controller
         }
     }
 
-    /* Extiende una reserva con nuevos días adicionales */
-    /** @param \Illuminate\Http\Request $request @param string $localizador */
-    /**
-     * Extiende reserva con nuevas fechas
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param string $localizador
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    public function extenderReserva(Request $request, string $localizador)
-    {
-        try {
-            $numeroDias = (int) $request->input('numero_dias');
-            $confirmar = (bool) $request->input('confirmar');
-
-            $resultado = $this->extensionService->extenderReserva($localizador, $numeroDias, $confirmar);
-
-            return $this->success($resultado);
-        } catch (\Exception $e) {
-            return $this->error('Error al extender la reserva: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Modifica las fechas de la estancia (ampliar o reducir) tras comprobar disponibilidad.
-     * Espera `check_in` y `check_out` en formato Y-m-d.
-     */
-    /** @param \App\Http\Requests\ModificarEstanciaRequest $request @param string $localizador */
-    /**
-     * Modifica detalles de estancia (fechas, habitaciones)
-     *
-     * @param \App\Http\Requests\ModificarEstanciaRequest $request
-     * @param string $localizador
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function modificarEstancia(\App\Http\Requests\ModificarEstanciaRequest $request, string $localizador)
-    {
-        try {
-            $action = app(\App\Actions\Reservas\ModificarEstanciaAction::class);
-            $resultado = $action->handle($localizador, $request->validated());
-
-            if (isset($resultado['error'])) {
-                return $this->error($resultado['error'], 402);
-            }
-
-            if (isset($resultado['success']) && $resultado['success'] === false) {
-                return $this->error($resultado['message'] ?? 'Error al modificar la estancia', 400);
-            }
-
-            return $this->success($resultado);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->error('Reserva no encontrada.', 404);
-        } catch (\Exception $e) {
-            Log::error('Error en modificarEstancia: ' . $e->getMessage());
-            return $this->error('Error al modificar la estancia: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Preview de modificación de estancia: comprueba disponibilidad y estima precio/ajuste.
-     * Devuelve: available (bool), nuevo_total, viejo_total, nights_old, nights_new, estimate_refund, estimate_charge
-     */
-    /** @param \App\Http\Requests\ModificarEstanciaRequest $request @param string $localizador */
-    /**
-     * Vista previa de cambios en la estancia
-     *
-     * @param \App\Http\Requests\ModificarEstanciaRequest $request
-     * @param string $localizador
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function previewModificarEstancia(\App\Http\Requests\ModificarEstanciaRequest $request, string $localizador)
-    {
-        try {
-            $action = app(\App\Actions\Reservas\PreviewModificarEstanciaAction::class);
-            $resultado = $action->handle($localizador, $request->validated());
-            return $this->success($resultado);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->error('Reserva no encontrada.', 404);
-        } catch (\Exception $e) {
-            Log::error('Error en previewModificarEstancia: ' . $e->getMessage());
-            return $this->error('Error en preview: ' . $e->getMessage(), 500);
-        }
-    }
+    // Las rutas y acciones de modificación/preview de estancia fueron eliminadas.
 
     /**
      * Obtiene precios y ocupación por día para calendario
