@@ -22,6 +22,12 @@ class PanelController extends Controller
         $this->reservaService = $reservaService;
     }
 
+    /**
+     * Render panel view with filtered resources for admin dashboard
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Inertia\Response
+     */
     public function index(Request $request)
     {
         $clientes = Cliente::buscar($request->busqueda)

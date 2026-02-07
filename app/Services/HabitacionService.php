@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Habitaciones\CalcularPreciosPorTipoAction;
 use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
 use App\Models\TipoHabitacion;
@@ -9,25 +10,17 @@ use Carbon\Carbon;
 
 class HabitacionService
 {
-    private PrecioService $precioService;
 
-    /**
-     * Constructor del servicio de habitaciones
-     * Inyecta dependencia de servicio de precios
-     * Usado por: inyección automática de dependencias
-     */
-    public function __construct(?PrecioService $precioService = null)
-    {
-        $this->precioService = $precioService ?? new PrecioService();
-    }
 
     /**
      * Formatea colección de habitaciones para respuesta
      * Agrupa por tipo y calcula precios
      * Usado por: getDisponibles()
      * Retorna: array de habitaciones formateadas
+     * @param \Illuminate\Support\Collection<int, \App\Models\Habitacion> $habitaciones
+     * @return array<int, array{tipo: string, cantidad: int, capacidadMaxima: int, precioMinimo: ?float, precioNoche: float, precioTotal: float, habitaciones: array}>
      */
-    private function formatearHabitaciones($habitaciones, Carbon $checkIn, Carbon $checkOut): array
+    private function formatearHabitaciones(\Illuminate\Support\Collection $habitaciones, Carbon $checkIn, Carbon $checkOut): array
     {
         $capacidadesPorTipo = TipoHabitacion::pluck('capacidad', 'slug')->toArray();
         $grupos = [];
@@ -54,7 +47,7 @@ class HabitacionService
         foreach ($grupos as $tipo => &$grupo) {
 
             try {
-                $action = app(\App\Actions\Habitaciones\CalcularPreciosPorTipoAction::class);
+                $action = app(CalcularPreciosPorTipoAction::class);
                 $mapaPrecios = $action->handle([$tipo], $checkIn, $checkOut);
                 $precioData = $mapaPrecios[$tipo] ?? null;
                 $grupo['precioTotal'] = $precioData['total'] ?? 0;

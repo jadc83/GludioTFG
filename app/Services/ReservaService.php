@@ -37,7 +37,9 @@ class ReservaService
      * Prepara y valida los datos de una reserva antes de crearla
      * Valida fechas, habitaciones y calcula precios totales
      * Usado por: crearReserva(), acciones de reserva
-     * Retorna: array con datos preparados y validados
+     *
+     * @param array<string,mixed> $datos
+     * @return array<string,mixed>
      */
     public function prepararDatosReserva(array $datos): array
     {
@@ -117,7 +119,10 @@ class ReservaService
      * Prepara fechas para edición de reserva existente
      * Valida que las nuevas fechas sean coherentes
      * Usado por: acciones de modificación de reserva
-     * Retorna: array con checkIn y checkOut validados
+     *
+     * @param array<string,mixed> $requestDates
+     * @param \App\Models\Reserva $reserva
+     * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon}
      */
     public function prepararFechasParaEdicion(array $requestDates, Reserva $reserva): array
     {
@@ -139,7 +144,11 @@ class ReservaService
      * Formatea datos de reserva para interfaz de edición
      * Incluye habitaciones, precios y estadísticas
      * Usado por: controladores de edición de reserva
-     * Retorna: array con todos los datos formateados para edición
+     *
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon $checkIn
+     * @param \Carbon\Carbon $checkOut
+     * @return array<string,mixed>
      */
     public function formatearReservaParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): array
     {
@@ -182,8 +191,13 @@ class ReservaService
      * Devuelve una colección mapeada lista para enviar a la vista.
      * Usado por: formatearReservaParaEdicion()
      * Retorna: colección de habitaciones con precios calculados
+     *
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon $checkIn
+     * @param \Carbon\Carbon $checkOut
+     * @return \Illuminate\Support\Collection<int, array<string,mixed>>
      */
-    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
+    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): \Illuminate\Support\Collection
     {
         // Aceptar también strings por seguridad: coerción a Carbon
         if (!($checkIn instanceof Carbon)) {
@@ -227,63 +241,7 @@ class ReservaService
         });
     }
 
-    /**
-     * Valida la selección de habitaciones
-     */
-    /**
-     * Valida y normaliza la configuración de habitaciones
-     * Verifica tipos válidos y cantidades positivas
-     * Usado por: prepararDatosReserva()
-     * Retorna: array de habitaciones validadas
-     */
-    private function validarHabitaciones(array $habitaciones): array
-    {
-        $validadas = [];
-        $tiposValidos = ['doble', 'familiar', 'suite'];
 
-        foreach ($habitaciones as $habitacion) {
-            $tipo = strtolower(trim($habitacion['tipo'] ?? ''));
-            $cantidad = intval($habitacion['cantidad'] ?? 0);
-
-            if (!in_array($tipo, $tiposValidos, true)) {
-                throw new \Exception("Tipo de habitación no válido: {$tipo}");
-            }
-
-            if ($cantidad <= 0) {
-                continue;
-            }
-
-            $personas = intval($habitacion['personas_por_habitacion'] ?? 1);
-            if ($personas < 1) {
-                throw new \Exception("Número de personas inválido para habitación {$tipo}");
-            }
-
-            $validadas[] = [
-                'tipo' => $tipo,
-                'cantidad' => $cantidad,
-                'personas_por_habitacion' => $personas,
-            ];
-        }
-
-        return $validadas;
-    }
-
-    /**
-     * Calcula el precio total de la reserva
-     * Usa el servicio de precios para calcular sin tarifas adicionales
-     * Usado por: prepararDatosReserva()
-     * Retorna: precio total como float
-     */
-    private function calcularPrecioTotal(array $habitaciones, Carbon $checkIn, Carbon $checkOut): float
-    {
-        $resultado = $this->servicioPrecio->precioSinTarifas($habitaciones, $checkIn, $checkOut);
-
-        if (isset($resultado['error'])) {
-            throw new \Exception($resultado['error']);
-        }
-
-        return $resultado['total'] ?? 0;
-    }
 
     /**
      * Genera un localizador único para la reserva
@@ -304,7 +262,10 @@ class ReservaService
      * Crea una reserva usando los helpers del servicio.
      * Prepara datos, verifica disponibilidad, crea reserva y asigna habitaciones
      * Usado por: controladores de reserva, acciones de creación
-     * Retorna: instancia de Reserva creada con ID
+     * @param array<string,mixed> $datos
+     * @param User|null $usuario
+     * @param string $status
+     * @return Reserva
      */
     public function crearReserva(array $datos, ?User $usuario = null, string $status = 'pendiente'): Reserva
     {
@@ -407,7 +368,12 @@ class ReservaService
      * Obtiene o crea el cliente para la reserva
      * Busca por DNI, reutiliza si coincide, crea nuevo si no existe
      * Usado por: crearReserva()
-     * Retorna: ID del cliente (string)
+     * @param array<string,mixed> $datos
+     * @return string
+     */
+    /**
+     * @param array<string,mixed> $datos
+     * @return string
      */
     public function obtenerOCrearCliente(array $datos): string
     {
@@ -443,24 +409,17 @@ class ReservaService
         return $this->crearCliente($datos);
     }
 
-    /**
-     * Valida si los datos coinciden con un cliente existente
-     * Compara nombre, email y teléfono (case insensitive para nombre)
-     * Usado por: obtenerOCrearCliente()
-     * Retorna: boolean indicando si coinciden
-     */
-    private function datosCoinciden(Cliente $cliente, array $datos): bool
-    {
-        return strcasecmp(trim($cliente->name), trim($datos['nombre'] ?? '')) === 0 &&
-               $cliente->email === ($datos['email'] ?? null) &&
-               $cliente->telefono === ($datos['telefono'] ?? null);
-    }
 
     /**
      * Crea un nuevo cliente
      * Procesa dirección y crea registro en base de datos
      * Usado por: obtenerOCrearCliente()
-     * Retorna: ID del cliente creado
+     * @param array<string,mixed> $datos
+     * @return string
+     */
+    /**
+     * @param array<string,mixed> $datos
+     * @return string
      */
     private function crearCliente(array $datos): string
     {
@@ -504,6 +463,12 @@ class ReservaService
      * Itera sobre cada tipo de habitación requerido y verifica disponibilidad
      * Usado por: crearReserva(), actualizarReserva()
      * Retorna: true si todas están disponibles, lanza excepción si no
+     */
+    /**
+     * @param array<int,array{tipo:string,cantidad:int}> $habitacionesRequeridas
+     * @param Carbon $checkIn
+     * @param Carbon $checkOut
+     * @return bool
      */
     public function verificarDisponibilidadMultiple(array $habitacionesRequeridas, Carbon $checkIn, Carbon $checkOut): bool
     {
@@ -585,7 +550,12 @@ class ReservaService
      * Usado por: controladores que necesitan generar PDFs de reserva
      * Retorna: objeto PDF generado
      */
-    public function generarPdf(Reserva $reserva)
+    /**
+     * Genera el PDF de la reserva delegando en PdfService
+     * @param \App\Models\Reserva $reserva
+     * @return \Barryvdh\DomPDF\PDF
+     */
+    public function generarPdf(Reserva $reserva): \Barryvdh\DomPDF\PDF
     {
         return $this->servicioPDF->generarPdf($reserva);
     }
@@ -681,11 +651,11 @@ class ReservaService
      * Usado por: MarcarCheckInAction, procesos de check-in
      * Retorna: array con resultados de cada asignación
      */
-    public function asignarHabitacionEnCheckIn(Reserva $reserva, $actorId = null): array
+    public function asignarHabitacionEnCheckIn(Reserva $reserva, $_actorId = null): array
     {
         $asignadas = [];
 
-        DB::transaction(function () use ($reserva, &$asignadas, $actorId) {
+        DB::transaction(function () use ($reserva, &$asignadas) {
             $checkIn = Carbon::parse($reserva->check_in);
             $checkOut = Carbon::parse($reserva->check_out);
 
@@ -759,7 +729,7 @@ class ReservaService
             }
         }
 
-        DB::transaction(function () use ($reserva, $habitacionIds, $checkIn, $checkOut) {
+        DB::transaction(function () use ($reserva, $habitacionIds) {
             // Obtener los slots existentes (HabitacionReserva) ordenados para asignar por orden
             $slots = $reserva->habitaciones()->orderBy('id')->get();
 
@@ -835,7 +805,7 @@ class ReservaService
      * Retorna: array formateado de reservas
      */
 
-    public function formatearReservas($reservas): array
+    public function formatearReservas(\Illuminate\Support\Collection $reservas): array
     {
         return $reservas->map(function ($reserva) {
             $nombreCliente = 'Sin cliente';
@@ -882,6 +852,8 @@ class ReservaService
      * Determina si es usuario registrado o cliente invitado
      * Usado por: formatearReservas(), detalles de reserva
      * Retorna: array con tipo y nombre del cliente
+     * @param \App\Models\Reserva $reserva
+     * @return array<string, mixed>
      */
     public function formatearCliente($reserva): array
     {

@@ -21,12 +21,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ReservaDisponibilidadService
 {
-    private PrecioService $servicioPrecio;
 
-    public function __construct(?PrecioService $servicioPrecio = null)
-    {
-        $this->servicioPrecio = $servicioPrecio ?? new PrecioService();
-    }
 
     /**
      * Verifica disponibilidad de múltiples tipos de habitaciones

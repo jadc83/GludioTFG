@@ -7,7 +7,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Class User
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $numero_documento
+ * @property string|null $telefono
+ * @method static \Database\Factories\UserFactory factory(...$parameters)
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -51,7 +65,12 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function scopeBuscar($query, $termino)
+    /**
+     * @param Builder<\App\Models\User> $query
+     * @param string|null $termino
+     * @return Builder<\App\Models\User>
+     */
+    public function scopeBuscar(Builder $query, ?string $termino): Builder
     {
         if (!$termino) return $query;
 
@@ -63,7 +82,12 @@ class User extends Authenticatable
         });
     }
 
-    public function scopeTipoDocumento($query, $tipo)
+    /**
+     * @param Builder<\App\Models\User> $query
+     * @param mixed $tipo
+     * @return Builder<\App\Models\User>
+     */
+    public function scopeTipoDocumento(Builder $query, $tipo): Builder
     {
         if (!$tipo || $tipo === 'todos') return $query;
         return $query->where('tipo_documento', $tipo);
@@ -72,23 +96,28 @@ class User extends Authenticatable
     /**
      * Relación con las reservas del usuario (a través de morphs)
      */
-    public function reservas()
+    /**
+     * @return MorphMany<\App\Models\Reserva,\App\Models\User>
+     */
+    public function reservas(): MorphMany
     {
         return $this->morphMany(Reserva::class, 'reservable');
     }
 
     /**
      * Relación con las reservas creadas por el usuario
+     * @return HasMany<\App\Models\Reserva,\App\Models\User>
      */
-    public function reservasCreadas()
+    public function reservasCreadas(): HasMany
     {
         return $this->hasMany(Reserva::class, 'booked_by_user_id');
     }
 
     /**
      * Relación con el modelo Empleado (si existe)
+     * @return HasOne<\App\Models\Empleado,\App\Models\User>
      */
-    public function empleado()
+    public function empleado(): HasOne
     {
         return $this->hasOne(Empleado::class);
     }

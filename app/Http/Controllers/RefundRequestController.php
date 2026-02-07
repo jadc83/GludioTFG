@@ -23,6 +23,13 @@ class RefundRequestController extends Controller
         $this->refundService = $refundService;
     }
 
+    /**
+     * Create a refund request for a given reserva
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Reserva $reserva
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(Request $request, Reserva $reserva)
     {
         Log::info('Incoming RefundRequest store', ['user_id' => Auth::id(), 'localizador' => $reserva->localizador ?? null, 'payload' => $request->all()]);
@@ -86,6 +93,10 @@ class RefundRequestController extends Controller
 
     /**
      * Create refund request by reserva localizador (p.ej. GJWQXWR). This resolves the reserva and delegates to store().
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param string $localizador
+     * @return \Illuminate\Http\JsonResponse
      */
     public function storeByLocalizador(Request $request, $localizador)
     {
@@ -93,12 +104,27 @@ class RefundRequestController extends Controller
         return $this->store($request, $reserva);
     }
 
+    /**
+     * List refund requests (paginated)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index(Request $request)
     {
         $list = RefundRequest::with(['reserva', 'user'])->orderByDesc('created_at')->paginate(25);
         return response()->json(['success' => true, 'data' => $list]);
     }
 
+    /**
+     * Approve a refund request (admin only)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\RefundRequest $refundRequest
+     * @param \App\Services\PaymentService $paymentService
+     * @param \App\Services\PrecioService $precioService
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function approve(Request $request, RefundRequest $refundRequest, PaymentService $paymentService, PrecioService $precioService)
     {
         // Only admins can approve refunds
@@ -189,6 +215,13 @@ class RefundRequestController extends Controller
         return response()->json($res);
     }
 
+    /**
+     * Reject a refund request (admin only)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\RefundRequest $refundRequest
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function reject(Request $request, RefundRequest $refundRequest)
     {
         $request->validate(['admin_reason' => 'required|string']);
@@ -223,6 +256,12 @@ class RefundRequestController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /**
+     * Delete a refund request (admin only)
+     *
+     * @param \App\Models\RefundRequest $refundRequest
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy(RefundRequest $refundRequest)
     {
         // Only admins can delete refund requests

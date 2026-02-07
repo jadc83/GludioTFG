@@ -170,7 +170,7 @@ class TareaController extends Controller
             return response()->json(['error' => 'Tarea ya completada'], 409);
         }
 
-        DB::transaction(function () use ($tarea, $user) {
+        DB::transaction(function () use ($tarea) {
             $tarea->status = 'cancelada';
             // Limpiamos campos de completado si existieran
             $tarea->completed_by = null;
