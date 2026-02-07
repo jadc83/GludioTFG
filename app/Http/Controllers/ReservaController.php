@@ -236,8 +236,8 @@ class ReservaController extends Controller
             try {
                 if ($request->has('cupon_id')) {
                     $incomingMonto = (float) $request->input('monto', $reserva->precio_total);
-                    $oldTotal = (float) $reserva->precio_total;
-                    $descuento = max(0, round($oldTotal - $incomingMonto, 2));
+                    $totalOriginal = (float) $reserva->precio_total;
+                    $descuento = max(0, round($totalOriginal - $incomingMonto, 2));
 
                     $reserva->update([
                         'cupon_id' => $request->input('cupon_id'),

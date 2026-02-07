@@ -58,14 +58,12 @@ class TurnoController extends Controller
         $starts = Carbon::parse($data['starts_at']);
         $ends = Carbon::parse($data['ends_at']);
 
-        // Check overlap
+        // Check overlap (exclusive): allow back-to-back shifts (e.g. 08:00-12:00 and 12:00-16:00)
         $exists = Turno::where('empleado_id', $user->empleado->id)
             ->where(function ($q) use ($starts, $ends) {
-                $q->whereBetween('starts_at', [$starts, $ends])
-                  ->orWhereBetween('ends_at', [$starts, $ends])
-                  ->orWhere(function ($sub) use ($starts, $ends) {
-                      $sub->where('starts_at', '<=', $starts)->where('ends_at', '>=', $ends);
-                  });
+                // overlap iff existing.starts_at < new_ends AND existing.ends_at > new_starts
+                $q->where('starts_at', '<', $ends)
+                  ->where('ends_at', '>', $starts);
             })->exists();
 
         if ($exists) {
@@ -107,11 +105,9 @@ class TurnoController extends Controller
         $exists = Turno::where('empleado_id', $user->empleado->id)
             ->where('id', '!=', $turno->id)
             ->where(function ($q) use ($starts, $ends) {
-                $q->whereBetween('starts_at', [$starts, $ends])
-                  ->orWhereBetween('ends_at', [$starts, $ends])
-                  ->orWhere(function ($sub) use ($starts, $ends) {
-                      $sub->where('starts_at', '<=', $starts)->where('ends_at', '>=', $ends);
-                  });
+                // overlap iff existing.starts_at < new_ends AND existing.ends_at > new_starts
+                $q->where('starts_at', '<', $ends)
+                  ->where('ends_at', '>', $starts);
             })->exists();
 
         if ($exists) {

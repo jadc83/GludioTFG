@@ -37,30 +37,21 @@ class EmpleadoController extends Controller
         ]);
 
         //Rellenar los campos opcionales con cadenas vacías
-        $optionalFields = ['tipo_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono'];
+        $opcionales = ['tipo_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono'];
 
-        foreach ($optionalFields as $field) {
+        foreach ($opcionales as $field) {
             $payload[$field] = $payload[$field] ?? '';
         }
 
-        //Generar o usar la contraseña proporcionada
         $password = $request->input('password', Str::random(24));
-
-        //Crear el usuario
         $user = User::create([ ...$payload, 'password' => Hash::make($password) ]);
 
-        //Asignar rol si fue seleccionado
         if ($request->filled('role')) {
-            $user->assignRole($request->role);
+            $user->syncRoles([$request->role]);
         }
 
-        //Crear el empleado vinculado al usuario (usar FK departamento_id)
-        $user->empleado()->create([
-            'departamento_id' => $request->departamento_id,
-            'puesto' => $request->puesto,
-        ]);
+        $user->empleado()->create([ 'departamento_id' => $request->departamento_id ]);
 
-        //Enviar enlace para crear contraseña si no se proporcionó
         if (!$request->filled('password')) {
             Password::sendResetLink(['email' => $user->email]);
         }
@@ -69,21 +60,16 @@ class EmpleadoController extends Controller
     return redirect()->route('empleados.index')->with('status', 'Empleado creado correctamente.');
 }
 
-
-    /**
-     * Actualiza un empleado existente (usuario y datos del empleado).
-     */
     public function update(UpdateEmpleadoRequest $request, Empleado $empleado): RedirectResponse
     {
         $user = $empleado->user;
         $user->update($request->only(['name','email','tipo_documento','numero_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono']));
 
-        // Actualizar rol si se indica
         if ($request->filled('role')) {
             $user->syncRoles([$request->role]);
         }
 
-        $empleado->update($request->only(['departamento_id','puesto']));
+        $empleado->update($request->only(['departamento_id']));
 
         return redirect()->route('empleados.index')->with('status', 'Empleado actualizado correctamente.');
     }

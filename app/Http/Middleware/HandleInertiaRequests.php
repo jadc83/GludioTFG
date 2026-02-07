@@ -32,10 +32,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? $request->user()->only([
+                'user' => ($request->user() ? array_merge($request->user()->only([
                     'id', 'name', 'email', 'tipo_documento', 'numero_documento', 'nacionalidad',
                     'direccion', 'ciudad', 'codigo_postal', 'telefono', 'email_verified_at',
-                ]) : null,
+                ]), [
+                    'roles' => $request->user()->getRoleNames()->toArray(),
+                    'is_encargado' => $request->user()->hasRole('encargado'),
+                    'is_admin' => $request->user()->hasRole('admin'),
+                ]) : null),
             ],
             'csrf_token' => csrf_token(),
         ];

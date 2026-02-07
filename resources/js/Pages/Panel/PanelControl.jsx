@@ -23,11 +23,10 @@ import Tabs from '@/Components/UI/Tabs';
 const TABS = [
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
     { id: 'clientes', label: 'Clientes', icon: UsersIcon },
-    { id: 'empleados', label: 'Empleados', icon: BriefcaseIcon },
     { id: 'departamentos', label: 'Departamentos', icon: ChartBarIcon },
     { id: 'reservas', label: 'Reservas', icon: InboxIcon },
     { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
-    { id: 'reembolsos', label: 'Reembolsos', icon: ChartBarIcon },
+
     { id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon },
 ];
 
@@ -44,7 +43,7 @@ function BotonTab({ id, icon: Icon, label, activa, onClick }) {
 }
 
 import TabConfiguracion from '@/Components/tabs/TabConfiguracion';
-import TabReembolsos from '@/Components/tabs/TabReembolsos';
+
 const TabEstadisticas = React.lazy(
     () => import('@/Components/tabs/TabEstadisticas'),
 );
@@ -101,7 +100,7 @@ function TabContenido({
         case 'departamentos':
             return (
                 <TabWrapper>
-                    <IndexDepartamentos />
+                    <IndexDepartamentos empleados={empleados} />
                 </TabWrapper>
             );
         case 'configuracion':
@@ -111,8 +110,6 @@ function TabContenido({
                     tiposHabitacion={tiposHabitacion}
                 />
             );
-        case 'reembolsos':
-            return <TabReembolsos />;
         case 'estadisticas':
             return (
                 <Suspense

@@ -54,7 +54,6 @@ class ProfileController extends Controller
                 'id' => $user->empleado->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'puesto' => $user->empleado->puesto,
                 'departamento' => $user->empleado->departamento?->name ?? null,
                 // Incluir datos de perfil del usuario para mostrarlos en el perfil de empleado
                 'role' => $user->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $user->getRoleNames()->first())) : null,
@@ -84,10 +83,12 @@ class ProfileController extends Controller
             'reservas' => $reservasFormateadas,
             'empleado' => $empleadoData,
             'habitacionesLimpieza' => $habitacionesLimpieza,
-            // Usar Spatie para indicar si el usuario puede ver "Mis Reservas"
-            'can_view_reservas' => $user->hasAnyRole(['user','admin']),
-            // Mostrar la pestaña Tareas solo para usuarios con rol limpieza o mantenimiento
-            'can_view_tareas' => $user->hasAnyRole(['limpieza','mantenimiento']),
+            // Para ahora, permitir que todos vean 'Mis Reservas'
+            'can_view_reservas' => true,
+            // Mostrar la pestaña Tareas y Turnos solo para empleados con rol encargado|operario|auxiliar
+            'can_view_tareas' => ($user->empleado && $user->hasAnyRole(['encargado','operario','auxiliar'])),
+            // Mostrar la pestaña 'Mi Perfil' para todos (contenido de tareas/turnos sigue restringido)
+            'show_profile_tab' => true,
         ]);
     }
 

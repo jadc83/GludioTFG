@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
+Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified', \App\Http\Middleware\EnsureEncargado::class]);
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
 Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr');
 Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->where('localizador', '[A-Z0-9]+')->name('reservas.checkin');
@@ -45,9 +45,9 @@ Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
 Route::put('/api/tipos-habitacion/{tipoHabitacion}', [TipoHabitacionController::class, 'update'])->middleware('auth');
 Route::get('/api/tarifas', [TarifaController::class, 'index']);
 
-// API: roles disponibles para asignar a empleados (excluye admin/user)
+// API: roles disponibles para asignar a empleados (encargado|operario|auxiliar)
 Route::get('/api/roles', function() {
-    return \Spatie\Permission\Models\Role::whereNotIn('name', ['admin','user'])->pluck('name');
+    return \Spatie\Permission\Models\Role::whereIn('name', ['encargado','operario','auxiliar'])->pluck('name')->values();
 })->middleware('auth');
 
 // API: departamentos
@@ -91,7 +91,7 @@ Route::get('/api/departamentos/{departamento}', function (App\Models\Departament
             'id' => $e->id,
             'name' => $e->user->name ?? null,
             'email' => $e->user->email ?? null,
-            'puesto' => $e->puesto ?? null,
+
             'role' => $e->user ? ($e->user->getRoleNames()->first() ?? null) : null,
         ];
     });

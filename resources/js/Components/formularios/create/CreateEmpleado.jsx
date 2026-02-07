@@ -18,7 +18,6 @@ const INITIAL_DATA = {
     password_confirmation: '',
 
     departamento: '',
-    puesto: '',
     role: '',
     tipo_documento: 'dni',
     numero_documento: '',
@@ -154,7 +153,6 @@ export default function CreateEmpleado({ iconOnly = false }) {
                             type="button"
                             className={getTabClass('laboral', [
                                 'departamento',
-                                'puesto',
                             ])}
                             onClick={() => setTabActiva('laboral')}
                         >
@@ -286,13 +284,7 @@ export default function CreateEmpleado({ iconOnly = false }) {
                                             ))}
                                         </Campo>
                                     </div>
-                                    <Campo
-                                        id="puesto"
-                                        label="Puesto / Cargo"
-                                        value={formulario.puesto}
-                                        onChange={cambiar}
-                                        error={errores.puesto}
-                                    />
+
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <Campo

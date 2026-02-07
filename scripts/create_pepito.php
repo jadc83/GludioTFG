@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Hash;
 // Datos
 $email = 'pepe@pepe.es';
 $name = 'Pepito Limpiezas';
-$puesto = 'Jefe';
 $deptName = 'LIMPIEZA';
 $password = env('DEFAULT_NEW_USER_PASSWORD', 'password');
 
@@ -37,14 +36,13 @@ if (!$user) {
     echo "User already exists\n";
 }
 
-// 3) asignar rol limpieza si existe
+// 3) asignar rol operario si existe
 try {
-    if (! $user->hasRole('limpieza')) {
-        $user->assignRole('limpieza');
-        echo "Assigned role 'limpieza' to user\n";
-    } else {
-        echo "User already has role 'limpieza'\n";
-    }
+        if (! $user->hasRole('operario')) {
+            $user->assignRole('operario');
+            echo "Assigned role 'operario' to user\n";
+        } else {
+            echo "User already has role 'operario'\n";
 } catch (\Throwable $e) {
     echo "Error assigning role: " . $e->getMessage() . "\n";
 }
@@ -54,12 +52,11 @@ $empleado = $user->empleado;
 if (!$empleado) {
     $empleado = $user->empleado()->create([
         'departamento_id' => $dep->id,
-        'puesto' => $puesto,
     ]);
     echo "Empleado created and assigned to department {$dep->name}\n";
 } else {
-    // actualizar departamento/puesto
-    $empleado->update(['departamento_id' => $dep->id, 'puesto' => $puesto]);
+    // actualizar departamento
+    $empleado->update(['departamento_id' => $dep->id]);
     echo "Empleado updated with department {$dep->name}\n";
 }
 

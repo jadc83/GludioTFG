@@ -10,6 +10,8 @@ import {
     TrashIcon,
     UserIcon,
 } from '@heroicons/react/24/outline';
+import * as api from '@/api/reservas';
+import IndexReembolsos from '@/Components/indexes/IndexReembolsos';
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
@@ -130,6 +132,98 @@ export default function IndexReserva({ reservas = [] }) {
                 // Delay extendido para asegurar que el spinner sea bien perceptible
                 setTimeout(() => setEliminandoId(null), 3000);
             }
+        }
+    };
+
+    // --- Reembolsos (embed debajo de tabla de reservas) ---
+    const [refunds, setRefunds] = useState([]);
+    const [refundsLoading, setRefundsLoading] = useState(false);
+    const [refundsPagination, setRefundsPagination] = useState(null);
+    const [refundsPage, setRefundsPage] = useState(1);
+
+    const fetchRefunds = async (p = refundsPage) => {
+        setRefundsLoading(true);
+        try {
+            const res = await api.listarSolicitudesReembolso({ page: p });
+            const paginator = res?.data ?? res ?? null;
+            const rows = paginator?.data ?? (Array.isArray(paginator) ? paginator : []);
+            setRefunds(rows);
+            setRefundsPagination(paginator);
+        } catch (e) {
+            console.error('Error loading refunds', e);
+            setRefunds([]);
+            setRefundsPagination(null);
+        } finally {
+            setRefundsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRefunds(refundsPage);
+    }, [refundsPage]);
+
+    useEffect(() => {
+        try {
+            if (window.Echo) {
+                const channel = window.Echo.private('refund-requests');
+                channel.listen('RefundRequestCreated', () => fetchRefunds(1));
+            }
+        } catch (e) {
+            console.warn('Echo no disponible para reembolsos', e);
+        }
+
+        return () => {
+            try {
+                if (window.Echo && window.Echo.leave) {
+                    window.Echo.leave('refund-requests');
+                }
+            } catch (e) {}
+        };
+    }, []);
+
+    const aprobarReembolso = async (id) => {
+        if (!confirm('Aprobar y ejecutar reembolso?')) return;
+        try {
+            const res = await api.aprobarSolicitud(id);
+            if (res?.success) {
+                alert('Reembolso ejecutado y solicitud aprobada');
+                fetchRefunds(refundsPage);
+            } else {
+                alert(res?.message || 'Error');
+            }
+        } catch (e) {
+            alert('Error ejecutando reembolso');
+        }
+    };
+
+    const rechazarReembolso = async (id) => {
+        const motivo = prompt('Motivo de rechazo (requerido)');
+        if (!motivo) return alert('Motivo requerido');
+        try {
+            const res = await api.rechazarSolicitud(id, { admin_reason: motivo });
+            if (res?.success) {
+                alert('Solicitud rechazada');
+                fetchRefunds(refundsPage);
+            } else {
+                alert(res?.message || 'Error');
+            }
+        } catch (e) {
+            alert('Error rechazando solicitud');
+        }
+    };
+
+    const borrarReembolso = async (id) => {
+        if (!confirm('¿Borrar esta solicitud de reembolso? Esta acción marcará la solicitud como eliminada.')) return;
+        try {
+            const res = await api.eliminarSolicitud(id);
+            if (res?.success) {
+                alert('Solicitud eliminada.');
+                fetchRefunds(refundsPage);
+            } else {
+                alert(res?.message || 'Error borrando solicitud');
+            }
+        } catch (e) {
+            alert('Error borrando solicitud');
         }
     };
 
@@ -491,6 +585,19 @@ export default function IndexReserva({ reservas = [] }) {
                         etiqueta="Reservas"
                     />
                 )}
+
+                {/* Reembolsos embebidos */}
+                <div className="mt-12">
+                    <IndexReembolsos
+                        refunds={refunds}
+                        pagination={refundsPagination}
+                        loading={refundsLoading}
+                        onPageChange={(p) => setRefundsPage(p)}
+                        onApprove={aprobarReembolso}
+                        onReject={rechazarReembolso}
+                        onDelete={borrarReembolso}
+                    />
+                </div>
             </div>
         </div>
     );

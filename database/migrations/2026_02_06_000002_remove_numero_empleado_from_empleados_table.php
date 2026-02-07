@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,17 +12,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasColumn('empleados', 'numero_empleado')) {
-            // SQLite doesn't support dropping columns directly; skip on sqlite to keep tests reliable.
-            if (Schema::getConnection()->getDriverName() === 'sqlite') {
-                return;
+        if (!Schema::hasColumn('empleados', 'numero_empleado')) {
+            return;
+        }
+
+        // SQLite does not support DROP COLUMN; recreate table and copy data safely using SQL
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            $existing = Schema::getColumnListing('empleados');
+            $copyColumns = array_values(array_diff($existing, ['numero_empleado']));
+
+            if (!empty($copyColumns)) {
+                $colsSql = implode(', ', array_map(function ($c) { return '"'.str_replace('"', '""', $c).'"'; }, $copyColumns));
+
+                // Create temporary table with same columns (no rows)
+                DB::statement("CREATE TABLE empleados_tmp AS SELECT $colsSql FROM empleados WHERE 0");
+
+                // Copy rows into temporary table
+                DB::statement("INSERT INTO empleados_tmp ($colsSql) SELECT $colsSql FROM empleados");
+
+                Schema::drop('empleados');
+                Schema::rename('empleados_tmp', 'empleados');
             }
 
-            Schema::table('empleados', function (Blueprint $table) {
-                // Si existiera el índice unique lo eliminará automáticamente al borrar la columna
-                $table->dropColumn('numero_empleado');
-            });
+            return;
         }
+
+        Schema::table('empleados', function (Blueprint $table) {
+            $table->dropColumn('numero_empleado');
+        });
     }
 
     /**

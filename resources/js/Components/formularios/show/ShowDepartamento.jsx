@@ -44,7 +44,6 @@ export default function ShowDepartamento({ departamento, abierto, onCerrar }) {
                                                 <div>
                                                     <div className="text-sm font-bold uppercase">{e.name}</div>
                                                     <div className="text-xs text-gray-400">{e.email}</div>
-                                                    <div className="text-xs text-gray-500 mt-1">Puesto: <span className="font-bold">{e.puesto || '—'}</span></div>
                                                     <div className="text-xs text-gray-500">Rol: <span className="font-bold">{e.role || '—'}</span></div>
                                                 </div>
                                             </div>

@@ -1,10 +1,11 @@
 import ShowDepartamento from '@/Components/formularios/show/ShowDepartamento';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
+import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
 import { useEffect, useMemo, useState } from 'react';
 import { InboxIcon, EyeIcon } from '@heroicons/react/24/outline';
 
-export default function IndexDepartamentos() {
+export default function IndexDepartamentos({ empleados = [] }) {
     const [departamentos, setDepartamentos] = useState([]);
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 10;
@@ -83,6 +84,11 @@ export default function IndexDepartamentos() {
             )}
 
             <ShowDepartamento departamento={departamentoSeleccionado} abierto={drawerAbierto} onCerrar={cerrarDetalle} />
+
+            {/* Empleados: tabla embebida dentro de Departamentos */}
+            <div className="mt-12">
+                <IndexEmpleados empleados={empleados} embedded />
+            </div>
         </div>
     );
 }

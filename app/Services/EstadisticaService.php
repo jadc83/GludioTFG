@@ -17,13 +17,10 @@ class EstadisticaService
 
         $tipos = ['doble', 'familiar', 'suite'];
 
-        $totalPorTipo = Habitacion::select('tipo', DB::raw('count(*) as cnt'))
-            ->groupBy('tipo')
-            ->pluck('cnt', 'tipo')
-            ->toArray();
+        $totalPorTipo = Habitacion::all()->countBy('tipo')->toArray();
 
-        foreach ($tipos as $t) {
-            $totalPorTipo[$t] = $totalPorTipo[$t] ?? 0;
+        foreach ($tipos as $tipo) {
+            $totalPorTipo[$tipo] = $totalPorTipo[$tipo] ?? 0;
         }
 
         $resultados = [];
@@ -32,14 +29,14 @@ class EstadisticaService
         foreach ($periodo as $dia) {
             $fecha = $dia->format('Y-m-d');
 
-            $counts = ContarPorTipoAction::handle($fecha);
+            $conteo = ContarPorTipoAction::handle($fecha);
 
-            $asignadasPorTipo = $counts['asignadasPorTipo'] ?? [];
-            $placeholdersPorTipo = $counts['placeholdersPorTipo'] ?? [];
-            $reservasSinHabitaciones = $counts['reservasSinHabitaciones'] ?? 0;
+            $asignadasPorTipo = $conteo['asignadasPorTipo'] ?? [];
+            $placeholdersPorTipo = $conteo['placeholdersPorTipo'] ?? [];
+            $reservasSinHabitacion = $conteo['reservasSinHabitacion'] ?? 0;
 
             $diaFormateado = FormatearPorDiaAction::handle($fecha, $asignadasPorTipo, $placeholdersPorTipo, $totalPorTipo, $totalHabitaciones);
-            $diaFormateado['ocupadas'] += $reservasSinHabitaciones;
+            $diaFormateado['ocupadas'] += $reservasSinHabitacion;
             $diaFormateado['porcentaje_ocupacion'] = $totalHabitaciones > 0 ? round(($diaFormateado['ocupadas'] / $totalHabitaciones) * 100, 2) : 0;
 
             $resultados[] = $diaFormateado;
@@ -52,15 +49,15 @@ class EstadisticaService
 
         $promedioPorTipo = [];
         if (!empty($resultados)) {
-            foreach ($tipos as $t) {
+            foreach ($tipos as $tipo) {
                 $suma = 0;
                 foreach ($resultados as $r) {
-                    $suma += $r['por_tipo'][$t]['porcentaje'];
+                    $suma += $r['por_tipo'][$tipo]['porcentaje'];
                 }
-                $promedioPorTipo[$t] = round($suma / count($resultados), 2);
+                $promedioPorTipo[$tipo] = round($suma / count($resultados), 2);
             }
         } else {
-            foreach ($tipos as $t) $promedioPorTipo[$t] = 0;
+            foreach ($tipos as $tipo) $promedioPorTipo[$tipo] = 0;
         }
 
         return [

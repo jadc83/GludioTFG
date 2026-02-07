@@ -7,6 +7,7 @@ use App\Models\Refund;
 use App\Models\Reserva;
 use App\Models\RefundRequest;
 use App\Events\ReservaActualizada;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Stripe\StripeClient;
@@ -16,23 +17,19 @@ class PaymentService
 	protected ?StripeClient $stripe = null;
 	protected RefundService $refundService;
 
-	/**
-	 * Constructor del servicio de pagos
-	 */
+	/* Constructor del servicio de pagos */
 	public function __construct(?RefundService $refundService = null)
 	{
 		$this->refundService = $refundService ?? new RefundService();
 	}
 
-	/**
-	 * Obtiene instancia de StripeClient (lazy loading)
-	 */
+	/* Obtiene instancia de StripeClient */
 	protected function getStripe(): StripeClient
 	{
 		if ($this->stripe === null) {
 			$stripeSecret = config('services.stripe.secret');
 			if (empty($stripeSecret)) {
-				throw new \RuntimeException('STRIPE_SECRET_KEY no está configurada o está vacía en el archivo .env.');
+				throw new \RuntimeException('Stripe secret key no está configurada.');
 			}
 			$this->stripe = new StripeClient($stripeSecret);
 		}
@@ -45,18 +42,16 @@ class PaymentService
 	public function puedeReembolsar(Reserva $reserva): bool
 	{
 		try {
-			$checkIn = \Carbon\Carbon::parse($reserva->check_in);
-			$deadline = $checkIn->copy()->subHours(48);
+			$checkIn = Carbon::parse($reserva->check_in);
+			$limite = $checkIn->copy()->subHours(48);
 
-			return \Carbon\Carbon::now()->lessThanOrEqualTo($deadline) && strtolower($reserva->pago) === 'pagado';
+			return Carbon::now()->lessThanOrEqualTo($limite) && strtolower($reserva->pago) === 'pagado';
 		} catch (\Throwable $e) {
 			return false;
 		}
 	}
 
-	/**
-	 * Solicita reembolso para una reserva
-	 */
+	/* Solicita reembolso para una reserva */
 	public function solicitarReembolso(Reserva $reserva, $usuario, ?float $monto = null, bool $forceByAdmin = false, ?Pago $pagoOverride = null): array
 	{
 		if (!$forceByAdmin && !$this->puedeReembolsar($reserva)) {
@@ -82,23 +77,23 @@ class PaymentService
 		}
 
 		// Idempotencia: evitar reembolsos duplicados en ventana de 5 min
-		$existingRefund = Refund::where('pago_id', $pago->id)
+		$reembolsado = Refund::where('pago_id', $pago->id)
 			->where('amount_cents', $montoCents)
 			->where('created_at', '>', now()->subMinutes(5))
 			->first();
 
-		if ($existingRefund && $existingRefund->status === 'succeeded') {
+		if ($reembolsado && $reembolsado->status === 'succeeded') {
 			return [
 				'success' => true,
-				'refund_id' => $existingRefund->stripe_refund_id,
-				'refund_amount' => $existingRefund->amount_cents / 100,
-				'message' => 'Refund ya existe'
+				'refund_id' => $reembolsado->stripe_refund_id,
+				'refund_amount' => $reembolsado->amount_cents / 100,
+				'message' => 'Este reembolso ya existe'
 			];
 		}
 
 		try {
 			return DB::transaction(function () use ($reserva, $pago, $pi_id, $montoCents) {
-				$stripeRefund = $this->getStripe()->refunds->create([
+				$reembolso = $this->getStripe()->refunds->create([
 					'payment_intent' => $pi_id,
 					'amount' => $montoCents,
 				]);
@@ -106,19 +101,19 @@ class PaymentService
 				Refund::create([
 					'pago_id' => $pago->id,
 					'reserva_id' => $reserva->id,
-					'stripe_refund_id' => $stripeRefund->id,
-					'amount_cents' => $stripeRefund->amount,
-					'currency' => $stripeRefund->currency,
-					'status' => $stripeRefund->status,
-					'stripe_response' => $stripeRefund->toArray(),
+					'stripe_refund_id' => $reembolso->id,
+					'amount_cents' => $reembolso->amount,
+					'currency' => $reembolso->currency,
+					'status' => $reembolso->status,
+					'stripe_response' => $reembolso->toArray(),
 				]);
 
 				$this->sincronizarEstadosPostReembolso($reserva, $pago);
 
 				return [
 					'success' => true,
-					'refund_id' => $stripeRefund->id,
-					'refund_amount' => $stripeRefund->amount / 100
+					'refund_id' => $reembolso->id,
+					'refund_amount' => $reembolso->amount / 100
 				];
 			});
 		} catch (\Exception $e) {
@@ -127,28 +122,26 @@ class PaymentService
 		}
 	}
 
-	/**
-	 * Maneja eventos de reembolso desde Stripe webhooks
-	 */
+	/* Maneja eventos de reembolso desde Stripe webhooks */
 	public function manejarEventoReembolso($refundObj): void
 	{
 		try {
-			$refundData = is_object($refundObj) && property_exists($refundObj, 'refunds') ? end($refundObj->refunds->data) : $refundObj;
+			$reembolsoData = is_object($refundObj) && property_exists($refundObj, 'refunds') ? end($refundObj->refunds->data) : $refundObj;
 
-			if (!$refundData || empty($refundData->id)) return;
-			if (Refund::where('stripe_refund_id', $refundData->id)->exists()) return;
+			if (!$reembolsoData || empty($reembolsoData->id)) return;
+			if (Refund::where('stripe_refund_id', $reembolsoData->id)->exists()) return;
 
-			$pago = Pago::where('stripe_payment_intent_id', $refundData->payment_intent)->first();
+			$pago = Pago::where('stripe_payment_intent_id', $reembolsoData->payment_intent)->first();
 			if (!$pago) return;
 
-			DB::transaction(function () use ($pago, $refundData) {
+			DB::transaction(function () use ($pago, $reembolsoData) {
 				Refund::create([
 					'pago_id' => $pago->id,
 					'reserva_id' => $pago->reserva_id,
-					'stripe_refund_id' => $refundData->id,
-					'amount_cents' => $refundData->amount,
-					'status' => $refundData->status,
-					'stripe_response' => (array)$refundData,
+					'stripe_refund_id' => $reembolsoData->id,
+					'amount_cents' => $reembolsoData->amount,
+					'status' => $reembolsoData->status,
+					'stripe_response' => (array)$reembolsoData,
 				]);
 
 				$this->sincronizarEstadosPostReembolso($pago->reserva, $pago);
@@ -183,7 +176,7 @@ class PaymentService
 
 	private function getSaldoReembolsable(Pago $pago): int
 	{
-		$pagado = (int)round($pago->monto * 100);
+		$pagado = (float)round($pago->monto * 100);
 		$reembolsado = (int)Refund::where('pago_id', $pago->id)
 			->where('status', 'succeeded')
 			->sum('amount_cents');
@@ -272,7 +265,7 @@ class PaymentService
 	public function crearCheckoutSessionParaReserva(\App\Models\Reserva $reserva, float $monto): array
 	{
 		try {
-			$montoCents = (int)round($monto * 100);
+			$montoCents = (float)round($monto * 100);
 			$successUrl = route('reserva.show', $reserva->localizador) . '?session_id={CHECKOUT_SESSION_ID}';
 
 			// Crear registro de Pago primero para poder pasar su id a metadata del PaymentIntent
@@ -311,7 +304,7 @@ class PaymentService
 					'stripe_payment_intent_id' => is_object($session->payment_intent) ? ($session->payment_intent->id ?? null) : (is_string($session->payment_intent) ? $session->payment_intent : $pago->stripe_payment_intent_id)
 				]);
 			} catch (\Throwable $e) {
-				// Si falla crear la sesión, marcar pago como fallido y registrar error
+				// Si falla crear la sesión, marcar pago como fallido y registra el error
 				$pago->update(['estado' => 'fallido', 'stripe_response' => array_merge($pago->stripe_response ?? [], ['error' => $e->getMessage()])]);
 				Log::error('Error creating checkout session after creating Pago: ' . $e->getMessage());
 				return ['success' => false, 'error' => $e->getMessage()];

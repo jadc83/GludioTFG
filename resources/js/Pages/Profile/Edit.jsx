@@ -23,21 +23,10 @@ import TurnosCalendar from '@/Components/Profile/TurnosCalendar';
 import ProfileDashboard from '@/Components/Profile/ProfileDashboard';
 import ErrorBoundary from '@/Components/UI/ErrorBoundary';
 
-export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [], can_view_reservas = false, can_view_tareas = false }) {
-    // Inicializar tab según query param ?tab=... o por defecto 'informacion'
-    const [activeTab, setActiveTab] = useState(() => {
-        try {
-            const params = new URLSearchParams(window.location.search);
-            const tab = params.get('tab');
-            return tab || 'informacion';
-        } catch (e) {
-            return 'informacion';
-        }
-    });
-
+export default function Edit({ mustVerifyEmail, status, auth, reservas = [], empleado = null, habitacionesLimpieza = [], can_view_reservas = false, can_view_tareas = false, show_profile_tab = false }) {
     // Construir tabs dinámicamente según permisos (Spatie)
     const tabs = [
-        { id: 'informacion', label: 'Mi Perfil', icon: UserIcon },
+        ...(show_profile_tab ? [{ id: 'informacion', label: 'Mi Perfil', icon: UserIcon }] : []),
         ...(can_view_reservas ? [{ id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon }] : []),
         ...(can_view_tareas ? [
             { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
@@ -45,6 +34,21 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
         ] : []),
         { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
     ];
+
+    // Inicializar tab según query param ?tab=... o por defecto al primer tab disponible
+    const initialTabFromUrl = (() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('tab');
+        } catch (e) {
+            return null;
+        }
+    })();
+
+    const [activeTab, setActiveTab] = useState(() => {
+        if (initialTabFromUrl && tabs.some(t => t.id === initialTabFromUrl)) return initialTabFromUrl;
+        return tabs[0]?.id || 'seguridad';
+    });
 
     // Configuración de estados para la tabla de reservas
     const configEstado = {
@@ -55,6 +59,10 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
         'Reembolsado': 'bg-sky-50 text-sky-700 border-sky-100',
         default: 'bg-gray-50 text-gray-500 border-gray-100',
     };
+
+    // Mostrar resumen solo si es empleado o tiene rol admin/encargado/operario/auxiliar
+    const roles = auth?.user?.roles || [];
+    const showSummary = empleado || roles.some(r => ['admin','encargado','operario','auxiliar'].includes(r));
 
     return (
         <AuthenticatedLayout>
@@ -77,13 +85,15 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
                         {/* TAB: INFORMACIÓN PERSONAL */}
                         {activeTab === 'informacion' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="mb-6">
-                                    <h2 className="font-extrabold text-lg">Panel de control</h2>
-                                    <p className="text-sm text-gray-500 mt-1">Resumen rápido: información personal, próximos turnos y últimas tareas completadas.</p>
-                                </div>
+                                {showSummary ? (
+                                    <div className="mb-6">
+                                        <h2 className="font-extrabold text-lg">Panel de control</h2>
+                                        <p className="text-sm text-gray-500 mt-1">Resumen rápido: información personal, próximos turnos y últimas tareas completadas.</p>
+                                    </div>
+                                ) : null}
 
                                 <ErrorBoundary>
-                                    <ProfileDashboard empleado={empleado} habitaciones={habitacionesLimpieza} />
+                                    <ProfileDashboard empleado={empleado} habitaciones={habitacionesLimpieza} canViewTareas={can_view_tareas} />
                                 </ErrorBoundary>
 
                                 <div className="mt-6 rounded-xl border border-gray-100 p-4 bg-white">

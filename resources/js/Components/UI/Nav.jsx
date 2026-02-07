@@ -31,18 +31,14 @@ export default function Navbar() {
 
                     <div className="hidden lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2 lg:transform lg:items-center">
                         <div className="flex w-full max-w-7xl justify-center px-4 sm:px-6 lg:space-x-8 lg:px-8">
-                            <NavLink
-                                href={route('home')}
-                                active={route().current('home')}
-                            >
-                                Home
-                            </NavLink>
-                            <NavLink
-                                href={route('panel')}
-                                active={route().current('panel')}
-                            >
-                                Panel de Control
-                            </NavLink>
+                            {(user?.is_encargado || (user?.roles || []).includes('admin')) ? (
+                                <NavLink
+                                    href={route('panel')}
+                                    active={route().current('panel')}
+                                >
+                                    Panel de Control
+                                </NavLink>
+                            ) : null}
                         </div>
                     </div>
 

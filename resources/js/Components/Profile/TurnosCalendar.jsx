@@ -13,10 +13,6 @@ export default function TurnosCalendar() {
     const [titleRange, setTitleRange] = useState('');
     const [selectedTurno, setSelectedTurno] = useState(null);
     const [renderError, setRenderError] = useState(null);
-
-    // simple debug helper
-    const debug = (...args) => { try { console.debug('TurnosCalendar:', ...args); } catch (e) {} };
-
     const formatTurnoRange = (start, end) => {
         try {
             if (!start || !end) return '';
@@ -185,7 +181,6 @@ export default function TurnosCalendar() {
         } catch (e) { console.error(e); }
     };
 
-    // Custom renderer for event content (compact): activity on left, time on right, meta below
     const renderEventContent = (arg) => {
         const evt = arg.event;
         const actividad = evt.title || (evt.extendedProps && evt.extendedProps.actividad) || 'Turno';
@@ -220,7 +215,6 @@ export default function TurnosCalendar() {
                             // Clear all turnos for empleado
                             try {
                                 const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                                // capture existing events to allow undo
                                 const existing = events.map(e => ({ actividad: e.title, starts_at: e.start, ends_at: e.end, meta: e.meta || null }));
                                 const res = await fetch('/api/turnos/clear', {
                                     method: 'POST',

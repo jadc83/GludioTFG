@@ -6,6 +6,8 @@ use App\Models\Tarea;
 use App\Models\Habitacion;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TareaController extends Controller
 {
@@ -20,7 +22,8 @@ class TareaController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasAnyRole(['limpieza', 'mantenimiento'])) {
+        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
+        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -59,7 +62,8 @@ class TareaController extends Controller
     public function assignRoom(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasAnyRole(['limpieza', 'mantenimiento'])) {
+        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
+        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -113,7 +117,8 @@ class TareaController extends Controller
     public function complete(Request $request, Tarea $tarea): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasAnyRole(['limpieza', 'mantenimiento'])) {
+        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
+        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -126,7 +131,7 @@ class TareaController extends Controller
         }
 
         // Actualizar dentro de transacción
-        \DB::transaction(function () use ($tarea, $user) {
+        DB::transaction(function () use ($tarea, $user) {
             $tarea->status = 'completada';
             $tarea->completed_by = $user->id;
             $tarea->completed_at = now();
@@ -152,7 +157,8 @@ class TareaController extends Controller
     public function cancel(Request $request, Tarea $tarea): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasAnyRole(['limpieza', 'mantenimiento'])) {
+        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
+        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -164,7 +170,7 @@ class TareaController extends Controller
             return response()->json(['error' => 'Tarea ya completada'], 409);
         }
 
-        \DB::transaction(function () use ($tarea, $user) {
+        DB::transaction(function () use ($tarea, $user) {
             $tarea->status = 'cancelada';
             // Limpiamos campos de completado si existieran
             $tarea->completed_by = null;
@@ -183,9 +189,7 @@ class TareaController extends Controller
         ]]);
     }
 
-    /**
-     * Listar tareas completadas por el usuario logueado
-     */
+    /* Listar tareas completadas por el usuario logueado */
     public function completedByUser(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -216,13 +220,13 @@ class TareaController extends Controller
                             $completedTs = \Carbon\Carbon::parse($t->completed_at)->getTimestamp();
                             $createdTs = \Carbon\Carbon::parse($t->created_at)->getTimestamp();
                             $durationSeconds = (int) abs($completedTs - $createdTs);
-                            \Log::info('Tarea duration calc', ['id' => $t->id, 'created_at' => (string)$t->created_at, 'completed_at' => (string)$t->completed_at, 'seconds' => $durationSeconds]);
+                            Log::info('Tarea duration calc', ['id' => $t->id, 'created_at' => (string)$t->created_at, 'completed_at' => (string)$t->completed_at, 'seconds' => $durationSeconds]);
                             $interval = \Carbon\CarbonInterval::seconds($durationSeconds);
                             $durationHuman = $interval->forHumans(['join' => true, 'parts' => 3, 'short' => false, 'locale' => 'es']);
                         } catch (\Throwable $e) {
                             $durationSeconds = null;
                             $durationHuman = null;
-                            \Log::error('Error computing duration timestamps', ['id' => $t->id, 'error' => (string)$e]);
+                            Log::error('Error computing duration timestamps', ['id' => $t->id, 'error' => (string)$e]);
                         }
                     } catch (\Throwable $e) {
                         $durationHuman = null;

@@ -23,7 +23,6 @@ export function useEmpleado(
             password_confirmation: '',
 
             departamento: '',
-            puesto: '',
             tipo_documento: 'dni',
             numero_documento: '',
             nacionalidad: '',
@@ -49,7 +48,6 @@ export function useEmpleado(
                 email: empleado.email || '',
 
                 departamento_id: empleado.departamento_id || null,
-                puesto: empleado.puesto || '',
                 tipo_documento: empleado.tipo_documento || 'dni',
                 numero_documento: empleado.numero_documento || '',
                 nacionalidad: empleado.nacionalidad || '',

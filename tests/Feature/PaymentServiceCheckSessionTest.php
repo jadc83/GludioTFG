@@ -35,7 +35,7 @@ class PaymentServiceCheckSessionTest extends TestCase
                 $fake->checkout = (object)['sessions' => $sessionsClass];
                 return $fake;
             }
-            public function confirmarPaymentIntent(string $paymentIntentId, ?\App\Models\Pago $pago = null): array {
+            public function confirmarPaymentIntent($paymentIntent, ?\App\Models\Pago $pago = null): array {
                 return ['success' => true, 'status' => 'succeeded', 'pago_id' => 999];
             }
         };

@@ -33,7 +33,6 @@ class UpdateEmpleadoRequest extends FormRequest
             // numero_empleado removed - not required anymore
             // departamento ahora referenciado por id
             'departamento_id' => ['nullable','integer','exists:departamentos,id'],
-            'puesto' => ['nullable', 'string', 'max:255'],
 
             // Campos adicionales del usuario
             'tipo_documento' => ['nullable', 'string', 'max:20'],
@@ -43,8 +42,8 @@ class UpdateEmpleadoRequest extends FormRequest
             'ciudad' => ['nullable', 'string', 'max:255'],
             'codigo_postal' => ['nullable', 'string', 'max:20'],
             'telefono' => ['nullable', 'string', 'max:50'],
-            // bloquear asignación de roles reservados (admin,user)
-            'role' => ['nullable','string','exists:roles,name','not_in:admin,user'],
+            // Sólo roles permitidos (encargado|operario|auxiliar)
+            'role' => ['nullable','string', Rule::in(['encargado','operario','auxiliar'])],
         ];
     }
 }
