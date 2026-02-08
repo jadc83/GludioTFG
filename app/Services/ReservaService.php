@@ -730,6 +730,8 @@ class ReservaService
             }
         }
 
+        $precioAntes = $reserva->precio_total ?? 0;
+
         DB::transaction(function () use ($reserva, $habitacionIds) {
             // Obtener los slots existentes (HabitacionReserva) ordenados para asignar por orden
             $slots = $reserva->habitaciones()->orderBy('id')->get();
@@ -756,14 +758,31 @@ class ReservaService
 
         // Refrescar reserva y recalcular precio_total si es necesario
         $reserva->refresh();
-        $precioTotal = $reserva->precio_total ?? (float) $reserva->habitaciones->sum('precio');
+        $precioDespues = $reserva->precio_total ?? (float) $reserva->habitaciones->sum('precio');
 
-        return [
+        $diferencia = $precioDespues - $precioAntes;
+
+        $result = [
             'success' => true,
             'message' => 'Habitaciones actualizadas correctamente',
             'habitaciones_asignadas' => count(array_filter($habitacionIds)),
-            'precio_total' => $precioTotal,
+            'precio_total' => $precioDespues,
+            'precio_antes' => $precioAntes,
+            'diferencia' => $diferencia,
         ];
+
+        // Si hay diferencia de precio y la reserva está pagada, indicar que necesita pago o reembolso
+        if ($diferencia != 0 && strtolower($reserva->pago) === 'pagado') {
+            if ($diferencia > 0) {
+                $result['requiere_pago'] = true;
+                $result['monto_pago'] = $diferencia;
+            } else {
+                $result['requiere_reembolso'] = true;
+                $result['monto_reembolso'] = abs($diferencia);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -937,36 +956,104 @@ class ReservaService
             'notas' => $validated['notas'] ?? null,
         ]);
 
-        // Usar el método de asignación manual solo si se han enviado IDs de habitación
+        // Determinar nuevo precioTotal:
+        // - Si se envían `habitacion_ids` usamos la asignación manual que devuelve el precio calculado
+        // - Si no se envían, recalculamos el precio para las habitaciones ya asociadas a la reserva
         $precioTotal = $reserva->precio_total ?? 0;
         if (!empty($habitacionIds)) {
             $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
             $precioTotal = $asignacionResult['precio_total'] ?? ($reserva->precio_total ?? $precioTotal);
+
+            // Log asignación manual result for debugging price differences
+            try {
+                Log::info('actualizarReserva - asignarHabitacionManual result', [
+                    'reserva_id' => $reserva->id,
+                    'asignacionResult' => $asignacionResult,
+                    'precio_total_after_asignacion' => $precioTotal,
+                ]);
+            } catch (\Throwable $_) {}
+        } else {
+            // Recalcular precio usando los tipos y cantidades actuales de la reserva
+            try {
+                $tiposMap = [];
+                foreach ($reserva->habitaciones as $hr) {
+                    $tipo = $hr->tipo ?? ($hr->habitacion?->tipo ?? null);
+                    if (!$tipo) continue;
+                    if (!isset($tiposMap[$tipo])) $tiposMap[$tipo] = 0;
+                    $tiposMap[$tipo]++;
+                }
+
+                $habitacionesParaCalculo = [];
+                foreach ($tiposMap as $tipo => $cantidad) {
+                    $habitacionesParaCalculo[] = ['tipo' => $tipo, 'cantidad' => $cantidad];
+                }
+
+                    if (!empty($habitacionesParaCalculo)) {
+                    // Evitar ambigüedad en columnas cuando se hace join: preferimos usar la relación ya cargada
+                    // o calificar la columna con el nombre de la tabla.
+                    if ($reserva->relationLoaded('tarifas')) {
+                        $tarifaIds = $reserva->tarifas->pluck('id')->toArray();
+                    } else {
+                        $tarifaIds = $reserva->tarifas()->pluck('tarifas.id')->toArray();
+                    }
+                    $resultadoPrecio = $this->servicioPrecio->calcularPrecioCompleto($habitacionesParaCalculo, $checkIn, $checkOut, $tarifaIds, $reserva->cupon_id ?? null);
+                    if (isset($resultadoPrecio['precio_total'])) {
+                        $precioTotal = $resultadoPrecio['precio_total'];
+                    }
+
+                    // Log calculated price details for comparison with preview
+                    try {
+                        Log::info('actualizarReserva - precio recalculado', [
+                            'reserva_id' => $reserva->id,
+                            'check_in' => $checkIn->format('Y-m-d'),
+                            'check_out' => $checkOut->format('Y-m-d'),
+                            'tiposMap' => $tiposMap,
+                            'habitacionesParaCalculo' => $habitacionesParaCalculo,
+                            'tarifaIds' => $tarifaIds,
+                            'resultadoPrecio' => $resultadoPrecio,
+                            'precioTotal_computed' => $precioTotal,
+                            'precioTotal_before' => $reserva->precio_total ?? null,
+                        ]);
+                    } catch (\Throwable $_) {}
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Error recalculando precio en actualizarReserva: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+            }
         }
 
         $totalViejo = (float) $reserva->precio_total;
         $diffSigned = round($precioTotal - $totalViejo, 2);
         $refundInfo = null;
-        $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado', 'procesando'])->get();
-        $montoPagado = $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
 
-        if ($diffSigned < 0 && $montoPagado > 0) {
+        if ($diffSigned < 0) {
             $refundAmount = round(abs($diffSigned), 2);
-            $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
-            $refundResult = $this->servicioPago->solicitarReembolso($reserva, $userForRefund, $refundAmount, true);
-            if (!($refundResult['success'] ?? false)) {
-                throw new \Exception('No se pudo procesar el reembolso: ' . ($refundResult['message'] ?? 'Error en reembolso'));
-            }
-
             $refundInfo = [
-                'amount' => $refundResult['refund_amount'] ?? $refundAmount,
-                'refund_id' => $refundResult['refund_id'] ?? null,
-                'message' => $refundResult['message'] ?? null
+                'queued' => true,
+                'amount' => $refundAmount,
             ];
-        } else {
-            if ($diffSigned < 0) {
-                Log::info('No se procesó reembolso porque no hay pagos detectados', ['reserva_id' => $reserva->id, 'monto_pagado' => $montoPagado, 'pago' => $reserva->pago]);
-            }
+
+            // Ejecutar la verificación de pagos y la petición de reembolso solo después del commit
+            DB::afterCommit(function() use ($reserva, $refundAmount) {
+                try {
+                    // Consultar pagos ya fuera de la transacción principal
+                    $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado', 'procesando'])->get();
+                    $montoPagado = $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
+
+                    if ($montoPagado > 0) {
+                        $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
+                        $refundResult = $this->servicioPago->solicitarReembolso($reserva, $userForRefund, $refundAmount, true);
+                        if (!($refundResult['success'] ?? false)) {
+                            Log::error('Reembolso en background falló', ['reserva_id' => $reserva->id, 'message' => $refundResult['message'] ?? null]);
+                        } else {
+                            Log::info('Reembolso procesado en background', ['reserva_id' => $reserva->id, 'refund' => $refundResult]);
+                        }
+                    } else {
+                        Log::info('No se procesó reembolso porque no hay pagos detectados (afterCommit)', ['reserva_id' => $reserva->id, 'monto_pagado' => $montoPagado]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Error procesando reembolso en afterCommit: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+                }
+            });
         }
 
         $reserva->update(['precio_total' => $precioTotal]);

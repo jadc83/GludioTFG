@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 
 class ReservaController extends Controller
@@ -429,9 +430,9 @@ class ReservaController extends Controller
             // Refrescar y formatear la reserva para devolver datos útiles al frontend
             $reserva->refresh();
             try {
-                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
             } catch (\Throwable $e) {
-                $reservaFormateada = ['id' => $reserva->id, 'precio_total' => $reserva->precio_total ?? null];
+                $reservaFormateada = ['id' => $reserva->id, 'precio_total' => $reserva->precio_total ?? null, 'check_in' => $reserva->check_in ?? null, 'check_out' => $reserva->check_out ?? null];
             }
 
             // Devolver siempre JSON para simplificar el flujo AJAX y evitar redirecciones

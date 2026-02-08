@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
 
-export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia = null, cargandoVistaPrevia = false, errorVistaPrevia = null, obtenerPreview = null }) {
+export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia = null, cargandoVistaPrevia = false, errorVistaPrevia = null, obtenerPreview = null, onRequestConfirmDates = null }) {
     const [checkIn, setCheckIn] = useState(reserva.check_in || '');
     const [checkOut, setCheckOut] = useState(reserva.check_out || '');
     const [saving, setSaving] = useState(false);
@@ -57,6 +57,22 @@ export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia 
         if (!validate()) return;
         setSaving(true);
         try {
+            // If dates differ from original, delegate to confirmation modal flow
+            const esOriginal = (ci, co) => {
+                const originalCi = reserva?.check_in || null;
+                const originalCo = reserva?.check_out || null;
+                return ci === originalCi && co === originalCo;
+            };
+
+            if (!esOriginal(checkIn, checkOut)) {
+                if (typeof onRequestConfirmDates === 'function') {
+                    onRequestConfirmDates(checkIn, checkOut);
+                    setSaving(false);
+                    return;
+                }
+                // fallback: if no handler provided, proceed with direct update
+            }
+
             const payload = {
                 check_in: checkIn,
                 check_out: checkOut,

@@ -253,6 +253,11 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 setReserva(data.reserva);
                 setHabitacionesSeleccionadas(data.reserva.habitaciones.map((h) => h.habitacion_id));
                 showToast?.('Habitaciones actualizadas con éxito', 'success');
+
+                // Si requiere pago adicional, abrir modal de pago
+                if (data.requiere_pago && data.monto_pago > 0) {
+                    paymentModal.open(data.monto_pago, { pendingApply: false, requireAcceptance: true, meta: { tipo: 'habitaciones' } });
+                }
             } else {
                 showToast?.(data?.error || 'Error al actualizar', 'error');
             }

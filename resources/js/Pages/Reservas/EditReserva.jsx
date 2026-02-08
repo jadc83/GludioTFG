@@ -32,11 +32,14 @@ export default function EditarReserva({
         loading: pLoadingHook,
         error: pErrorHook,
         fetchPreview: fetchPreviewHook,
+        clearPreview: clearPreviewHook,
     } = usePreview(reserva.localizador);
 
     const preview = pFromHook;
     const previewLoading = pLoadingHook;
     const previewError = pErrorHook;
+
+    const [originalPrecioBackup, setOriginalPrecioBackup] = useState(null);
 
     useReservaEvents(reserva, { onRefresh: refresh, onUpdated: setReserva, suppressToast: true });
 
@@ -74,6 +77,14 @@ export default function EditarReserva({
     const viewerIsAdmin = !!viewer.is_admin;
     const viewerIsRecepcion = !!viewer.is_recepcion;
 
+    useEffect(() => {
+        if (!preview && originalPrecioBackup !== null) {
+            // restore original price
+            setReserva((r) => ({ ...r, precio_total: Number(originalPrecioBackup) }));
+            setOriginalPrecioBackup(null);
+        }
+    }, [preview, originalPrecioBackup, setReserva]);
+
     return (
         <AuthenticatedLayout>
             <div className="min-h-screen bg-gray-50 pb-24">
@@ -88,6 +99,11 @@ export default function EditarReserva({
                         cargandoVistaPrevia={previewLoading}
                         errorVistaPrevia={previewError}
                         obtenerPreview={fetchPreviewHook}
+                        onRequestConfirmDates={(ci, co) => {
+                            setFechaModalCheckIn(ci);
+                            setFechaModalCheckOut(co);
+                            setMostrarModalFechas(true);
+                        }}
                     />
                 </div>
 
@@ -115,10 +131,14 @@ export default function EditarReserva({
                         </div>
 
                         <ReservaSidebar
-                                    reserva={preview?.nuevo_total != null ? { ...reserva, precio_total: preview.nuevo_total } : reserva}
-                                    estaCancelada={isCancelled}
-                                    onSolicitarReembolso={() => abrirReembolso((preview?.nuevo_total ?? reserva.precio_total) - reserva.reembolsos_total)}
-                                />
+                            reserva={
+                                preview
+                                    ? { ...reserva, precio_total: Number(reserva.precio_total ?? 0) + Number(preview.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0) }
+                                    : reserva
+                            }
+                            estaCancelada={isCancelled}
+                            onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)}
+                        />
                     </div>
                 </main>
 
@@ -136,6 +156,37 @@ export default function EditarReserva({
                     reserva={reserva}
                     onCerrar={() => setMostrarModalFechas(false)}
                     onConfirmar={confirmarModalFechas}
+                    onApplied={(resData) => {
+                        // Close modal and update reserva in memory.
+                        // Backup original precio_total before overriding so we can restore if preview disappears
+                        setMostrarModalFechas(false);
+                        try {
+                            const currentPrecio = Number(reserva.precio_total ?? 0);
+                            if (originalPrecioBackup === null) setOriginalPrecioBackup(currentPrecio);
+                        } catch (e) {}
+
+                        if (resData && resData.reserva) {
+                            // Set immediately to server-returned reserva to reflect persisted changes
+                            setReserva(resData.reserva);
+                            try {
+                                clearPreviewHook();
+                            } catch (e) {}
+                        } else if (preview && preview.nuevo_total !== undefined) {
+                            // override local reserva precio_total to match preview while we refresh
+                            setReserva((r) => ({ ...r, precio_total: Number(preview.nuevo_total) }));
+                        }
+
+                        (async () => {
+                            try {
+                                await refresh();
+                                // refresh succeeded, clear backup
+                                setOriginalPrecioBackup(null);
+                            } catch (e) {
+                                // fallback: setReserva if resData contains reserva
+                                if (resData && resData.reserva) setReserva(resData.reserva);
+                            }
+                        })();
+                    }}
                     procesando={isProcessing}
                 />
 
@@ -183,3 +234,8 @@ export default function EditarReserva({
         </AuthenticatedLayout>
     );
 }
+
+// Restore original price if preview disappears
+// (keeps UI consistent when user reverts to original dates)
+// Note: this effect runs in the component scope using the preview and backup state
+// so it should be defined inside the component. We add it below export to keep file edits minimal.

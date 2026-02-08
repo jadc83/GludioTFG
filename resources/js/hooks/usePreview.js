@@ -73,7 +73,8 @@ export default function usePreview(localizador) {
                                 check_in: reserva.check_out,
                                 check_out: checkOutStr,
                                 habitaciones: habPayload,
-                                tarifas: [],
+                                tarifas: reserva?.tarifa_ids || (reserva?.tarifas ? (reserva.tarifas.map((t) => t.id)) : []) || [],
+                                reserva_id: reserva?.id || reserva?.reserva_id || null,
                             };
 
                             const precioRes = await calcularPrecio(payload);
@@ -92,29 +93,58 @@ export default function usePreview(localizador) {
                     // Subtract cost for removed nights using assignment per-night when available, else group per-night
                     if (removedNights > 0) {
                         try {
-                            // calcular reembolso por las noches que se quitan consultando al backend
-                            const tipoCounts = {};
-                            for (const hr of habitaciones) {
-                                const tipo = hr.tipo || hr.tipo_habitacion || null;
-                                if (!tipo) continue;
-                                tipoCounts[tipo] = (tipoCounts[tipo] || 0) + 1;
+                            // Si la reserva tiene habitaciones asignadas con precio por noche,
+                            // usar ese `precio_noche` por habitación para calcular el total a restar
+                            // (evita usar la "media" de la reserva).
+                            let usedFallback = false;
+                            if (Array.isArray(habitaciones) && habitaciones.length > 0) {
+                                let removedSum = 0;
+                                let ok = true;
+                                for (const hr of habitaciones) {
+                                    const precioNoche = Number(hr.precio_noche ?? (hr.precio ? (Number(hr.precio) / Math.max(1, nightsOld)) : NaN));
+                                    if (!Number.isFinite(precioNoche) || Number.isNaN(precioNoche)) {
+                                        ok = false;
+                                        break;
+                                    }
+                                    removedSum += precioNoche * removedNights;
+                                }
+
+                                if (ok) {
+                                    lastRemovedTotal = Math.round(removedSum * 100) / 100;
+                                    nuevoTotal -= lastRemovedTotal;
+                                } else {
+                                    usedFallback = true;
+                                }
+                            } else {
+                                usedFallback = true;
                             }
 
-                            const habPayload = Object.entries(tipoCounts).map(([tipo, cantidad]) => ({ tipo, cantidad }));
-                            const payload = {
-                                check_in: checkOutStr,
-                                check_out: reserva.check_out,
-                                habitaciones: habPayload,
-                                tarifas: [],
-                            };
+                            if (usedFallback) {
+                                // calcular reembolso por las noches que se quitan consultando al backend
+                                const tipoCounts = {};
+                                for (const hr of habitaciones) {
+                                    const tipo = hr.tipo || hr.tipo_habitacion || null;
+                                    if (!tipo) continue;
+                                    tipoCounts[tipo] = (tipoCounts[tipo] || 0) + 1;
+                                }
 
-                            const precioRes = await calcularPrecio(payload);
-                            if (!precioRes || !precioRes.success) {
-                                disponible = false;
-                            } else {
-                                const removedTotal = Number(precioRes.data?.total ?? precioRes.data?.precio_total ?? 0);
-                                lastRemovedTotal = removedTotal;
-                                nuevoTotal -= removedTotal;
+                                const habPayload = Object.entries(tipoCounts).map(([tipo, cantidad]) => ({ tipo, cantidad }));
+                                const payload = {
+                                    check_in: checkOutStr,
+                                    check_out: reserva.check_out,
+                                    habitaciones: habPayload,
+                                    tarifas: reserva?.tarifa_ids || (reserva?.tarifas ? (reserva.tarifas.map((t) => t.id)) : []) || [],
+                                    reserva_id: reserva?.id || reserva?.reserva_id || null,
+                                };
+
+                                const precioRes = await calcularPrecio(payload);
+                                if (!precioRes || !precioRes.success) {
+                                    disponible = false;
+                                } else {
+                                    const removedTotal = Number(precioRes.data?.total ?? precioRes.data?.precio_total ?? 0);
+                                    lastRemovedTotal = removedTotal;
+                                    nuevoTotal -= removedTotal;
+                                }
                             }
                         } catch (e) {
                             disponible = false;
@@ -125,9 +155,11 @@ export default function usePreview(localizador) {
                 const delta = Number(nuevoTotal) - Number(viejoTotal);
                 const penalizacion = 20.0;
                 let estimateRefund = 0.0;
+                let estimateRefundRaw = 0.0;
                 let estimateCharge = 0.0;
                 if (delta < 0) {
                     const rawRefund = Math.round((viejoTotal - nuevoTotal) * 100) / 100;
+                    estimateRefundRaw = rawRefund;
                     estimateRefund = Math.max(0, Math.round((rawRefund - penalizacion) * 100) / 100);
                 } else {
                     estimateCharge = Math.round(delta * 100) / 100;
@@ -162,6 +194,7 @@ export default function usePreview(localizador) {
                     nights_old: nightsOld,
                     nights_new: nightsNew,
                     estimate_refund: estimateRefund,
+                    estimate_refund_raw: estimateRefundRaw,
                     penalizacion: penalizacion,
                     estimate_charge: estimateCharge,
                     extra_nights: extraNights,
@@ -197,5 +230,10 @@ export default function usePreview(localizador) {
         [localizador],
     );
 
-    return { preview, loading, error, fetchPreview };
+    const clearPreview = useCallback(() => {
+        setPreview(null);
+        setError(null);
+    }, []);
+
+    return { preview, loading, error, fetchPreview, clearPreview };
 }
