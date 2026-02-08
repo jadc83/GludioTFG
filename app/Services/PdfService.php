@@ -16,6 +16,8 @@ class PdfService
 
     /**
      * Genera y devuelve el objeto PDF para una reserva (no lo descarga)
+     * @param \App\Models\Reserva $reserva
+     * @return \Barryvdh\DomPDF\PDF
      */
     public function generarPdf(Reserva $reserva)
     {

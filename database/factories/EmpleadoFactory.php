@@ -18,7 +18,7 @@ class EmpleadoFactory extends Factory
             'user_id' => $user->id,
             // 'numero_empleado' removed - no longer used for employees
             'departamento' => $this->faker->randomElement(['Recepción','Mantenimiento','Administración']),
-            'puesto' => $this->faker->randomElement(['Recepcionista','Conserje','Gerente']),
+            'role' => $this->faker->randomElement(['encargado','operario','auxiliar']),
         ];
     }
 }

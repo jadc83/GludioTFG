@@ -3,6 +3,19 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+// Enviar cookies de sesión en peticiones XHR (necesario para dev/puerto cruzado)
+window.axios.defaults.withCredentials = true;
+
+// Asegurar que axios use la cookie XSRF y la envíe como X-XSRF-TOKEN
+window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
+
+// Si existe meta csrf-token, añadirlo como header X-CSRF-TOKEN (compatibilidad)
+const metaCsrf = typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]') : null;
+if (metaCsrf) {
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = metaCsrf.getAttribute('content');
+}
+
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 

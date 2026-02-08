@@ -13,7 +13,7 @@ class Empleado extends Model
     protected $fillable = [
         'user_id',
         'departamento_id',
-        'puesto',
+        'role',
     ];
 
     public function user()

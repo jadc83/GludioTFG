@@ -32,9 +32,13 @@ class ReservaFormatterService
      * Usado por: controladores de listado de reservas
      * Retorna: array formateado de reservas
      */
-    public function formatearReservas($reservas): array
+    /**
+     * @param \Illuminate\Support\Collection<int, \App\Models\Reserva> $reservas
+     * @return array<int, array<string,mixed>>
+     */
+    public function formatearReservas(\Illuminate\Support\Collection $reservas): array
     {
-        return $reservas->map(function ($reserva) {
+        return $reservas->map(function (\App\Models\Reserva $reserva): array {
             $nombreCliente = 'Sin cliente';
             if ($reserva->reservable) {
                 $nombreCliente = $reserva->reservable?->name ?? 'Sin cliente';
@@ -57,7 +61,7 @@ class ReservaFormatterService
                 'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
                 'habitacion_numero' => (function() use ($reserva) {
-                    $nums = $reserva->habitaciones->map(function($hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
+                    $nums = $reserva->habitaciones->map(function(\App\Models\HabitacionReserva $hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
                     return $nums->count() ? $nums->implode(', ') : 's/a';
                 })(),
             ];
@@ -70,6 +74,12 @@ class ReservaFormatterService
      * Incluye habitaciones, precios y estadísticas
      * Usado por: controladores de edición de reserva
      * Retorna: array con todos los datos formateados para edición
+     */
+    /**
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon|null $checkIn
+     * @param \Carbon\Carbon|null $checkOut
+     * @return array<string, mixed>
      */
     public function formatearReservaParaEdicion(Reserva $reserva, ?Carbon $checkIn = null, ?Carbon $checkOut = null): array
     {
@@ -88,6 +98,10 @@ class ReservaFormatterService
             'localizador' => $reserva->localizador,
             'check_in' => Carbon::parse($reserva->check_in)->format('Y-m-d'),
             'check_out' => Carbon::parse($reserva->check_out)->format('Y-m-d'),
+            'check_in_full' => Carbon::parse($reserva->check_in)->toIso8601String(),
+            'check_out_full' => Carbon::parse($reserva->check_out)->toIso8601String(),
+            'check_in_time' => Carbon::parse($reserva->check_in)->format('H:i'),
+            'check_out_time' => Carbon::parse($reserva->check_out)->format('H:i'),
             'precio_total' => $reserva->precio_total,
             'status' => $reserva->status,
             'pago' => $reserva->pago,
@@ -99,8 +113,14 @@ class ReservaFormatterService
                 'telefono' => $reserva->reservable?->telefono ?? null,
                 'numero_documento' => $reserva->reservable?->numero_documento ?? null,
                 'tipo_documento' => $reserva->reservable?->tipo_documento ?? null,
+                'direccion' => $reserva->reservable?->direccion ?? null,
             ],
-            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches) {
+            'booked_by_user' => [
+                'id' => $reserva->bookedBy?->id ?? null,
+                'name' => $reserva->bookedBy?->name ?? ($reserva->booked_by_user ?? 'Sistema'),
+                'email' => $reserva->bookedBy?->email ?? null,
+            ],
+            'habitaciones' => $reserva->habitaciones->map(function (\App\Models\HabitacionReserva $hr) use ($noches): array {
                 return [
                     'habitacion_id' => $hr->habitacion_id, // Usar directamente el ID de la habitación física (puede ser null)
                     'slot_id' => $hr->id, // Agregar explícitamente el ID del registro de la tabla pivot
@@ -113,6 +133,17 @@ class ReservaFormatterService
             })->values(),
         ];
 
+        // Incluir información de tarifa si está presente
+        if ($reserva->tarifa) {
+            $reservaData['tarifa'] = [
+                'id' => $reserva->tarifa->id ?? null,
+                'name' => $reserva->tarifa->name ?? ($reserva->tarifa->descripcion ?? null),
+                'price' => $reserva->tarifa->price ?? null,
+            ];
+        } else {
+            $reservaData['tarifa'] = null;
+        }
+
         return $reservaData;
     }
 
@@ -122,7 +153,7 @@ class ReservaFormatterService
      * Usado por: formatearReservas(), detalles de reserva
      * Retorna: array con tipo y nombre del cliente
      */
-    public function formatearCliente($reserva): array
+    public function formatearCliente(Reserva $reserva): array
     {
         if ($reserva->reservable_type === 'App\\Models\\User') {
             return [
@@ -142,12 +173,16 @@ class ReservaFormatterService
      * Usado por: controlador show(), detalles de reserva
      * Retorna: array de reembolsos formateados
      */
+    /**
+     * @param \App\Models\Reserva $reserva
+     * @return array<int, array<string, mixed>>
+     */
     public function formatearReembolsos(Reserva $reserva): array
     {
         $reservaTotal = $reserva->precio_total ?? 0;
         $cumulative = 0;
 
-        return $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reservaTotal, &$cumulative) {
+        return $reserva->reembolsos->sortBy('created_at')->values()->map(function (\App\Models\Refund $r) use ($reservaTotal, &$cumulative): array {
             $amount = ($r->amount_cents ?? 0) / 100;
             $cumulative += $amount;
 
@@ -174,7 +209,13 @@ class ReservaFormatterService
      * Usado por: formatearReservaParaEdicion()
      * Retorna: colección de habitaciones con precios calculados
      */
-    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
+    /**
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon $checkIn
+     * @param \Carbon\Carbon $checkOut
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): \Illuminate\Support\Collection
     {
         // Aceptar también strings por seguridad: coerción a Carbon
         if (!($checkIn instanceof Carbon)) {
@@ -189,7 +230,7 @@ class ReservaFormatterService
         $checkInStr = $checkIn->toDateString();
         $checkOutStr = $checkOut->toDateString();
 
-        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas
+        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas, incluyendo las ya asignadas para permitir reasignación
         $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
             ->where('estado', 'disponible')
             ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
@@ -197,13 +238,13 @@ class ReservaFormatterService
                     ->where('check_in', '<', $checkOutStr)
                     ->where('check_out', '>', $checkInStr);
             })
-            ->whereNotIn('id', $habitacionesActualesIds) // Excluir habitaciones ya asignadas a esta reserva
+            // No excluir habitaciones ya asignadas a esta reserva
             ->orderBy('numero')
             ->get();
 
         $noches = max(1, $checkIn->diffInDays($checkOut));
 
-        return $habitaciones->map(function ($hab) use ($checkIn, $checkOut, $noches) {
+        return $habitaciones->map(function (\App\Models\Habitacion $hab) use ($checkIn, $checkOut, $noches): array {
             $precioDinamico = $this->servicioPrecio->precioEntreFechas($hab->tipo, $checkIn, $checkOut);
 
             return [

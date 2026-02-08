@@ -15,33 +15,67 @@ export default function ReservaPayments({ reserva, estaCancelada, onSolicitarRee
             </div>
 
             <div className="space-y-3">
-                {!estaCancelada && reserva?.status === 'pendiente' && (
-                    <button
-                        onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkin`)}
-                        className="w-full rounded-2xl bg-white py-4 text-xs font-black uppercase tracking-widest text-[#7a0202] shadow-lg shadow-black/10 transition hover:bg-gray-100"
-                    >
-                        Hacer Check-In
-                    </button>
-                )}
-
-                {!estaCancelada && reserva?.status !== 'checked_out' && (
-                    <button
-                        onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkout`)}
-                        className="w-full rounded-2xl border border-white/10 bg-black/30 py-4 text-xs font-black uppercase tracking-widest text-white transition hover:bg-black/40"
-                    >
-                        Hacer Check-Out
-                    </button>
-                )}
+                {/* Check-In/Check-Out actions moved to AssignedHabitaciones component (per habitación) */}
             </div>
 
-            {!estaCancelada && reserva?.pago === 'pagado' && (
-                <button
-                    onClick={onSolicitarReembolso}
-                    className="mt-4 w-full rounded-2xl border border-gray-200 bg-white py-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:border-red-200 hover:text-red-600"
-                >
-                    Solicitar Reembolso
-                </button>
-            )}
+            <div className="space-y-3">
+                {(() => {
+                    const status = String(reserva?.status || '').toLowerCase();
+                    const isCheckedIn = status === 'checked_in';
+                    const isCheckedOut = status === 'checked_out';
+
+                    // Initial: show Check-In and Reembolso
+                    if (!isCheckedIn && !isCheckedOut) {
+                        return (
+                            <>
+                                <button
+                                    onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkin`)}
+                                    className="w-full rounded-2xl bg-white py-4 text-xs font-black uppercase tracking-widest text-[#7a0202] shadow-lg shadow-black/10 transition hover:bg-gray-100"
+                                >
+                                    Hacer Check-In
+                                </button>
+
+                                {reserva?.pago === 'pagado' && (
+                                    <button
+                                        onClick={onSolicitarReembolso}
+                                        className="w-full rounded-2xl border border-gray-200 bg-white py-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:border-red-200 hover:text-red-600"
+                                    >
+                                        Reembolso
+                                    </button>
+                                )}
+                            </>
+                        );
+                    }
+
+                    // Checked-in: show Check-Out only
+                    if (isCheckedIn) {
+                        return (
+                            <button
+                                onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkout`)}
+                                className="w-full rounded-2xl border border-white/10 bg-black/30 py-4 text-xs font-black uppercase tracking-widest text-white transition hover:bg-black/40"
+                            >
+                                Hacer Check-Out
+                            </button>
+                        );
+                    }
+
+                    // Checked-out: show Reembolso only
+                    if (isCheckedOut) {
+                        return (
+                            reserva?.pago === 'pagado' && (
+                                <button
+                                    onClick={onSolicitarReembolso}
+                                    className="w-full rounded-2xl border border-gray-200 bg-white py-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:border-red-200 hover:text-red-600"
+                                >
+                                    Reembolso
+                                </button>
+                            )
+                        );
+                    }
+
+                    return null;
+                })()}
+            </div>
         </div>
     );
 }

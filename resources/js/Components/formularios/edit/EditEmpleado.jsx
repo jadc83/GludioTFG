@@ -12,7 +12,6 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         password_confirmation: '',
 
         departamento_id: null,
-        puesto: '',
         role: '',
         tipo_documento: 'dni',
         numero_documento: '',
@@ -61,7 +60,7 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                 email: empleado.email || '',
 
                 departamento_id: empleado.departamento_id || null,
-                puesto: empleado.puesto || '',
+
                 role: empleado.role || (empleado.roles && empleado.roles.length ? empleado.roles[0] : ''),
                 tipo_documento: empleado.tipo_documento || 'dni',
                 numero_documento: empleado.numero_documento || '',
@@ -179,13 +178,7 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                                     ))}
                                 </Campo>
 
-                                <Campo
-                                    id="puesto"
-                                    label="Puesto"
-                                    value={formulario.puesto || ''}
-                                    onChange={cambiar}
-                                    error={errores.puesto}
-                                />
+
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

@@ -7,6 +7,7 @@ use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
 use Illuminate\Support\Facades\Log;
 use App\Models\Reserva;
+use App\Models\Pago;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -17,6 +18,8 @@ use App\Events\ReservaActualizada;
 
 class ReservaService
 {
+    // El método de cambio de fechas se eliminó: el sistema antiguo de extensión y el servicio
+    // especializado `ReservaExtensionService` gestionan ahora las extensiones de estancia.
     private PrecioService $servicioPrecio;
     private \App\Services\PaymentService $servicioPago;
     private \App\Services\PdfService $servicioPDF;
@@ -37,7 +40,9 @@ class ReservaService
      * Prepara y valida los datos de una reserva antes de crearla
      * Valida fechas, habitaciones y calcula precios totales
      * Usado por: crearReserva(), acciones de reserva
-     * Retorna: array con datos preparados y validados
+     *
+     * @param array<string,mixed> $datos
+     * @return array<string,mixed>
      */
     public function prepararDatosReserva(array $datos): array
     {
@@ -53,46 +58,42 @@ class ReservaService
         $habitaciones = $datos['habitaciones'];
 
         // Calcular precio completo usando el método unificado
+        $tarifas = $datos['tarifas'] ?? [];
+        $cuponId = $datos['cupon_id'] ?? null;
+
         $resultadoPrecio = $this->servicioPrecio->calcularPrecioCompleto(
             $habitaciones,
             $checkIn,
             $checkOut,
-            $datos['tarifas'] ?? [],
-            $datos['cupon_id'] ?? null
+            $tarifas,
+            $cuponId
         );
 
         if (isset($resultadoPrecio['error'])) {
-            throw new \Exception($resultadoPrecio['error']);
+            throw new \Exception('Error calculando precio: ' . ($resultadoPrecio['error'] ?? 'desconocido'));
         }
 
-        $precioTotal = $resultadoPrecio['precio_total'];
-        $descuentoAplicado = $resultadoPrecio['descuento_aplicado'];
-        $tarifaIds = $resultadoPrecio['tarifa_ids'];
-        $cuponId = $datos['cupon_id'] ?? null;
+        $precioTotal = $resultadoPrecio['precio_total'] ?? 0;
+        $descuentoAplicado = $resultadoPrecio['descuento_aplicado'] ?? 0;
+        $tarifaIds = $resultadoPrecio['tarifa_ids'] ?? [];
 
-        // Mapear método de pago del frontend a estado de pago del backend
-        $metodoPago = $datos['metodo_pago'] ?? 'pendiente';
-        $estadoPago = 'pendiente'; // Por defecto
+        $estadoPago = $datos['pago'] ?? 'pendiente';
+        $metodoPago = $datos['metodo_pago'] ?? null;
 
-        // Si el método es tarjeta y hay un payment intent ID, considerarlo pagado
-        if ($metodoPago === 'tarjeta' && !empty($datos['payment_intent_id'])) {
-            $estadoPago = 'pagado';
-        }
-        // Para otros métodos (recepcion, transferencia), mantener pendiente
-
+        // Preparar estructura de retorno esperada por crearReserva()
         $datosReturn = [
-            'nombre' => $datos['name'] ?? null,
+            'name' => $datos['name'] ?? null,
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
-            'tipo_documento' => $datos['tipo_documento'] ?? 'dni',
             'numero_documento' => $datos['numero_documento'] ?? null,
-            'nacionalidad' => $datos['nacionalidad'] ?? '',
+            'tipo_documento' => $datos['tipo_documento'] ?? null,
+            'nacionalidad' => $datos['nacionalidad'] ?? null,
             'direccion' => $datos['direccion'] ?? null,
-            'check_in' => $checkIn,
-            'check_out' => $checkOut,
+            'check_in' => $checkIn->toDateString(),
+            'check_out' => $checkOut->toDateString(),
             'habitaciones' => $habitaciones,
             'precio_total' => $precioTotal,
-            'tarifa_ids' => $tarifaIds, // Cambiar a array
+            'tarifa_ids' => $tarifaIds,
             'cupon_id' => $cuponId,
             'descuento_aplicado' => $descuentoAplicado,
             'reservable_id' => $datos['reservable_id'] ?? null,
@@ -100,8 +101,10 @@ class ReservaService
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
             'pago' => $estadoPago,
+            'payment_intent_id' => $datos['payment_intent_id'] ?? null,
+            'pago_monto' => $datos['pago_monto'] ?? null,
             'metodo_pago' => $metodoPago,
-            'notas' => $datos['notas'] ?? '',
+            'notas' => $datos['notas'] ?? null,
         ];
 
         \Illuminate\Support\Facades\Log::info('prepararDatosReserva completado', [
@@ -117,7 +120,10 @@ class ReservaService
      * Prepara fechas para edición de reserva existente
      * Valida que las nuevas fechas sean coherentes
      * Usado por: acciones de modificación de reserva
-     * Retorna: array con checkIn y checkOut validados
+     *
+     * @param array<string,mixed> $requestDates
+     * @param \App\Models\Reserva $reserva
+     * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon}
      */
     public function prepararFechasParaEdicion(array $requestDates, Reserva $reserva): array
     {
@@ -139,7 +145,11 @@ class ReservaService
      * Formatea datos de reserva para interfaz de edición
      * Incluye habitaciones, precios y estadísticas
      * Usado por: controladores de edición de reserva
-     * Retorna: array con todos los datos formateados para edición
+     *
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon $checkIn
+     * @param \Carbon\Carbon $checkOut
+     * @return array<string,mixed>
      */
     public function formatearReservaParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): array
     {
@@ -182,8 +192,13 @@ class ReservaService
      * Devuelve una colección mapeada lista para enviar a la vista.
      * Usado por: formatearReservaParaEdicion()
      * Retorna: colección de habitaciones con precios calculados
+     *
+     * @param \App\Models\Reserva $reserva
+     * @param \Carbon\Carbon $checkIn
+     * @param \Carbon\Carbon $checkOut
+     * @return \Illuminate\Support\Collection<int, array<string,mixed>>
      */
-    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut)
+    public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): \Illuminate\Support\Collection
     {
         // Aceptar también strings por seguridad: coerción a Carbon
         if (!($checkIn instanceof Carbon)) {
@@ -227,63 +242,7 @@ class ReservaService
         });
     }
 
-    /**
-     * Valida la selección de habitaciones
-     */
-    /**
-     * Valida y normaliza la configuración de habitaciones
-     * Verifica tipos válidos y cantidades positivas
-     * Usado por: prepararDatosReserva()
-     * Retorna: array de habitaciones validadas
-     */
-    private function validarHabitaciones(array $habitaciones): array
-    {
-        $validadas = [];
-        $tiposValidos = ['doble', 'familiar', 'suite'];
 
-        foreach ($habitaciones as $habitacion) {
-            $tipo = strtolower(trim($habitacion['tipo'] ?? ''));
-            $cantidad = intval($habitacion['cantidad'] ?? 0);
-
-            if (!in_array($tipo, $tiposValidos, true)) {
-                throw new \Exception("Tipo de habitación no válido: {$tipo}");
-            }
-
-            if ($cantidad <= 0) {
-                continue;
-            }
-
-            $personas = intval($habitacion['personas_por_habitacion'] ?? 1);
-            if ($personas < 1) {
-                throw new \Exception("Número de personas inválido para habitación {$tipo}");
-            }
-
-            $validadas[] = [
-                'tipo' => $tipo,
-                'cantidad' => $cantidad,
-                'personas_por_habitacion' => $personas,
-            ];
-        }
-
-        return $validadas;
-    }
-
-    /**
-     * Calcula el precio total de la reserva
-     * Usa el servicio de precios para calcular sin tarifas adicionales
-     * Usado por: prepararDatosReserva()
-     * Retorna: precio total como float
-     */
-    private function calcularPrecioTotal(array $habitaciones, Carbon $checkIn, Carbon $checkOut): float
-    {
-        $resultado = $this->servicioPrecio->precioSinTarifas($habitaciones, $checkIn, $checkOut);
-
-        if (isset($resultado['error'])) {
-            throw new \Exception($resultado['error']);
-        }
-
-        return $resultado['total'] ?? 0;
-    }
 
     /**
      * Genera un localizador único para la reserva
@@ -304,7 +263,10 @@ class ReservaService
      * Crea una reserva usando los helpers del servicio.
      * Prepara datos, verifica disponibilidad, crea reserva y asigna habitaciones
      * Usado por: controladores de reserva, acciones de creación
-     * Retorna: instancia de Reserva creada con ID
+     * @param array<string,mixed> $datos
+     * @param User|null $usuario
+     * @param string $status
+     * @return Reserva
      */
     public function crearReserva(array $datos, ?User $usuario = null, string $status = 'pendiente'): Reserva
     {
@@ -326,7 +288,10 @@ class ReservaService
 
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
             // Verificar disponibilidad dentro de la transacción
-            $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
+            // Asegurar que pasamos objetos Carbon (prepararDatosReserva retornó strings)
+            $checkInCarbon = Carbon::parse($datosPreparados['check_in']);
+            $checkOutCarbon = Carbon::parse($datosPreparados['check_out']);
+            $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $checkInCarbon, $checkOutCarbon);
 
             $localizador = $this->generarLocalizador();
 
@@ -358,6 +323,32 @@ class ReservaService
 
             // Asignar habitaciones
             $this->asignarHabitaciones($reserva, $datosPreparados['habitaciones']);
+
+            // Si se proporcionó un payment_intent_id al crear la reserva, registrar un Pago ligado
+            try {
+                $paymentIntentId = $datosPreparados['payment_intent_id'] ?? null;
+                $pagoMonto = $datosPreparados['pago_monto'] ?? ($reserva->precio_total ?? null);
+                if ($paymentIntentId) {
+                    // Crear registro de Pago si no existe uno similar
+                    $existing = \App\Models\Pago::where('reserva_id', $reserva->id)
+                        ->where('stripe_payment_intent_id', $paymentIntentId)
+                        ->first();
+                    if (! $existing) {
+                        $pagoData = [
+                            'reserva_id' => $reserva->id,
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                            'monto' => $pagoMonto ?? $reserva->precio_total,
+                            'moneda' => 'eur',
+                            'estado' => ($datosPreparados['pago'] ?? 'pendiente') === 'pagado' ? 'completado' : 'procesando',
+                            'descripcion' => 'Pago asociado al crear reserva ' . $reserva->localizador,
+                            'stripe_response' => ['id' => $paymentIntentId],
+                        ];
+                        \App\Models\Pago::create($pagoData);
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo crear Pago automático al crear reserva: ' . $e->getMessage());
+            }
 
             // Registrar cupón aplicado en auditoría
             if ($datosPreparados['cupon_id'] ?? null) {
@@ -407,7 +398,12 @@ class ReservaService
      * Obtiene o crea el cliente para la reserva
      * Busca por DNI, reutiliza si coincide, crea nuevo si no existe
      * Usado por: crearReserva()
-     * Retorna: ID del cliente (string)
+     * @param array<string,mixed> $datos
+     * @return string
+     */
+    /**
+     * @param array<string,mixed> $datos
+     * @return string
      */
     public function obtenerOCrearCliente(array $datos): string
     {
@@ -443,24 +439,17 @@ class ReservaService
         return $this->crearCliente($datos);
     }
 
-    /**
-     * Valida si los datos coinciden con un cliente existente
-     * Compara nombre, email y teléfono (case insensitive para nombre)
-     * Usado por: obtenerOCrearCliente()
-     * Retorna: boolean indicando si coinciden
-     */
-    private function datosCoinciden(Cliente $cliente, array $datos): bool
-    {
-        return strcasecmp(trim($cliente->name), trim($datos['nombre'] ?? '')) === 0 &&
-               $cliente->email === ($datos['email'] ?? null) &&
-               $cliente->telefono === ($datos['telefono'] ?? null);
-    }
 
     /**
      * Crea un nuevo cliente
      * Procesa dirección y crea registro en base de datos
      * Usado por: obtenerOCrearCliente()
-     * Retorna: ID del cliente creado
+     * @param array<string,mixed> $datos
+     * @return string
+     */
+    /**
+     * @param array<string,mixed> $datos
+     * @return string
      */
     private function crearCliente(array $datos): string
     {
@@ -504,6 +493,12 @@ class ReservaService
      * Itera sobre cada tipo de habitación requerido y verifica disponibilidad
      * Usado por: crearReserva(), actualizarReserva()
      * Retorna: true si todas están disponibles, lanza excepción si no
+     */
+    /**
+     * @param array<int,array{tipo:string,cantidad:int}> $habitacionesRequeridas
+     * @param Carbon $checkIn
+     * @param Carbon $checkOut
+     * @return bool
      */
     public function verificarDisponibilidadMultiple(array $habitacionesRequeridas, Carbon $checkIn, Carbon $checkOut): bool
     {
@@ -585,7 +580,12 @@ class ReservaService
      * Usado por: controladores que necesitan generar PDFs de reserva
      * Retorna: objeto PDF generado
      */
-    public function generarPdf(Reserva $reserva)
+    /**
+     * Genera el PDF de la reserva delegando en PdfService
+     * @param \App\Models\Reserva $reserva
+     * @return \Barryvdh\DomPDF\PDF
+     */
+    public function generarPdf(Reserva $reserva): \Barryvdh\DomPDF\PDF
     {
         return $this->servicioPDF->generarPdf($reserva);
     }
@@ -681,11 +681,11 @@ class ReservaService
      * Usado por: MarcarCheckInAction, procesos de check-in
      * Retorna: array con resultados de cada asignación
      */
-    public function asignarHabitacionEnCheckIn(Reserva $reserva, $actorId = null): array
+    public function asignarHabitacionEnCheckIn(Reserva $reserva, $_actorId = null): array
     {
         $asignadas = [];
 
-        DB::transaction(function () use ($reserva, &$asignadas, $actorId) {
+        DB::transaction(function () use ($reserva, &$asignadas) {
             $checkIn = Carbon::parse($reserva->check_in);
             $checkOut = Carbon::parse($reserva->check_out);
 
@@ -759,7 +759,9 @@ class ReservaService
             }
         }
 
-        DB::transaction(function () use ($reserva, $habitacionIds, $checkIn, $checkOut) {
+        $precioAntes = $reserva->precio_total ?? 0;
+
+        DB::transaction(function () use ($reserva, $habitacionIds) {
             // Obtener los slots existentes (HabitacionReserva) ordenados para asignar por orden
             $slots = $reserva->habitaciones()->orderBy('id')->get();
 
@@ -783,11 +785,33 @@ class ReservaService
             }
         });
 
-        return [
+        // Refrescar reserva y recalcular precio_total si es necesario
+        $reserva->refresh();
+        $precioDespues = $reserva->precio_total ?? (float) $reserva->habitaciones->sum('precio');
+
+        $diferencia = $precioDespues - $precioAntes;
+
+        $result = [
             'success' => true,
             'message' => 'Habitaciones actualizadas correctamente',
-            'habitaciones_asignadas' => count(array_filter($habitacionIds))
+            'habitaciones_asignadas' => count(array_filter($habitacionIds)),
+            'precio_total' => $precioDespues,
+            'precio_antes' => $precioAntes,
+            'diferencia' => $diferencia,
         ];
+
+        // Si hay diferencia de precio y la reserva está pagada, indicar que necesita pago o reembolso
+        if ($diferencia != 0 && strtolower($reserva->pago) === 'pagado') {
+            if ($diferencia > 0) {
+                $result['requiere_pago'] = true;
+                $result['monto_pago'] = $diferencia;
+            } else {
+                $result['requiere_reembolso'] = true;
+                $result['monto_reembolso'] = abs($diferencia);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -835,7 +859,7 @@ class ReservaService
      * Retorna: array formateado de reservas
      */
 
-    public function formatearReservas($reservas): array
+    public function formatearReservas(\Illuminate\Support\Collection $reservas): array
     {
         return $reservas->map(function ($reserva) {
             $nombreCliente = 'Sin cliente';
@@ -882,6 +906,8 @@ class ReservaService
      * Determina si es usuario registrado o cliente invitado
      * Usado por: formatearReservas(), detalles de reserva
      * Retorna: array con tipo y nombre del cliente
+     * @param \App\Models\Reserva $reserva
+     * @return array<string, mixed>
      */
     public function formatearCliente($reserva): array
     {
@@ -939,14 +965,21 @@ class ReservaService
     {
         $checkIn = Carbon::parse($validated['check_in']);
         $checkOut = Carbon::parse($validated['check_out']);
-        $habitacionIds = $validated['habitacion_ids'];
+        // `habitacion_ids` puede no enviarse en actualizaciones que solo cambian fechas
+        $habitacionIds = $validated['habitacion_ids'] ?? [];
 
-        foreach ($habitacionIds as $id) {
-            if (!$this->verificarDisponibilidadHabitacion($id, $checkIn, $checkOut, $reserva->id)) {
-                $num = Habitacion::find($id)->numero ?? $id;
-                throw new \Exception("La habitación {$num} ya está ocupada en esas fechas.");
+        if (!empty($habitacionIds)) {
+            foreach ($habitacionIds as $id) {
+                if ($id === null) continue;
+                if (!$this->verificarDisponibilidadHabitacion($id, $checkIn, $checkOut, $reserva->id)) {
+                    $num = Habitacion::find($id)->numero ?? $id;
+                    throw new \Exception("La habitación {$num} ya está ocupada en esas fechas.");
+                }
             }
         }
+
+        $oldCheckIn = $reserva->check_in;
+        $oldCheckOut = $reserva->check_out;
 
         $reserva->update(['check_in' => $checkIn,
             'check_out' => $checkOut,
@@ -955,198 +988,172 @@ class ReservaService
             'notas' => $validated['notas'] ?? null,
         ]);
 
-        // Usar el método de asignación manual para habitaciones específicas
-        $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
-        $precioTotal = $asignacionResult['precio_total'];
+        // Determinar nuevo precioTotal:
+        // - Si se envían `habitacion_ids` usamos la asignación manual que devuelve el precio calculado
+        // - Si no se envían, recalculamos el precio para las habitaciones ya asociadas a la reserva
+        $precioTotal = $reserva->precio_total ?? 0;
+        if (!empty($habitacionIds)) {
+            $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
+            $precioTotal = $asignacionResult['precio_total'] ?? ($reserva->precio_total ?? $precioTotal);
+
+            // Log asignación manual result for debugging price differences
+            try {
+                Log::info('actualizarReserva - asignarHabitacionManual result', [
+                    'reserva_id' => $reserva->id,
+                    'asignacionResult' => $asignacionResult,
+                    'precio_total_after_asignacion' => $precioTotal,
+                ]);
+            } catch (\Throwable $_) {}
+        } else {
+            // Recalcular precio usando los tipos y cantidades actuales de la reserva
+            try {
+                $tiposMap = [];
+                foreach ($reserva->habitaciones as $hr) {
+                    $tipo = $hr->tipo ?? ($hr->habitacion?->tipo ?? null);
+                    if (!$tipo) continue;
+                    if (!isset($tiposMap[$tipo])) $tiposMap[$tipo] = 0;
+                    $tiposMap[$tipo]++;
+                }
+
+                $habitacionesParaCalculo = [];
+                foreach ($tiposMap as $tipo => $cantidad) {
+                    $habitacionesParaCalculo[] = ['tipo' => $tipo, 'cantidad' => $cantidad];
+                }
+
+                    if (!empty($habitacionesParaCalculo)) {
+                    // Evitar ambigüedad en columnas cuando se hace join: preferimos usar la relación ya cargada
+                    // o calificar la columna con el nombre de la tabla.
+                    if ($reserva->relationLoaded('tarifas')) {
+                        $tarifaIds = $reserva->tarifas->pluck('id')->toArray();
+                    } else {
+                        $tarifaIds = $reserva->tarifas()->pluck('tarifas.id')->toArray();
+                    }
+                    $resultadoPrecio = $this->servicioPrecio->calcularPrecioCompleto($habitacionesParaCalculo, $checkIn, $checkOut, $tarifaIds, $reserva->cupon_id ?? null);
+                    if (isset($resultadoPrecio['precio_total'])) {
+                        $precioTotal = $resultadoPrecio['precio_total'];
+                    }
+
+                    // Log calculated price details for comparison with preview
+                    try {
+                        Log::info('actualizarReserva - precio recalculado', [
+                            'reserva_id' => $reserva->id,
+                            'check_in' => $checkIn->format('Y-m-d'),
+                            'check_out' => $checkOut->format('Y-m-d'),
+                            'tiposMap' => $tiposMap,
+                            'habitacionesParaCalculo' => $habitacionesParaCalculo,
+                            'tarifaIds' => $tarifaIds,
+                            'resultadoPrecio' => $resultadoPrecio,
+                            'precioTotal_computed' => $precioTotal,
+                            'precioTotal_before' => $reserva->precio_total ?? null,
+                        ]);
+                    } catch (\Throwable $_) {}
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Error recalculando precio en actualizarReserva: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+            }
+        }
 
         $totalViejo = (float) $reserva->precio_total;
         $diffSigned = round($precioTotal - $totalViejo, 2);
         $refundInfo = null;
-        $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado', 'procesando'])->get();
-        $montoPagado = $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
-
-        if ($diffSigned < 0 && $montoPagado > 0) {
-            $refundAmount = round(abs($diffSigned), 2);
-            $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
-            $refundResult = $this->servicioPago->solicitarReembolso($reserva, $userForRefund, $refundAmount, true);
-            if (!($refundResult['success'] ?? false)) {
-                throw new \Exception('No se pudo procesar el reembolso: ' . ($refundResult['message'] ?? 'Error en reembolso'));
-            }
-
-            $refundInfo = [
-                'amount' => $refundResult['refund_amount'] ?? $refundAmount,
-                'refund_id' => $refundResult['refund_id'] ?? null,
-                'message' => $refundResult['message'] ?? null
-            ];
-        } else {
-            if ($diffSigned < 0) {
-                Log::info('No se procesó reembolso porque no hay pagos detectados', ['reserva_id' => $reserva->id, 'monto_pagado' => $montoPagado, 'pago' => $reserva->pago]);
-            }
-        }
 
         $reserva->update(['precio_total' => $precioTotal]);
 
+        // Si se recibió payment_intent_id en la actualización, crear un Pago asociado si no existe.
         try {
-            event(new ReservaActualizada($reserva, $meta ?? null));
+            $paymentIntentId = $validated['payment_intent_id'] ?? null;
+            $pagoMonto = $validated['pago_monto'] ?? ($precioTotal ?? null);
+            if ($paymentIntentId) {
+                $existing = Pago::where('reserva_id', $reserva->id)
+                    ->where('stripe_payment_intent_id', $paymentIntentId)
+                    ->first();
+                if (! $existing) {
+                    $pagoData = [
+                        'reserva_id' => $reserva->id,
+                        'stripe_payment_intent_id' => $paymentIntentId,
+                        'monto' => $pagoMonto ?? $precioTotal,
+                        'moneda' => 'eur',
+                        'estado' => ($validated['pago'] ?? 'pendiente') === 'pagado' ? 'completado' : 'procesando',
+                        'descripcion' => 'Pago asociado al actualizar reserva ' . $reserva->localizador,
+                        'stripe_response' => ['id' => $paymentIntentId],
+                    ];
+                    Pago::create($pagoData);
+                }
+            }
         } catch (\Throwable $e) {
+            Log::warning('No se pudo crear Pago automático al actualizar reserva: ' . $e->getMessage());
+        }
 
+        // Crear una solicitud de reembolso SOLO si cambian las fechas y cambia el importe total
+        $datesChanged = ($oldCheckIn != $checkIn->format('Y-m-d')) || ($oldCheckOut != $checkOut->format('Y-m-d'));
+        $priceChanged = ($totalViejo != $precioTotal);
+
+        if ($datesChanged && $priceChanged) {
+            $refundInfo = [
+                'queued' => true,
+                'amount' => round(abs($precioTotal - $totalViejo), 2),
+            ];
+
+            // Crear RefundRequest tras el commit de la transacción para asegurar que el precio ya está persistido
+            DB::afterCommit(function() use ($reserva, $checkIn, $checkOut, $precioTotal, $totalViejo) {
+                try {
+                    // Obtener pagos completados para determinar el importe total pagado
+                    $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado'])->get();
+                    $totalPagado = (float) $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
+                    $pagoId = $pagosCompletados->first()?->id ?? null;
+
+                    // Si no hay pagos detectados, como fallback pedimos el importe antiguo
+                    $requestedAmount = $totalPagado > 0 ? $totalPagado : (float)$totalViejo;
+
+                    $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
+
+                    // Crear la solicitud de reembolso (pendiente) con información del nuevo total y fechas
+                    $rr = \App\Models\RefundRequest::create([
+                        'reserva_id' => $reserva->id,
+                        'pago_id' => $pagoId,
+                        'requested_amount_cents' => (int)round($requestedAmount * 100),
+                        'status' => 'pending',
+                        'user_id' => $userForRefund?->id ?? null,
+                        'reason_code' => 'cambio_fechas',
+                        'notes' => 'Solicitud generada automáticamente tras cambio de fechas',
+                        'pending_check_in' => $checkIn->format('Y-m-d'),
+                        'pending_check_out' => $checkOut->format('Y-m-d'),
+                        'pending_nuevo_total' => $precioTotal,
+                    ]);
+
+                    // Emitir notificación para equipos/admins
+                    try {
+                        \Notification::route('mail', config('app.admin_email'))->notify(new \App\Notifications\RefundRequestCreatedNotification($rr));
+                    } catch (\Throwable $_) {}
+
+                    Log::info('RefundRequest creado tras cambio de fechas', ['reserva_id' => $reserva->id, 'refund_request_id' => $rr->id, 'requested_amount' => $requestedAmount]);
+                } catch (\Throwable $e) {
+                    Log::error('Error creando RefundRequest en afterCommit: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+                }
+            });
+        }
+
+        // Asegurar que el evento solo se despache tras un commit exitoso
+        try {
+            DB::afterCommit(function() use ($reserva, $meta) {
+                try {
+                    event(new ReservaActualizada($reserva, $meta ?? null));
+                } catch (\Throwable $e) {
+                    Log::warning('Emitir ReservaActualizada failed (afterCommit): ' . $e->getMessage());
+                }
+            });
+        } catch (\Throwable $e) {
+            // Registrar advertencia pero no bloquear la operación
+            Log::warning('Registrar afterCommit failed: ' . $e->getMessage());
         }
 
         return ['refund' => $refundInfo];
     }
 
+    // Métodos de extensión eliminados.
     /**
-     * Obtiene información sobre la posibilidad de extender una reserva
-     * Verifica tiempo hasta checkout y estado de la reserva
-     * Usado por: interfaces de extensión de reserva
-     * Retorna: array con información de extensión disponible
+     * Nota: las funciones relacionadas con la extensión de reservas fueron retiradas.
      */
-    public function obtenerInfoExtension(Reserva $reserva): array
-    {
-        $checkOut = Carbon::parse($reserva->check_out);
-        $horasHastaCheckout = now()->diffInHours($checkOut, false);
-        $puedeExtender = $horasHastaCheckout < 24 && $reserva->status !== 'cancelada';
-
-        $razon = null;
-        if (!$puedeExtender) {
-            if ($reserva->status === 'cancelada') {
-                $razon = 'No se pueden extender reservas canceladas';
-            } else {
-                $razon = 'Solo puedes extender 24 horas antes del checkout';
-            }
-        }
-
-        return [
-            'puede_extender' => $puedeExtender,
-            'horas_hasta_checkout' => max(0, (int)$horasHastaCheckout),
-            'max_dias' => 3,
-            'razon' => $razon,
-            'check_out_actual' => $checkOut->format('Y-m-d'),
-        ];
-    }
-
-    /**
-     * Verifica disponibilidad de habitaciones para extensión de reserva
-     * Comprueba que las habitaciones asignadas estén libres en el período de extensión
-     * Usado por: procesos de extensión de reserva
-     * Retorna: array con números de habitaciones no disponibles
-     */
-    public function verificarDisponibilidadExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): array
-    {
-        $habitacionesNoDisponibles = [];
-        $checkOutDate = $checkOutActual->format('Y-m-d');
-        $nuevoCheckOutDate = $nuevoCheckOut->format('Y-m-d');
-
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacion = $habitacionReserva->habitacion;
-
-            $conflictivas = HabitacionReserva::where('habitacion_id', $habitacion->id)
-                ->where('reserva_id', '!=', $reserva->id)
-                ->whereRaw("check_in < ? AND check_out > ?", [$nuevoCheckOutDate, $checkOutDate])
-                ->count();
-
-            if ($conflictivas > 0) {
-                $habitacionesNoDisponibles[] = $habitacion->numero;
-            }
-        }
-
-        return $habitacionesNoDisponibles;
-    }
-
-    /**
-     * Calcula el precio de extensión de una reserva
-     * Suma precios de todas las habitaciones por el período de extensión
-     * Usado por: procesos de extensión de reserva
-     * Retorna: precio total de la extensión (float)
-     */
-    public function calcularPrecioExtension(Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): float
-    {
-        $precioExtension = 0;
-
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacion = $habitacionReserva->habitacion;
-            $precioExtension += $this->servicioPrecio->precioEntreFechas(
-                $habitacion->tipo,
-                $checkOutActual,
-                $nuevoCheckOut
-            );
-        }
-
-        return $precioExtension;
-    }
-
-    /**
-     * Aplica la extensión a una reserva
-     * Actualiza fechas de checkout y recalcula precio total
-     * Usado por: acciones de extensión de reserva
-     * Retorna: void
-     */
-    public function aplicarExtension(Reserva $reserva, Carbon $nuevoCheckOut, float $precioExtension): void
-    {
-        $reserva->check_out = $nuevoCheckOut;
-        $reserva->precio_total += $precioExtension;
-        $reserva->save();
-
-        // Actualizar las fechas en las relaciones HabitacionReserva
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacionReserva->check_out = $nuevoCheckOut;
-            $habitacionReserva->save();
-        }
-    }
-
-    /**
-     * Extiende una reserva: valida, calcula precio y aplica si se confirma
-     * Verifica disponibilidad, calcula precio y aplica extensión si se confirma
-     * Usado por: acciones de extensión de reserva desde panel de control
-     * Retorna: array con resultado de la extensión
-     */
-    public function extenderReserva(string $localizador, int $numeroDias, bool $confirmar = false): array
-    {
-        $reserva = Reserva::with(['habitaciones.habitacion', 'pagos'])->where('localizador', $localizador)->first();
-        if (!$reserva) {
-            throw new \Exception('Reserva no encontrada');
-        }
-
-        $checkOut = Carbon::parse($reserva->check_out);
-        $horas = now()->diffInHours($checkOut);
-
-        if ($horas >= 24) {
-            throw new \Exception('La extensión solo está disponible 24 horas antes del checkout');
-        }
-
-        if ($reserva->status === 'cancelada') {
-            throw new \Exception('No se puede extender una reserva cancelada');
-        }
-
-        if ($numeroDias < 1 || $numeroDias > 3) {
-            throw new \Exception('Debes seleccionar entre 1 y 3 días de extensión');
-        }
-
-        $nuevoCheckOut = $checkOut->copy()->addDays($numeroDias);
-
-        // Verificar disponibilidad
-        $habitacionesNoDisponibles = $this->verificarDisponibilidadExtension($reserva, $checkOut, $nuevoCheckOut);
-        if (!empty($habitacionesNoDisponibles)) {
-            return [ 'success' => false, 'error' => 'Las habitaciones no están disponibles para la extensión seleccionada', 'habitaciones_no_disponibles' => $habitacionesNoDisponibles ];
-        }
-
-        $precioExtension = $this->calcularPrecioExtension($reserva, $checkOut, $nuevoCheckOut);
-        $necesitaPago = $reserva->pago === 'pagado';
-
-        if ($confirmar) {
-            $this->aplicarExtension($reserva, $nuevoCheckOut, $precioExtension);
-            try {
-                event(new ReservaActualizada($reserva, null));
-            } catch (\Throwable $e) {
-                // ignore
-            }
-            return [ 'success' => true, 'aplicada' => true, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
-        }
-
-        return [ 'success' => true, 'aplicada' => false, 'nuevo_check_out' => $nuevoCheckOut->toDateString(), 'precio_extension' => $precioExtension, 'necesita_pago' => $necesitaPago ];
-    }
-
-
 }
 
 

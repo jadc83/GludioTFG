@@ -15,6 +15,7 @@ export default function useReservaEvents(
     { onRefresh = () => {}, onDeleted = () => {}, onUpdated = null, suppressToast = false } = {},
 ) {
     const { props } = usePage();
+    const isAuthedUserId = Boolean(props?.auth?.user?.id);
 
     useEffect(() => {
         const echo = window.Echo;
@@ -54,5 +55,5 @@ export default function useReservaEvents(
             listener.stopListening('ReservaCreada');
             listener.stopListening('ReservaBorrada');
         };
-    }, [reserva?.id, reserva?.localizador, onRefresh, onDeleted, props, onUpdated, suppressToast]);
+    }, [reserva?.id, reserva?.localizador, onRefresh, onDeleted, onUpdated, suppressToast, isAuthedUserId]);
 }

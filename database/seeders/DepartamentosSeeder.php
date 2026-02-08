@@ -9,8 +9,9 @@ class DepartamentosSeeder extends Seeder
 {
     public function run(): void
     {
-        Departamento::firstOrCreate(['name' => 'mantenimiento']);
-        Departamento::firstOrCreate(['name' => 'recepcion']);
-        Departamento::firstOrCreate(['name' => 'limpieza']);
+        // Usar los nombres canónicos ya normalizados para evitar conflictos
+        Departamento::firstOrCreate(['name' => 'Mantenimiento']);
+        Departamento::firstOrCreate(['name' => 'Recepcion']);
+        Departamento::firstOrCreate(['name' => 'Limpieza']);
     }
 }

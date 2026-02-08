@@ -86,6 +86,47 @@ class PagoController extends Controller
         }
     }
 
+    /**
+     * Crear un PaymentIntent standalone (sin reserva asociada)
+     */
+    public function crearPaymentIntentStandalone(Request $request)
+    {
+        $validated = $request->validate([
+            'monto' => 'required|numeric|min:0.01',
+            'receipt_email' => 'nullable|email',
+            'metadata' => 'nullable|array',
+            'metadata.reserva_id' => 'nullable|integer|exists:reservas,id',
+            'reserva_id' => 'nullable|integer|exists:reservas,id',
+        ]);
+
+        try {
+            // Normalizar metadata: si se envía reserva_id en top-level, colocarlo dentro de metadata
+            $metadata = $request->input('metadata', []);
+            if ($request->filled('reserva_id')) {
+                $metadata['reserva_id'] = $request->input('reserva_id');
+            }
+
+            $serviceResp = $this->paymentService->crearPaymentIntentStandalone((float)$validated['monto'], [
+                'receipt_email' => $validated['receipt_email'] ?? null,
+                'metadata' => $metadata,
+            ]);
+
+            if (!empty($serviceResp['success'])) {
+                return response()->json([
+                    'success' => true,
+                    'clientSecret' => $serviceResp['clientSecret'] ?? null,
+                    'paymentIntentId' => $serviceResp['paymentIntentId'] ?? null,
+                    'paymentIntentStatus' => $serviceResp['paymentIntentStatus'] ?? null,
+                ]);
+            }
+
+            return response()->json(['success' => false, 'error' => $serviceResp['error'] ?? 'Error creating payment intent'], 400);
+        } catch (\Exception $e) {
+            Log::error('crearPaymentIntentStandalone error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Error creando PaymentIntent'], 400);
+        }
+    }
+
     public function crearCheckoutSession(Request $request)
     {
         $validated = $request->validate([
@@ -130,18 +171,37 @@ class PagoController extends Controller
     {
         $request->validate([
             'payment_intent_id' => 'required|string',
-            'pago_id' => 'required|exists:pagos,id',
+            'pago_id' => 'nullable|exists:pagos,id',
         ]);
 
-        $pago = Pago::findOrFail($request->pago_id);
+        $pago = null;
+        if ($request->filled('pago_id')) {
+            $pago = Pago::find($request->pago_id);
+        }
 
         try {
+            Log::info('confirmarPago called', ['payment_intent_id' => $request->input('payment_intent_id'), 'pago_id' => $request->input('pago_id')]);
 
             $resp = $this->paymentService->confirmarPaymentIntent($request->payment_intent_id, $pago);
 
             if (!empty($resp['success']) && ($resp['status'] ?? '') === 'succeeded') {
-                $pago->marcarComoPagado();
-                $pago->reserva->update(['pago' => 'pagado']);
+                // Si el controlador no recibió un Pago pero el servicio devolvió pago_id, cargarlo
+                if (!$pago && !empty($resp['pago_id'])) {
+                    try { $pago = Pago::find((int)$resp['pago_id']); } catch (\Throwable $_e) { $pago = null; }
+                }
+
+                if (!$pago) {
+                    Log::warning('confirmarPago: pago no disponible tras confirmarPaymentIntent', ['payment_intent_id' => $request->payment_intent_id, 'resp' => $resp]);
+                    return response()->json([ 'success' => false, 'message' => 'Pago no encontrado tras confirmación' ], 400);
+                }
+
+                try {
+                    $pago->marcarComoPagado();
+                } catch (\Throwable $e) {
+                    Log::warning('confirmarPago: fallo al marcarPago como pagado: ' . $e->getMessage());
+                }
+
+                try { $pago->reserva->update(['pago' => 'pagado']); } catch (\Throwable $_e) { /* noop */ }
 
                 // Enviar notificación centralizada (evitar duplicados con idempotencia)
                 try {
@@ -175,10 +235,10 @@ class PagoController extends Controller
             }
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe API error confirming payment: ' . $e->getMessage(), ['exception' => $e]);
-            $pago->marcarComoFallido();
+            if ($pago) try { $pago->marcarComoFallido(); } catch (\Throwable $_e) { /* noop */ }
             return response()->json([ 'success' => false, 'error' => 'Error al confirmar el pago (Stripe API).'], 400);
         } catch (\Exception $e) {
-            $pago->marcarComoFallido();
+            if ($pago) try { $pago->marcarComoFallido(); } catch (\Throwable $_e) { /* noop */ }
             Log::error('Confirmar Pago Error: ' . $e->getMessage());
 
             return response()->json([ 'success' => false, 'error' => 'No se pudo confirmar el pago. Por favor, intenta nuevamente.' ], 400);

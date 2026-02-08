@@ -42,6 +42,10 @@
         "vitest": "^4.0.18"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.20",
+        "@fullcalendar/interaction": "^6.1.20",
+        "@fullcalendar/react": "^6.1.20",
+        "@fullcalendar/timegrid": "^6.1.20",
         "@heroicons/react": "^2.2.0",
         "@hookform/resolvers": "^5.2.2",
         "@splidejs/react-splide": "^0.7.12",

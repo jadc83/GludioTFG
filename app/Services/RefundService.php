@@ -87,13 +87,24 @@ class RefundService
     /**
      * Sincroniza el estado del pago según reembolsos
      *
-     * @param \App\Models\Pago $pago
+     * @param \App\Models\Pago|\stdClass $pago
      * @return void
      */
     public function sincronizarEstadoPagoSegunReembolsos($pago): void
     {
         if (!$pago) return;
 
+        // Aceptamos Pago o stdClass (desde webhooks/raw). Intentar resolver a Pago si es posible.
+        if (!($pago instanceof \App\Models\Pago)) {
+            if (isset($pago->id) && is_numeric($pago->id)) {
+                $pago = \App\Models\Pago::find((int)$pago->id);
+            }
+            if (!($pago instanceof \App\Models\Pago)) {
+                return;
+            }
+        }
+
+        /** @var \App\Models\Pago $pago */
         $pago->load(['reserva', 'reembolsos']);
         $reserva = $pago->reserva;
 
@@ -158,6 +169,10 @@ class RefundService
      * @param Reserva $reserva
      * @return array
      */
+    /**
+     * @param \App\Models\Reserva $reserva
+     * @return array<string, mixed>
+     */
     public function obtenerDetallesReembolsos(Reserva $reserva): array
     {
         $reserva->load(['reembolsos', 'refundRequests', 'pagos']);
@@ -169,7 +184,7 @@ class RefundService
         $refundRequests = $reserva->refundRequests()
             ->with('user')
             ->get()
-            ->map(function ($rr) {
+            ->map(function (\App\Models\RefundRequest $rr): array {
                 return [
                     'id' => $rr->id,
                     'estado' => $rr->status,
@@ -180,11 +195,11 @@ class RefundService
                     'fecha_solicitud' => $rr->created_at?->format('Y-m-d H:i:s'),
                     'fecha_procesado' => $rr->processed_at?->format('Y-m-d H:i:s'),
                 ];
-            });
+            })->values()->toArray();
 
         $reembolsos = $reserva->reembolsos()
             ->get()
-            ->map(function ($r) {
+            ->map(function (\App\Models\Refund $r): array {
                 return [
                     'id' => $r->id,
                     'monto' => $r->amount_cents ? ($r->amount_cents / 100) : 0,
@@ -193,7 +208,7 @@ class RefundService
                     'stripe_id' => $r->stripe_refund_id,
                     'fecha' => $r->created_at?->format('Y-m-d H:i:s'),
                 ];
-            });
+            })->values()->toArray();
 
         return [
             'precio_total' => $precioTotal,

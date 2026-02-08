@@ -21,8 +21,18 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        // Si el usuario actual es admin y se pasó ?user_id=xx, permitir ver el perfil de ese usuario (reservas incluidas)
+        $targetUser = $user;
+        $requestedUserId = $request->query('user_id');
+        if ($requestedUserId && $user->hasRole('admin')) {
+            $maybe = \App\Models\User::find($requestedUserId);
+            if ($maybe) {
+                $targetUser = $maybe;
+            }
+        }
+
         // Obtener las reservas del usuario
-        $reservas = $user->reservas()
+        $reservas = $targetUser->reservas()
             ->with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
             ->orderBy('check_in', 'desc')
             ->get();
@@ -48,29 +58,44 @@ class ProfileController extends Controller
         $empleadoData = null;
         $habitacionesLimpieza = [];
 
-        if ($user->empleado) {
-            $user->empleado->load('departamento');
+        if ($targetUser->empleado) {
+            $targetUser->empleado->load('departamento');
             $empleadoData = [
-                'id' => $user->empleado->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'puesto' => $user->empleado->puesto,
-                'departamento' => $user->empleado->departamento?->name ?? null,
+                'id' => $targetUser->empleado->id,
+                'name' => $targetUser->name,
+                'email' => $targetUser->email,
+                'departamento' => $targetUser->empleado->departamento?->name ?? null,
                 // Incluir datos de perfil del usuario para mostrarlos en el perfil de empleado
-                'role' => $user->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $user->getRoleNames()->first())) : null,
-                'telefono' => $user->telefono ?? null,
-                'direccion' => $user->direccion ?? null,
-                'ciudad' => $user->ciudad ?? null,
-                'codigo_postal' => $user->codigo_postal ?? null,
-                'nacionalidad' => $user->nacionalidad ?? null,
-                'tipo_documento' => $user->tipo_documento ?? null,
-                'numero_documento' => $user->numero_documento ?? null,
+                'role' => $targetUser->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $targetUser->getRoleNames()->first())) : null,
+                'telefono' => $targetUser->telefono ?? null,
+                'direccion' => $targetUser->direccion ?? null,
+                'ciudad' => $targetUser->ciudad ?? null,
+                'codigo_postal' => $targetUser->codigo_postal ?? null,
+                'nacionalidad' => $targetUser->nacionalidad ?? null,
+                'tipo_documento' => $targetUser->tipo_documento ?? null,
+                'numero_documento' => $targetUser->numero_documento ?? null,
             ];
 
             // Cargar habitaciones en estado 'limpieza' para mostrar en el perfil de empleado
-            $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')->with('fotos')->limit(100)->get();
+            // Excluir habitaciones que ya tienen una tarea activa (pendiente|en_progreso)
+            $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
+                ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
+                ->with('fotos')
+                ->limit(100)
+                ->get();
             $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
             $habitacionesLimpieza = $action->handle($habitaciones);
+        }
+
+        // Determinar si el usuario que visualiza pertenece al departamento Recepcion
+        $viewer = $request->user();
+        $viewerIsReception = false;
+        if ($viewer->empleado && $viewer->empleado->departamento) {
+            try {
+                $viewerIsReception = strcasecmp($viewer->empleado->departamento->name, 'recepcion') === 0;
+            } catch (\Throwable $e) {
+                $viewerIsReception = false;
+            }
         }
 
         return Inertia::render('Profile/Edit', [
@@ -79,6 +104,12 @@ class ProfileController extends Controller
             'reservas' => $reservasFormateadas,
             'empleado' => $empleadoData,
             'habitacionesLimpieza' => $habitacionesLimpieza,
+            // Mostrar 'Mis Reservas' sólo a administradores y empleados del departamento Recepcion
+            'can_view_reservas' => $request->user()->hasRole('admin') || $viewerIsReception,
+            // Mostrar la pestaña Tareas y Turnos solo para empleados con rol encargado|operario|auxiliar
+            'can_view_tareas' => ($user->empleado && $user->hasAnyRole(['encargado','operario','auxiliar'])),
+            // Mostrar la pestaña 'Mi Perfil' para todos (contenido de tareas/turnos sigue restringido)
+            'show_profile_tab' => true,
         ]);
     }
 
@@ -116,6 +147,72 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit');
+    }
+
+    /**
+     * Mostrar vista de historial de tareas completadas por el usuario
+     */
+    public function tareasCompleted(Request $request)
+    {
+        $user = $request->user();
+        $tareas = \App\Models\Tarea::where('completed_by', $user->id)
+            ->with('habitacion')
+            ->orderBy('completed_at', 'desc')
+            ->get()
+            ->map(function ($t) {
+                $completedAt = null;
+                if ($t->completed_at) {
+                    try {
+                        $completedAt = \Carbon\Carbon::parse($t->completed_at)->toDateTimeString();
+                    } catch (\Throwable $e) {
+                        $completedAt = (string) $t->completed_at;
+                    }
+                }
+
+                // Calcular duración (segundos) entre asignación (created_at) y completado (completed_at)
+                $durationSeconds = null;
+                $durationHuman = null;
+                if ($t->completed_at && $t->created_at) {
+                    try {
+                        // Use absolute difference of timestamps to avoid negative diffs
+                        try {
+                            $completedTs = \Carbon\Carbon::parse($t->completed_at)->getTimestamp();
+                            $createdTs = \Carbon\Carbon::parse($t->created_at)->getTimestamp();
+                            $durationSeconds = (int) abs($completedTs - $createdTs);
+                            \Log::info('Tarea duration calc', ['id' => $t->id, 'created_at' => (string)$t->created_at, 'completed_at' => (string)$t->completed_at, 'seconds' => $durationSeconds]);
+                            $interval = \Carbon\CarbonInterval::seconds($durationSeconds)->cascade();
+                            $durationHuman = $interval->forHumans(['join' => true, 'parts' => 2, 'short' => false, 'locale' => 'es']);
+                            \Log::info('Tarea duration human', ['id' => $t->id, 'human' => $durationHuman]);
+                        } catch (\Throwable $e) {
+                            $durationSeconds = null;
+                            $durationHuman = null;
+                            \Log::error('Error computing duration timestamps', ['id' => $t->id, 'error' => (string)$e]);
+                        }
+                    } catch (\Throwable $e) {
+                        $durationHuman = null;
+                        \Log::error('Error computing duration', ['id' => $t->id, 'error' => (string)$e]);
+                    }
+                }
+
+                // Si la descripción termina en un número y ya tenemos habitación, eliminar el número repetido
+                $desc = $t->descripcion;
+                if ($t->habitacion && is_string($desc) && preg_match('/\d+$/', trim($desc))) {
+                    $desc = preg_replace('/\s*\d+$/', '', $desc);
+                }
+
+                return [
+                    'id' => $t->id,
+                    'descripcion' => $desc,
+                    'habitacion' => $t->habitacion ? ['id' => $t->habitacion->id, 'numero' => $t->habitacion->numero] : null,
+                    'assigned_at' => $t->created_at ? (\Carbon\Carbon::parse($t->created_at)->toDateTimeString() ?? (string) $t->created_at) : null,
+                    'completed_at' => $completedAt,
+                    'duration' => $durationHuman,
+                ];
+            });
+
+        return Inertia::render('Profile/CompletedTasks', [
+            'tareas' => $tareas,
+        ]);
     }
 
     /**

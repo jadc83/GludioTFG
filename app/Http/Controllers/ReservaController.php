@@ -10,7 +10,6 @@ use App\Services\ReservaService;
 use App\Services\HabitacionService;
 use App\Services\PrecioService;
 use App\Services\ReservaFormatterService;
-use App\Services\ReservaExtensionService;
 use App\Http\Traits\JsonResponse;
 use App\Models\Cupon;
 use App\Models\CuponAplicado;
@@ -19,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 
 class ReservaController extends Controller
@@ -29,7 +29,6 @@ class ReservaController extends Controller
     protected PrecioService $precioService;
     protected HabitacionService $habitacionService;
     protected ReservaFormatterService $formatterService;
-    protected ReservaExtensionService $extensionService;
     protected PaymentService $paymentService;
 
     /* Constructor del controlador de reservas */
@@ -38,33 +37,46 @@ class ReservaController extends Controller
         PrecioService $precioService,
         HabitacionService $habitacionService,
         ReservaFormatterService $formatterService,
-        ReservaExtensionService $extensionService,
         PaymentService $paymentService
     ) {
         $this->reservaService = $reservaService;
         $this->precioService = $precioService;
         $this->habitacionService = $habitacionService;
         $this->formatterService = $formatterService;
-        $this->extensionService = $extensionService;
         $this->paymentService = $paymentService;
     }
+
+    // El endpoint de cambio de fechas fue eliminado; las extensiones deben usar el flujo existente de extensión.
 
     /**
      * Lista reservas con filtros y paginación
      * GET /reservas - Panel de administración de reservas
      * Filtros: status, localizador, cliente, habitación
      * Devuelve: vista con reservas paginadas
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array<string,mixed>|\Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
-        $reservas = Reserva::withReservable()
+        $query = Reserva::withReservable()
             ->with(['habitaciones.habitacion', 'bookedBy', 'pagos'])
             ->status($request->status)
             ->localizador($request->localizador)
             ->cliente($request->cliente)
-            ->habitacion($request->habitacion)
-            ->orderBy('check_in', 'desc')
-            ->get();
+            ->habitacion($request->habitacion);
+
+        // Soporte para mostrar registros eliminados (soft deletes).
+        // Parámetro request 'trashed' puede ser:
+        //  - 'with' -> incluir registros borrados (withTrashed)
+        //  - 'only' -> sólo registros borrados (onlyTrashed)
+        if (($request->input('trashed') ?? '') === 'with') {
+            $query = $query->withTrashed();
+        } elseif (($request->input('trashed') ?? '') === 'only') {
+            $query = $query->onlyTrashed();
+        }
+
+        $reservas = $query->orderBy('check_in', 'desc')->get();
 
         $reservasJson = $this->formatterService->formatearReservas($reservas);
 
@@ -82,6 +94,9 @@ class ReservaController extends Controller
      * POST /reservas - Procesa datos del formulario de reserva
      * Valida datos, crea reserva y envía email de confirmación
      * Devuelve: redirección con mensaje de éxito
+     *
+     * @param \App\Http\Requests\StoreReservaRequest $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function store(StoreReservaRequest $request)
     {
@@ -205,7 +220,12 @@ class ReservaController extends Controller
         }
     }
 
-    /* Crea una reserva y, opcionalmente, inicia un Checkout de Stripe en la misma operación */
+    /**
+     * Crea una reserva y, opcionalmente, inicia un Checkout de Stripe en la misma operación
+     *
+     * @param \App\Http\Requests\StoreReservaRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function storeConCheckout(StoreReservaRequest $request)
     {
         try {
@@ -236,8 +256,8 @@ class ReservaController extends Controller
             try {
                 if ($request->has('cupon_id')) {
                     $incomingMonto = (float) $request->input('monto', $reserva->precio_total);
-                    $oldTotal = (float) $reserva->precio_total;
-                    $descuento = max(0, round($oldTotal - $incomingMonto, 2));
+                    $totalOriginal = (float) $reserva->precio_total;
+                    $descuento = max(0, round($totalOriginal - $incomingMonto, 2));
 
                     $reserva->update([
                         'cupon_id' => $request->input('cupon_id'),
@@ -286,8 +306,6 @@ class ReservaController extends Controller
             } else {
                 return response()->json(['success' => false, 'error' => $checkout['error'] ?? 'Error creating checkout session'], 400);
             }
-
-            return response()->json(['success' => false, 'error' => $checkout['error'] ?? 'Error creating checkout session'], 400);
         } catch (\Exception $e) {
             Log::error('Error en ReservaController::storeConCheckout', ['mensaje' => $e->getMessage(), 'archivo' => $e->getFile(), 'linea' => $e->getLine()]);
             return response()->json(['success' => false, 'error' => 'Error creando reserva o checkout'], 400);
@@ -299,6 +317,9 @@ class ReservaController extends Controller
      * GET /api/habitaciones-disponibles - Endpoint AJAX para calendario
      * Parámetros: check_in, check_out
      * Devuelve: JSON con habitaciones disponibles por tipo
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse|array<string,mixed>
      */
     public function habitacionesDisponibles(Request $request)
     {
@@ -318,11 +339,17 @@ class ReservaController extends Controller
     }
 
 
+    /**
+     * Muestra detalle de reserva para edición/visualización
+     *
+     * @param \App\Models\Reserva $reserva
+     * @return \Inertia\Response|array<string,mixed>
+     */
     public function show(Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
 
-        return inertia('Reservas/EditReservaUsuario', [
+        return inertia('Reservas/EditReserva', [
             'reserva' => [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -345,6 +372,13 @@ class ReservaController extends Controller
             ]]);
     }
 
+    /**
+     * Vista de edición en panel
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Reserva $reserva
+     * @return \Inertia\Response
+     */
     public function edit(Request $request, Reserva $reserva)
     {
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
@@ -354,17 +388,30 @@ class ReservaController extends Controller
         $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva, $checkIn, $checkOut);
         $habitacionesDisponibles = $this->formatterService->obtenerHabitacionesYPreciosParaEdicion($reserva, $checkIn, $checkOut);
 
-        return inertia('Reservas/EditReservaPMS', [
+        return inertia('Reservas/EditReserva', [
             'reserva' => $reservaData,
             'habitaciones' => $habitacionesDisponibles
         ]);
     }
 
+    /**
+     * Actualiza una reserva en el panel (datos y estado)
+     *
+     * @param \App\Http\Requests\UpdateReservaRequest $request
+     * @param \App\Models\Reserva $reserva
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
         $validated = $request->validated();
 
         try {
+            // Registro explícito si el frontend envía payment_intent_id para ayudar a depuración de persistencia
+            try {
+                if (!empty($validated['payment_intent_id'])) {
+                    Log::info('ReservaController::update - payment_intent_id presente en payload', ['reserva_id' => $reserva->id, 'payment_intent_id' => $validated['payment_intent_id'], 'pago_monto' => $validated['pago_monto'] ?? null, 'user_id' => Auth::id()]);
+                }
+            } catch (\Throwable $e) { Log::warning('ReservaController::update - fallo logging payment_intent_id: ' . $e->getMessage()); }
             // Detectar cambio de estado a 'cancelado' para enviar correo
             $originalStatus = $reserva->status;
             $motivo = $request->input('motivo') ?? null;
@@ -386,30 +433,46 @@ class ReservaController extends Controller
                 $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
             }
 
-            // Si la petición espera JSON, devolver información estructurada (incluyendo refund si existe)
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $msg,
-                    'refund' => $result['refund'] ?? null,
-                    'payment' => $result['payment'] ?? null,
-                ]);
+            // Refrescar y formatear la reserva para devolver datos útiles al frontend
+            $reserva->refresh();
+            try {
+                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+            } catch (\Throwable $e) {
+                $reservaFormateada = ['id' => $reserva->id, 'precio_total' => $reserva->precio_total ?? null, 'check_in' => $reserva->check_in ?? null, 'check_out' => $reserva->check_out ?? null];
             }
 
-            $redirect = redirect()->route('panel')->with('success', $msg);
-            if (!empty($result['refund'])) {
-                $redirect = $redirect->with('refund_info', $result['refund']);
-            }
-            if (!empty($result['payment'])) {
-                $redirect = $redirect->with('payment_info', $result['payment']);
-            }
-
-            return $redirect;
+            // Devolver siempre JSON para simplificar el flujo AJAX y evitar redirecciones
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'refund' => $result['refund'] ?? null,
+                'payment' => $result['payment'] ?? null,
+                'reserva' => $reservaFormateada,
+            ]);
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
+            Log::error('Error en ReservaController::update', [
+                'mensaje' => $e->getMessage(),
+                'class' => \get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'stack' => $e->getTraceAsString(),
+                'reserva_id' => $reserva->id ?? null,
+                'user_id' => Auth::id(),
+                'payload' => $request->all(),
+            ]);
+
+            $msg = $e->getMessage();
+            return response()->json(['success' => false, 'error' => $msg], 400);
         }
     }
 
+    /**
+     * Elimina una reserva (panel)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Reserva $reserva
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
     public function destroy(Request $request, Reserva $reserva)
     {
         try {
@@ -431,6 +494,13 @@ class ReservaController extends Controller
     /**
      * Asigna habitaciones específicas manualmente a una reserva existente
      * Usado para edición manual desde panel de control
+     */
+    /**
+     * Asigna habitaciones a una reserva
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Reserva $reserva
+     * @return array<string,mixed>|\Illuminate\Http\JsonResponse
      */
     public function asignarHabitaciones(Request $request, Reserva $reserva)
     {
@@ -487,6 +557,13 @@ class ReservaController extends Controller
      * Desasigna habitaciones específicas de una reserva existente
      * Usado para quitar asignaciones manuales desde panel de control
      */
+    /**
+     * Desasigna habitaciones de una reserva
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Reserva $reserva
+     * @return array<string,mixed>|\Illuminate\Http\JsonResponse
+     */
     public function desasignarHabitaciones(Request $request, Reserva $reserva)
     {
         $request->validate([
@@ -539,6 +616,12 @@ class ReservaController extends Controller
     }
 
     /* Calcula el precio dinámico para una reserva */
+    /**
+     * Calcula precio para un conjunto de habitaciones y fechas
+     *
+     * @param \App\Http\Requests\CalcularPrecioRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function calcularPrecio(\App\Http\Requests\CalcularPrecioRequest $request)
     {
         try {
@@ -564,8 +647,10 @@ class ReservaController extends Controller
 
     /**
      * Busca una reserva por localizador
+     * @param string $localizador
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function buscarPorLocalizador($localizador)
+    public function buscarPorLocalizador(string $localizador)
     {
         try {
             $action = app(\App\Actions\Reservas\BuscarPorLocalizadorAction::class);
@@ -584,6 +669,12 @@ class ReservaController extends Controller
     /**
      * Devuelve estados de pago para un conjunto de localizadores (query param `localizadores` coma-separados)
      * Ej: GET /api/reservas/estados?localizadores=GKS6BC3,G1KIR63
+     */
+    /**
+     * Lista estados disponibles y filtros para reservas
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array<string,mixed>
      */
     public function estados(\Illuminate\Http\Request $request)
     {
@@ -604,7 +695,14 @@ class ReservaController extends Controller
     }
 
     /* Descarga un comprobante de reserva en PDF */
-    public function descargarComprobante($localizador)
+    /** @param string $localizador @return \Symfony\Component\HttpFoundation\BinaryFileResponse */
+    /**
+     * Descarga comprobante (PDF) de reserva
+     *
+     * @param string $localizador
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
+     */
+    public function descargarComprobante(string $localizador)
     {
         try {
             $action = app(\App\Actions\Reservas\DescargarComprobanteAction::class);
@@ -615,71 +713,19 @@ class ReservaController extends Controller
         }
     }
 
-    /* Extiende una reserva con nuevos días adicionales */
-    public function extenderReserva(Request $request, $localizador)
-    {
-        try {
-            $numeroDias = (int) $request->input('numero_dias');
-            $confirmar = (bool) $request->input('confirmar');
-
-            $resultado = $this->extensionService->extenderReserva($localizador, $numeroDias, $confirmar);
-
-            return $this->success($resultado);
-        } catch (\Exception $e) {
-            return $this->error('Error al extender la reserva: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Modifica las fechas de la estancia (ampliar o reducir) tras comprobar disponibilidad.
-     * Espera `check_in` y `check_out` en formato Y-m-d.
-     */
-    public function modificarEstancia(\App\Http\Requests\ModificarEstanciaRequest $request, $localizador)
-    {
-        try {
-            $action = app(\App\Actions\Reservas\ModificarEstanciaAction::class);
-            $resultado = $action->handle($localizador, $request->validated());
-
-            if (isset($resultado['error'])) {
-                return $this->error($resultado['error'], 402);
-            }
-
-            if (isset($resultado['success']) && $resultado['success'] === false) {
-                return $this->error($resultado['message'] ?? 'Error al modificar la estancia', 400);
-            }
-
-            return $this->success($resultado);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->error('Reserva no encontrada.', 404);
-        } catch (\Exception $e) {
-            Log::error('Error en modificarEstancia: ' . $e->getMessage());
-            return $this->error('Error al modificar la estancia: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Preview de modificación de estancia: comprueba disponibilidad y estima precio/ajuste.
-     * Devuelve: available (bool), nuevo_total, viejo_total, nights_old, nights_new, estimate_refund, estimate_charge
-     */
-    public function previewModificarEstancia(\App\Http\Requests\ModificarEstanciaRequest $request, $localizador)
-    {
-        try {
-            $action = app(\App\Actions\Reservas\PreviewModificarEstanciaAction::class);
-            $resultado = $action->handle($localizador, $request->validated());
-            return $this->success($resultado);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->error('Reserva no encontrada.', 404);
-        } catch (\Exception $e) {
-            Log::error('Error en previewModificarEstancia: ' . $e->getMessage());
-            return $this->error('Error en preview: ' . $e->getMessage(), 500);
-        }
-    }
+    // Las rutas y acciones de modificación/preview de estancia fueron eliminadas.
 
     /**
      * Obtiene precios y ocupación por día para calendario
      * GET /reservas/precios-por-dia - Endpoint para componente calendario
      * Parámetros: inicio, fin (fechas en formato YYYY-MM-DD)
      * Devuelve: JSON con precios y ocupación diaria
+     */
+    /**
+     * Devuelve precios por día para un periodo solicitado
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array<string,mixed>|\Illuminate\Http\JsonResponse
      */
     public function preciosPorDia(Request $request)
     {
@@ -700,7 +746,15 @@ class ReservaController extends Controller
     }
 
     /* Devuelve precios para un mes concreto */
-    public function preciosMes($yyyy, $mm)
+    /** @param int|string $yyyy @param int|string $mm @return \Illuminate\Http\JsonResponse */
+    /**
+     * Devuelve precios agregados por mes
+     *
+     * @param int|string $yyyy
+     * @param int|string $mm
+     * @return array<string,mixed>
+     */
+    public function preciosMes(int|string $yyyy, int|string $mm)
     {
         try {
             $action = app(\App\Actions\Reservas\PreciosMesAction::class);
@@ -722,8 +776,11 @@ class ReservaController extends Controller
      * POST /reservas/{localizador}/check-in - Procesa check-in desde panel
     * Asigna habitaciones físicas y cambia estado a checked_in
      * Devuelve: JSON con resultado del check-in
+     * @param \Illuminate\Http\Request $request
+     * @param string $localizador
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function marcarCheckIn(Request $request, $localizador)
+    public function marcarCheckIn(Request $request, string $localizador)
     {
         try {
             $action = app(\App\Actions\Reservas\MarcarCheckInAction::class);

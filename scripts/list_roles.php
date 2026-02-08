@@ -7,5 +7,5 @@ $kernel->bootstrap();
 
 use Spatie\Permission\Models\Role;
 
-$roles = Role::whereNotIn('name', ['admin','user'])->pluck('name')->toArray();
+$roles = Role::whereIn('name', ['encargado','operario','auxiliar'])->pluck('name')->toArray();
 echo json_encode($roles, JSON_UNESCAPED_UNICODE) . PHP_EOL;

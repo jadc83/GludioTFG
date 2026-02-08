@@ -7,12 +7,7 @@ use App\Models\HabitacionReserva;
 
 class ContarPorTipoAction
 {
-    /**
-     * Devuelve arrays con conteos por tipo para una fecha dada.
-     *
-     * @param string $fecha Formato Y-m-d
-     * @return array [ 'asignadasPorTipo' => [...], 'placeholdersPorTipo' => [...], 'reservasSinHabitaciones' => int ]
-     */
+
     public static function handle(string $fecha): array
     {
         $asignadasPorTipo = DB::table('habitacion_reserva')
@@ -43,6 +38,7 @@ class ContarPorTipoAction
             'asignadasPorTipo' => $asignadasPorTipo,
             'placeholdersPorTipo' => $placeholdersPorTipo,
             'reservasSinHabitaciones' => $reservasSinHabitaciones,
+            'reservasSinHabitacion' => $reservasSinHabitaciones,
         ];
     }
 }

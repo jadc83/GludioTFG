@@ -21,12 +21,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ReservaDisponibilidadService
 {
-    private PrecioService $servicioPrecio;
 
-    public function __construct(?PrecioService $servicioPrecio = null)
-    {
-        $this->servicioPrecio = $servicioPrecio ?? new PrecioService();
-    }
 
     /**
      * Verifica disponibilidad de múltiples tipos de habitaciones
@@ -132,25 +127,5 @@ class ReservaDisponibilidadService
      * Usado por: procesos de extensión de reserva
      * Retorna: array con números de habitaciones no disponibles
      */
-    public function verificarDisponibilidadExtension(\App\Models\Reserva $reserva, Carbon $checkOutActual, Carbon $nuevoCheckOut): array
-    {
-        $habitacionesNoDisponibles = [];
-        $checkOutDate = $checkOutActual->format('Y-m-d');
-        $nuevoCheckOutDate = $nuevoCheckOut->format('Y-m-d');
-
-        foreach ($reserva->habitaciones as $habitacionReserva) {
-            $habitacion = $habitacionReserva->habitacion;
-
-            $conflictivas = HabitacionReserva::where('habitacion_id', $habitacion->id)
-                ->where('reserva_id', '!=', $reserva->id)
-                ->whereRaw("check_in < ? AND check_out > ?", [$nuevoCheckOutDate, $checkOutDate])
-                ->count();
-
-            if ($conflictivas > 0) {
-                $habitacionesNoDisponibles[] = $habitacion->numero;
-            }
-        }
-
-        return $habitacionesNoDisponibles;
-    }
+    // Método verificarDisponibilidadExtension eliminado: extensiones de reserva retiradas.
 }

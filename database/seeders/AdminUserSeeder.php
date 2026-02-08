@@ -13,23 +13,38 @@ class AdminUserSeeder extends Seeder
 
     public function run(): void
     {
-        // Preferir actualizar el primer usuario existente a admin para evitar duplicados
-        $user = User::first();
+        // Intentar marcar usuario específico como admin
+        $email = 'dominguezcamachojose@gmail.com';
+        $user = User::where('email', $email)->first();
+
         if ($user) {
-            // Keep existing user as-is (no admin flag)
+            // Asegurar que el rol 'admin' exista y asignarlo
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('admin');
+                $this->command->info("Usuario {$email} actualizado con rol admin.");
+            } else {
+                $this->command->info("Usuario {$email} encontrado, pero el método assignRole no está disponible.");
+            }
             return;
         }
 
-        // Si no hay usuarios, crear uno con credenciales por defecto (ajustar en .env)
-        User::create([
-            'name' => 'Admin',
-            'email' => env('ADMIN_EMAIL', 'admin@example.com'),
-            'password' => Hash::make(env('ADMIN_PASSWORD', 'password')),
+        // Si no existe, crear el usuario y asignar rol admin si es posible
+        $new = User::create([
+            'name' => 'Jose Dominguez',
+            'email' => $email,
+            'password' => Hash::make(env('ADMIN_PASSWORD', 'ChangeMe123!')),
             'tipo_documento' => 'dni',
             'numero_documento' => '00000000T',
             'nacionalidad' => 'Española',
             'direccion' => 'Dirección admin',
             'telefono' => '000000000',
         ]);
+
+        if ($new && method_exists($new, 'assignRole')) {
+            $new->assignRole('admin');
+            $this->command->info("Usuario {$email} creado y asignado al rol admin.");
+        } else {
+            $this->command->info("Usuario {$email} creado. Asegúrate de asignar el rol 'admin' manualmente.");
+        }
     }
 }

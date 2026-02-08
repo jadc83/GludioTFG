@@ -20,7 +20,7 @@ echo "stripe_payment_intent_id={$pago->stripe_payment_intent_id}\n";
 echo "stripe_response (summary):\n";
 if ($pago->stripe_response) {
     if (is_array($pago->stripe_response)) {
-        echo json_encode(array_intersect_key($pago->stripe_response, array_flip(['id','status','amount','currency','last_payment_error'])), JSON_PRETTY_PRINT) . "\n";
+        echo json_encode(array_intersect_key($pago->stripe_response, array_flip(['id','status','amount','currency','last_payment_error','client_secret'])), JSON_PRETTY_PRINT) . "\n";
     } else {
         echo substr((string)$pago->stripe_response, 0, 1000) . "\n";
     }
@@ -34,6 +34,9 @@ if (config('services.stripe.secret') && $pago->stripe_payment_intent_id) {
     try {
         $pi = PaymentIntent::retrieve($pago->stripe_payment_intent_id);
         echo "Stripe PaymentIntent id={$pi->id} status={$pi->status} amount={$pi->amount} currency={$pi->currency}\n";
+        if (isset($pi->client_secret)) {
+            echo "client_secret: " . ($pi->client_secret ?? '[none]') . "\n";
+        }
         if (isset($pi->last_payment_error) && $pi->last_payment_error) {
             echo "last_payment_error: " . json_encode($pi->last_payment_error) . "\n";
         }

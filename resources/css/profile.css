@@ -104,4 +104,147 @@
     .perfil-form-actions button {
         width: auto;
     }
+
+    /* FullCalendar headers: show full weekday names, capitalize and prevent truncation */
+    .fc .fc-col-header-cell-cushion {
+      text-transform: capitalize; /* capitaliza la primera letra */
+      white-space: nowrap; /* evita que se rompan en varias líneas */
+    }
+
+    /* Ensure header has enough space so long names fit better */
+    .fc .fc-col-header-cell {
+      min-width: 64px;
+    }
+
+    /* Custom estilo para eventos de turno */
+    .fc .fc-event-turno {
+        border: none;
+        background: linear-gradient(90deg, #6b021c, #33020b); /* burgundy -> darker */
+        color: #ffffff;
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.75rem;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        overflow: visible;
+        box-shadow: 0 6px 18px rgba(107, 2, 28, 0.18);
+        border-left: 4px solid rgba(255,255,255,0.12);
+    }
+
+    .fc .turno-event-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        width: 100%;
+    }
+
+    /* Compact row: title left, time right */
+    .fc .turno-event-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .fc .turno-event-title {
+        font-weight: 700;
+        font-size: 0.92rem; /* smaller */
+        line-height: 1.05;
+        color: #fff;
+        max-width: 65%;
+    }
+
+    .fc .turno-event-time {
+        font-size: 0.82rem; /* smaller */
+        color: rgba(255,255,255,0.98);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .fc .turno-event-meta {
+        font-size: 0.75rem; /* reduce */
+        color: rgba(255,255,255,0.9);
+        opacity: 0.95;
+    }
+
+    /* Make event more compact vertically */
+    .fc .fc-event-turno {
+        padding: 0.45rem 0.6rem;
+        min-height: 44px;
+    }
+
+    /* Global FullCalendar enhancements */
+    /* Toolbar */
+    .fc .fc-toolbar-chunk button {
+        background: transparent;
+        border: 1px solid rgba(11,22,34,0.06);
+        color: #071326;
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.375rem;
+        font-weight: 700;
+        text-transform: none;
+    }
+
+    .fc .fc-toolbar-chunk button.fc-button-active {
+        background: #0f172a;
+        color: #fff;
+        border-color: #0f172a;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #071326;
+    }
+
+    /* Column headers */
+    .fc .fc-col-header-cell {
+        background: transparent;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(11,22,34,0.04);
+    }
+
+    .fc .fc-col-header-cell-cushion {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #071326;
+        text-transform: capitalize;
+        white-space: nowrap;
+    }
+
+    /* Time column (left) */
+    .fc .fc-timegrid-axis {
+        color: #6b7280;
+        font-weight: 600;
+        padding-right: 0.5rem;
+    }
+
+    /* Grid lines and cell hover */
+    .fc .fc-timegrid-slot-lane-frame {
+        background-image: linear-gradient(rgba(11,22,34,0.03) 1px, transparent 1px);
+        background-size: 100% 2.5rem;
+    }
+
+    .fc .fc-timegrid-col:hover {
+        background: rgba(11,22,34,0.015);
+    }
+
+    /* Event hover and interaction */
+    .fc .fc-event-turno:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(107,2,28,0.22);
+    }
+
+    /* Make events show more clearly on narrow cells */
+    .fc .fc-daygrid-event .fc-event-title,
+    .fc .fc-timegrid-event .turno-event-title {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    /* Fullscreen container tweak */
+    .fc .fc-scroller {
+        -webkit-overflow-scrolling: touch;
+    }
 }

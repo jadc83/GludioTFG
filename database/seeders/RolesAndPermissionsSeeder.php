@@ -14,20 +14,34 @@ class RolesAndPermissionsSeeder extends Seeder
         // Limpiar caché de permissions
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
+        // Borrar datos antiguos (fresh) de Spatie para evitar roles legacy
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+        Permission::query()->delete();
+        Role::query()->delete();
+        \Illuminate\Support\Facades\DB::table('model_has_roles')->delete();
+        \Illuminate\Support\Facades\DB::table('model_has_permissions')->delete();
+        \Illuminate\Support\Facades\DB::table('role_has_permissions')->delete();
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+
         // Permisos de ejemplo (puedes añadir más si lo necesitas)
         Permission::firstOrCreate(['name' => 'manage users']);
         Permission::firstOrCreate(['name' => 'view reports']);
 
-        // Roles
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $user = Role::firstOrCreate(['name' => 'user']);
+        // Roles: crear sólo los roles necesarios
+        $roles = ['admin', 'user', 'encargado', 'operario', 'auxiliar'];
+        foreach ($roles as $r) {
+            Role::firstOrCreate(['name' => $r]);
+        }
 
         // Asignar permisos básicos al admin
-        $admin->givePermissionTo(['manage users', 'view reports']);
+        $admin = Role::where('name','admin')->first();
+        if ($admin) {
+            $admin->givePermissionTo(['manage users', 'view reports']);
+        }
 
         // Asignar rol admin al usuario de prueba si existe
         $u = User::where('email', 'test@example.com')->first();
-        if ($u) {
+        if ($u && $admin) {
             $u->assignRole($admin);
         }
     }

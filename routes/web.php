@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
+Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified', \App\Http\Middleware\EnsureEncargado::class]);
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
 Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr');
 Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->where('localizador', '[A-Z0-9]+')->name('reservas.checkin');
@@ -45,15 +45,43 @@ Route::get('/api/tipos-habitacion', [TipoHabitacionController::class, 'index']);
 Route::put('/api/tipos-habitacion/{tipoHabitacion}', [TipoHabitacionController::class, 'update'])->middleware('auth');
 Route::get('/api/tarifas', [TarifaController::class, 'index']);
 
-// API: roles disponibles para asignar a empleados (excluye admin/user)
+// API: roles disponibles para asignar a empleados (encargado|operario|auxiliar)
 Route::get('/api/roles', function() {
-    return \Spatie\Permission\Models\Role::whereNotIn('name', ['admin','user'])->pluck('name');
+    return \Spatie\Permission\Models\Role::whereIn('name', ['encargado','operario','auxiliar'])->pluck('name')->values();
 })->middleware('auth');
 
 // API: departamentos
 Route::get('/api/departamentos', function() {
     return \App\Models\Departamento::select('id','name')->orderBy('name')->get();
 })->middleware('auth');
+
+// API: tareas para empleado logueado
+Route::get('/api/tareas', [\App\Http\Controllers\TareaController::class, 'index'])->middleware('auth');
+Route::post('/api/tareas/assign-room', [\App\Http\Controllers\TareaController::class, 'assignRoom'])->middleware('auth');
+Route::post('/api/tareas/{tarea}/complete', [\App\Http\Controllers\TareaController::class, 'complete'])->middleware('auth');
+Route::post('/api/tareas/{tarea}/cancel', [\App\Http\Controllers\TareaController::class, 'cancel'])->middleware('auth');
+Route::get('/api/tareas/completed', [\App\Http\Controllers\TareaController::class, 'completedByUser'])->middleware('auth');
+
+// API: habitaciones en limpieza (excluye habitaciones con tareas activas)
+Route::get('/api/habitaciones/limpieza', function (Illuminate\Http\Request $request) {
+    $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
+        ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
+        ->with('fotos')
+        ->limit(200)
+        ->get();
+    $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
+    return response()->json(['habitaciones' => $action->handle($habitaciones)]);
+})->middleware('auth');
+
+// API: turnos (PoC) - para empleado logueado
+Route::get('/api/turnos', [\App\Http\Controllers\TurnoController::class, 'index'])->middleware('auth');
+Route::post('/api/turnos', [\App\Http\Controllers\TurnoController::class, 'store'])->middleware('auth');
+Route::put('/api/turnos/{turno}', [\App\Http\Controllers\TurnoController::class, 'update'])->middleware('auth');
+Route::delete('/api/turnos/{turno}', [\App\Http\Controllers\TurnoController::class, 'destroy'])->middleware('auth');
+Route::post('/api/turnos/clear', [\App\Http\Controllers\TurnoController::class, 'clear'])->middleware('auth');
+
+// Vista: historial de tareas completadas por el usuario
+Route::get('/profile/tareas/completadas', [\App\Http\Controllers\ProfileController::class, 'tareasCompleted'])->name('profile.tareas.completed')->middleware('auth');
 
 // API: detalle de departamento con empleados
 Route::get('/api/departamentos/{departamento}', function (App\Models\Departamento $departamento) {
@@ -63,7 +91,7 @@ Route::get('/api/departamentos/{departamento}', function (App\Models\Departament
             'id' => $e->id,
             'name' => $e->user->name ?? null,
             'email' => $e->user->email ?? null,
-            'puesto' => $e->puesto ?? null,
+
             'role' => $e->user ? ($e->user->getRoleNames()->first() ?? null) : null,
         ];
     });
@@ -84,9 +112,7 @@ Route::get('/reservas/calcular-precio', function() {
 
 // Endpoint para obtener estados de pago por localizadores (usado por el panel para refrescar)
 Route::get('/api/reservas/estados', [ReservaController::class, 'estados'])->name('api.reservas.estados');
-Route::post('/reservas/{localizador}/extender', [ReservaController::class, 'extenderReserva'])->where('localizador', '[A-Z0-9]+')->name('reservas.extender');
-Route::post('/reservas/{localizador}/modificar-estancia', [ReservaController::class, 'modificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.modificar-estancia');
-Route::get('/reservas/{localizador}/preview-modificar-estancia', [ReservaController::class, 'previewModificarEstancia'])->where('localizador', '[A-Z0-9]+')->name('reservas.preview-modificar-estancia');
+// Cambio de fechas eliminado: rutas de modificación/preview retiradas.
 Route::post('/reservas/{reserva}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'store'])->name('reservas.refund-requests.store')->where('reserva', '[0-9]+')->middleware('auth');
 Route::post('/reservas/{localizador}/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'storeByLocalizador'])->where('localizador', '[A-Z0-9]+')->name('reservas.refund-requests.store.by_localizador')->middleware('auth');
 Route::get('/refund-requests', [\App\Http\Controllers\RefundRequestController::class, 'index'])->name('refund-requests.index')->middleware('auth');
@@ -97,7 +123,15 @@ Route::delete('/refund-requests/{refundRequest}', [\App\Http\Controllers\RefundR
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 Route::post('/reservas/crear-con-checkout', [ReservaController::class, 'storeConCheckout'])->name('reservas.store.con_checkout');
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
+Route::post('/pagos/crear-payment-intent-standalone', [PagoController::class, 'crearPaymentIntentStandalone'])->name('pagos.crear-payment-intent-standalone');
 Route::post('/pagos/crear-checkout-session', [PagoController::class, 'crearCheckoutSession'])->name('pagos.crear-checkout-session');
+// Página para simular Stripe Checkout pero alojando un formulario con Stripe Elements
+Route::get('/checkout-simulado', function (\Illuminate\Http\Request $request) {
+    return Inertia::render('CheckoutSimulada', [
+        'reserva_id' => $request->get('reserva_id'),
+        'monto' => $request->get('monto'),
+    ]);
+});
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');
 // Endpoint para comprobar estado de una Checkout Session (usado por success_url UX)
 Route::get('/pagos/check-session', [PagoController::class, 'checkSession'])->name('pagos.check-session');

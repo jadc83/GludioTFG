@@ -45,3 +45,14 @@ export async function crearPaymentIntent(reservaId, monto) {
         return err?.response?.data ?? { success: false, error: err.message };
     }
 }
+
+export async function crearPaymentIntentStandalone(monto, opts = {}) {
+    try {
+        const res = await axios.post('/pagos/crear-payment-intent-standalone', { monto, ...opts }, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, error: err?.message };
+    }
+}
