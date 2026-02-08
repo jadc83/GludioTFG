@@ -1,196 +1,199 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
+import { CalendarIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia = null, cargandoVistaPrevia = false, errorVistaPrevia = null, obtenerPreview = null, onRequestConfirmDates = null, clearPreview = null }) {
-    const [checkIn, setCheckIn] = useState(reserva.check_in || '');
-    const [checkOut, setCheckOut] = useState(reserva.check_out || '');
-    const [saving, setSaving] = useState(false);
-    const [previewLoaded, setPreviewLoaded] = useState(false);
+export default function FechaEditor({
+	reserva,
+	setReserva,
+	refresh,
+	vistaPrevia = null,
+	cargandoVistaPrevia = false,
+	errorVistaPrevia = null,
+	obtenerPreview = null,
+	onRequestConfirmDates = null,
+	clearPreview = null
+}) {
+	const [checkIn, setCheckIn] = useState(reserva.check_in || '');
+	const [checkOut, setCheckOut] = useState(reserva.check_out || '');
+	const [saving, setSaving] = useState(false);
+	const [previewLoaded, setPreviewLoaded] = useState(false);
 
-    const validate = () => {
-        if (!checkIn || !checkOut) {
-            emitToast('Rellena ambas fechas', 'error');
-            return false;
-        }
-        if (new Date(checkIn) >= new Date(checkOut)) {
-            emitToast('El check-out debe ser posterior al check-in', 'error');
-            return false;
-        }
-        return true;
-    };
+	const esFechaOriginal = (ci, co) => ci === reserva?.check_in && co === reserva?.check_out;
 
-    // trigger preview when dates change and differ from original
-    const esFechaOriginal = (ci, co) => {
-        const originalCi = reserva?.check_in || null;
-        const originalCo = reserva?.check_out || null;
-        return ci === originalCi && co === originalCo;
-    };
+	useEffect(() => {
+		let mounted = true;
+		const tryFetch = async () => {
+			if (!obtenerPreview || !checkIn || !checkOut || esFechaOriginal(checkIn, checkOut)) {
+				setPreviewLoaded(false);
+				return;
+			}
+			try {
+				setPreviewLoaded(false);
+				await obtenerPreview(checkIn, checkOut, reserva);
+				if (mounted) setPreviewLoaded(true);
+			} catch (e) {
+				if (mounted) setPreviewLoaded(false);
+			}
+		};
+		tryFetch();
+		return () => { mounted = false; };
+	}, [checkIn, checkOut, obtenerPreview, reserva]);
 
-    useEffect(() => {
-        let mounted = true;
-        const tryFetch = async () => {
-            if (!obtenerPreview) return;
-            if (!checkIn || !checkOut) {
-                setPreviewLoaded(false);
-                return;
-            }
-            if (esFechaOriginal(checkIn, checkOut)) {
-                setPreviewLoaded(false);
-                return;
-            }
-            try {
-                setPreviewLoaded(false);
-                await obtenerPreview(checkIn, checkOut, reserva);
-                if (mounted) setPreviewLoaded(true);
-            } catch (e) {
-                if (mounted) setPreviewLoaded(false);
-            }
-        };
+	const onSave = async (e) => {
+		e?.preventDefault();
+		if (!checkIn || !checkOut) return emitToast('Rellena ambas fechas', 'error');
+		if (new Date(checkIn) >= new Date(checkOut)) return emitToast('El check-out debe ser posterior', 'error');
 
-        tryFetch();
-        return () => { mounted = false; };
-    }, [checkIn, checkOut, obtenerPreview, reserva]);
+		setSaving(true);
+		try {
+			if (!esFechaOriginal(checkIn, checkOut) && typeof onRequestConfirmDates === 'function') {
+				onRequestConfirmDates(checkIn, checkOut);
+				setSaving(false);
+				return;
+			}
 
-    const onSave = async (e) => {
-        e?.preventDefault();
-        if (!validate()) return;
-        setSaving(true);
-        try {
-            // If dates differ from original, delegate to confirmation modal flow
-            const esOriginal = (ci, co) => {
-                const originalCi = reserva?.check_in || null;
-                const originalCo = reserva?.check_out || null;
-                return ci === originalCi && co === originalCo;
-            };
+			const payload = {
+				check_in: checkIn,
+				check_out: checkOut,
+				status: reserva.status || 'pendiente',
+				pago: reserva.pago?.estado || 'pendiente',
+				habitacion_ids: (reserva.habitaciones || [])
+					.map(h => Number(h.habitacion_id ?? h.id))
+					.filter(n => Number.isInteger(n))
+			};
 
-            if (!esOriginal(checkIn, checkOut)) {
-                if (typeof onRequestConfirmDates === 'function') {
-                    onRequestConfirmDates(checkIn, checkOut);
-                    setSaving(false);
-                    return;
-                }
-                // fallback: if no handler provided, proceed with direct update
-            }
+			await axios.put(`/reservas/${reserva.id}`, payload);
+			emitToast('Fechas actualizadas', 'success');
+			if (refresh) await refresh();
+		} catch (err) {
+			emitToast(err.response?.data?.message || 'Error al actualizar', 'error');
+		} finally {
+			setSaving(false);
+		}
+	};
 
-            const payload = {
-                check_in: checkIn,
-                check_out: checkOut,
-                // Campos requeridos por UpdateReservaRequest: enviar valores actuales para no romper validación
-                status: reserva.status || 'pendiente',
-                pago: (reserva.pago && reserva.pago.estado) || 'pendiente',
-            };
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+			<form onSubmit={onSave} className="p-5">
+				<div className="flex flex-col md:flex-row md:items-end gap-4">
+					{/* Inputs de Fecha */}
+					<div className="grid grid-cols-2 gap-4 flex-1">
+						<div className="space-y-1">
+							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-in</label>
+							<div className="relative">
+								<CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+								<input
+									type="date"
+									value={checkIn}
+									onChange={(e) => setCheckIn(e.target.value)}
+									className="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+								/>
+							</div>
+						</div>
 
-            // Normalizar IDs de habitación a enteros y sólo enviar si hay al menos uno
-            const habitacionIdsRaw = (reserva.habitaciones || []).map((h) => h.habitacion_id ?? h.id ?? null);
-            const habitacionIds = habitacionIdsRaw
-                .map((v) => (v === null || v === undefined ? null : Number(v)))
-                .filter((n) => Number.isInteger(n));
+						<div className="space-y-1">
+							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-out</label>
+							<div className="relative">
+								<CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+								<input
+									type="date"
+									value={checkOut}
+									onChange={(e) => setCheckOut(e.target.value)}
+									className="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+								/>
+							</div>
+						</div>
+					</div>
 
-            if (habitacionIds.length > 0) payload.habitacion_ids = habitacionIds;
+					{/* Grupo de Acciones: Limpiar + Guardar */}
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={() => {
+								setCheckIn(reserva?.check_in || '');
+								setCheckOut(reserva?.check_out || '');
+								if (clearPreview) clearPreview();
+							}}
+							className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all border border-transparent hover:border-gray-200"
+							title="Restablecer fechas originales"
+						>
+							<ArrowPathIcon className="w-5 h-5" />
+						</button>
 
-            // Obtener XSRF cookie y pasar como header explícito por si acaso
-            const getCookie = (name) => {
-                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-                return match ? decodeURIComponent(match[2]) : null;
-            };
-            const xsrf = getCookie('XSRF-TOKEN');
+						{!esFechaOriginal(checkIn, checkOut) ? (
+							<button
+								type="submit"
+								disabled={saving}
+								className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+							>
+								{saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <CheckIcon className="w-4 h-4" />}
+								<span>{saving ? 'Guardando...' : 'Actualizar'}</span>
+							</button>
+						) : (
+							<button type="button" disabled className="px-6 py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-lg border border-gray-200 cursor-not-allowed italic">
+								Sin cambios
+							</button>
+						)}
+					</div>
+				</div>
 
-            const res = await axios.put(`/reservas/${reserva.id}`, payload, {
-                withCredentials: true,
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
-                },
-            });
-            if (res?.data?.success ?? false) {
-                emitToast('Fechas actualizadas', 'success');
-                if (typeof refresh === 'function') await refresh();
-            } else {
-                emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
-            }
-        } catch (err) {
-            const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
-            emitToast(msg, 'error');
-        } finally {
-            setSaving(false);
-        }
-    };
+				{/* Panel de Vista Previa (Solo aparece si hay cambios) */}
+				{(cargandoVistaPrevia || previewLoaded || errorVistaPrevia) && (
+					<div className={`mt-5 p-4 rounded-lg border ${errorVistaPrevia ? 'bg-red-50 border-red-100' : 'bg-blue-50/30 border-blue-100'}`}>
+						{cargandoVistaPrevia ? (
+							<div className="flex items-center gap-3 text-sm text-blue-600 font-medium">
+								<ArrowPathIcon className="w-4 h-4 animate-spin" />
+								Calculando disponibilidad y precios...
+							</div>
+						) : errorVistaPrevia ? (
+							<div className="flex items-center gap-2 text-sm text-red-600 font-medium">
+								<XMarkIcon className="w-5 h-5" />
+								{typeof errorVistaPrevia === 'string' ? errorVistaPrevia : errorVistaPrevia?.message}
+							</div>
+						) : vistaPrevia && (
+							<div className="flex flex-wrap items-center justify-between gap-4">
+								<div className="flex gap-8">
+									{/* Diferencia Monetaria */}
+									<div>
+										<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Impacto Económico</p>
+										<p className={`text-lg font-bold ${Number(vistaPrevia.nuevo_total) > Number(vistaPrevia.viejo_total) ? 'text-amber-600' : 'text-green-600'}`}>
+											{Number(vistaPrevia.nuevo_total) > Number(vistaPrevia.viejo_total) ? '+' : ''}
+											{(Number(vistaPrevia.nuevo_total) - Number(vistaPrevia.viejo_total)).toFixed(2)}€
+										</p>
+									</div>
 
-    return (
-        <form onSubmit={onSave} className="bg-white p-4 rounded shadow-sm">
-            <div className="flex gap-3 items-end">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Check-in</label>
-                    <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className="mt-1 block w-40 rounded border-gray-300" />
-                </div>
+									{/* Noches */}
+									{(vistaPrevia.extra_nights > 0 || vistaPrevia.removed_nights > 0) && (
+										<div>
+											<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Estancia</p>
+											<p className="text-sm font-semibold text-gray-700 h-7 flex items-center">
+														{(() => {
+															const extra = Number(vistaPrevia.extra_nights || 0);
+															const removed = Number(vistaPrevia.removed_nights || 0);
+															const count = extra > 0 ? extra : removed;
+															const sign = extra > 0 ? `+` : `-`;
+															const label = Math.abs(count) === 1 ? 'noche' : 'noches';
+															return `${sign}${count} ${label}`;
+														})()}
+													</p>
+										</div>
+									)}
+								</div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Check-out</label>
-                    <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className="mt-1 block w-40 rounded border-gray-300" />
-                </div>
-
-                <div>
-                    <div className="flex items-center gap-2">
-                        {esFechaOriginal(checkIn, checkOut) ? (
-                            <button type="button" disabled className="px-4 py-2 bg-gray-300 text-gray-700 rounded">Consultar</button>
-                        ) : (
-                            <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-                                {saving ? 'Guardando...' : 'Guardar fechas'}
-                            </button>
-                        )}
-
-                        <button type="button" onClick={() => {
-                            // Limpiar inputs: restaurar a valores de la reserva y limpiar preview
-                            setCheckIn(reserva?.check_in || '');
-                            setCheckOut(reserva?.check_out || '');
-                            try { if (typeof clearPreview === 'function') clearPreview(); } catch (e) {}
-                        }} className="px-3 py-2 bg-gray-100 text-gray-800 rounded">Limpiar</button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-4">
-                <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                    {cargandoVistaPrevia || (previewLoaded && cargandoVistaPrevia) ? (
-                        <div className="text-sm text-gray-500">Calculando cambio de precio...</div>
-                    ) : errorVistaPrevia ? (
-                        <div className="text-sm text-red-500">{typeof errorVistaPrevia === 'string' ? errorVistaPrevia : (errorVistaPrevia?.message || String(errorVistaPrevia))}</div>
-                    ) : (!previewLoaded || !vistaPrevia) ? (
-                        <div className="text-sm text-gray-500">Selecciona fechas diferentes para ver la diferencia de precio</div>
-                    ) : (
-                        <div className="flex items-center justify-between">
-                            <div>
-                                {Number(vistaPrevia.nuevo_total) - Number(vistaPrevia.viejo_total) > 0 ? (
-                                    <div>
-                                        <div className="text-xs text-gray-400">A pagar ahora</div>
-                                        <div className="text-lg font-bold text-red-600">+{vistaPrevia.estimate_charge.toFixed ? vistaPrevia.estimate_charge.toFixed(2) : vistaPrevia.estimate_charge}</div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div className="text-xs text-gray-400">Reembolso estimado</div>
-                                        <div className="text-lg font-bold text-green-600">-{vistaPrevia.estimate_refund.toFixed ? vistaPrevia.estimate_refund.toFixed(2) : vistaPrevia.estimate_refund}</div>
-                                    </div>
-                                )}
-
-                                {/* per-night info */}
-                                {vistaPrevia.extra_nights > 0 && (
-                                    <div className="mt-2 text-sm text-gray-700">+{Number(vistaPrevia.per_night_change).toFixed(2)} / noche ({vistaPrevia.extra_nights} noche{vistaPrevia.extra_nights > 1 ? 's' : ''})</div>
-                                )}
-                                {vistaPrevia.removed_nights > 0 && (
-                                    <div className="mt-2 text-sm text-gray-700">-{Number(vistaPrevia.per_night_change).toFixed(2)} / noche ({vistaPrevia.removed_nights} noche{vistaPrevia.removed_nights > 1 ? 's' : ''})</div>
-                                )}
-                            </div>
-
-                            <div className={`text-right ${vistaPrevia.available ? 'text-green-600' : 'text-red-600'}`}>
-                                <div className="text-xs font-black uppercase">Estado</div>
-                                <div className="font-bold">{vistaPrevia.available ? '✓ Disponible' : '✕ No disponible'}</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </form>
-    );
+								{/* Badge de Disponibilidad */}
+								<div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-tight shadow-sm ${vistaPrevia.available ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+									{vistaPrevia.available ? (
+										<><CheckIcon className="w-3.5 h-3.5" /> Disponible</>
+									) : (
+										<><XMarkIcon className="w-3.5 h-3.5" /> Sin Cupo</>
+									)}
+								</div>
+							</div>
+						)}
+					</div>
+				)}
+			</form>
+		</div>
+	);
 }

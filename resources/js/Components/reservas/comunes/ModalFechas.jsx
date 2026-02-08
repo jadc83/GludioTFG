@@ -168,41 +168,57 @@ export default function ModalFechas({
                 ) : (
                     // Sin cargo adicional: botón simple para aplicar cambios
                     <div className="flex-1">
-                        <button
-                            onClick={async () => {
-                                const getCookie = (name) => {
-                                    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-                                    return match ? decodeURIComponent(match[2]) : null;
-                                };
-                                try {
-                                    const payload = {
-                                        check_in: modalCheckIn,
-                                        check_out: modalCheckOut,
-                                        status: reserva.status || 'pendiente',
-                                        pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
-                                    };
-                                    const xsrf = getCookie('XSRF-TOKEN');
-                                    const res = await axios.put(`/reservas/${reserva.id}`, payload, {
-                                        withCredentials: true,
-                                        headers: {
-                                            Accept: 'application/json',
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                            ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
-                                        },
-                                    });
-                                    if (res?.data?.success) {
-                                        emitToast('Fechas actualizadas', 'success');
-                                        onApplied && onApplied(res.data);
-                                    } else {
-                                        emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    try {
+                                        if (typeof clearPreview === 'function') clearPreview();
+                                    } catch (e) {}
+                                    if (typeof setModalCheckIn === 'function' && typeof setModalCheckOut === 'function') {
+                                        setModalCheckIn(reserva?.check_in || '');
+                                        setModalCheckOut(reserva?.check_out || '');
                                     }
-                                } catch (err) {
-                                    const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
-                                    emitToast(msg, 'error');
-                                }
-                            }}
-                            className="flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
-                        >Aplicar Cambios</button>
+                                }}
+                                className="rounded-2xl border border-gray-200 bg-white py-3 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 hover:bg-gray-50"
+                            >Limpiar</button>
+
+                            <button
+                                onClick={async () => {
+                                    const getCookie = (name) => {
+                                        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                                        return match ? decodeURIComponent(match[2]) : null;
+                                    };
+                                    try {
+                                        const payload = {
+                                            check_in: modalCheckIn,
+                                            check_out: modalCheckOut,
+                                            status: reserva.status || 'pendiente',
+                                            pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
+                                        };
+                                        const xsrf = getCookie('XSRF-TOKEN');
+                                        const res = await axios.put(`/reservas/${reserva.id}`, payload, {
+                                            withCredentials: true,
+                                            headers: {
+                                                Accept: 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
+                                            },
+                                        });
+                                        if (res?.data?.success) {
+                                            emitToast('Fechas actualizadas', 'success');
+                                            onApplied && onApplied(res.data);
+                                        } else {
+                                            emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
+                                        }
+                                    } catch (err) {
+                                        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
+                                        emitToast(msg, 'error');
+                                    }
+                                }}
+                                className="flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                            >Aplicar Cambios</button>
+                        </div>
                     </div>
                 )}
             </div>
