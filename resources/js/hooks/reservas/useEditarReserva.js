@@ -6,7 +6,7 @@ import usePaymentCheck from '@/hooks/pagos/usePaymentCheck';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
 import axios from 'axios';
 
-export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview }) {
+export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview, clearPreview = null }) {
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState([]);
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(initialHabitacionesDisponibles);
     const [guardandoHabitaciones, setGuardandoHabitaciones] = useState(false);
@@ -129,6 +129,10 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 return;
             }
             if (esFechaOriginal(fechaModalCheckIn, fechaModalCheckOut)) {
+                // If user reverted to the original dates, clear any preview to restore original total
+                try {
+                    if (clearPreview) clearPreview();
+                } catch (e) {}
                 setVistaPreviaCargada(false);
                 return;
             }
@@ -182,7 +186,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             if (obtenerPreview) {
                 ultimoPreview = await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut, reserva);
             } else {
-                ultimoPreview = await reservasApi.getDisponibles(fechaModalCheckIn, fechaModalCheckOut);
+                ultimoPreview = await reservasApi.getDisponibles(fechaModalCheckIn, fechaModalCheckOut, reserva?.id || reserva?.reserva_id || null);
             }
 
             if (ultimoPreview?.available === false) {

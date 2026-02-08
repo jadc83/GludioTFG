@@ -69,7 +69,7 @@ class HabitacionService
      * Usado por: interfaces de selección de habitaciones
      * Retorna: array de habitaciones disponibles por tipo
      */
-    public function getDisponibles(Carbon $checkIn, Carbon $checkOut, bool $summary = false): array
+    public function getDisponibles(Carbon $checkIn, Carbon $checkOut, bool $summary = false, ?int $excluirReservaId = null): array
     {
         // Obtener todas las habitaciones no en mantenimiento
         $habitacionesDisponibles = Habitacion::where('estado', '!=', 'mantenimiento')->orderBy('numero')->get();
@@ -87,6 +87,9 @@ class HabitacionService
                 ->whereIn('habitacion_id', $habitacionesId)
                 ->where('check_in', '<', $checkOut->format('Y-m-d'))
                 ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->when($excluirReservaId, function ($q) use ($excluirReservaId) {
+                    $q->where('reserva_id', '!=', $excluirReservaId);
+                })
                 ->distinct('habitacion_id')
                 ->count('habitacion_id');
 
@@ -94,6 +97,9 @@ class HabitacionService
                 ->where('tipo', $tipo)
                 ->where('check_in', '<', $checkOut->format('Y-m-d'))
                 ->where('check_out', '>', $checkIn->format('Y-m-d'))
+                ->when($excluirReservaId, function ($q) use ($excluirReservaId) {
+                    $q->where('reserva_id', '!=', $excluirReservaId);
+                })
                 ->count();
 
             $totalHabitaciones = count($habitacionesId);
@@ -104,10 +110,13 @@ class HabitacionService
             }
 
             // Seleccionar habitaciones del tipo que no tienen reservas asignadas que solapen
-            $candidateRooms = $habitacionesTipo->filter(function ($h) use ($checkIn, $checkOut) {
-                return !$h->reservas()->where('check_in', '<', $checkOut->format('Y-m-d'))
-                    ->where('check_out', '>', $checkIn->format('Y-m-d'))
-                    ->exists();
+            $candidateRooms = $habitacionesTipo->filter(function ($h) use ($checkIn, $checkOut, $excluirReservaId) {
+                $query = $h->reservas()->where('check_in', '<', $checkOut->format('Y-m-d'))
+                    ->where('check_out', '>', $checkIn->format('Y-m-d'));
+                if ($excluirReservaId) {
+                    $query->where('reserva_id', '!=', $excluirReservaId);
+                }
+                return !$query->exists();
             })->values();
 
             $toAdd = $candidateRooms->slice(0, $availableSlots);

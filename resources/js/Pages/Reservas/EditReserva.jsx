@@ -61,7 +61,7 @@ export default function EditarReserva({
         mostrarModalPago, setMostrarModalPago, montoPago, setMontoPago, pendienteAplicarTrasPago, setPendienteAplicTrasPago, aceptaTerminosPago,
         setAceptaTerminosPago, isProcessing, pagoExitoso
 
-    } = useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles: habitaciones || [], refresh, showToast, aplicarCambioFechas: aplicarCambioFechas, obtenerPreview: fetchPreviewHook });
+    } = useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles: habitaciones || [], refresh, showToast, aplicarCambioFechas: aplicarCambioFechas, obtenerPreview: fetchPreviewHook, clearPreview: clearPreviewHook });
 
     useEffect(() => {
         if (hookHabitacionesDisponibles) {
@@ -99,6 +99,7 @@ export default function EditarReserva({
                         cargandoVistaPrevia={previewLoading}
                         errorVistaPrevia={previewError}
                         obtenerPreview={fetchPreviewHook}
+                        clearPreview={clearPreviewHook}
                         onRequestConfirmDates={(ci, co) => {
                             setFechaModalCheckIn(ci);
                             setFechaModalCheckOut(co);
@@ -154,7 +155,8 @@ export default function EditarReserva({
                     errorVistaPrevia={previewError}
                     vistaPreviaCargada={vistaPreviaCargada}
                     reserva={reserva}
-                    onCerrar={() => setMostrarModalFechas(false)}
+                        clearPreview={clearPreviewHook}
+                        onCerrar={() => setMostrarModalFechas(false)}
                     onConfirmar={confirmarModalFechas}
                     onApplied={(resData) => {
                         // Close modal and update reserva in memory.

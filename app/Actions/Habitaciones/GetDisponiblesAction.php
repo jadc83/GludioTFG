@@ -29,14 +29,17 @@ class GetDisponiblesAction
             $check_out = $checkOut ? Carbon::createFromFormat('Y-m-d', $checkOut) : null;
         }
 
+        $request = request();
+        $excluirReservaId = $request->query('reserva_id') ? (int)$request->query('reserva_id') : null;
+
         if (! $check_in || ! $check_out) {
             return $individuales
-                ? $this->service->getDisponiblesIndividuales(Carbon::now(), Carbon::now()->addDay())
-                : $this->service->getDisponibles(Carbon::now(), Carbon::now()->addDay(), true);
+                ? $this->service->getDisponiblesIndividuales(Carbon::now(), Carbon::now()->addDay(), $excluirReservaId)
+                : $this->service->getDisponibles(Carbon::now(), Carbon::now()->addDay(), true, $excluirReservaId);
         }
 
         return $individuales
-            ? $this->service->getDisponiblesIndividuales($check_in, $check_out)
-            : $this->service->getDisponibles($check_in, $check_out, false);
+            ? $this->service->getDisponiblesIndividuales($check_in, $check_out, $excluirReservaId)
+            : $this->service->getDisponibles($check_in, $check_out, false, $excluirReservaId);
     }
 }

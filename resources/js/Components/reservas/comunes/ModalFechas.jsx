@@ -3,6 +3,10 @@ import { formatearMoneda } from '@/utils/formatters';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
 import { useState } from 'react';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+
+dayjs.locale('es');
 
 export default function ModalFechas({
     mostrar,
@@ -20,6 +24,7 @@ export default function ModalFechas({
     onApplied,
     procesando,
     reserva,
+    clearPreview,
 }) {
     if (!mostrar) return null;
 
@@ -94,44 +99,33 @@ export default function ModalFechas({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="animate-in fade-in zoom-in w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl duration-200">
-                <div className="flex items-center justify-between border-b border-gray-100 p-8">
-                    <h2 className="text-xl font-black uppercase tracking-tight text-gray-900">HOLA PERRO</h2>
-                    <button onClick={onCerrar} className="font-bold text-gray-400 hover:text-gray-600">✕</button>
+                <div className="flex items-start justify-between border-b border-gray-100 p-6">
+                    <div>
+                        <h2 className="text-lg font-extrabold text-gray-900">Confirmar cambios de fechas</h2>
+                        <div className="mt-1 text-sm text-gray-500">Reservas · Localizador: <span className="font-semibold text-gray-700">{reserva?.localizador || '-'}</span></div>
+                    </div>
+                    <button onClick={onCerrar} aria-label="Cerrar" className="rounded-full p-2 text-gray-400 hover:bg-gray-100">✕</button>
                 </div>
 
-                    <div className="space-y-6 p-8">
-                    <div className="text-center text-2xl font-bold text-gray-900">HOLA PERRO</div>
+                <div className="space-y-6 p-6">
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-gray-400">Entrada (original)</label>
-                            <div className="w-full rounded-xl border border-gray-200 bg-white p-2 font-bold">{reserva?.check_in || ''}</div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                            <div className="text-xs font-bold uppercase text-gray-400">Entrada (original)</div>
+                            <div className="mt-2 text-sm font-semibold text-gray-800">{reserva?.check_in ? dayjs(reserva.check_in).format('dddd, D [de] MMMM [de] YYYY') : '-'}</div>
+                            <div className="mt-1 text-xs text-gray-500">Salida original: <span className="font-medium text-gray-700">{reserva?.check_out ? dayjs(reserva.check_out).format('dddd, D [de] MMMM [de] YYYY') : '-'}</span></div>
+                            {reserva?.check_in && reserva?.check_out && (
+                                <div className="mt-2 text-xs text-gray-500">Duración: <span className="font-semibold text-gray-700">{dayjs(reserva.check_out).diff(dayjs(reserva.check_in), 'day')} noche{dayjs(reserva.check_out).diff(dayjs(reserva.check_in), 'day') !== 1 ? 's' : ''}</span></div>
+                            )}
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-gray-400">Salida (original)</label>
-                            <div className="w-full rounded-xl border border-gray-200 bg-white p-2 font-bold">{reserva?.check_out || ''}</div>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-gray-400">Entrada (nueva)</label>
-                            <input
-                                type="date"
-                                disabled={isCheckedIn}
-                                value={modalCheckIn}
-                                onChange={(e) => setModalCheckIn(e.target.value)}
-                                className="w-full rounded-xl border-gray-200 bg-gray-50 font-bold focus:border-[#7a0202] focus:ring-[#7a0202]"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-gray-400">Salida (nueva)</label>
-                            <input
-                                type="date"
-                                value={modalCheckOut}
-                                onChange={(e) => setModalCheckOut(e.target.value)}
-                                className="w-full rounded-xl border-gray-200 bg-gray-50 font-bold focus:border-[#7a0202] focus:ring-[#7a0202]"
-                            />
+                        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                            <div className="text-xs font-bold uppercase text-gray-400">Entrada (nueva)</div>
+                            <div className="mt-2 text-sm font-semibold text-gray-800">{modalCheckIn ? dayjs(modalCheckIn).format('dddd, D [de] MMMM [de] YYYY') : '-'}</div>
+                            <div className="mt-1 text-xs text-gray-500">Salida nueva: <span className="font-medium text-gray-700">{modalCheckOut ? dayjs(modalCheckOut).format('dddd, D [de] MMMM [de] YYYY') : '-'}</span></div>
+                            {modalCheckIn && modalCheckOut && (
+                                <div className="mt-2 text-xs text-gray-500">Duración: <span className="font-semibold text-gray-700">{dayjs(modalCheckOut).diff(dayjs(modalCheckIn), 'day')} noche{dayjs(modalCheckOut).diff(dayjs(modalCheckIn), 'day') !== 1 ? 's' : ''}</span></div>
+                            )}
                         </div>
                     </div>
 
@@ -141,11 +135,28 @@ export default function ModalFechas({
                                 <span className="font-bold text-gray-700">Precio original:</span>
                                 <span className="font-black text-gray-900">{formatearMoneda(reserva?.precio_total ?? 0)}</span>
                             </div>
-                            {vistaPrevia && vistaPreviaCargada && (
+                                    {vistaPrevia && vistaPreviaCargada && (
                                 <>
                                     <div className="flex justify-between">
                                         <span className="font-bold text-gray-700">Precio nuevo:</span>
                                         <span className="font-black text-gray-900">{formatearMoneda(vistaPrevia.nuevo_total)}</span>
+                                    </div>
+
+                                    {/* Mostrar aviso de penalización si aplica */}
+                                    {Number(vistaPrevia.removed_nights || 0) > 0 && (
+                                        <div className="mt-3 rounded-md border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-800">
+                                            <strong>Penalización:</strong> {formatearMoneda(vistaPrevia.penalizacion || 20)} aplicada sobre el reembolso. Si la penalización cubre el reembolso, no habrá devolución.
+                                        </div>
+                                    )}
+
+                                    {/* Mostrar estado de disponibilidad */}
+                                    <div className="mt-3 text-sm">
+                                        <span className={`font-bold ${vistaPrevia.available ? 'text-green-600' : 'text-red-600'}`}>
+                                            {vistaPrevia.available ? 'Disponible' : 'No disponible'}
+                                        </span>
+                                        {!vistaPrevia.available && (
+                                            <div className="text-xs text-gray-500">Algunas habitaciones se solapan en las fechas seleccionadas.</div>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -154,14 +165,25 @@ export default function ModalFechas({
                 </div>
 
                 <div className="flex gap-3 bg-gray-50 p-8">
-                    <button onClick={onCerrar} className="flex-1 rounded-2xl border border-gray-200 bg-white py-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:bg-white/50">Cancelar</button>
+                    <button onClick={onCerrar} className="rounded-2xl border border-gray-200 bg-white py-4 px-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:bg-white/50">Cerrar</button>
+                    <button
+                        onClick={() => {
+                            try {
+                                if (typeof clearPreview === 'function') clearPreview();
+                            } catch (e) {}
+                            if (typeof setModalCheckIn === 'function' && typeof setModalCheckOut === 'function') {
+                                setModalCheckIn(reserva?.check_in || '');
+                                setModalCheckOut(reserva?.check_out || '');
+                            }
+                        }}
+                        className="rounded-2xl border border-gray-200 bg-white py-4 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 hover:bg-gray-50"
+                    >Limpiar</button>
                     <ApplyButton
                         reserva={reserva}
                         modalCheckIn={modalCheckIn}
                         modalCheckOut={modalCheckOut}
                         disabled={!vistaPreviaCargada || !vistaPrevia?.available || procesando}
                         onSuccess={(resData) => {
-                            // invoke parent handler to update state instead of reloading
                             if (typeof onApplied === 'function') onApplied(resData);
                             else {
                                 onCerrar && onCerrar();

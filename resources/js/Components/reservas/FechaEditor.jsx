@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
 
-export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia = null, cargandoVistaPrevia = false, errorVistaPrevia = null, obtenerPreview = null, onRequestConfirmDates = null }) {
+export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia = null, cargandoVistaPrevia = false, errorVistaPrevia = null, obtenerPreview = null, onRequestConfirmDates = null, clearPreview = null }) {
     const [checkIn, setCheckIn] = useState(reserva.check_in || '');
     const [checkOut, setCheckOut] = useState(reserva.check_out || '');
     const [saving, setSaving] = useState(false);
@@ -132,9 +132,22 @@ export default function FechaEditor({ reserva, setReserva, refresh, vistaPrevia 
                 </div>
 
                 <div>
-                    <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-                        {saving ? 'Guardando...' : 'Guardar fechas'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {esFechaOriginal(checkIn, checkOut) ? (
+                            <button type="button" disabled className="px-4 py-2 bg-gray-300 text-gray-700 rounded">Consultar</button>
+                        ) : (
+                            <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
+                                {saving ? 'Guardando...' : 'Guardar fechas'}
+                            </button>
+                        )}
+
+                        <button type="button" onClick={() => {
+                            // Limpiar inputs: restaurar a valores de la reserva y limpiar preview
+                            setCheckIn(reserva?.check_in || '');
+                            setCheckOut(reserva?.check_out || '');
+                            try { if (typeof clearPreview === 'function') clearPreview(); } catch (e) {}
+                        }} className="px-3 py-2 bg-gray-100 text-gray-800 rounded">Limpiar</button>
+                    </div>
                 </div>
             </div>
 

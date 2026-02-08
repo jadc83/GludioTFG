@@ -15,7 +15,7 @@ export default function usePreview(localizador) {
                 setLoading(true);
 
                 // Use server-side preview if available; otherwise compute from disponibilidad
-                const disponibles = await api.getDisponibles(checkInStr, checkOutStr);
+                const disponibles = await api.getDisponibles(checkInStr, checkOutStr, reserva?.id || reserva?.reserva_id || null);
 
                 if (!disponibles) {
                     setPreview(null);
@@ -69,9 +69,22 @@ export default function usePreview(localizador) {
                             }
 
                             const habPayload = Object.entries(tipoCounts).map(([tipo, cantidad]) => ({ tipo, cantidad }));
+                            // Determine whether extra nights are before the original check_in or after the original check_out
+                            let extraCheckIn;
+                            let extraCheckOut;
+                            if (dayjs(checkInStr).isBefore(dayjs(reserva.check_in))) {
+                                // Extra nights added at the beginning
+                                extraCheckIn = checkInStr;
+                                extraCheckOut = reserva.check_in;
+                            } else {
+                                // Extra nights added at the end
+                                extraCheckIn = reserva.check_out;
+                                extraCheckOut = checkOutStr;
+                            }
+
                             const payload = {
-                                check_in: reserva.check_out,
-                                check_out: checkOutStr,
+                                check_in: extraCheckIn,
+                                check_out: extraCheckOut,
                                 habitaciones: habPayload,
                                 tarifas: reserva?.tarifa_ids || (reserva?.tarifas ? (reserva.tarifas.map((t) => t.id)) : []) || [],
                                 reserva_id: reserva?.id || reserva?.reserva_id || null,
@@ -129,9 +142,22 @@ export default function usePreview(localizador) {
                                 }
 
                                 const habPayload = Object.entries(tipoCounts).map(([tipo, cantidad]) => ({ tipo, cantidad }));
+                                // Determine removed range: could be at the end or at the beginning
+                                let removedCheckIn;
+                                let removedCheckOut;
+                                if (dayjs(checkOutStr).isBefore(dayjs(reserva.check_out))) {
+                                    // Removed nights at the end
+                                    removedCheckIn = checkOutStr;
+                                    removedCheckOut = reserva.check_out;
+                                } else {
+                                    // Removed nights at the beginning
+                                    removedCheckIn = reserva.check_in;
+                                    removedCheckOut = checkInStr;
+                                }
+
                                 const payload = {
-                                    check_in: checkOutStr,
-                                    check_out: reserva.check_out,
+                                    check_in: removedCheckIn,
+                                    check_out: removedCheckOut,
                                     habitaciones: habPayload,
                                     tarifas: reserva?.tarifa_ids || (reserva?.tarifas ? (reserva.tarifas.map((t) => t.id)) : []) || [],
                                     reserva_id: reserva?.id || reserva?.reserva_id || null,
