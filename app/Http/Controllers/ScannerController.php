@@ -29,6 +29,7 @@ class ScannerController extends Controller
         }
 
         try {
+            Log::info('ScannerController::procesar called', ['localizador' => $localizador, 'accion' => $accion, 'payload' => $request->all()]);
             $reserva = Reserva::where('localizador', $localizador)->first();
             if (!$reserva) {
                 return response()->json(['success' => false, 'error' => 'Reserva no encontrada'], 404);
@@ -80,18 +81,26 @@ class ScannerController extends Controller
                 }
 
                 $reserva->status = 'checked_out';
-                $reserva->save();
+                $saved = $reserva->save();
+
+                Log::info('ScannerController::procesar - reserva status updated', ['localizador' => $reserva->localizador, 'status' => $reserva->status, 'saved' => $saved]);
 
                 // Marcar las habitaciones asignadas como 'limpieza' para que recepción/protocolos las procesen
                 try {
-                    foreach ($reserva->habitaciones()->whereNotNull('habitacion_id')->get() as $hr) {
+                    $hrs = $reserva->habitaciones()->whereNotNull('habitacion_id')->get();
+                    Log::info('ScannerController::procesar - habitaciones to mark limpieza', ['count' => $hrs->count(), 'ids' => $hrs->pluck('habitacion_id')->toArray()]);
+
+                    foreach ($hrs as $hr) {
                         $habitacion = $hr->habitacion;
                         if ($habitacion) {
                             try {
-                                $habitacion->update(['estado' => 'limpieza']);
+                                $updated = \App\Models\Habitacion::where('id', $habitacion->id)->update(['estado' => 'limpieza']);
+                                Log::info('ScannerController::procesar - habitacion update result', ['habitacion_id' => $habitacion->id, 'updated_rows' => $updated]);
                             } catch (\Throwable $e) {
                                 Log::warning('No se pudo actualizar estado de habitación tras checkout (habitacion_id=' . ($habitacion->id ?? 'n/a') . '): ' . $e->getMessage());
                             }
+                        } else {
+                            Log::warning('ScannerController::procesar - habitacion relation missing for HabitacionReserva', ['habitacion_reserva_id' => $hr->id]);
                         }
                     }
                 } catch (\Throwable $e) {

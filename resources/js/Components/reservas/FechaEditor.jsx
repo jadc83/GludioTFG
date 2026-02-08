@@ -14,6 +14,8 @@ export default function FechaEditor({
 	onRequestConfirmDates = null,
 	clearPreview = null
 }) {
+	const status = String(reserva?.status || '').toLowerCase();
+	if (status === 'checked_in' || status === 'checked_out') return null;
 	const [checkIn, setCheckIn] = useState(reserva.check_in || '');
 	const [checkOut, setCheckOut] = useState(reserva.check_out || '');
 	const [saving, setSaving] = useState(false);

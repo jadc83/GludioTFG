@@ -98,6 +98,10 @@ class ReservaFormatterService
             'localizador' => $reserva->localizador,
             'check_in' => Carbon::parse($reserva->check_in)->format('Y-m-d'),
             'check_out' => Carbon::parse($reserva->check_out)->format('Y-m-d'),
+            'check_in_full' => Carbon::parse($reserva->check_in)->toIso8601String(),
+            'check_out_full' => Carbon::parse($reserva->check_out)->toIso8601String(),
+            'check_in_time' => Carbon::parse($reserva->check_in)->format('H:i'),
+            'check_out_time' => Carbon::parse($reserva->check_out)->format('H:i'),
             'precio_total' => $reserva->precio_total,
             'status' => $reserva->status,
             'pago' => $reserva->pago,
@@ -109,6 +113,12 @@ class ReservaFormatterService
                 'telefono' => $reserva->reservable?->telefono ?? null,
                 'numero_documento' => $reserva->reservable?->numero_documento ?? null,
                 'tipo_documento' => $reserva->reservable?->tipo_documento ?? null,
+                'direccion' => $reserva->reservable?->direccion ?? null,
+            ],
+            'booked_by_user' => [
+                'id' => $reserva->bookedBy?->id ?? null,
+                'name' => $reserva->bookedBy?->name ?? ($reserva->booked_by_user ?? 'Sistema'),
+                'email' => $reserva->bookedBy?->email ?? null,
             ],
             'habitaciones' => $reserva->habitaciones->map(function (\App\Models\HabitacionReserva $hr) use ($noches): array {
                 return [
@@ -122,6 +132,17 @@ class ReservaFormatterService
                 ];
             })->values(),
         ];
+
+        // Incluir información de tarifa si está presente
+        if ($reserva->tarifa) {
+            $reservaData['tarifa'] = [
+                'id' => $reserva->tarifa->id ?? null,
+                'name' => $reserva->tarifa->name ?? ($reserva->tarifa->descripcion ?? null),
+                'price' => $reserva->tarifa->price ?? null,
+            ];
+        } else {
+            $reservaData['tarifa'] = null;
+        }
 
         return $reservaData;
     }

@@ -22,19 +22,21 @@ export default function ReservaHeader({ reserva, isCancelled, onOpenDateModal })
                             {reserva.status}
                         </span>
 
-                        {/* Estado de pago: mostrar junto al estado de la reserva */}
-                        {reserva.pago && (
-                            <span
-                                className={`ml-3 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
-                                    reserva.pago === 'pagado' ? 'bg-green-100 text-green-700' : reserva.pago === 'pendiente' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
-                                }`}
-                            >
-                                {reserva.pago}
-                            </span>
-                        )}
+                        {/* Estado de pago mostrado en el sidebar; oculto en la cabecera para evitar duplicidad */}
                     </div>
                     <p className="mt-1 text-sm font-medium text-gray-500">
-                        {reserva.cliente?.nombre} • {formatearFecha(reserva.check_in)} al {formatearFecha(reserva.check_out)}
+                        {reserva.cliente?.name || reserva.cliente?.nombre} • {formatearFecha(reserva.check_in)} al {formatearFecha(reserva.check_out)}
+                        {(() => {
+                            const bookedName = reserva.booked_by_user?.name || null;
+                            const bookedEmail = reserva.booked_by_user?.email || null;
+                            const clientName = reserva.cliente?.name || reserva.cliente?.nombre || null;
+                            const clientEmail = reserva.cliente?.email || null;
+                            const isSame = (bookedName && clientName && bookedName === clientName) || (bookedEmail && clientEmail && bookedEmail === clientEmail);
+                            if (!reserva.booked_by_user || isSame) return null;
+                            return (
+                                <span className="ml-2 text-sm text-gray-400">Reservado por: {reserva.booked_by_user.name}{reserva.booked_by_user.email ? ` ({reserva.booked_by_user.email})` : ''}</span>
+                            );
+                        })()}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

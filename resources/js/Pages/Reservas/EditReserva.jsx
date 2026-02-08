@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import useEditarReserva from '@/hooks/reservas/useEditarReserva';
 import AssignedHabitaciones from '@/Components/reservas/pms/AssignedHabitaciones';
 import AsignacionHabitaciones from '@/Components/reservas/pms/AsignacionHabitaciones';
+import ReservaInfo from '@/Components/reservas/comunes/ReservaInfo';
 import { usePage } from '@inertiajs/react';
 import ModalFechas from '@/Components/reservas/comunes/ModalFechas';
 import FechaEditor from '@/Components/reservas/FechaEditor';
@@ -71,6 +72,7 @@ export default function EditarReserva({
 
     const isCancelled = reserva.status?.toLowerCase().includes('cancelado');
     const isCheckedIn = reserva.status?.toLowerCase() === 'checked_in';
+    const isCheckedOut = reserva.status?.toLowerCase() === 'checked_out';
 
     const page = usePage();
     const viewer = page.props.auth.user || {};
@@ -85,63 +87,91 @@ export default function EditarReserva({
         }
     }, [preview, originalPrecioBackup, setReserva]);
 
+    const refundAmount = (Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total;
+
     return (
         <AuthenticatedLayout>
-            <div className="min-h-screen bg-gray-50 pb-24">
-                <ReservaHeader reserva={reserva} isCancelled={isCancelled} onOpenDateModal={abrirModalFechas} />
+            <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 text-gray-900 font-sans overflow-hidden relative pb-24">
 
-                <div className="mx-auto mt-4 max-w-7xl px-4">
-                    <FechaEditor
-                        reserva={reserva}
-                        setReserva={setReserva}
-                        refresh={refresh}
-                        vistaPrevia={preview}
-                        cargandoVistaPrevia={previewLoading}
-                        errorVistaPrevia={previewError}
-                        obtenerPreview={fetchPreviewHook}
-                        clearPreview={clearPreviewHook}
-                        onRequestConfirmDates={(ci, co) => {
-                            setFechaModalCheckIn(ci);
-                            setFechaModalCheckOut(co);
-                            setMostrarModalFechas(true);
-                        }}
+                {/* BACKGROUND DINÁMICO: Imagen de Hotel con Overlay (copiado de CheckoutSimulada) */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+                    <div className="absolute inset-0 bg-[#7a0202]/6 z-10 mix-blend-multiply" />
+                    <img
+                        src="https://images.unsplash.com/photo-1505691723518-36a6cc7ec9b0?q=80&w=2070&auto=format&fit=crop"
+                        className="w-full h-full object-cover opacity-12 scale-110 animate-slow-zoom"
+                        alt="Hotel Background"
                     />
                 </div>
 
-                <main className="mx-auto mt-8 max-w-7xl px-4">
-                    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                        <div className="space-y-6 lg:col-span-8">
-                            <AssignedHabitaciones
-                                habitaciones={reserva.habitaciones}
-                                onDesasignar={desasignarHabitacion}
-                                guardando={guardandoHabitaciones}
-                            />
+                <style dangerouslySetInnerHTML={{ __html: `
+                    @keyframes slow-zoom {
+                        0% { transform: scale(1); }
+                        100% { transform: scale(1.1); }
+                    }
+                    .animate-slow-zoom { animation: slow-zoom 20s infinite alternate ease-in-out; }
+                `}} />
 
-                            {(viewerIsAdmin || viewerIsRecepcion) && (
-                                <AsignacionHabitaciones
-                                    reservaSlots={reserva.habitaciones}
-                                    habitacionesDisponibles={hookHabitacionesDisponibles}
-                                    habitacionesSeleccionadas={habitacionesSeleccionadas}
-                                    setHabitacionesSeleccionadas={setHabitacionesSeleccionadas}
-                                    onDesasignar={desasignarHabitacion}
-                                    onGuardar={actualizarHabitaciones}
-                                    guardando={guardandoHabitaciones}
-                                />
-                            )}
+                <div className="relative z-20">
+                    <ReservaHeader reserva={reserva} isCancelled={isCancelled} onOpenDateModal={abrirModalFechas} />
 
-                        </div>
-
-                        <ReservaSidebar
-                            reserva={
-                                preview
-                                    ? { ...reserva, precio_total: Number(reserva.precio_total ?? 0) + Number(preview.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0) }
-                                    : reserva
-                            }
-                            estaCancelada={isCancelled}
-                            onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)}
+                    <div className="mx-auto mt-4 max-w-7xl px-4">
+                        <FechaEditor
+                            reserva={reserva}
+                            setReserva={setReserva}
+                            refresh={refresh}
+                            vistaPrevia={preview}
+                            cargandoVistaPrevia={previewLoading}
+                            errorVistaPrevia={previewError}
+                            obtenerPreview={fetchPreviewHook}
+                            clearPreview={clearPreviewHook}
+                            onRequestConfirmDates={(ci, co) => {
+                                setFechaModalCheckIn(ci);
+                                setFechaModalCheckOut(co);
+                                setMostrarModalFechas(true);
+                            }}
                         />
                     </div>
-                </main>
+
+                    <main className="mx-auto mt-8 max-w-7xl px-4">
+                        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                            <div className="space-y-6 lg:col-span-8">
+                                <ReservaInfo reserva={reserva} />
+
+                                <AssignedHabitaciones
+                                    habitaciones={reserva.habitaciones}
+                                    onDesasignar={desasignarHabitacion}
+                                    guardando={guardandoHabitaciones}
+                                    reserva={reserva}
+                                />
+
+                                {(viewerIsAdmin || viewerIsRecepcion) && !isCheckedIn && !isCheckedOut && (
+                                    <AsignacionHabitaciones
+                                        reserva={reserva}
+                                        reservaSlots={reserva.habitaciones}
+                                        habitacionesDisponibles={hookHabitacionesDisponibles}
+                                        habitacionesSeleccionadas={habitacionesSeleccionadas}
+                                        setHabitacionesSeleccionadas={setHabitacionesSeleccionadas}
+                                        onDesasignar={desasignarHabitacion}
+                                        onGuardar={actualizarHabitaciones}
+                                        guardando={guardandoHabitaciones}
+                                    />
+                                )}
+
+                            </div>
+
+                            <ReservaSidebar
+                                reserva={
+                                    preview
+                                        ? { ...reserva, precio_total: Number(reserva.precio_total ?? 0) + Number(preview.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0) }
+                                        : reserva
+                                }
+                                estaCancelada={isCancelled}
+                                onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)}
+                            />
+                        </div>
+                    </main>
+                </div>
 
                 <ModalFechas
                     mostrar={mostrarModalFechas}

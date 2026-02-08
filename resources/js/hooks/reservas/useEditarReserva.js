@@ -142,17 +142,64 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     };
 
     const desasignarHabitacion = async (habitacionId) => {
+        // Prevent concurrent desasignaciones
+        if (guardandoHabitaciones) {
+            showToast?.('Operación en curso, espera...', 'info');
+            return;
+        }
+
+        // Resolve habitacion_id from the parameter which may be a habitacion_id or a slot_id (or string)
+        let resolvedHabitacionId = null;
+        const parsedParam = (typeof habitacionId === 'string' || typeof habitacionId === 'number') ? Number(habitacionId) : habitacionId;
+        const hrList = Array.isArray(reserva?.habitaciones) ? reserva.habitaciones : [];
+
+        // If the passed value directly matches an existing habitacion_id, use it
+        const directMatch = hrList.find(h => Number(h.habitacion_id) === parsedParam);
+        if (directMatch) resolvedHabitacionId = Number(directMatch.habitacion_id);
+
+        // Otherwise try to find a slot with slot_id equal to the passed param and use its habitacion_id
+        if (!resolvedHabitacionId) {
+            const slotMatch = hrList.find(h => Number(h.slot_id) === parsedParam || Number(h.id) === parsedParam);
+            if (slotMatch && slotMatch.habitacion_id) resolvedHabitacionId = Number(slotMatch.habitacion_id);
+        }
+
+        // As a last resort, if the caller passed a non-numeric falsy value, try to find any non-null habitacion_id for the same slot index
+        if (!resolvedHabitacionId && !Number.isFinite(parsedParam)) {
+            const anyAssigned = hrList.find(h => h && h.habitacion_id);
+            if (anyAssigned) resolvedHabitacionId = Number(anyAssigned.habitacion_id);
+        }
+
+        if (!resolvedHabitacionId) {
+            showToast?.('ID de habitación inválida', 'error');
+            return;
+        }
+
         setGuardandoHabitaciones(true);
         try {
-            const data = await reservasApi.desasignarHabitaciones(reserva.id, [habitacionId]);
+            // eslint-disable-next-line no-console
+            console.debug('[useEditarReserva] desasignarHabitacion', { reservaId: reserva?.id, habitacionId: resolvedHabitacionId, originalParam: habitacionId });
+            const data = await reservasApi.desasignarHabitaciones(reserva.id, [resolvedHabitacionId]);
             if (data?.success && data.reserva) {
                 setReserva(data.reserva);
                 showToast?.('Habitación desasignada con éxito', 'success');
             } else {
-                showToast?.(data?.error || 'Error al desasignar', 'error');
+                // mostrar detalle de error devuelto por la API si lo hay
+                // eslint-disable-next-line no-console
+                console.warn('[useEditarReserva] desasignarHabitacion api returned error', data);
+                showToast?.(data?.error || data?.message || 'Error al desasignar', 'error');
             }
         } catch (error) {
-            showToast?.('Error al desasignar habitación', 'error');
+            // eslint-disable-next-line no-console
+            console.error('[useEditarReserva] desasignarHabitacion error', error);
+            // intentar mostrar el cuerpo de la respuesta si existe
+            const apiErr = error?.response?.data || error?.response || error?.message || String(error);
+            // eslint-disable-next-line no-console
+            console.debug('[useEditarReserva] desasignarHabitacion response body', apiErr);
+            if (apiErr && typeof apiErr === 'object') {
+                showToast?.(apiErr.error || apiErr.message || 'Error al desasignar habitación', 'error');
+            } else {
+                showToast?.(String(apiErr), 'error');
+            }
         } finally {
             setGuardandoHabitaciones(false);
         }
@@ -307,7 +354,9 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const actualizarHabitaciones = async () => {
         setGuardandoHabitaciones(true);
         try {
-            const habitacionIds = [...habitacionesSeleccionadas];
+            // Ensure we send an array aligned with reservation slots: one entry per slot (null when empty)
+            const slotsCount = Array.isArray(reserva?.habitaciones) ? reserva.habitaciones.length : habitacionesSeleccionadas.length;
+            const habitacionIds = Array.from({ length: slotsCount }).map((_, idx) => (Array.isArray(habitacionesSeleccionadas) ? (habitacionesSeleccionadas[idx] ?? null) : null));
             const data = await reservasApi.asignarHabitaciones(reserva.id, habitacionIds);
             if (data?.success && data.reserva) {
                 setReserva(data.reserva);
