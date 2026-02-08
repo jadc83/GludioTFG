@@ -426,27 +426,36 @@ class ReservaController extends Controller
                 $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
             }
 
-            // Si la petición espera JSON, devolver información estructurada (incluyendo refund si existe)
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $msg,
-                    'refund' => $result['refund'] ?? null,
-                    'payment' => $result['payment'] ?? null,
-                ]);
+            // Refrescar y formatear la reserva para devolver datos útiles al frontend
+            $reserva->refresh();
+            try {
+                $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+            } catch (\Throwable $e) {
+                $reservaFormateada = ['id' => $reserva->id, 'precio_total' => $reserva->precio_total ?? null];
             }
 
-            $redirect = redirect()->route('panel')->with('success', $msg);
-            if (!empty($result['refund'])) {
-                $redirect = $redirect->with('refund_info', $result['refund']);
-            }
-            if (!empty($result['payment'])) {
-                $redirect = $redirect->with('payment_info', $result['payment']);
-            }
-
-            return $redirect;
+            // Devolver siempre JSON para simplificar el flujo AJAX y evitar redirecciones
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'refund' => $result['refund'] ?? null,
+                'payment' => $result['payment'] ?? null,
+                'reserva' => $reservaFormateada,
+            ]);
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
+            Log::error('Error en ReservaController::update', [
+                'mensaje' => $e->getMessage(),
+                'class' => \get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'stack' => $e->getTraceAsString(),
+                'reserva_id' => $reserva->id ?? null,
+                'user_id' => Auth::id(),
+                'payload' => $request->all(),
+            ]);
+
+            $msg = $e->getMessage();
+            return response()->json(['success' => false, 'error' => $msg], 400);
         }
     }
 

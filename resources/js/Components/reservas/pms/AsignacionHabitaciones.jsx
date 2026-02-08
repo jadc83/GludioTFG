@@ -39,7 +39,19 @@ export default function AsignacionHabitaciones({
                                     )}
                                 </div>
                                 {hSlot.precio && (
-                                    <span className="text-xs text-gray-500">{formatearMoneda(hSlot.precio)} / noche</span>
+                                    (() => {
+                                        // Mostrar precio por noche correctamente: preferir precio_noche si viene del backend,
+                                        // si no, calcular a partir del total `hSlot.precio` y las fechas del slot o de la reserva
+                                        const parseDate = (s) => (s ? new Date(s) : null);
+                                        const slotCheckIn = parseDate(hSlot.check_in);
+                                        const slotCheckOut = parseDate(hSlot.check_out);
+                                        const noches = slotCheckIn && slotCheckOut ? Math.max(0, Math.ceil((slotCheckOut - slotCheckIn) / (1000 * 60 * 60 * 24))) : null;
+                                        const precioNoche = hSlot.precio_noche != null ? Number(hSlot.precio_noche) : (noches && noches > 0 ? Number(hSlot.precio) / noches : Number(hSlot.precio));
+
+                                        return (
+                                            <span className="text-xs text-gray-500">{formatearMoneda(precioNoche)} / noche</span>
+                                        );
+                                    })()
                                 )}
                             </div>
 

@@ -285,7 +285,10 @@ class ReservaService
 
         $reserva = DB::transaction(function () use ($datosPreparados, $usuario, $status, $reservableType) {
             // Verificar disponibilidad dentro de la transacción
-            $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $datosPreparados['check_in'], $datosPreparados['check_out']);
+            // Asegurar que pasamos objetos Carbon (prepararDatosReserva retornó strings)
+            $checkInCarbon = Carbon::parse($datosPreparados['check_in']);
+            $checkOutCarbon = Carbon::parse($datosPreparados['check_out']);
+            $this->verificarDisponibilidadMultiple($datosPreparados['habitaciones'], $checkInCarbon, $checkOutCarbon);
 
             $localizador = $this->generarLocalizador();
 
@@ -751,10 +754,15 @@ class ReservaService
             }
         });
 
+        // Refrescar reserva y recalcular precio_total si es necesario
+        $reserva->refresh();
+        $precioTotal = $reserva->precio_total ?? (float) $reserva->habitaciones->sum('precio');
+
         return [
             'success' => true,
             'message' => 'Habitaciones actualizadas correctamente',
-            'habitaciones_asignadas' => count(array_filter($habitacionIds))
+            'habitaciones_asignadas' => count(array_filter($habitacionIds)),
+            'precio_total' => $precioTotal,
         ];
     }
 
@@ -909,12 +917,16 @@ class ReservaService
     {
         $checkIn = Carbon::parse($validated['check_in']);
         $checkOut = Carbon::parse($validated['check_out']);
-        $habitacionIds = $validated['habitacion_ids'];
+        // `habitacion_ids` puede no enviarse en actualizaciones que solo cambian fechas
+        $habitacionIds = $validated['habitacion_ids'] ?? [];
 
-        foreach ($habitacionIds as $id) {
-            if (!$this->verificarDisponibilidadHabitacion($id, $checkIn, $checkOut, $reserva->id)) {
-                $num = Habitacion::find($id)->numero ?? $id;
-                throw new \Exception("La habitación {$num} ya está ocupada en esas fechas.");
+        if (!empty($habitacionIds)) {
+            foreach ($habitacionIds as $id) {
+                if ($id === null) continue;
+                if (!$this->verificarDisponibilidadHabitacion($id, $checkIn, $checkOut, $reserva->id)) {
+                    $num = Habitacion::find($id)->numero ?? $id;
+                    throw new \Exception("La habitación {$num} ya está ocupada en esas fechas.");
+                }
             }
         }
 
@@ -925,9 +937,12 @@ class ReservaService
             'notas' => $validated['notas'] ?? null,
         ]);
 
-        // Usar el método de asignación manual para habitaciones específicas
-        $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
-        $precioTotal = $asignacionResult['precio_total'];
+        // Usar el método de asignación manual solo si se han enviado IDs de habitación
+        $precioTotal = $reserva->precio_total ?? 0;
+        if (!empty($habitacionIds)) {
+            $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
+            $precioTotal = $asignacionResult['precio_total'] ?? ($reserva->precio_total ?? $precioTotal);
+        }
 
         $totalViejo = (float) $reserva->precio_total;
         $diffSigned = round($precioTotal - $totalViejo, 2);
@@ -956,10 +971,18 @@ class ReservaService
 
         $reserva->update(['precio_total' => $precioTotal]);
 
+        // Asegurar que el evento solo se despache tras un commit exitoso
         try {
-            event(new ReservaActualizada($reserva, $meta ?? null));
+            DB::afterCommit(function() use ($reserva, $meta) {
+                try {
+                    event(new ReservaActualizada($reserva, $meta ?? null));
+                } catch (\Throwable $e) {
+                    Log::warning('Emitir ReservaActualizada failed (afterCommit): ' . $e->getMessage());
+                }
+            });
         } catch (\Throwable $e) {
-
+            // Registrar advertencia pero no bloquear la operación
+            Log::warning('Registrar afterCommit failed: ' . $e->getMessage());
         }
 
         return ['refund' => $refundInfo];

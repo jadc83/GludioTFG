@@ -52,11 +52,14 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        if (reserva?.habitaciones) {
+        // Depend only on the stable list of habitacion ids to avoid re-running
+        const idsKey = reserva?.habitaciones ? reserva.habitaciones.map((h) => h.habitacion_id || '').join(',') : '';
+        if (idsKey) {
             const currentPhysicalIds = reserva.habitaciones.map((h) => h.habitacion_id || null);
             setHabitacionesSeleccionadas(currentPhysicalIds);
         }
-    }, [reserva]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reserva?.habitaciones?.length, reserva?.habitaciones?.map?.((h) => h.habitacion_id).join(',')]);
 
     useEffect(() => {
         if (initialHabitacionesDisponibles) {
@@ -115,7 +118,7 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             if (!obtenerPreview) return;
             setVistaPreviaCargada(false);
             try {
-                await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut);
+                await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut, reserva);
                 if (mounted) setVistaPreviaCargada(true);
             } catch (e) {
                 if (mounted) setVistaPreviaCargada(false);
@@ -127,7 +130,8 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         return () => {
             mounted = false;
         };
-    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut, obtenerPreview, reserva]);
+    // Only depend on the modal flags, preview function and the original check-in/out values
+    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut, obtenerPreview, reserva?.check_in, reserva?.check_out]);
 
     // Use centralized hybrid listener/polling for Checkout redirect + realtime update
     const sessionIdParam = new URLSearchParams(window.location.search).get('session_id');
@@ -158,9 +162,9 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             // obtener último preview
             let ultimoPreview = null;
             if (obtenerPreview) {
-                ultimoPreview = await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut);
+                ultimoPreview = await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut, reserva);
             } else {
-                ultimoPreview = await reservasApi.previewModificarEstancia(reserva.localizador, { check_in: fechaModalCheckIn, check_out: fechaModalCheckOut });
+                ultimoPreview = await reservasApi.getDisponibles(fechaModalCheckIn, fechaModalCheckOut);
             }
 
             if (ultimoPreview?.available === false) {

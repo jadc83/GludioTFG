@@ -15,6 +15,7 @@ export default function ModalFechas({
     onCerrar,
     onConfirmar,
     procesando,
+    reserva,
 }) {
     if (!mostrar) return null;
 
@@ -60,6 +61,34 @@ export default function ModalFechas({
         );
     };
 
+    const renderPorNoche = () => {
+        if (!vistaPrevia) return null;
+        const extra = Number(vistaPrevia.extra_nights || 0);
+        const removed = Number(vistaPrevia.removed_nights || 0);
+        const per = Number(vistaPrevia.per_night_change || 0);
+        const perNet = Number(vistaPrevia.per_night_net || 0);
+        if (extra > 0) {
+            return (
+                <div className="mt-3 text-sm text-gray-700">
+                    <div className="font-bold">Precio por noche extra</div>
+                    <div className="text-lg text-red-600">+{formatearMoneda(per)} / noche ({extra} noche{extra > 1 ? 's' : ''})</div>
+                </div>
+            );
+        }
+        if (removed > 0) {
+            return (
+                <div className="mt-3 text-sm text-gray-700">
+                    <div className="font-bold">A devolver por noche</div>
+                    <div className="text-lg text-green-600">-{formatearMoneda(per)} / noche ({removed} noche{removed > 1 ? 's' : ''})</div>
+                    {perNet >= 0 && perNet !== per && (
+                        <div className="mt-1 text-xs text-gray-400">Neto por noche tras penalización: {formatearMoneda(perNet)}</div>
+                    )}
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="animate-in fade-in zoom-in w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl duration-200">
@@ -69,6 +98,16 @@ export default function ModalFechas({
                 </div>
 
                 <div className="space-y-6 p-8">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Total a cobrar</div>
+                            <div className="text-2xl font-black text-gray-900">{formatearMoneda(vistaPrevia?.nuevo_total ?? reserva?.precio_total ?? 0)}</div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-[10px] font-black uppercase opacity-60">Pago inicial</div>
+                            <div className="mt-1 inline-block rounded bg-gray-100 px-3 py-1 text-xs font-black uppercase text-gray-700">{reserva?.pago ?? 'pendiente'}</div>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-gray-400">Entrada</label>
@@ -98,12 +137,15 @@ export default function ModalFechas({
                                 <div className="mt-2 text-xs font-bold uppercase tracking-widest text-gray-400">Calculando cambios...</div>
                             </div>
                         ) : errorVistaPrevia ? (
-                            <div className="py-4 text-center text-sm font-bold text-red-500">{errorVistaPrevia}</div>
+                            <div className="py-4 text-center text-sm font-bold text-red-500">{typeof errorVistaPrevia === 'string' ? errorVistaPrevia : (errorVistaPrevia?.message || String(errorVistaPrevia))}</div>
                         ) : !vistaPreviaCargada ? (
                             <div className="py-6 text-center text-sm text-gray-500">Selecciona las nuevas fechas para ajustar el importe</div>
                         ) : vistaPrevia ? (
                             <div className="flex items-center justify-between">
-                                {renderDiferencia()}
+                                <div>
+                                    {renderDiferencia()}
+                                    {renderPorNoche()}
+                                </div>
 
                                 <div className="text-right">
                                     <span className="mb-1 block text-[10px] font-black uppercase leading-none text-gray-400">Estado</span>

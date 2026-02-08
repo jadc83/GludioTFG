@@ -87,3 +87,12 @@ export async function crearReservaConCheckout(payload) {
         return err?.response?.data ?? { success: false, message: err.message };
     }
 }
+
+export async function getDisponibles(checkIn, checkOut) {
+    try {
+        const res = await axios.get('/reservas/disponibles', { params: { check_in: checkIn, check_out: checkOut } });
+        return res?.data?.data ?? res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err?.message };
+    }
+}

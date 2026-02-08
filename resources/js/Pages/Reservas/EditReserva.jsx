@@ -7,7 +7,9 @@ import { useEffect, useState } from 'react';
 import useEditarReserva from '@/hooks/reservas/useEditarReserva';
 import AssignedHabitaciones from '@/Components/reservas/pms/AssignedHabitaciones';
 import AsignacionHabitaciones from '@/Components/reservas/pms/AsignacionHabitaciones';
+import { usePage } from '@inertiajs/react';
 import ModalFechas from '@/Components/reservas/comunes/ModalFechas';
+import FechaEditor from '@/Components/reservas/FechaEditor';
 import ReservaHeader from '@/Components/comunes/ReservaHeader';
 import ReservaSidebar from '@/Components/reservas/comunes/ReservaSidebar';
 import ModalReembolso from '@/Components/reservas/comunes/ModalReembolso';
@@ -67,10 +69,27 @@ export default function EditarReserva({
     const isCancelled = reserva.status?.toLowerCase().includes('cancelado');
     const isCheckedIn = reserva.status?.toLowerCase() === 'checked_in';
 
+    const page = usePage();
+    const viewer = page.props.auth.user || {};
+    const viewerIsAdmin = !!viewer.is_admin;
+    const viewerIsRecepcion = !!viewer.is_recepcion;
+
     return (
         <AuthenticatedLayout>
             <div className="min-h-screen bg-gray-50 pb-24">
                 <ReservaHeader reserva={reserva} isCancelled={isCancelled} onOpenDateModal={abrirModalFechas} />
+
+                <div className="mx-auto mt-4 max-w-7xl px-4">
+                    <FechaEditor
+                        reserva={reserva}
+                        setReserva={setReserva}
+                        refresh={refresh}
+                        vistaPrevia={preview}
+                        cargandoVistaPrevia={previewLoading}
+                        errorVistaPrevia={previewError}
+                        obtenerPreview={fetchPreviewHook}
+                    />
+                </div>
 
                 <main className="mx-auto mt-8 max-w-7xl px-4">
                     <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
@@ -81,23 +100,25 @@ export default function EditarReserva({
                                 guardando={guardandoHabitaciones}
                             />
 
-                            <AsignacionHabitaciones
-                                reservaSlots={reserva.habitaciones}
-                                habitacionesDisponibles={hookHabitacionesDisponibles}
-                                habitacionesSeleccionadas={habitacionesSeleccionadas}
-                                setHabitacionesSeleccionadas={setHabitacionesSeleccionadas}
-                                onDesasignar={desasignarHabitacion}
-                                onGuardar={actualizarHabitaciones}
-                                guardando={guardandoHabitaciones}
-                            />
+                            {(viewerIsAdmin || viewerIsRecepcion) && (
+                                <AsignacionHabitaciones
+                                    reservaSlots={reserva.habitaciones}
+                                    habitacionesDisponibles={hookHabitacionesDisponibles}
+                                    habitacionesSeleccionadas={habitacionesSeleccionadas}
+                                    setHabitacionesSeleccionadas={setHabitacionesSeleccionadas}
+                                    onDesasignar={desasignarHabitacion}
+                                    onGuardar={actualizarHabitaciones}
+                                    guardando={guardandoHabitaciones}
+                                />
+                            )}
 
                         </div>
 
                         <ReservaSidebar
-                            reserva={reserva}
-                            estaCancelada={isCancelled}
-                            onSolicitarReembolso={() => abrirReembolso(reserva.precio_total - reserva.reembolsos_total)}
-                        />
+                                    reserva={preview?.nuevo_total != null ? { ...reserva, precio_total: preview.nuevo_total } : reserva}
+                                    estaCancelada={isCancelled}
+                                    onSolicitarReembolso={() => abrirReembolso((preview?.nuevo_total ?? reserva.precio_total) - reserva.reembolsos_total)}
+                                />
                     </div>
                 </main>
 
@@ -112,6 +133,7 @@ export default function EditarReserva({
                     cargandoVistaPrevia={previewLoading}
                     errorVistaPrevia={previewError}
                     vistaPreviaCargada={vistaPreviaCargada}
+                    reserva={reserva}
                     onCerrar={() => setMostrarModalFechas(false)}
                     onConfirmar={confirmarModalFechas}
                     procesando={isProcessing}

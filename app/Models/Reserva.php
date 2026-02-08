@@ -47,6 +47,22 @@ class Reserva extends Model
         return $this->morphTo();
     }
 
+    protected static function booted()
+    {
+        // Cuando una reserva se marca como borrada (soft-delete), desvincular sus placeholders
+        static::deleted(function (Reserva $reserva) {
+            try {
+                // Eliminar placeholders (registros sin habitacion_id) porque la política
+                // de la empresa indica que las reservas canceladas no se restaurarán.
+                \App\Models\HabitacionReserva::where('reserva_id', $reserva->id)
+                    ->whereNull('habitacion_id')
+                    ->delete();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Error eliminando placeholders al borrar reserva: ' . $e->getMessage());
+            }
+        });
+    }
+
     public function bookedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'booked_by_user_id');

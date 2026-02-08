@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
                     'roles' => $request->user()->getRoleNames()->toArray(),
                     'is_encargado' => $request->user()->hasRole('encargado'),
                     'is_admin' => $request->user()->hasRole('admin'),
+                    'is_recepcion' => strtolower($request->user()->empleado?->departamento?->name ?? '') === 'recepcion',
                     // Can view panel: admin, encargado, operario (mantenimiento|recepcion), auxiliar(recepcion)
                     'can_view_panel' => (
                         $request->user() && (

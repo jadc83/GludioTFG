@@ -21,8 +21,18 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        // Si el usuario actual es admin y se pasó ?user_id=xx, permitir ver el perfil de ese usuario (reservas incluidas)
+        $targetUser = $user;
+        $requestedUserId = $request->query('user_id');
+        if ($requestedUserId && $user->hasRole('admin')) {
+            $maybe = \App\Models\User::find($requestedUserId);
+            if ($maybe) {
+                $targetUser = $maybe;
+            }
+        }
+
         // Obtener las reservas del usuario
-        $reservas = $user->reservas()
+        $reservas = $targetUser->reservas()
             ->with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
             ->orderBy('check_in', 'desc')
             ->get();
@@ -48,22 +58,22 @@ class ProfileController extends Controller
         $empleadoData = null;
         $habitacionesLimpieza = [];
 
-        if ($user->empleado) {
-            $user->empleado->load('departamento');
+        if ($targetUser->empleado) {
+            $targetUser->empleado->load('departamento');
             $empleadoData = [
-                'id' => $user->empleado->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'departamento' => $user->empleado->departamento?->name ?? null,
+                'id' => $targetUser->empleado->id,
+                'name' => $targetUser->name,
+                'email' => $targetUser->email,
+                'departamento' => $targetUser->empleado->departamento?->name ?? null,
                 // Incluir datos de perfil del usuario para mostrarlos en el perfil de empleado
-                'role' => $user->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $user->getRoleNames()->first())) : null,
-                'telefono' => $user->telefono ?? null,
-                'direccion' => $user->direccion ?? null,
-                'ciudad' => $user->ciudad ?? null,
-                'codigo_postal' => $user->codigo_postal ?? null,
-                'nacionalidad' => $user->nacionalidad ?? null,
-                'tipo_documento' => $user->tipo_documento ?? null,
-                'numero_documento' => $user->numero_documento ?? null,
+                'role' => $targetUser->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $targetUser->getRoleNames()->first())) : null,
+                'telefono' => $targetUser->telefono ?? null,
+                'direccion' => $targetUser->direccion ?? null,
+                'ciudad' => $targetUser->ciudad ?? null,
+                'codigo_postal' => $targetUser->codigo_postal ?? null,
+                'nacionalidad' => $targetUser->nacionalidad ?? null,
+                'tipo_documento' => $targetUser->tipo_documento ?? null,
+                'numero_documento' => $targetUser->numero_documento ?? null,
             ];
 
             // Cargar habitaciones en estado 'limpieza' para mostrar en el perfil de empleado
@@ -77,14 +87,25 @@ class ProfileController extends Controller
             $habitacionesLimpieza = $action->handle($habitaciones);
         }
 
+        // Determinar si el usuario que visualiza pertenece al departamento Recepcion
+        $viewer = $request->user();
+        $viewerIsReception = false;
+        if ($viewer->empleado && $viewer->empleado->departamento) {
+            try {
+                $viewerIsReception = strcasecmp($viewer->empleado->departamento->name, 'recepcion') === 0;
+            } catch (\Throwable $e) {
+                $viewerIsReception = false;
+            }
+        }
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'reservas' => $reservasFormateadas,
             'empleado' => $empleadoData,
             'habitacionesLimpieza' => $habitacionesLimpieza,
-            // Para ahora, permitir que todos vean 'Mis Reservas'
-            'can_view_reservas' => true,
+            // Mostrar 'Mis Reservas' sólo a administradores y empleados del departamento Recepcion
+            'can_view_reservas' => $request->user()->hasRole('admin') || $viewerIsReception,
             // Mostrar la pestaña Tareas y Turnos solo para empleados con rol encargado|operario|auxiliar
             'can_view_tareas' => ($user->empleado && $user->hasAnyRole(['encargado','operario','auxiliar'])),
             // Mostrar la pestaña 'Mi Perfil' para todos (contenido de tareas/turnos sigue restringido)

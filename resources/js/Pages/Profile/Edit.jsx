@@ -126,6 +126,18 @@ export default function Edit({ mustVerifyEmail, status, auth, reservas = [], emp
                                 </div>
                             </div>
                         )}
+                        {/* TAB: RESERVAS */}
+                        {activeTab === 'reservas' && (
+                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="rounded-xl border border-gray-100 p-4 bg-white">
+                                    {reservas && reservas.length ? (
+                                        <ReservationsTable reservas={reservas} />
+                                    ) : (
+                                        <div className="p-6 text-sm text-gray-500">No hay reservas para mostrar.</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         {/* TAB: TURNOS */}
                         {activeTab === 'turnos' && (
                             <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
