@@ -4,6 +4,7 @@ import * as reservasApi from '@/api/reservas';
 import usePayments from '@/hooks/pagos/usePayments';
 import usePaymentCheck from '@/hooks/pagos/usePaymentCheck';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
+import axios from 'axios';
 
 export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview }) {
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState([]);
@@ -64,8 +65,25 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     useEffect(() => {
         if (initialHabitacionesDisponibles) {
             setHabitacionesDisponibles(initialHabitacionesDisponibles);
+        } else {
+            // Si no hay iniciales, cargar dinámicamente
+            cargarHabitacionesDisponibles();
         }
     }, [initialHabitacionesDisponibles]);
+
+    const cargarHabitacionesDisponibles = async () => {
+        try {
+            const response = await axios.get(`/habitaciones/disponibles?individuales=true&check_in=${reserva.check_in}&check_out=${reserva.check_out}`);
+            const data = response.data;
+            if (data) {
+                // data es array de grupos, necesitamos aplanar a habitaciones individuales
+                const habitaciones = data.flatMap(grupo => grupo.habitaciones || []);
+                setHabitacionesDisponibles(habitaciones);
+            }
+        } catch (error) {
+            console.error('Error cargando habitaciones disponibles:', error);
+        }
+    };
 
     const desasignarHabitacion = async (habitacionId) => {
         setGuardandoHabitaciones(true);

@@ -209,7 +209,7 @@ class ReservaFormatterService
         $checkInStr = $checkIn->toDateString();
         $checkOutStr = $checkOut->toDateString();
 
-        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas
+        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas, incluyendo las ya asignadas para permitir reasignación
         $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
             ->where('estado', 'disponible')
             ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
@@ -217,7 +217,7 @@ class ReservaFormatterService
                     ->where('check_in', '<', $checkOutStr)
                     ->where('check_out', '>', $checkInStr);
             })
-            ->whereNotIn('id', $habitacionesActualesIds) // Excluir habitaciones ya asignadas a esta reserva
+            // No excluir habitaciones ya asignadas a esta reserva
             ->orderBy('numero')
             ->get();
 
