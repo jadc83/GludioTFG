@@ -269,11 +269,35 @@ class PaymentService
 
 			$paymentIntent = $this->getStripe()->paymentIntents->create($intentData);
 
+			// Si la metadata contiene reserva_id, crear un registro Pago preliminar para asegurar el mapeo
+			try {
+				$meta = $options['metadata'] ?? [];
+				if (!empty($meta['reserva_id'])) {
+					$reservaId = (int)$meta['reserva_id'];
+					$reserva = Reserva::find($reservaId);
+					if ($reserva) {
+						$pago = Pago::create([
+							'reserva_id' => $reserva->id,
+							'stripe_payment_intent_id' => $paymentIntent->id ?? null,
+							'monto' => $monto,
+							'moneda' => 'eur',
+							'estado' => 'procesando',
+							'descripcion' => $options['description'] ?? 'Pago creado junto a PaymentIntent standalone',
+							'stripe_response' => $paymentIntent->toArray(),
+						]);
+						Log::info('crearPaymentIntentStandalone: Pago creado para metadata.reserva_id', ['reserva_id' => $reserva->id, 'pago_id' => $pago->id, 'payment_intent' => $paymentIntent->id]);
+					}
+				}
+			} catch (\Throwable $e) {
+				Log::warning('crearPaymentIntentStandalone: no se pudo crear Pago desde metadata: ' . $e->getMessage());
+			}
+
 			return [
 				'success' => true,
 				'clientSecret' => $paymentIntent->client_secret ?? null,
 				'paymentIntentId' => $paymentIntent->id ?? null,
 				'paymentIntentStatus' => $paymentIntent->status ?? null,
+				'pago_id' => $pago->id ?? null,
 			];
 		} catch (\Throwable $e) {
 			Log::error('Error creating standalone PaymentIntent: ' . $e->getMessage());

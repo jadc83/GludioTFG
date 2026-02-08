@@ -2,9 +2,10 @@ import Campo from '@/Components/reservas/utilidades/Campo';
 import Modal from '@/Components/Modal';
 import { usePage } from '@inertiajs/react';
 
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { crearCheckoutSession } from '@/api/pagos';
+import { Elements } from '@stripe/react-stripe-js';
+import { getStripePromise } from '@/utils/stripe';
+import CardConfirmForm from '@/Components/pagos/CardConfirmForm';
+// Nota: Checkout clásico redireccional se ha sustituido por la página interna "checkout-simulado"
 import usePayments from '@/hooks/pagos/usePayments';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
@@ -36,7 +37,7 @@ function FormularioPagoInterno({
     const { createPaymentIntent, confirmarPaymentIntent } = usePayments();
 
     const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
-    const stripePromise = useMemo(() => (stripePublicKey ? loadStripe(stripePublicKey) : null), [stripePublicKey]);
+    const stripePromise = useMemo(() => getStripePromise(stripePublicKey), [stripePublicKey]);
 
     const [piClientSecret, setPiClientSecret] = useState(null);
     const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
@@ -300,65 +301,7 @@ function FormularioPagoInterno({
         } catch (e) {}
     };
 
-    // Componente interno: formulario de tarjeta para confirmar PaymentIntent
-    function CardConfirmForm({ clientSecret, paymentIntentId, onSuccess, onError, name, email }) {
-        const stripe = useStripe();
-        const elements = useElements();
-        const [loadingConfirm, setLoadingConfirm] = useState(false);
-        const { confirmarPaymentIntent: confirmarPI } = usePayments();
-
-        const handleConfirm = async () => {
-            if (!stripe || !elements) {
-                onError && onError('Stripe no inicializado');
-                return;
-            }
-            setLoadingConfirm(true);
-            const card = elements.getElement(CardElement);
-            try {
-                const res = await stripe.confirmCardPayment(clientSecret, {
-                    payment_method: {
-                        card,
-                        billing_details: { name: name || '', email: email || '' },
-                    },
-                });
-
-                if (res.error) {
-                    onError && onError(res.error.message || 'Error confirmando el pago');
-                    setLoadingConfirm(false);
-                    return;
-                }
-
-                if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
-                    const backendResp = await confirmarPI(paymentIntentId);
-                    if (backendResp && backendResp.success) {
-                        onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
-                    } else {
-                        onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
-                    }
-                } else {
-                    onError && onError('Pago no confirmado');
-                }
-            } catch (e) {
-                onError && onError(e?.message || String(e));
-            } finally {
-                setLoadingConfirm(false);
-            }
-        };
-
-        return (
-            <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700">Datos de tarjeta</label>
-                <div className="mt-2 rounded-md border border-gray-200 p-3">
-                    <CardElement options={{ hidePostalCode: true }} />
-                </div>
-                <div className="mt-3 flex justify-end">
-                    <button onClick={handleConfirm} disabled={loadingConfirm} className="rounded bg-[#7a0202] px-4 py-2 font-bold text-white">
-                        {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    // Usamos el componente compartido `CardConfirmForm` en lugar de la definición local.
 
     return (
         <div className="relative mx-auto w-full bg-gris px-2">
@@ -551,19 +494,11 @@ function FormularioPagoInterno({
                                             setShowCardForm(true);
                                             // No redirigimos a Checkout
                                         } else {
-                                            // Crear checkout session y redirigir (nueva forma: usar session.url)
-                                            const ck = await crearCheckoutSession(resId, { monto });
-                                            if (!ck || (!ck.sessionUrl && !ck.sessionId)) {
-                                                throw new Error(ck?.error || 'No se pudo iniciar Stripe Checkout');
-                                            }
-
-                                            if (ck.sessionUrl) {
-                                                window.location.href = ck.sessionUrl;
-                                            } else {
-                                                // Fallback antiguo: usar redirectToCheckout si aún disponible
-                                                const stripe = await loadStripe(ck.publicKey);
-                                                await stripe.redirectToCheckout({ sessionId: ck.sessionId });
-                                            }
+                                                // En lugar de redirigir a Stripe Checkout, abrir la página interna
+                                                // que simula Checkout y montará Stripe Elements para confirmar.
+                                                // Pasamos reserva_id y monto por query params.
+                                                const params = new URLSearchParams({ reserva_id: String(resId), monto: String(monto) });
+                                                window.location.href = `/checkout-simulado?${params.toString()}`;
                                         }
                                     } catch (e) {
                                         console.error('Error checkout:', e);

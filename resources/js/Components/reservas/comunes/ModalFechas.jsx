@@ -6,8 +6,9 @@ import { emitToast } from '@/utils/toast';
 import { useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import { getStripePromise } from '@/utils/stripe';
+import PaymentBox from '@/Components/pagos/PaymentBox';
 import { usePage } from '@inertiajs/react';
 import * as pagosApi from '@/api/pagos';
 
@@ -39,7 +40,7 @@ export default function ModalFechas({
     const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
     const page = usePage();
     const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
-    const stripePromise = useMemo(() => (stripePublicKey ? loadStripe(stripePublicKey) : null), [stripePublicKey]);
+    const stripePromise = useMemo(() => getStripePromise(stripePublicKey), [stripePublicKey]);
     const mostrarAviso = () => {
         if (!vistaPrevia) return null;
         const delta = Number(vistaPrevia.nuevo_total) - Number(vistaPrevia.viejo_total);
@@ -119,48 +120,46 @@ export default function ModalFechas({
                         {needPayment && piClientSecret && stripePromise && (
                             <div className="mt-4 w-full">
                                 <Elements stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
-                                    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                                        <PaymentConfirm
-                                            clientSecret={piClientSecret}
-                                            paymentIntentId={piPaymentIntentId}
-                                            reserva={reserva}
-                                                    amount={Number(vistaPrevia.penalizacion ?? vistaPrevia.estimate_charge ?? 0)}
-                                            onConfirmed={async (paymentIntentId) => {
-                                                const getCookie = (name) => {
-                                                    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-                                                    return match ? decodeURIComponent(match[2]) : null;
-                                                };
-                                                const payload2 = {
-                                                    check_in: modalCheckIn,
-                                                    check_out: modalCheckOut,
-                                                    status: reserva.status || 'pendiente',
-                                                    pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
-                                                    payment_intent_id: paymentIntentId,
-                                                };
-                                                const xsrf = getCookie('XSRF-TOKEN');
-                                                try {
-                                                    const res2 = await axios.put(`/reservas/${reserva.id}`, payload2, {
-                                                        withCredentials: true,
-                                                        headers: {
-                                                            Accept: 'application/json',
-                                                            'X-Requested-With': 'XMLHttpRequest',
-                                                            ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
-                                                        },
-                                                    });
-                                                    if (res2?.data?.success) {
-                                                        emitToast('Fechas actualizadas', 'success');
-                                                        onApplied && onApplied(res2.data);
-                                                    } else {
-                                                        emitToast(res2?.data?.message || 'No se pudo actualizar', 'error');
-                                                    }
-                                                } catch (e) {
-                                                    emitToast(e?.response?.data?.error || e?.message || 'Error aplicando cambios', 'error');
-                                                } finally {
-                                                    setNeedPayment(false);
+                                    <PaymentBox
+                                        clientSecret={piClientSecret}
+                                        paymentIntentId={piPaymentIntentId}
+                                        reserva={reserva}
+                                        amount={Number(vistaPrevia.penalizacion ?? vistaPrevia.estimate_charge ?? 0)}
+                                        onConfirmed={async (paymentIntentId) => {
+                                            const getCookie = (name) => {
+                                                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                                                return match ? decodeURIComponent(match[2]) : null;
+                                            };
+                                            const payload2 = {
+                                                check_in: modalCheckIn,
+                                                check_out: modalCheckOut,
+                                                status: reserva.status || 'pendiente',
+                                                pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
+                                                payment_intent_id: paymentIntentId,
+                                            };
+                                            const xsrf = getCookie('XSRF-TOKEN');
+                                            try {
+                                                const res2 = await axios.put(`/reservas/${reserva.id}`, payload2, {
+                                                    withCredentials: true,
+                                                    headers: {
+                                                        Accept: 'application/json',
+                                                        'X-Requested-With': 'XMLHttpRequest',
+                                                        ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
+                                                    },
+                                                });
+                                                if (res2?.data?.success) {
+                                                    emitToast('Fechas actualizadas', 'success');
+                                                    onApplied && onApplied(res2.data);
+                                                } else {
+                                                    emitToast(res2?.data?.message || 'No se pudo actualizar', 'error');
                                                 }
-                                            }}
-                                        />
-                                    </div>
+                                            } catch (e) {
+                                                emitToast(e?.response?.data?.error || e?.message || 'Error aplicando cambios', 'error');
+                                            } finally {
+                                                setNeedPayment(false);
+                                            }
+                                        }}
+                                    />
                                 </Elements>
                             </div>
                         )}
@@ -243,58 +242,4 @@ export default function ModalFechas({
     );
 }
 
-function PaymentConfirm({ clientSecret, paymentIntentId, reserva, onConfirmed, amount }) {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [loading, setLoading] = useState(false);
-
-    const handleConfirm = async () => {
-        if (!stripe || !elements) return;
-        setLoading(true);
-        const card = elements.getElement(CardElement);
-        try {
-            const res = await stripe.confirmCardPayment(clientSecret, {
-                payment_method: { card, billing_details: { name: reserva?.reservable?.name || '', email: reserva?.reservable?.email || '' } }
-            });
-            if (res.error) {
-                emitToast(res.error.message || 'Error confirmando pago', 'error');
-                setLoading(false);
-                return;
-            }
-            if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
-                onConfirmed(paymentIntentId);
-            } else {
-                emitToast('Pago no confirmado', 'error');
-            }
-        } catch (e) {
-            emitToast(e?.message || 'Error confirmando', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="w-full max-w-xl mx-auto p-6 rounded-2xl bg-white shadow-lg border border-gray-100">
-            <div className="flex items-start justify-between">
-                <div>
-                    <h3 className="text-lg font-extrabold text-gray-900">Completar pago</h3>
-                    <p className="mt-1 text-sm text-gray-500">Introduce los datos de la tarjeta para procesar el cobro seguro.</p>
-                    {typeof amount === 'number' && (
-                        <div className="mt-2 text-sm text-gray-700">Importe a cargar: <span className="font-bold">{formatearMoneda(amount)}</span></div>
-                    )}
-                </div>
-            </div>
-
-                <div className="mt-4">
-                <label className="block text-xs font-semibold text-gray-600 mb-2">Tarjeta</label>
-                <div className="rounded-lg border border-gray-200 p-3 bg-white">
-                    <CardElement options={{ hidePostalCode: true }} />
-                </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-3">
-                <button onClick={handleConfirm} disabled={loading} className="px-5 py-2 rounded-md bg-[#7a0202] text-sm font-bold text-white hover:bg-[#5a0101] shadow">{loading ? 'Confirmando...' : 'Estoy de acuerdo'}</button>
-            </div>
-        </div>
-    );
-}
+// PaymentConfirm refactorizado a Componentes reutilizables (CardConfirmForm + PaymentBox)

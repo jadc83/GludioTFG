@@ -25,6 +25,10 @@ class UpdateReservaRequest extends FormRequest
             'habitacion_ids.*' => ['integer', 'exists:habitaciones,id'],
             'notas' => ['nullable', 'string', 'max:1000'],
             'motivo' => ['nullable', 'string', 'max:500'],
+            // Permitir que el frontend incluya un payment_intent_id al actualizar la reserva
+            'payment_intent_id' => ['nullable', 'string'],
+            // monto del pago enviado desde frontend (opcional)
+            'pago_monto' => ['nullable', 'numeric'],
         ];
     }
 

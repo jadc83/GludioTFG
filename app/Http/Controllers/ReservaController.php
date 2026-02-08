@@ -406,6 +406,12 @@ class ReservaController extends Controller
         $validated = $request->validated();
 
         try {
+            // Registro explícito si el frontend envía payment_intent_id para ayudar a depuración de persistencia
+            try {
+                if (!empty($validated['payment_intent_id'])) {
+                    Log::info('ReservaController::update - payment_intent_id presente en payload', ['reserva_id' => $reserva->id, 'payment_intent_id' => $validated['payment_intent_id'], 'pago_monto' => $validated['pago_monto'] ?? null, 'user_id' => Auth::id()]);
+                }
+            } catch (\Throwable $e) { Log::warning('ReservaController::update - fallo logging payment_intent_id: ' . $e->getMessage()); }
             // Detectar cambio de estado a 'cancelado' para enviar correo
             $originalStatus = $reserva->status;
             $motivo = $request->input('motivo') ?? null;

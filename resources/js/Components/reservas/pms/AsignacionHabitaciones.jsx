@@ -75,6 +75,11 @@ export default function AsignacionHabitaciones({
                             {(() => {
                                 const filtered = habitacionesDisponibles.filter((habFisica) => !hSlot.tipo || (habFisica.tipo && habFisica.tipo.toLowerCase() === hSlot.tipo.toLowerCase()));
 
+                                try {
+                                    // eslint-disable-next-line no-console
+                                    console.debug('[AsignacionHabitaciones] slot', idx, { slotTipo: hSlot.tipo, availableCount: habitacionesDisponibles.length, filteredCount: filtered.length, availableTipos: (habitacionesDisponibles || []).map(h=>h.tipo) });
+                                } catch (e) {}
+
                                 if (filtered.length === 0) {
                                     return (
                                         <div className="col-span-full">

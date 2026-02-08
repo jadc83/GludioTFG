@@ -125,6 +125,13 @@ Route::post('/reservas/crear-con-checkout', [ReservaController::class, 'storeCon
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
 Route::post('/pagos/crear-payment-intent-standalone', [PagoController::class, 'crearPaymentIntentStandalone'])->name('pagos.crear-payment-intent-standalone');
 Route::post('/pagos/crear-checkout-session', [PagoController::class, 'crearCheckoutSession'])->name('pagos.crear-checkout-session');
+// Página para simular Stripe Checkout pero alojando un formulario con Stripe Elements
+Route::get('/checkout-simulado', function (\Illuminate\Http\Request $request) {
+    return Inertia::render('CheckoutSimulada', [
+        'reserva_id' => $request->get('reserva_id'),
+        'monto' => $request->get('monto'),
+    ]);
+});
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');
 // Endpoint para comprobar estado de una Checkout Session (usado por success_url UX)
 Route::get('/pagos/check-session', [PagoController::class, 'checkSession'])->name('pagos.check-session');

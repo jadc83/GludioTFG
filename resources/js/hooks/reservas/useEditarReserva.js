@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import * as reservasApi from '@/api/reservas';
 import usePayments from '@/hooks/pagos/usePayments';
@@ -9,6 +9,7 @@ import axios from 'axios';
 export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview, clearPreview = null }) {
     const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState([]);
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(initialHabitacionesDisponibles);
+    const loadedAvailRef = useRef(false);
     const [guardandoHabitaciones, setGuardandoHabitaciones] = useState(false);
     const [enviandoSolicitudReembolso, setEnviandoSolicitudReembolso] = useState(false);
 
@@ -52,6 +53,12 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     // Unified name: use `isProcessing` across hooks/components for consistency
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Debugging: log initial values to help trace repeated requests / empty disponible lists
+    try {
+        // eslint-disable-next-line no-console
+        console.debug('[useEditarReserva] init', { reservaId: reserva?.id, initialHabitacionesDisponiblesLength: Array.isArray(initialHabitacionesDisponibles) ? initialHabitacionesDisponibles.length : null });
+    } catch (e) {}
+
     useEffect(() => {
         // Update selected rooms only if the id list actually changed to avoid
         // repeated setState causing maximum update depth.
@@ -66,11 +73,37 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     }, [reserva?.habitaciones]);
 
     useEffect(() => {
-        if (initialHabitacionesDisponibles) {
-            setHabitacionesDisponibles(initialHabitacionesDisponibles);
-        } else {
-            // Si no hay iniciales, cargar dinámicamente
-            cargarHabitacionesDisponibles();
+        // Avoid resetting `habitacionesDisponibles` on every render when
+        // `initialHabitacionesDisponibles` is a new array reference but
+        // contains the same content. Do a shallow compare by id and length.
+        try {
+            if (Array.isArray(initialHabitacionesDisponibles) && initialHabitacionesDisponibles.length > 0) {
+                const prev = habitacionesDisponibles || [];
+                const prevIds = prev.map(h => h.id ?? h.habitacion_id ?? '').join(',');
+                const newIds = initialHabitacionesDisponibles.map(h => h.id ?? h.habitacion_id ?? '').join(',');
+                if (prevIds !== newIds) {
+                    // eslint-disable-next-line no-console
+                    console.debug('[useEditarReserva] setting habitacionesDisponibles from initial prop', { prevCount: prev.length, newCount: initialHabitacionesDisponibles.length });
+                    setHabitacionesDisponibles(initialHabitacionesDisponibles);
+                }
+                loadedAvailRef.current = true;
+            } else {
+                // Si no hay iniciales, cargar dinámicamente sólo una vez
+                if (!loadedAvailRef.current) {
+                    // eslint-disable-next-line no-console
+                    console.debug('[useEditarReserva] initialHabitacionesDisponibles empty, loading from API (first time)');
+                    cargarHabitacionesDisponibles();
+                    loadedAvailRef.current = true;
+                } else {
+                    // eslint-disable-next-line no-console
+                    console.debug('[useEditarReserva] initialHabitacionesDisponibles empty, skipping repeated load');
+                }
+            }
+        } catch (e) {
+            // Fallback: set directly if anything unexpected
+            // eslint-disable-next-line no-console
+            console.debug('[useEditarReserva] fallback set habitacionesDisponibles', { err: String(e) });
+            setHabitacionesDisponibles(initialHabitacionesDisponibles || []);
         }
     }, [initialHabitacionesDisponibles]);
 
@@ -78,12 +111,32 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         try {
             const response = await axios.get(`/habitaciones/disponibles?individuales=true&check_in=${reserva.check_in}&check_out=${reserva.check_out}`);
             const data = response.data;
+            // eslint-disable-next-line no-console
+            console.debug('[useEditarReserva] cargarHabitacionesDisponibles response', { url: response.config.url, data });
             if (data) {
-                // data es array de grupos, necesitamos aplanar a habitaciones individuales
-                const habitaciones = data.flatMap(grupo => grupo.habitaciones || []);
-                setHabitacionesDisponibles(habitaciones);
-            }
+                    // La API puede devolver dos formatos:
+                    // 1) Array de grupos: [{ habitaciones: [...] }, ...]
+                    // 2) Array directo de habitaciones: [{ id, numero, tipo, ... }, ...]
+                    let habitaciones = [];
+                    if (Array.isArray(data) && data.length > 0 && (data[0].habitaciones || data[0].id)) {
+                        if (data[0].habitaciones) {
+                            // formato grupos
+                            habitaciones = data.flatMap(grupo => grupo.habitaciones || []);
+                        } else {
+                            // formato directo de habitaciones
+                            habitaciones = data;
+                        }
+                    } else {
+                        // fallback: intentar aplanar por seguridad
+                        habitaciones = Array.isArray(data) ? data.flatMap(grupo => grupo.habitaciones || []) : [];
+                    }
+
+                    // eslint-disable-next-line no-console
+                    console.debug('[useEditarReserva] cargarHabitacionesDisponibles parsed habitaciones', { count: habitaciones.length });
+                    setHabitacionesDisponibles(habitaciones);
+                }
         } catch (error) {
+            // eslint-disable-next-line no-console
             console.error('Error cargando habitaciones disponibles:', error);
         }
     };

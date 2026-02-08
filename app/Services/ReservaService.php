@@ -7,6 +7,7 @@ use App\Models\Habitacion;
 use App\Models\HabitacionReserva;
 use Illuminate\Support\Facades\Log;
 use App\Models\Reserva;
+use App\Models\Pago;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -1057,6 +1058,31 @@ class ReservaService
         $refundInfo = null;
 
         $reserva->update(['precio_total' => $precioTotal]);
+
+        // Si se recibió payment_intent_id en la actualización, crear un Pago asociado si no existe.
+        try {
+            $paymentIntentId = $validated['payment_intent_id'] ?? null;
+            $pagoMonto = $validated['pago_monto'] ?? ($precioTotal ?? null);
+            if ($paymentIntentId) {
+                $existing = Pago::where('reserva_id', $reserva->id)
+                    ->where('stripe_payment_intent_id', $paymentIntentId)
+                    ->first();
+                if (! $existing) {
+                    $pagoData = [
+                        'reserva_id' => $reserva->id,
+                        'stripe_payment_intent_id' => $paymentIntentId,
+                        'monto' => $pagoMonto ?? $precioTotal,
+                        'moneda' => 'eur',
+                        'estado' => ($validated['pago'] ?? 'pendiente') === 'pagado' ? 'completado' : 'procesando',
+                        'descripcion' => 'Pago asociado al actualizar reserva ' . $reserva->localizador,
+                        'stripe_response' => ['id' => $paymentIntentId],
+                    ];
+                    Pago::create($pagoData);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo crear Pago automático al actualizar reserva: ' . $e->getMessage());
+        }
 
         // Crear una solicitud de reembolso SOLO si cambian las fechas y cambia el importe total
         $datesChanged = ($oldCheckIn != $checkIn->format('Y-m-d')) || ($oldCheckOut != $checkOut->format('Y-m-d'));

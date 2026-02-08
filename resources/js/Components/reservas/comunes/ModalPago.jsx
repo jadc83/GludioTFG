@@ -2,7 +2,6 @@ import ErrorBoundary from '@/Components/ErrorBoundary';
 import FormularioPago from '@/Components/formularios/create/FormularioPago';
 import { formatearMoneda } from '@/utils/formatters';
 import { loadStripe } from '@stripe/stripe-js';
-import { crearCheckoutSession } from '@/api/pagos';
 import { useState } from 'react';
 
 export default function ModalPago({
