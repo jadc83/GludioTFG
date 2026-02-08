@@ -86,6 +86,38 @@ class PagoController extends Controller
         }
     }
 
+    /**
+     * Crear un PaymentIntent standalone (sin reserva asociada)
+     */
+    public function crearPaymentIntentStandalone(Request $request)
+    {
+        $validated = $request->validate([
+            'monto' => 'required|numeric|min:0.01',
+            'receipt_email' => 'nullable|email',
+        ]);
+
+        try {
+            $serviceResp = $this->paymentService->crearPaymentIntentStandalone((float)$validated['monto'], [
+                'receipt_email' => $validated['receipt_email'] ?? null,
+                'metadata' => $request->input('metadata', []),
+            ]);
+
+            if (!empty($serviceResp['success'])) {
+                return response()->json([
+                    'success' => true,
+                    'clientSecret' => $serviceResp['clientSecret'] ?? null,
+                    'paymentIntentId' => $serviceResp['paymentIntentId'] ?? null,
+                    'paymentIntentStatus' => $serviceResp['paymentIntentStatus'] ?? null,
+                ]);
+            }
+
+            return response()->json(['success' => false, 'error' => $serviceResp['error'] ?? 'Error creating payment intent'], 400);
+        } catch (\Exception $e) {
+            Log::error('crearPaymentIntentStandalone error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Error creando PaymentIntent'], 400);
+        }
+    }
+
     public function crearCheckoutSession(Request $request)
     {
         $validated = $request->validate([
@@ -130,10 +162,13 @@ class PagoController extends Controller
     {
         $request->validate([
             'payment_intent_id' => 'required|string',
-            'pago_id' => 'required|exists:pagos,id',
+            'pago_id' => 'nullable|exists:pagos,id',
         ]);
 
-        $pago = Pago::findOrFail($request->pago_id);
+        $pago = null;
+        if ($request->filled('pago_id')) {
+            $pago = Pago::find($request->pago_id);
+        }
 
         try {
 

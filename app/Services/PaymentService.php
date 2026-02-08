@@ -239,6 +239,50 @@ class PaymentService
 	}
 
 	/**
+	 * Crear un PaymentIntent standalone (sin asociarlo a una Reserva).
+	 * Útil para flujos en los que el front crea el PaymentIntent antes de persistir la reserva.
+	 * No crea un registro `Pago` local; se asume que la reserva recibirá `payment_intent_id` y creará el Pago.
+	 *
+	 * @param float $monto
+	 * @param array<string,mixed> $options
+	 * @return array<string,mixed>
+	 */
+	public function crearPaymentIntentStandalone(float $monto, array $options = []): array
+	{
+		try {
+			$montoCents = (int)round($monto * 100);
+			$intentData = [
+				'amount' => $montoCents,
+				'currency' => 'eur',
+				// Limitar a tarjeta para evitar mostrar métodos no activados (Link, etc.)
+				'payment_method_types' => ['card'],
+				'metadata' => $options['metadata'] ?? [],
+				'description' => $options['description'] ?? 'PaymentIntent standalone',
+			];
+
+			if (!empty($options['receipt_email'])) $intentData['receipt_email'] = $options['receipt_email'];
+
+			if (!empty($options['confirm_with_pm'])) {
+				$intentData['confirm'] = true;
+				$intentData['payment_method'] = $options['payment_method'] ?? 'pm_card_visa';
+			}
+
+			$paymentIntent = $this->getStripe()->paymentIntents->create($intentData);
+
+			return [
+				'success' => true,
+				'clientSecret' => $paymentIntent->client_secret ?? null,
+				'paymentIntentId' => $paymentIntent->id ?? null,
+				'paymentIntentStatus' => $paymentIntent->status ?? null,
+			];
+		} catch (\Throwable $e) {
+			Log::error('Error creating standalone PaymentIntent: ' . $e->getMessage());
+			return ['success' => false, 'error' => $e->getMessage()];
+		}
+	}
+
+
+	/**
 	 * Crear un PaymentIntent y Pago asociado
 	 *
 	 * @param \App\Models\Reserva $reserva
@@ -255,7 +299,8 @@ class PaymentService
 			$intentData = [
 				'amount' => $montoCents,
 				'currency' => 'eur',
-				'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
+				// Forzar solo tarjetas para evitar mostrar métodos extras en Elements
+				'payment_method_types' => ['card'],
 				'metadata' => [
 					'reserva_id' => (string)$reserva->id,
 					'localizador' => (string)$reserva->localizador,
@@ -265,7 +310,7 @@ class PaymentService
 
 			if ($receiptEmail) $intentData['receipt_email'] = $receiptEmail;
 
-			if (($options['confirm_with_pm'] ?? false) || app()->isLocal()) {
+			if (!empty($options['confirm_with_pm'])) {
 				$intentData['confirm'] = true;
 				$intentData['payment_method'] = 'pm_card_visa';
 			}

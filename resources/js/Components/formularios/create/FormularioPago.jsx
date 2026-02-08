@@ -3,6 +3,7 @@ import Modal from '@/Components/Modal';
 import { usePage } from '@inertiajs/react';
 
 import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { crearCheckoutSession } from '@/api/pagos';
 import usePayments from '@/hooks/pagos/usePayments';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -33,6 +34,13 @@ function FormularioPagoInterno({
     const [debugErrorJson, setDebugErrorJson] = useState(null);
 
     const { createPaymentIntent, confirmarPaymentIntent } = usePayments();
+
+    const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
+    const stripePromise = useMemo(() => (stripePublicKey ? loadStripe(stripePublicKey) : null), [stripePublicKey]);
+
+    const [piClientSecret, setPiClientSecret] = useState(null);
+    const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
+    const [showCardForm, setShowCardForm] = useState(false);
 
     // Manejo de clientes existentes (409)
     const [clienteExistente, setClienteExistente] = useState(null);
@@ -292,6 +300,66 @@ function FormularioPagoInterno({
         } catch (e) {}
     };
 
+    // Componente interno: formulario de tarjeta para confirmar PaymentIntent
+    function CardConfirmForm({ clientSecret, paymentIntentId, onSuccess, onError, name, email }) {
+        const stripe = useStripe();
+        const elements = useElements();
+        const [loadingConfirm, setLoadingConfirm] = useState(false);
+        const { confirmarPaymentIntent: confirmarPI } = usePayments();
+
+        const handleConfirm = async () => {
+            if (!stripe || !elements) {
+                onError && onError('Stripe no inicializado');
+                return;
+            }
+            setLoadingConfirm(true);
+            const card = elements.getElement(CardElement);
+            try {
+                const res = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card,
+                        billing_details: { name: name || '', email: email || '' },
+                    },
+                });
+
+                if (res.error) {
+                    onError && onError(res.error.message || 'Error confirmando el pago');
+                    setLoadingConfirm(false);
+                    return;
+                }
+
+                if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
+                    const backendResp = await confirmarPI(paymentIntentId);
+                    if (backendResp && backendResp.success) {
+                        onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
+                    } else {
+                        onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
+                    }
+                } else {
+                    onError && onError('Pago no confirmado');
+                }
+            } catch (e) {
+                onError && onError(e?.message || String(e));
+            } finally {
+                setLoadingConfirm(false);
+            }
+        };
+
+        return (
+            <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700">Datos de tarjeta</label>
+                <div className="mt-2 rounded-md border border-gray-200 p-3">
+                    <CardElement options={{ hidePostalCode: true }} />
+                </div>
+                <div className="mt-3 flex justify-end">
+                    <button onClick={handleConfirm} disabled={loadingConfirm} className="rounded bg-[#7a0202] px-4 py-2 font-bold text-white">
+                        {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="relative mx-auto w-full bg-gris px-2">
             {/* Modal: Cliente existente (409) */}
@@ -435,8 +503,33 @@ function FormularioPagoInterno({
                                         let resId = reservaData?.reserva_id;
 
                                         if (!esExtension) {
+                                            // Crear PaymentIntent standalone primero para asegurar que el pago quede ligado a Stripe
+                                            const pagosApi = await import('@/api/pagos');
+                                            const montoFloat = Number(monto) || 0;
+                                            let piResp = null;
+                                            try {
+                                                piResp = await pagosApi.crearPaymentIntentStandalone(montoFloat, { receipt_email: email });
+                                                if (!piResp || piResp.success === false) {
+                                                    throw new Error(piResp?.error || 'No se pudo crear PaymentIntent');
+                                                }
+                                            } catch (e) {
+                                                setMensaje(e?.message || 'Error creando PaymentIntent');
+                                                throw e;
+                                            }
+
                                             const service = await import('@/hooks/reservas/service');
                                             const nuevoPayload = { ...reservaData, name, email, telefono };
+                                            // Incluir payment_intent_id para que el backend cree el Pago ligado
+                                            if (piResp && piResp.paymentIntentId) {
+                                                nuevoPayload.payment_intent_id = piResp.paymentIntentId;
+                                                nuevoPayload.pago_monto = montoFloat;
+                                                // Guardar clientSecret para confirmar en cliente
+                                                if (piResp.clientSecret) {
+                                                    setPiClientSecret(piResp.clientSecret);
+                                                    setPiPaymentIntentId(piResp.paymentIntentId);
+                                                }
+                                            }
+
                                             try {
                                                 const dataReserva = await service.crearReserva(nuevoPayload);
                                                 if (!dataReserva || dataReserva.success === false) {
@@ -447,20 +540,30 @@ function FormularioPagoInterno({
                                                 setMensaje(e?.message || 'Error creando la reserva');
                                                 throw e;
                                             }
+                                            // Nota: la confirmación del PaymentIntent (recolección de tarjeta) debe realizarse
+                                            // en un paso posterior usando `piResp.clientSecret` con Stripe.js / Elements.
+                                            // Aquí sólo nos aseguramos de crear el PaymentIntent y persistir la reserva con payment_intent_id.
                                         }
 
-                                        // Crear checkout session y redirigir (nueva forma: usar session.url)
-                                        const ck = await crearCheckoutSession(resId, { monto });
-                                        if (!ck || (!ck.sessionUrl && !ck.sessionId)) {
-                                            throw new Error(ck?.error || 'No se pudo iniciar Stripe Checkout');
-                                        }
-
-                                        if (ck.sessionUrl) {
-                                            window.location.href = ck.sessionUrl;
+                                        // Si creamos un PaymentIntent standalone con clientSecret, mostrar el formulario
+                                        if (piClientSecret && stripePromise) {
+                                            // Mostrar formulario de tarjeta para confirmar el PaymentIntent
+                                            setShowCardForm(true);
+                                            // No redirigimos a Checkout
                                         } else {
-                                            // Fallback antiguo: usar redirectToCheckout si aún disponible
-                                            const stripe = await loadStripe(ck.publicKey);
-                                            await stripe.redirectToCheckout({ sessionId: ck.sessionId });
+                                            // Crear checkout session y redirigir (nueva forma: usar session.url)
+                                            const ck = await crearCheckoutSession(resId, { monto });
+                                            if (!ck || (!ck.sessionUrl && !ck.sessionId)) {
+                                                throw new Error(ck?.error || 'No se pudo iniciar Stripe Checkout');
+                                            }
+
+                                            if (ck.sessionUrl) {
+                                                window.location.href = ck.sessionUrl;
+                                            } else {
+                                                // Fallback antiguo: usar redirectToCheckout si aún disponible
+                                                const stripe = await loadStripe(ck.publicKey);
+                                                await stripe.redirectToCheckout({ sessionId: ck.sessionId });
+                                            }
                                         }
                                     } catch (e) {
                                         console.error('Error checkout:', e);
@@ -478,6 +581,24 @@ function FormularioPagoInterno({
                             Transacción segura encriptada vía Stripe
                         </p>
                     </div>
+                    {/* Si se requiere confirmación cliente (PaymentIntent creado), mostrar Elements + CardConfirmForm */}
+                    {showCardForm && piClientSecret && stripePromise && (
+                        <div className="mt-4">
+                            <Elements stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
+                                <CardConfirmForm
+                                    clientSecret={piClientSecret}
+                                    paymentIntentId={piPaymentIntentId}
+                                    name={name}
+                                    email={email}
+                                    onSuccess={(data) => {
+                                        setShowCardForm(false);
+                                        if (typeof onPagoExitoso === 'function') onPagoExitoso(data);
+                                    }}
+                                    onError={(msg) => setMensaje(msg)}
+                                />
+                            </Elements>
+                        </div>
+                    )}
                 </div>
 
                 {/* ERRORES */}

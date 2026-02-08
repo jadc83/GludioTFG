@@ -1,10 +1,15 @@
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
+import Modal from '@/Components/Modal';
 import { formatearMoneda } from '@/utils/formatters';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { usePage } from '@inertiajs/react';
+import * as pagosApi from '@/api/pagos';
 
 dayjs.locale('es');
 
@@ -28,15 +33,26 @@ export default function ModalFechas({
 }) {
     if (!mostrar) return null;
 
-    const renderDiferencia = () => {
+    const [creatingPi, setCreatingPi] = useState(false);
+    const [needPayment, setNeedPayment] = useState(false);
+    const [piClientSecret, setPiClientSecret] = useState(null);
+    const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
+    const page = usePage();
+    const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
+    const stripePromise = useMemo(() => (stripePublicKey ? loadStripe(stripePublicKey) : null), [stripePublicKey]);
+    const mostrarAviso = () => {
         if (!vistaPrevia) return null;
         const delta = Number(vistaPrevia.nuevo_total) - Number(vistaPrevia.viejo_total);
         if (delta > 0) {
-            // se debe pagar
+            // se debe pagar -> mostrar aviso legal/penalización integrado en el modal (estilo neutro)
+            const penalizacion = Number(vistaPrevia.penalizacion ?? 20);
             return (
-                <div>
-                    <span className="mb-1 block text-[10px] font-black uppercase leading-none text-gray-400">A pagar ahora</span>
-                    <span className="text-2xl font-black text-red-600">+{formatearMoneda(vistaPrevia.estimate_charge)}</span>
+                <div className="p-3 border border-gray-100 rounded-lg bg-white">
+                    <div className="flex flex-col gap-2">
+                        <div className="text-sm font-semibold text-gray-800">Aviso: penalización aplicable</div>
+                        <div className="text-xs text-gray-600">Esta modificación de fechas conlleva una penalización de {formatearMoneda(penalizacion)} según nuestras condiciones de reserva. Al confirmar, autoriza al establecimiento a cargar este importe en el método de pago proporcionado. La penalización se debe, en parte, a retenciones y tarifas aplicadas por Stripe durante el procesamiento de pagos.</div>
+                        <div className="text-[11px] text-gray-500">Nota: las modificaciones realizadas dentro de las 48 horas previas al check-in pueden estar sujetas a penalizaciones. Los cargos se procesan a través de Stripe y están sujetos a sus términos y condiciones.</div>
+                    </div>
                 </div>
             );
         }
@@ -70,177 +86,199 @@ export default function ModalFechas({
 
     const renderPorNoche = () => {
         if (!vistaPrevia) return null;
-        const extra = Number(vistaPrevia.extra_nights || 0);
-        const removed = Number(vistaPrevia.removed_nights || 0);
-        const per = Number(vistaPrevia.per_night_change || 0);
-        const perNet = Number(vistaPrevia.per_night_net || 0);
-        if (extra > 0) {
-            return (
-                <div className="mt-3 text-sm text-gray-700">
-                    <div className="font-bold">Precio por noche extra</div>
-                    <div className="text-lg text-red-600">+{formatearMoneda(per)} / noche ({extra} noche{extra > 1 ? 's' : ''})</div>
-                </div>
-            );
-        }
-        if (removed > 0) {
-            return (
-                <div className="mt-3 text-sm text-gray-700">
-                    <div className="font-bold">A devolver por noche</div>
-                    <div className="text-lg text-green-600">-{formatearMoneda(per)} / noche ({removed} noche{removed > 1 ? 's' : ''})</div>
-                    {perNet >= 0 && perNet !== per && (
-                        <div className="mt-1 text-xs text-gray-400">Neto por noche tras penalización: {formatearMoneda(perNet)}</div>
-                    )}
-                </div>
-            );
-        }
-        return null;
+        return (
+            <div className="flex gap-3 bg-white p-8">
+
+                {/* Si la preview indica cargo, mostrar flujo de pago (Elements + formulario) */}
+                {vistaPrevia && vistaPreviaCargada && Number(vistaPrevia.estimate_charge || 0) > 0 ? (
+                    <div className="flex-1">
+                                                {/* Importe mostrado únicamente en el formulario seguro; eliminado del CTA */}
+                        {!needPayment && (
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={async () => {
+                                        if (creatingPi) return;
+                                        setCreatingPi(true);
+                                        try {
+                                            const resp = await pagosApi.crearPaymentIntentStandalone(Number(vistaPrevia.estimate_charge || 0), { receipt_email: reserva?.reservable?.email });
+                                            if (!resp || resp.success === false) throw new Error(resp?.error || 'No se pudo crear PaymentIntent');
+                                            setPiClientSecret(resp.clientSecret ?? null);
+                                            setPiPaymentIntentId(resp.paymentIntentId ?? null);
+                                            setNeedPayment(true);
+                                        } catch (e) {
+                                            emitToast(e?.message || 'Error creando PaymentIntent', 'error');
+                                        } finally {
+                                            setCreatingPi(false);
+                                        }
+                                    }}
+                                    className="ml-auto flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                                >{creatingPi ? 'Preparando pago...' : 'Estoy de acuerdo'}</button>
+                            </div>
+                        )}
+
+                        {needPayment && piClientSecret && stripePromise && (
+                            <div className="mt-4 w-full">
+                                <Elements stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
+                                    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                                        <PaymentConfirm
+                                            clientSecret={piClientSecret}
+                                            paymentIntentId={piPaymentIntentId}
+                                            reserva={reserva}
+                                                    amount={Number(vistaPrevia.penalizacion ?? vistaPrevia.estimate_charge ?? 0)}
+                                            onConfirmed={async (paymentIntentId) => {
+                                                const getCookie = (name) => {
+                                                    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                                                    return match ? decodeURIComponent(match[2]) : null;
+                                                };
+                                                const payload2 = {
+                                                    check_in: modalCheckIn,
+                                                    check_out: modalCheckOut,
+                                                    status: reserva.status || 'pendiente',
+                                                    pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
+                                                    payment_intent_id: paymentIntentId,
+                                                };
+                                                const xsrf = getCookie('XSRF-TOKEN');
+                                                try {
+                                                    const res2 = await axios.put(`/reservas/${reserva.id}`, payload2, {
+                                                        withCredentials: true,
+                                                        headers: {
+                                                            Accept: 'application/json',
+                                                            'X-Requested-With': 'XMLHttpRequest',
+                                                            ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
+                                                        },
+                                                    });
+                                                    if (res2?.data?.success) {
+                                                        emitToast('Fechas actualizadas', 'success');
+                                                        onApplied && onApplied(res2.data);
+                                                    } else {
+                                                        emitToast(res2?.data?.message || 'No se pudo actualizar', 'error');
+                                                    }
+                                                } catch (e) {
+                                                    emitToast(e?.response?.data?.error || e?.message || 'Error aplicando cambios', 'error');
+                                                } finally {
+                                                    setNeedPayment(false);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </Elements>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    // Sin cargo adicional: botón simple para aplicar cambios
+                    <div className="flex-1">
+                        <button
+                            onClick={async () => {
+                                const getCookie = (name) => {
+                                    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                                    return match ? decodeURIComponent(match[2]) : null;
+                                };
+                                try {
+                                    const payload = {
+                                        check_in: modalCheckIn,
+                                        check_out: modalCheckOut,
+                                        status: reserva.status || 'pendiente',
+                                        pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
+                                    };
+                                    const xsrf = getCookie('XSRF-TOKEN');
+                                    const res = await axios.put(`/reservas/${reserva.id}`, payload, {
+                                        withCredentials: true,
+                                        headers: {
+                                            Accept: 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
+                                        },
+                                    });
+                                    if (res?.data?.success) {
+                                        emitToast('Fechas actualizadas', 'success');
+                                        onApplied && onApplied(res.data);
+                                    } else {
+                                        emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
+                                    }
+                                } catch (err) {
+                                    const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
+                                    emitToast(msg, 'error');
+                                }
+                            }}
+                            className="flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                        >Aplicar Cambios</button>
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="animate-in fade-in zoom-in w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl duration-200">
-                <div className="flex items-start justify-between border-b border-gray-100 p-6">
-                    <div>
-                        <h2 className="text-lg font-extrabold text-gray-900">Confirmar cambios de fechas</h2>
-                        <div className="mt-1 text-sm text-gray-500">Reservas · Localizador: <span className="font-semibold text-gray-700">{reserva?.localizador || '-'}</span></div>
-                    </div>
-                    <button onClick={onCerrar} aria-label="Cerrar" className="rounded-full p-2 text-gray-400 hover:bg-gray-100">✕</button>
-                </div>
+        <Modal show={mostrar} onClose={onCerrar} maxWidth="2xl">
+            <div className="p-4 rounded-md relative">
+                <button aria-label="Cerrar" onClick={onCerrar} className="absolute top-3 right-3 p-2 rounded-full text-gray-600 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                </button>
 
-                <div className="space-y-6 p-6">
-
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                            <div className="text-xs font-bold uppercase text-gray-400">Entrada (original)</div>
-                            <div className="mt-2 text-sm font-semibold text-gray-800">{reserva?.check_in ? dayjs(reserva.check_in).format('dddd, D [de] MMMM [de] YYYY') : '-'}</div>
-                            <div className="mt-1 text-xs text-gray-500">Salida original: <span className="font-medium text-gray-700">{reserva?.check_out ? dayjs(reserva.check_out).format('dddd, D [de] MMMM [de] YYYY') : '-'}</span></div>
-                            {reserva?.check_in && reserva?.check_out && (
-                                <div className="mt-2 text-xs text-gray-500">Duración: <span className="font-semibold text-gray-700">{dayjs(reserva.check_out).diff(dayjs(reserva.check_in), 'day')} noche{dayjs(reserva.check_out).diff(dayjs(reserva.check_in), 'day') !== 1 ? 's' : ''}</span></div>
-                            )}
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                            <div className="text-xs font-bold uppercase text-gray-400">Entrada (nueva)</div>
-                            <div className="mt-2 text-sm font-semibold text-gray-800">{modalCheckIn ? dayjs(modalCheckIn).format('dddd, D [de] MMMM [de] YYYY') : '-'}</div>
-                            <div className="mt-1 text-xs text-gray-500">Salida nueva: <span className="font-medium text-gray-700">{modalCheckOut ? dayjs(modalCheckOut).format('dddd, D [de] MMMM [de] YYYY') : '-'}</span></div>
-                            {modalCheckIn && modalCheckOut && (
-                                <div className="mt-2 text-xs text-gray-500">Duración: <span className="font-semibold text-gray-700">{dayjs(modalCheckOut).diff(dayjs(modalCheckIn), 'day')} noche{dayjs(modalCheckOut).diff(dayjs(modalCheckIn), 'day') !== 1 ? 's' : ''}</span></div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
-                        <div className="space-y-4">
-                            <div className="flex justify-between">
-                                <span className="font-bold text-gray-700">Precio original:</span>
-                                <span className="font-black text-gray-900">{formatearMoneda(reserva?.precio_total ?? 0)}</span>
-                            </div>
-                                    {vistaPrevia && vistaPreviaCargada && (
-                                <>
-                                    <div className="flex justify-between">
-                                        <span className="font-bold text-gray-700">Precio nuevo:</span>
-                                        <span className="font-black text-gray-900">{formatearMoneda(vistaPrevia.nuevo_total)}</span>
-                                    </div>
-
-                                    {/* Mostrar aviso de penalización si aplica */}
-                                    {Number(vistaPrevia.removed_nights || 0) > 0 && (
-                                        <div className="mt-3 rounded-md border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-800">
-                                            <strong>Penalización:</strong> {formatearMoneda(vistaPrevia.penalizacion || 20)} aplicada sobre el reembolso. Si la penalización cubre el reembolso, no habrá devolución.
-                                        </div>
-                                    )}
-
-                                    {/* Mostrar estado de disponibilidad */}
-                                    <div className="mt-3 text-sm">
-                                        <span className={`font-bold ${vistaPrevia.available ? 'text-green-600' : 'text-red-600'}`}>
-                                            {vistaPrevia.available ? 'Disponible' : 'No disponible'}
-                                        </span>
-                                        {!vistaPrevia.available && (
-                                            <div className="text-xs text-gray-500">Algunas habitaciones se solapan en las fechas seleccionadas.</div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex gap-3 bg-gray-50 p-8">
-                    <button onClick={onCerrar} className="rounded-2xl border border-gray-200 bg-white py-4 px-4 text-xs font-bold uppercase tracking-widest text-gray-500 transition hover:bg-white/50">Cerrar</button>
-                    <button
-                        onClick={() => {
-                            try {
-                                if (typeof clearPreview === 'function') clearPreview();
-                            } catch (e) {}
-                            if (typeof setModalCheckIn === 'function' && typeof setModalCheckOut === 'function') {
-                                setModalCheckIn(reserva?.check_in || '');
-                                setModalCheckOut(reserva?.check_out || '');
-                            }
-                        }}
-                        className="rounded-2xl border border-gray-200 bg-white py-4 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 hover:bg-gray-50"
-                    >Limpiar</button>
-                    <ApplyButton
-                        reserva={reserva}
-                        modalCheckIn={modalCheckIn}
-                        modalCheckOut={modalCheckOut}
-                        disabled={!vistaPreviaCargada || !vistaPrevia?.available || procesando}
-                        onSuccess={(resData) => {
-                            if (typeof onApplied === 'function') onApplied(resData);
-                            else {
-                                onCerrar && onCerrar();
-                                window.location.reload();
-                            }
-                        }}
-                    />
+                <div className="grid grid-cols-1 gap-4">
+                    <div>{mostrarAviso()}</div>
+                    <div className="mt-4">{renderPorNoche()}</div>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }
 
-function ApplyButton({ reserva, modalCheckIn, modalCheckOut, disabled, onSuccess }) {
-    const [applying, setApplying] = useState(false);
+function PaymentConfirm({ clientSecret, paymentIntentId, reserva, onConfirmed, amount }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [loading, setLoading] = useState(false);
 
-    const getCookie = (name) => {
-        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-        return match ? decodeURIComponent(match[2]) : null;
-    };
-
-    const applyChanges = async () => {
-        if (disabled || applying) return;
-        setApplying(true);
+    const handleConfirm = async () => {
+        if (!stripe || !elements) return;
+        setLoading(true);
+        const card = elements.getElement(CardElement);
         try {
-            const payload = {
-                check_in: modalCheckIn,
-                check_out: modalCheckOut,
-                status: reserva.status || 'pendiente',
-                pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
-            };
-
-            const xsrf = getCookie('XSRF-TOKEN');
-            const res = await axios.put(`/reservas/${reserva.id}`, payload, {
-                withCredentials: true,
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
-                },
+            const res = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: { card, billing_details: { name: reserva?.reservable?.name || '', email: reserva?.reservable?.email || '' } }
             });
-
-            if (res?.data?.success) {
-                emitToast('Fechas actualizadas', 'success');
-                onSuccess && onSuccess(res.data);
-            } else {
-                emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
+            if (res.error) {
+                emitToast(res.error.message || 'Error confirmando pago', 'error');
+                setLoading(false);
+                return;
             }
-        } catch (err) {
-            const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
-            emitToast(msg, 'error');
+            if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
+                onConfirmed(paymentIntentId);
+            } else {
+                emitToast('Pago no confirmado', 'error');
+            }
+        } catch (e) {
+            emitToast(e?.message || 'Error confirmando', 'error');
         } finally {
-            setApplying(false);
+            setLoading(false);
         }
     };
 
     return (
-        <button disabled={disabled || applying} onClick={applyChanges} className="flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50">{applying ? 'Aplicando...' : 'Aplicar Cambios'}</button>
+        <div className="w-full max-w-xl mx-auto p-6 rounded-2xl bg-white shadow-lg border border-gray-100">
+            <div className="flex items-start justify-between">
+                <div>
+                    <h3 className="text-lg font-extrabold text-gray-900">Completar pago</h3>
+                    <p className="mt-1 text-sm text-gray-500">Introduce los datos de la tarjeta para procesar el cobro seguro.</p>
+                    {typeof amount === 'number' && (
+                        <div className="mt-2 text-sm text-gray-700">Importe a cargar: <span className="font-bold">{formatearMoneda(amount)}</span></div>
+                    )}
+                </div>
+            </div>
+
+                <div className="mt-4">
+                <label className="block text-xs font-semibold text-gray-600 mb-2">Tarjeta</label>
+                <div className="rounded-lg border border-gray-200 p-3 bg-white">
+                    <CardElement options={{ hidePostalCode: true }} />
+                </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+                <button onClick={handleConfirm} disabled={loading} className="px-5 py-2 rounded-md bg-[#7a0202] text-sm font-bold text-white hover:bg-[#5a0101] shadow">{loading ? 'Confirmando...' : 'Estoy de acuerdo'}</button>
+            </div>
+        </div>
     );
 }

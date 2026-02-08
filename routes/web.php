@@ -123,6 +123,7 @@ Route::delete('/refund-requests/{refundRequest}', [\App\Http\Controllers\RefundR
 Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store');
 Route::post('/reservas/crear-con-checkout', [ReservaController::class, 'storeConCheckout'])->name('reservas.store.con_checkout');
 Route::post('/pagos/crear-payment-intent', [PagoController::class, 'crearPaymentIntent'])->name('pagos.crear-payment-intent');
+Route::post('/pagos/crear-payment-intent-standalone', [PagoController::class, 'crearPaymentIntentStandalone'])->name('pagos.crear-payment-intent-standalone');
 Route::post('/pagos/crear-checkout-session', [PagoController::class, 'crearCheckoutSession'])->name('pagos.crear-checkout-session');
 Route::post('/pagos/confirmar', [PagoController::class, 'confirmarPago'])->name('pagos.confirmar');
 // Endpoint para comprobar estado de una Checkout Session (usado por success_url UX)

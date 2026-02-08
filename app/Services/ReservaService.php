@@ -100,6 +100,8 @@ class ReservaService
             'tipo_usuario' => $datos['tipo_usuario'] ?? 'cliente',
             'booked_by_user_id' => $datos['booked_by_user_id'] ?? null,
             'pago' => $estadoPago,
+            'payment_intent_id' => $datos['payment_intent_id'] ?? null,
+            'pago_monto' => $datos['pago_monto'] ?? null,
             'metodo_pago' => $metodoPago,
             'notas' => $datos['notas'] ?? null,
         ];
@@ -320,6 +322,32 @@ class ReservaService
 
             // Asignar habitaciones
             $this->asignarHabitaciones($reserva, $datosPreparados['habitaciones']);
+
+            // Si se proporcionó un payment_intent_id al crear la reserva, registrar un Pago ligado
+            try {
+                $paymentIntentId = $datosPreparados['payment_intent_id'] ?? null;
+                $pagoMonto = $datosPreparados['pago_monto'] ?? ($reserva->precio_total ?? null);
+                if ($paymentIntentId) {
+                    // Crear registro de Pago si no existe uno similar
+                    $existing = \App\Models\Pago::where('reserva_id', $reserva->id)
+                        ->where('stripe_payment_intent_id', $paymentIntentId)
+                        ->first();
+                    if (! $existing) {
+                        $pagoData = [
+                            'reserva_id' => $reserva->id,
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                            'monto' => $pagoMonto ?? $reserva->precio_total,
+                            'moneda' => 'eur',
+                            'estado' => ($datosPreparados['pago'] ?? 'pendiente') === 'pagado' ? 'completado' : 'procesando',
+                            'descripcion' => 'Pago asociado al crear reserva ' . $reserva->localizador,
+                            'stripe_response' => ['id' => $paymentIntentId],
+                        ];
+                        \App\Models\Pago::create($pagoData);
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo crear Pago automático al crear reserva: ' . $e->getMessage());
+            }
 
             // Registrar cupón aplicado en auditoría
             if ($datosPreparados['cupon_id'] ?? null) {

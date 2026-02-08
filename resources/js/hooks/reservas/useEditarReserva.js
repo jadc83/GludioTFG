@@ -53,14 +53,17 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        // Depend only on the stable list of habitacion ids to avoid re-running
-        const idsKey = reserva?.habitaciones ? reserva.habitaciones.map((h) => h.habitacion_id || '').join(',') : '';
-        if (idsKey) {
-            const currentPhysicalIds = reserva.habitaciones.map((h) => h.habitacion_id || null);
-            setHabitacionesSeleccionadas(currentPhysicalIds);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reserva?.habitaciones?.length, reserva?.habitaciones?.map?.((h) => h.habitacion_id).join(',')]);
+        // Update selected rooms only if the id list actually changed to avoid
+        // repeated setState causing maximum update depth.
+        if (!Array.isArray(reserva?.habitaciones)) return;
+        const newIds = reserva.habitaciones.map((h) => h.habitacion_id || null);
+        setHabitacionesSeleccionadas((prev) => {
+            if (prev.length === newIds.length && prev.every((v, i) => v === newIds[i])) {
+                return prev;
+            }
+            return newIds;
+        });
+    }, [reserva?.habitaciones]);
 
     useEffect(() => {
         if (initialHabitacionesDisponibles) {

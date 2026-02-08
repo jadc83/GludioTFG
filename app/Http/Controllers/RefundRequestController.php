@@ -210,6 +210,24 @@ class RefundRequestController extends Controller
             } catch (\Throwable $e) {
                 Log::error('Error aplicando cambios tras aprobación de RefundRequest: ' . $e->getMessage());
             }
+
+            // Crear PaymentIntent / Pago para el nuevo precio (no confirmar automáticamente)
+            try {
+                $montoParaCobrar = $refundRequest->pending_nuevo_total ?? ($reserva->precio_total ?? null);
+                if ($montoParaCobrar && $montoParaCobrar > 0) {
+                    $paymentIntentResult = $paymentService->crearPaymentIntentParaReserva($reserva, (float)$montoParaCobrar);
+                    // Adjuntar info del pago al response
+                    $res['payment_intent'] = $paymentIntentResult;
+                    // Guardar relación con pago si fue creado
+                    if (!empty($paymentIntentResult['pago_id'])) {
+                        try {
+                            $refundRequest->update(['pago_id' => $paymentIntentResult['pago_id']]);
+                        } catch (\Throwable $_) {}
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Error creando PaymentIntent tras reembolso: ' . $e->getMessage(), ['refund_request_id' => $refundRequest->id]);
+            }
         }
 
         return response()->json($res);

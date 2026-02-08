@@ -15,3 +15,7 @@ export async function confirmar(paymentIntentId, pagoId = null) {
 export async function crearPaymentIntent(reservaId, monto) {
     return api.crearPaymentIntent(reservaId, monto);
 }
+
+export async function crearPaymentIntentStandalone(monto, opts = {}) {
+    return api.crearPaymentIntentStandalone(monto, opts);
+}
