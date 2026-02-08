@@ -949,6 +949,9 @@ class ReservaService
             }
         }
 
+        $oldCheckIn = $reserva->check_in;
+        $oldCheckOut = $reserva->check_out;
+
         $reserva->update(['check_in' => $checkIn,
             'check_out' => $checkOut,
             'status' => $validated['status'],
@@ -1025,38 +1028,56 @@ class ReservaService
         $diffSigned = round($precioTotal - $totalViejo, 2);
         $refundInfo = null;
 
-        if ($diffSigned < 0) {
-            $refundAmount = round(abs($diffSigned), 2);
+        $reserva->update(['precio_total' => $precioTotal]);
+
+        // Crear una solicitud de reembolso SOLO si cambian las fechas y cambia el importe total
+        $datesChanged = ($oldCheckIn != $checkIn->format('Y-m-d')) || ($oldCheckOut != $checkOut->format('Y-m-d'));
+        $priceChanged = ($totalViejo != $precioTotal);
+
+        if ($datesChanged && $priceChanged) {
             $refundInfo = [
                 'queued' => true,
-                'amount' => $refundAmount,
+                'amount' => round(abs($precioTotal - $totalViejo), 2),
             ];
 
-            // Ejecutar la verificación de pagos y la petición de reembolso solo después del commit
-            DB::afterCommit(function() use ($reserva, $refundAmount) {
+            // Crear RefundRequest tras el commit de la transacción para asegurar que el precio ya está persistido
+            DB::afterCommit(function() use ($reserva, $checkIn, $checkOut, $precioTotal, $totalViejo) {
                 try {
-                    // Consultar pagos ya fuera de la transacción principal
-                    $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado', 'procesando'])->get();
-                    $montoPagado = $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
+                    // Obtener pagos completados para determinar el importe total pagado
+                    $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado'])->get();
+                    $totalPagado = (float) $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
+                    $pagoId = $pagosCompletados->first()?->id ?? null;
 
-                    if ($montoPagado > 0) {
-                        $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
-                        $refundResult = $this->servicioPago->solicitarReembolso($reserva, $userForRefund, $refundAmount, true);
-                        if (!($refundResult['success'] ?? false)) {
-                            Log::error('Reembolso en background falló', ['reserva_id' => $reserva->id, 'message' => $refundResult['message'] ?? null]);
-                        } else {
-                            Log::info('Reembolso procesado en background', ['reserva_id' => $reserva->id, 'refund' => $refundResult]);
-                        }
-                    } else {
-                        Log::info('No se procesó reembolso porque no hay pagos detectados (afterCommit)', ['reserva_id' => $reserva->id, 'monto_pagado' => $montoPagado]);
-                    }
+                    // Si no hay pagos detectados, como fallback pedimos el importe antiguo
+                    $requestedAmount = $totalPagado > 0 ? $totalPagado : (float)$totalViejo;
+
+                    $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
+
+                    // Crear la solicitud de reembolso (pendiente) con información del nuevo total y fechas
+                    $rr = \App\Models\RefundRequest::create([
+                        'reserva_id' => $reserva->id,
+                        'pago_id' => $pagoId,
+                        'requested_amount_cents' => (int)round($requestedAmount * 100),
+                        'status' => 'pending',
+                        'user_id' => $userForRefund?->id ?? null,
+                        'reason_code' => 'cambio_fechas',
+                        'notes' => 'Solicitud generada automáticamente tras cambio de fechas',
+                        'pending_check_in' => $checkIn->format('Y-m-d'),
+                        'pending_check_out' => $checkOut->format('Y-m-d'),
+                        'pending_nuevo_total' => $precioTotal,
+                    ]);
+
+                    // Emitir notificación para equipos/admins
+                    try {
+                        \Notification::route('mail', config('app.admin_email'))->notify(new \App\Notifications\RefundRequestCreatedNotification($rr));
+                    } catch (\Throwable $_) {}
+
+                    Log::info('RefundRequest creado tras cambio de fechas', ['reserva_id' => $reserva->id, 'refund_request_id' => $rr->id, 'requested_amount' => $requestedAmount]);
                 } catch (\Throwable $e) {
-                    Log::error('Error procesando reembolso en afterCommit: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+                    Log::error('Error creando RefundRequest en afterCommit: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
                 }
             });
         }
-
-        $reserva->update(['precio_total' => $precioTotal]);
 
         // Asegurar que el evento solo se despache tras un commit exitoso
         try {
