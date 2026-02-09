@@ -22,6 +22,12 @@ export default function EditarReserva({
 }) {
     const { reserva, setReserva, refresh, aplicarCambioFechas } =
         useReserva(initialReserva);
+    useEffect(() => {
+        try {
+            // eslint-disable-next-line no-console
+            console.log('reserva (debug):', reserva);
+        } catch (e) {}
+    }, [reserva]);
     const motivosReembolso = [
         { value: 'billing_error', label: 'Error de facturación' },
         { value: 'change_to_cheaper', label: 'Cambio a habitación más barata' },
@@ -88,6 +94,9 @@ export default function EditarReserva({
     }, [preview, originalPrecioBackup, setReserva]);
 
     const refundAmount = (Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total;
+    const totalToCharge = preview
+        ? Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)
+        : Number(reserva.precio_total ?? 0);
 
     return (
         <AuthenticatedLayout>
@@ -136,7 +145,7 @@ export default function EditarReserva({
                     <main className="mx-auto mt-8 max-w-7xl px-4">
                         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
                             <div className="space-y-6 lg:col-span-8">
-                                <ReservaInfo reserva={reserva} />
+                                <ReservaInfo reserva={reserva} total={totalToCharge} onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)} />
 
                                 <AssignedHabitaciones
                                     habitaciones={reserva.habitaciones}

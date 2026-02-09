@@ -133,15 +133,44 @@ class ReservaFormatterService
             })->values(),
         ];
 
-        // Incluir información de tarifa si está presente
+        // Incluir información de tarifa si está presente.
+        // Preferir la relación `tarifa` (columna tarifa_id). Si no existe, intentar usar la primera tarifa
+        // asociada en la tabla pivot `reserva_tarifas` (relación `tarifas`).
         if ($reserva->tarifa) {
+            $tar = $reserva->tarifa;
+        } else {
+            $tar = null;
+            try {
+                $first = $reserva->tarifas?->first() ?? null;
+                if ($first) $tar = $first;
+            } catch (\Throwable $__e) {
+                $tar = null;
+            }
+        }
+
+        if ($tar) {
             $reservaData['tarifa'] = [
-                'id' => $reserva->tarifa->id ?? null,
-                'name' => $reserva->tarifa->name ?? ($reserva->tarifa->descripcion ?? null),
-                'price' => $reserva->tarifa->price ?? null,
+                'id' => $tar->id ?? null,
+                // Tarifa model uses Spanish field names
+                'name' => $tar->nombre ?? ($tar->name ?? ($tar->descripcion ?? null)),
+                'price' => $tar->modificador_precio ?? ($tar->price ?? null),
             ];
         } else {
             $reservaData['tarifa'] = null;
+        }
+
+        // Export all tarifas associated to the reserva (pivot `reserva_tarifas`), mapping Spanish fields
+        try {
+            $tarifasCollection = $reserva->tarifas ?? collect();
+            $reservaData['tarifas'] = $tarifasCollection->map(function ($t) {
+                return [
+                    'id' => $t->id ?? null,
+                    'name' => $t->nombre ?? ($t->name ?? ($t->descripcion ?? null)),
+                    'price' => $t->modificador_precio ?? ($t->price ?? null),
+                ];
+            })->values()->toArray();
+        } catch (\Throwable $__e) {
+            $reservaData['tarifas'] = [];
         }
 
         return $reservaData;

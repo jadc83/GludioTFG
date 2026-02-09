@@ -26,6 +26,22 @@ export function formatearFecha(fecha, tipo = 'legible') {
 }
 
 /**
+ * Formatea la hora de una fecha en formato HH:MM (24h). Si no hay hora retorna null.
+ * @param {string|Date} fecha
+ * @returns {string|null}
+ */
+export function formatearHora(fecha) {
+    if (!fecha) return null;
+    const date = fecha instanceof Date ? fecha : new Date(fecha);
+    if (Number.isNaN(date.getTime())) return null;
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    // Si hora y minutos son 00:00 consideramos que no hay hora útil
+    if (hh === '00' && mm === '00') return null;
+    return `${hh}:${mm}`;
+}
+
+/**
  * Formatea una cantidad como moneda
  * @param {number} cantidad
  * @param {string} moneda - 'EUR' | 'USD', etc
@@ -245,6 +261,7 @@ export function obtenerColorEstadoHabitacion(estado) {
  */
 export const formatters = {
     fecha: formatearFecha,
+    hora: formatearHora,
     moneda: formatearMoneda,
     documento: {
         nombre: obtenerNombreDocumento,

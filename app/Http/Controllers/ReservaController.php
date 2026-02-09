@@ -347,29 +347,50 @@ class ReservaController extends Controller
      */
     public function show(Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos']);
+        $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos', 'tarifa', 'tarifas']);
+        // Use the formatter service to ensure the frontend receives the full, consistent
+        // structure used by the EditReserva page (includes `tarifa`, `cliente`, `habitaciones`, etc.).
+        try {
+            // Log tarifa presence for debugging
+            try {
+                \Illuminate\Support\Facades\Log::debug('ReservaController::show - tarifa check', ['reserva_id' => $reserva->id, 'tarifa_id' => $reserva->tarifa_id, 'tarifa_loaded' => (bool) $reserva->tarifa]);
+            } catch (\Throwable $__e) {}
 
-        return inertia('Reservas/EditReserva', [
-            'reserva' => [
+            $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva);
+
+            // If formatter didn't include tarifa but reserva has a tarifa_id, attempt to load soft-deleted tarifa as fallback
+            if (empty($reservaData['tarifa']) && !empty($reserva->tarifa_id)) {
+                try {
+                    $tarifaModel = \App\Models\Tarifa::withTrashed()->find($reserva->tarifa_id);
+                    if ($tarifaModel) {
+                        $reservaData['tarifa'] = [
+                            'id' => $tarifaModel->id ?? null,
+                            'name' => $tarifaModel->nombre ?? ($tarifaModel->name ?? ($tarifaModel->descripcion ?? null)),
+                            'price' => $tarifaModel->modificador_precio ?? ($tarifaModel->price ?? null),
+                        ];
+                        \Illuminate\Support\Facades\Log::info('ReservaController::show - tarifa recovered via withTrashed', ['reserva_id' => $reserva->id, 'tarifa_id' => $tarifaModel->id]);
+                    }
+                } catch (\Throwable $__e) {
+                    \Illuminate\Support\Facades\Log::warning('ReservaController::show - fallo recuperando tarifa withTrashed: ' . $__e->getMessage());
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fallback to a minimal payload if formatting fails
+            $reservaData = [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
-                'cliente' => $this->formatterService->formatearCliente($reserva),
                 'check_in' => $reserva->check_in,
                 'check_out' => $reserva->check_out,
                 'precio_total' => $reserva->precio_total,
                 'status' => $reserva->status,
                 'pago' => $reserva->pago,
                 'reembolsos_total' => ($reserva->reembolsos->sum('amount_cents') ?? 0) / 100,
-                'reembolsos' => $this->formatterService->formatearReembolsos($reserva),
-                'habitaciones' => $reserva->habitaciones->map(function ($hr) {
-                    return [
-                        'id' => $hr->id,
-                        'numero' => $hr->habitacion?->numero ?? null,
-                        'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
-                        'precio' => $hr->precio,
-                    ];
-                })->values()
-            ]]);
+            ];
+        }
+
+        return inertia('Reservas/EditReserva', [
+            'reserva' => $reservaData,
+        ]);
     }
 
     /**
@@ -381,7 +402,7 @@ class ReservaController extends Controller
      */
     public function edit(Request $request, Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion.fotos']);
+        $reserva->load(['reservable', 'habitaciones.habitacion.fotos', 'tarifa', 'tarifas']);
 
         [$checkIn, $checkOut] = $this->reservaService->prepararFechasParaEdicion($request->all(), $reserva);
 

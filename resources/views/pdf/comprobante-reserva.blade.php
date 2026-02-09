@@ -1,158 +1,253 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Comprobante de Reserva {{ $reserva->localizador }}</title>
-    <style>
-        /* Page setup for PDF */
-        @page { size: A4; margin: 20mm; }
-        body { font-family: Arial, Helvetica, sans-serif; color: #222; background: #fff; margin:0; padding:0; }
-        .container { width: 100%; max-width: 780px; margin: 0 auto; }
-        .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
-        .brand { font-weight:700; color:#7a0202; }
-        .meta { text-align:right; font-size:12px; color:#555; }
-        .localizador { font-family: monospace; color:#7a0202; font-weight:700; margin-top:6px; display:block; }
+	<meta charset="UTF-8">
+	<title>Factura {{ $reserva->localizador }} - Hotel Gludio</title>
+	<style>
+		/* Configuraciones de página para PDF (DomPDF compatible) */
+		@page { size: A4; margin: 0; }
+		body {
+			font-family: Helvetica, Arial, sans-serif;
+			color: #1a1a1a;
+			background: #ffffff;
+			line-height: 1.5;
+			margin: 0;
+			padding: 0;
+		}
 
-        .section { margin-bottom: 14px; }
-        .section-title { font-size:12px; font-weight:700; color:#fff; background:#7a0202; padding:6px 10px; display:inline-block; border-radius:3px; }
+		/* Contenedor principal */
+		.wrapper { padding: 40px; }
 
-        .info { display:flex; gap:20px; margin-top:8px; }
-        .info .col { flex:1; }
-        .info-label { font-size:10px; color:#7a0202; font-weight:700; text-transform:uppercase; }
-        .info-value { font-size:13px; color:#222; margin-top:6px; }
+		/* Cabecera */
+		.header {
+			display: table;
+			width: 100%;
+			border-bottom: 2px solid #f3f4f6;
+			padding-bottom: 25px;
+			margin-bottom: 30px;
+		}
+		.brand-cell { display: table-cell; vertical-align: top; }
+		.meta-cell { display: table-cell; vertical-align: top; text-align: right; }
 
-        table.items { width:100%; border-collapse:collapse; margin-top:10px; }
-        table.items th, table.items td { border:1px solid #ddd; padding:8px 10px; text-align:left; font-size:13px; }
-        table.items th { background:#f5f5f5; font-weight:700; }
+		.brand-name { font-size: 24px; font-weight: bold; color: #111; margin: 0; }
+		.brand-sub { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
 
-        .totals { margin-top:12px; width:100%; display:flex; justify-content:flex-end; }
-        .totals .box { width:320px; }
-        .totals .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
-        .totals .grand { font-weight:800; font-size:16px; color:#7a0202; border-top:2px solid #eee; padding-top:8px; }
+		.localizador-badge {
+			background: #f3f4f6;
+			padding: 4px 12px;
+			border-radius: 6px;
+			font-family: monospace;
+			font-size: 16px;
+			font-weight: bold;
+			color: #111;
+			display: inline-block;
+			margin-top: 5px;
+		}
 
-        .badge { display:inline-block; padding:6px 10px; border-radius:4px; color:#fff; font-weight:700; font-size:12px; }
-        .badge-success { background:#10b981; }
-        .badge-warning { background:#f59e0b; }
+		/* Grid de información rápida (Usando tablas para compatibilidad PDF) */
+		.summary-table {
+			width: 100%;
+			margin-bottom: 40px;
+			background: #fafafa;
+			border-radius: 12px;
+			border-spacing: 20px;
+			border-collapse: separate;
+		}
+		.summary-item { width: 25%; vertical-align: top; }
+		.label { font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 4px; }
+		.value { font-size: 13px; font-weight: bold; color: #111; }
 
-        .footer { margin-top:22px; font-size:11px; color:#666; text-align:center; }
-    </style>
+		/* Secciones */
+		.section-title {
+			font-size: 13px;
+			font-weight: bold;
+			color: #111;
+			margin-bottom: 15px;
+			padding-left: 10px;
+			border-left: 4px solid #7a0202;
+		}
+
+		/* Tablas */
+		table.modern-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+		table.modern-table th {
+			text-align: left;
+			font-size: 11px;
+			color: #6b7280;
+			padding: 12px;
+			border-bottom: 1px solid #e5e7eb;
+			text-transform: uppercase;
+		}
+		table.modern-table td { padding: 14px 12px; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+
+		/* Totales */
+		.totals-wrapper { width: 100%; display: table; margin-top: 10px; }
+		.totals-left { display: table-cell; width: 55%; vertical-align: bottom; }
+		.totals-right { display: table-cell; width: 45%; }
+
+		.total-row { display: table; width: 100%; margin-bottom: 6px; }
+		.total-label { display: table-cell; text-align: left; color: #6b7280; font-size: 13px; }
+		.total-value { display: table-cell; text-align: right; font-weight: bold; font-size: 13px; }
+
+		.grand-total { border-top: 2px solid #111; padding-top: 12px; margin-top: 10px; }
+		.grand-total .total-label { color: #111; font-weight: bold; font-size: 15px; }
+		.grand-total .total-value { color: #7a0202; font-weight: bold; font-size: 19px; }
+
+		/* Badges */
+		.status-badge {
+			padding: 5px 12px;
+			border-radius: 15px;
+			font-size: 10px;
+			font-weight: bold;
+			display: inline-block;
+			text-transform: uppercase;
+		}
+		.status-paid { background: #dcfce7; color: #166534; }
+		.status-pending { background: #fef3c7; color: #92400e; }
+
+		.qr-box { text-align: right; }
+		.qr-box img { border: 1px solid #e5e7eb; padding: 4px; background: #fff; }
+
+		.footer {
+			margin-top: 40px;
+			padding-top: 20px;
+			border-top: 1px solid #f3f4f6;
+			text-align: center;
+			font-size: 11px;
+			color: #9ca3af;
+		}
+	</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="brand">
-                <div style="font-size:18px;">Hotel Gludio</div>
-                <div style="font-size:12px;">Comprobante / Factura</div>
-            </div>
-            <div class="meta">
-                <div>{{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
-                <div class="localizador">{{ $reserva->localizador }}</div>
-                {{-- QR con enlace directo al comprobante/reserva (se genera vía Google Chart API) --}}
-                <div style="margin-top:8px;">
-                    @if(!empty($qr_data_uri))
-                        <img src="{{ $qr_data_uri }}" alt="QR" style="width:80px;height:80px;border:0;" />
-                    @else
-                        <img src="https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl={{ urlencode(url('/reserva/'.$reserva->localizador)) }}" alt="QR" style="width:80px;height:80px;border:0;" />
-                    @endif
-                </div>
-            </div>
-        </div>
+	<div class="wrapper">
+		<div class="header">
+			<div class="brand-cell">
+				<div class="brand-name">Hotel Gludio</div>
+				<div class="brand-sub">Factura</div>
+				<div style="margin-top:8px; font-size:11px; color:#6b7280;">
+					<strong>Hotel Gludio S.L.</strong><br>
+					C/ Ejemplo, 1 · 11540 Sanlúcar de Barrameda<br>
+					CIF: B12345678
+				</div>
+			</div>
+			<div class="meta-cell" style="text-align:right;">
+				<div class="label">Factura Nº</div>
+				<div class="localizador-badge">FAC-{{ $reserva->localizador }}</div>
+				<div style="margin-top:8px; font-size:11px; color:#6b7280;">
+					<div class="label">Emitida</div>
+					<div class="value">{{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
+				</div>
+			</div>
+		</div>
 
-        <div class="section">
-            <div class="section-title">Información del Huésped</div>
-            <div class="info">
-                <div class="col">
-                    <div class="info-label">Nombre</div>
-                    <div class="info-value">{{ $cliente['nombre'] ?? ($reserva->reservable?->name ?? 'N/A') }}</div>
-                </div>
-                <div class="col">
-                    <div class="info-label">Email</div>
-                    <div class="info-value">{{ optional($reserva->reservable)->email ?? '-' }}</div>
-                </div>
-            </div>
-        </div>
+		<table class="summary-table">
+			<tr>
+				<td class="summary-item">
+					<div class="label">Huésped</div>
+					<div class="value">{{ $reserva->reservable?->name ?? 'N/A' }}</div>
+				</td>
+				<td class="summary-item">
+					<div class="label">Check-in</div>
+					<div class="value">{{ \Carbon\Carbon::parse($reserva->check_in)->format('d/m/Y') }}</div>
+				</td>
+				<td class="summary-item">
+					<div class="label">Check-out</div>
+					<div class="value">{{ \Carbon\Carbon::parse($reserva->check_out)->format('d/m/Y') }}</div>
+				</td>
+				<td class="summary-item">
+					<div class="label">Estancia</div>
+					<div class="value">
+						{{ $noches }} {{ $noches == 1 ? 'noche' : 'noches' }}
+					</div>
+				</td>
+			</tr>
+		</table>
 
-        <div class="section">
-            <div class="section-title">Detalles de la Estancia</div>
-            <div class="info">
-                <div class="col">
-                    <div class="info-label">Check-in</div>
-                    <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_in)->format('d/m/Y') }}</div>
-                </div>
-                <div class="col">
-                    <div class="info-label">Check-out</div>
-                    <div class="info-value">{{ \Carbon\Carbon::parse($reserva->check_out)->format('d/m/Y') }}</div>
-                </div>
-                <div class="col">
-                    <div class="info-label">Noches</div>
-                    <div class="info-value">{{ $noches }}</div>
-                </div>
-            </div>
-        </div>
+		<div class="section-title">Habitaciones Reservadas</div>
+		<table class="modern-table">
+			<thead>
+				<tr>
+					<th>Descripción</th>
+					<th style="text-align: center;">Noches</th>
+					<th style="text-align: right;">Precio/Noche</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach($reserva->habitaciones as $hr)
+					@php
+						$tipo = $hr->habitacion?->tipo ?? ($hr->tipo ?? 'Habitación');
+						$precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
+					@endphp
+					<tr>
+						<td style="font-weight: 500;">Habitación {{ ucfirst(strtolower($tipo)) }}</td>
+						<td style="text-align: center;">{{ $noches }}</td>
+						<td style="text-align: right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
+					</tr>
+				@endforeach
+			</tbody>
+		</table>
 
-        <div class="section">
-            <div class="section-title">Habitaciones</div>
-            <table class="items">
-                <thead>
-                    <tr>
-                        <th>Descripción</th>
-                        <th style="width:170px;text-align:right;">Precio</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach($reserva->habitaciones as $hr)
-                    @php
-                            $tipo = $hr->habitacion?->tipo ?? ($hr->tipo ?? 'Habitación');
-                            $precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
-                        @endphp
-                    <tr>
-                        <td>Habitación {{ strtolower($tipo) }}</td>
-                        <td style="text-align:right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </div>
+		@php
+			$tarifasArr = (isset($reserva->tarifas) && count($reserva->tarifas)) ? $reserva->tarifas : (isset($reserva->tarifa) ? collect([$reserva->tarifa]) : collect());
+		@endphp
 
-        <div class="totals">
-            <div class="box">
-                <div class="row"><span>Subtotal</span><strong>€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</strong></div>
-                <div class="row grand"><span>TOTAL</span><strong>€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</strong></div>
-            </div>
-        </div>
+		@if($tarifasArr->count())
+			<div class="section-title">Extras y Tarifas</div>
+			<table class="modern-table" style="margin-bottom: 10px;">
+				@foreach($tarifasArr as $t)
+					@php
+						$name = $t->name ?? $t['name'] ?? $t->nombre ?? $t['nombre'] ?? 'Suplemento';
+						$price = $t->price ?? $t['price'] ?? $t->modificador_precio ?? $t['modificador_precio'] ?? 0;
+					@endphp
+					<tr>
+						<td style="color: #4b5563;">{{ $name }}</td>
+						<td style="text-align: right; font-weight: 500;">
+							{{ $price > 0 ? '+' : '' }} € {{ number_format($price, 2, ',', '.') }}
+						</td>
+					</tr>
+				@endforeach
+			</table>
+		@endif
 
-        <div class="section" style="margin-top:20px;">
-            <div class="section-title">Estado de Pago</div>
-            <div style="margin-top:8px;">
-                @php
-                    // calcular pago_texto: sólo considerar abonado si existe pago completado con stripe id
-                    try { $reserva->loadMissing('pagos'); } catch (\Throwable $e) {}
-                    $pagosCollection = $reserva->pagos ?? collect();
-                    $ultimoTarjeta = $pagosCollection->where('estado','completado')
-                                    ->filter(function($p){ return !empty($p->stripe_payment_intent_id); })
-                                    ->sortByDesc('pagado_en')
-                                    ->first();
-                @endphp
-                @if(isset($pago_texto))
-                    @php $text = $pago_texto; @endphp
-                @elseif($ultimoTarjeta)
-                    @php $text = 'ABONADO (Tarjeta)'; @endphp
-                @else
-                    @php $text = 'PENDIENTE'; @endphp
-                @endif
+		<div class="totals-wrapper">
+			<div class="totals-left">
+				<div style="margin-top: 6px;">
+					<div class="section-title">Cliente (datos fiscales)</div>
+					<div style="font-size:11px; color:#4b5563; margin-top:6px;">
+						<strong>{{ $reserva->reservable?->name ?? ($reserva->reservable?->nombre ?? 'Cliente') }}</strong><br>
+						{{ $reserva->reservable?->direccion ?? $reserva->reservable?->address ?? '-' }}<br>
+						NIF/CIF: {{ $reserva->reservable?->numero_documento ?? '-' }}<br>
+						Email: {{ $reserva->reservable?->email ?? '-' }} · Tel: {{ $reserva->reservable?->telefono ?? '-' }}
+					</div>
+				</div>
+			</div>
 
-                @if(stripos($text,'abon') !== false)
-                    <span class="badge badge-success">{{ $text }}</span>
-                @else
-                    <span class="badge badge-warning">{{ $text }}</span>
-                @endif
-            </div>
-        </div>
+			<div class="totals-right">
+				<div class="total-row">
+					<div class="total-label">Base imponible</div>
+					<div class="total-value">€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</div>
+				</div>
+				<div class="total-row">
+					<div class="total-label">IVA (21%)</div>
+					<div class="total-value">€ {{ number_format(round($reserva->precio_total * 0.21, 2), 2, ',', '.') }}</div>
+				</div>
+				<div class="total-row grand-total">
+					<div class="total-label">TOTAL FACTURA</div>
+					<div class="total-value">€ {{ number_format(round($reserva->precio_total * 1.21, 2), 2, ',', '.') }}</div>
+				</div>
 
-        <div class="footer">
-            <div>Comprobante generado el {{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
-            <div style="margin-top:6px;font-size:11px;color:#888;">Hotel Gludio — Guarda este documento para tus registros.</div>
-        </div>
-    </div>
+				<div class="qr-box" style="margin-top: 20px;">
+					@php
+						$qrUrl = !empty($qr_data_uri) ? $qr_data_uri : "https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=" . urlencode(url('/reserva/'.$reserva->localizador));
+					@endphp
+					<img src="{{ $qrUrl }}" alt="QR" style="width:80px; height:80px;" />
+				</div>
+			</div>
+		</div>
+
+		<div class="footer">
+			<strong>Hotel Gludio S.L.</strong> &bull; CIF: B12345678 &bull; C/ Ejemplo, 1 · 11540 Sanlúcar de Barrameda<br>
+			Emitida el {{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}
+		</div>
+	</div>
 </body>
 </html>
