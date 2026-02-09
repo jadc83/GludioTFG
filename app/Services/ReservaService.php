@@ -1121,12 +1121,75 @@ class ReservaService
                         'pending_nuevo_total' => $precioTotal,
                     ]);
 
-                    // Emitir notificación para equipos/admins
+                    // Emitir notificación para equipos/admins (no bloquear en caso de fallo)
                     try {
                         \Notification::route('mail', config('app.admin_email'))->notify(new \App\Notifications\RefundRequestCreatedNotification($rr));
                     } catch (\Throwable $_) {}
 
-                    Log::info('RefundRequest creado tras cambio de fechas', ['reserva_id' => $reserva->id, 'refund_request_id' => $rr->id, 'requested_amount' => $requestedAmount]);
+                    Log::info('RefundRequest creado tras cambio de fechas (auto-approve encolado)', ['reserva_id' => $reserva->id, 'refund_request_id' => $rr->id, 'requested_amount' => $requestedAmount]);
+
+                    // --- Procesamiento automático: aprobar y ejecutar reembolso + crear nuevo PaymentIntent ---
+                    try {
+                        // Idempotencia: si por algún motivo ya fue procesada, saltar
+                        $rr->refresh();
+                        if ($rr->status !== 'pending') {
+                            Log::info('RefundRequest ya procesada, saltando auto-approve', ['refund_request_id' => $rr->id, 'status' => $rr->status]);
+                            return;
+                        }
+
+                        /** @var \App\Services\PaymentService $paymentService */
+                        $paymentService = app(\App\Services\PaymentService::class);
+                        /** @var \App\Services\RefundService $refundService */
+                        $refundService = app(\App\Services\RefundService::class);
+
+                        // Ejecutar reembolso (solicitarReembolso) en modo forzado (administrativo)
+                        $pagoForRefund = $rr->pago ?? $pagosCompletados->first() ?? null;
+                        $res = $paymentService->solicitarReembolso(
+                            $reserva,
+                            $userForRefund ?? 'system',
+                            ($rr->requested_amount_cents ? $rr->requested_amount_cents / 100 : null),
+                            true,
+                            $pagoForRefund
+                        );
+
+                        if (!empty($res['success'])) {
+                            // Actualizar RefundRequest como aprobada/procesada
+                            try {
+                                $rr->update([
+                                    'status' => 'approved',
+                                    'admin_id' => null,
+                                    'admin_reason' => 'auto_approved_after_date_change',
+                                    'processed_at' => now(),
+                                    'stripe_refund_id' => $res['refund_id'] ?? null,
+                                    'processed_refund_amount_cents' => isset($res['refund_amount']) ? intval(round($res['refund_amount'] * 100)) : null,
+                                ]);
+                            } catch (\Throwable $_e) {
+                                Log::warning('No se pudo actualizar RefundRequest tras reembolso automático: ' . $_e->getMessage(), ['refund_request_id' => $rr->id]);
+                            }
+
+                            // Sincronizar estados de reserva según reembolsos
+                            try { $refundService->sincronizarEstadoReservaSegunReembolsos($reserva); } catch (\Throwable $_e) { Log::warning('Error sincronizando estado tras reembolso automático: ' . $_e->getMessage()); }
+
+                            // Crear PaymentIntent / Pago para el nuevo precio (no confirmar automáticamente)
+                            try {
+                                $montoParaCobrar = $rr->pending_nuevo_total ?? ($reserva->precio_total ?? null);
+                                if ($montoParaCobrar && $montoParaCobrar > 0) {
+                                    $paymentIntentResult = $paymentService->crearPaymentIntentParaReserva($reserva, (float)$montoParaCobrar);
+                                    if (!empty($paymentIntentResult['pago_id'])) {
+                                        try { $rr->update(['pago_id' => $paymentIntentResult['pago_id']]); } catch (\Throwable $_) {}
+                                    }
+                                    Log::info('Auto-created PaymentIntent tras reembolso automático', ['refund_request_id' => $rr->id, 'payment_intent_result' => $paymentIntentResult]);
+                                }
+                            } catch (\Throwable $_e) {
+                                Log::error('Error creando PaymentIntent tras reembolso automático: ' . $_e->getMessage(), ['refund_request_id' => $rr->id]);
+                            }
+                        } else {
+                            Log::warning('Auto-approve: solicitarReembolso devolvió fallo', ['refund_request_id' => $rr->id, 'response' => $res]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Error procesando RefundRequest automáticamente: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
+                    }
+
                 } catch (\Throwable $e) {
                     Log::error('Error creando RefundRequest en afterCommit: ' . $e->getMessage(), ['reserva_id' => $reserva->id]);
                 }

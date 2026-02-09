@@ -65,7 +65,15 @@ class RefundService
             // Reembolsos ya procesados
             if ($totalReembolsado >= $precioTotal && $precioTotal > 0) {
                 // Si está completamente reembolsada, cancelar la reserva
-                $nuevoEstado = 'cancelado';
+                // EXCEPTION: si el último refund procesado deja un "pending_nuevo_total" > 0
+                // (p.ej. cambio de fechas donde se reembolsa el importe anterior y se genera un nuevo monto),
+                // no consideramos la reserva "cancelado" sino confirmada con nuevo total.
+                $lastProcessed = $reserva->refundRequests()->whereNotNull('processed_at')->orderByDesc('processed_at')->first();
+                if ($lastProcessed && (($lastProcessed->pending_nuevo_total ?? 0) > 0)) {
+                    $nuevoEstado = 'confirmado';
+                } else {
+                    $nuevoEstado = 'cancelado';
+                }
             } else {
                 // Reembolso parcial procesado: mantener un estado válido (confirmado)
                 $nuevoEstado = 'confirmado';

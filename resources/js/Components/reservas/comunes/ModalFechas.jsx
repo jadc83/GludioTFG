@@ -101,7 +101,8 @@ export default function ModalFechas({
                                         if (creatingPi) return;
                                         setCreatingPi(true);
                                         try {
-                                            const resp = await pagosApi.crearPaymentIntentStandalone(Number(vistaPrevia.estimate_charge || 0), { receipt_email: reserva?.reservable?.email });
+                                            // Incluir metadata para que el backend pueda mapear el PaymentIntent a la reserva
+                                            const resp = await pagosApi.crearPaymentIntentStandalone(Number(vistaPrevia.estimate_charge || 0), { receipt_email: reserva?.reservable?.email, reserva_id: reserva?.id, localizador: reserva?.localizador });
                                             if (!resp || resp.success === false) throw new Error(resp?.error || 'No se pudo crear PaymentIntent');
                                             setPiClientSecret(resp.clientSecret ?? null);
                                             setPiPaymentIntentId(resp.paymentIntentId ?? null);

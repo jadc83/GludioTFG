@@ -251,12 +251,20 @@ class PaymentService
 	{
 		try {
 			$montoCents = (int)round($monto * 100);
+			// Validación: evitar crear PaymentIntents sin metadata que permita mapearlos a una Reserva/Pago
+			$meta = $options['metadata'] ?? [];
+			$allowWithoutMeta = !empty($options['allow_without_metadata']);
+			if (empty($meta) && !$allowWithoutMeta) {
+				Log::warning('crearPaymentIntentStandalone: rechazada creación sin metadata', ['monto' => $monto, 'options' => $options]);
+				return ['success' => false, 'error' => 'PaymentIntent requires metadata (reserva_id or localizador)'];
+			}
+
 			$intentData = [
 				'amount' => $montoCents,
 				'currency' => 'eur',
 				// Limitar a tarjeta para evitar mostrar métodos no activados (Link, etc.)
 				'payment_method_types' => ['card'],
-				'metadata' => $options['metadata'] ?? [],
+				'metadata' => $meta,
 				'description' => $options['description'] ?? 'PaymentIntent standalone',
 			];
 
@@ -319,6 +327,47 @@ class PaymentService
 		try {
 			$receiptEmail = $options['receipt_email'] ?? $reserva->reservable?->email ?? null;
 			$montoCents = (int)round($monto * 100);
+
+			// Dedupe: si ya existe un Pago COMPLETADO para esta reserva y monto, devolverlo (no crear nuevo PI)
+			try {
+				$existingCompleted = Pago::where('reserva_id', $reserva->id)
+					->where('estado', 'completado')
+					->where('monto', $monto)
+					->latest()
+					->first();
+				if ($existingCompleted) {
+					Log::info('crearPaymentIntentParaReserva: returning existing completed Pago', ['reserva_id' => $reserva->id, 'pago_id' => $existingCompleted->id]);
+					return [
+						'success' => true,
+						'pago_id' => $existingCompleted->id,
+						'paymentIntentId' => $existingCompleted->stripe_payment_intent_id ?? null,
+						'paymentIntentStatus' => 'already_completed',
+						'message' => 'Payment already completed for this reservation and amount',
+					];
+				}
+
+				// If there's a processing Pago with a usable clientSecret, reuse it instead of creating a new PI
+				$processing = Pago::where('reserva_id', $reserva->id)
+					->where('estado', 'procesando')
+					->where('monto', $monto)
+					->latest()->get();
+				foreach ($processing as $p) {
+					$resp = $p->stripe_response ?? [];
+					$clientSecret = is_array($resp) && isset($resp['client_secret']) ? $resp['client_secret'] : null;
+					if ($clientSecret) {
+						Log::info('crearPaymentIntentParaReserva: reusing existing processing Pago with clientSecret', ['pago_id' => $p->id]);
+						return [
+							'success' => true,
+							'clientSecret' => $clientSecret,
+							'pago_id' => $p->id,
+							'paymentIntentId' => $p->stripe_payment_intent_id ?? null,
+							'paymentIntentStatus' => 'requires_payment_method',
+						];
+					}
+				}
+			} catch (\Throwable $e) {
+				Log::warning('crearPaymentIntentParaReserva: dedupe check failed: ' . $e->getMessage());
+			}
 
 			$intentData = [
 				'amount' => $montoCents,
@@ -659,8 +708,168 @@ class PaymentService
 					// Añadir contexto extra en el log: metadata del PaymentIntent si existe
 					$piMetaForLog = null;
 					try { $piMetaForLog = isset($paymentIntent->metadata) ? (array)$paymentIntent->metadata : null; } catch (\Throwable $__e) { $piMetaForLog = null; }
-					Log::warning('confirmarPaymentIntent: Pago no encontrado para payment_intent', ['payment_intent_id' => $paymentIntentId, 'payment_intent_metadata' => $piMetaForLog]);
-					return ['success' => false, 'error' => 'Pago no encontrado'];
+
+					// Intentar crear un Pago automáticamente si la metadata contiene referencia a Reserva
+					try {
+						$meta = $piMetaForLog ?? [];
+						$foundReserva = null;
+						if (!empty($meta['reserva_id'])) {
+							$foundReserva = Reserva::find((int)$meta['reserva_id']);
+						} elseif (!empty($meta['localizador'])) {
+							$foundReserva = Reserva::where('localizador', (string)$meta['localizador'])->first();
+						}
+
+						if ($foundReserva) {
+							$amount = null;
+							try {
+								if (isset($paymentIntent->amount_received)) $amount = ((int)$paymentIntent->amount_received) / 100.0;
+								elseif (isset($paymentIntent->amount)) $amount = ((int)$paymentIntent->amount) / 100.0;
+							} catch (\Throwable $_e) { $amount = null; }
+
+							$pago = Pago::create([
+								'reserva_id' => $foundReserva->id,
+								'stripe_payment_intent_id' => $paymentIntentId,
+								'monto' => $amount ?? 0,
+								'moneda' => isset($paymentIntent->currency) ? $paymentIntent->currency : 'eur',
+								'estado' => ($status === 'succeeded') ? 'completado' : 'procesando',
+								'descripcion' => 'Pago creado desde metadata de PaymentIntent',
+								'stripe_response' => is_object($paymentIntent) && method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent,
+							]);
+
+							Log::info('confirmarPaymentIntent: creado Pago desde metadata del PaymentIntent', ['pago_id' => $pago->id, 'reserva_id' => $foundReserva->id, 'payment_intent_id' => $paymentIntentId]);
+						} else {
+							Log::warning('confirmarPaymentIntent: Pago no encontrado por metadata, intentaremos heurísticas', ['payment_intent_id' => $paymentIntentId, 'payment_intent_metadata' => $piMetaForLog]);
+
+							// Heurística adicional: intentar localizar Reserva por email de facturación del cargo
+							try {
+								$billingEmail = null;
+								if (isset($paymentIntent->charges) && isset($paymentIntent->charges->data) && count($paymentIntent->charges->data) > 0) {
+									$charge = $paymentIntent->charges->data[0];
+									if (is_object($charge) && property_exists($charge, 'billing_details')) {
+										$billingEmail = $charge->billing_details->email ?? null;
+									} elseif (is_array($charge) && isset($charge['billing_details'])) {
+										$billingEmail = $charge['billing_details']['email'] ?? null;
+									}
+								}
+
+								$foundReservaByEmail = null;
+								if (!empty($billingEmail)) {
+									$foundReservaByEmail = Reserva::whereHas('reservable', function ($q) use ($billingEmail) {
+										$q->where('email', $billingEmail);
+									})->orderByDesc('id')->first();
+								}
+
+								if ($foundReservaByEmail) {
+									$amount = null;
+									try {
+										if (isset($paymentIntent->amount_received)) $amount = ((int)$paymentIntent->amount_received) / 100.0;
+										elseif (isset($paymentIntent->amount)) $amount = ((int)$paymentIntent->amount) / 100.0;
+									} catch (\Throwable $_e) { $amount = null; }
+
+									$pago = Pago::create([
+										'reserva_id' => $foundReservaByEmail->id,
+										'stripe_payment_intent_id' => $paymentIntentId,
+										'monto' => $amount ?? 0,
+										'moneda' => isset($paymentIntent->currency) ? $paymentIntent->currency : 'eur',
+										'estado' => ($status === 'succeeded') ? 'completado' : 'procesando',
+										'descripcion' => 'Pago creado heurísticamente desde billing email del PaymentIntent',
+										'stripe_response' => is_object($paymentIntent) && method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent,
+									]);
+
+									Log::info('confirmarPaymentIntent: creado Pago heurístico por email de facturación', ['pago_id' => $pago->id, 'reserva_id' => $foundReservaByEmail->id, 'billing_email' => $billingEmail, 'payment_intent_id' => $paymentIntentId]);
+								} else {
+									// Intentar extraer localizador desde la descripción del PaymentIntent
+									$desc = isset($paymentIntent->description) ? (string)$paymentIntent->description : '';
+									$localizadorCandidate = null;
+									if (!empty($desc) && preg_match('/localizador[:\s#-]*([A-Za-z0-9\-]+)/i', $desc, $m2)) {
+										$localizadorCandidate = $m2[1];
+									} elseif (!empty($desc) && preg_match('/reserva[:\s#-]*([A-Za-z0-9\-]+)/i', $desc, $m3)) {
+										$localizadorCandidate = $m3[1];
+									}
+
+									$foundReservaByLocalizador = null;
+									if ($localizadorCandidate) {
+										$foundReservaByLocalizador = Reserva::where('localizador', $localizadorCandidate)->first();
+									}
+
+									if ($foundReservaByLocalizador) {
+										$amount = null;
+										try {
+											if (isset($paymentIntent->amount_received)) $amount = ((int)$paymentIntent->amount_received) / 100.0;
+											elseif (isset($paymentIntent->amount)) $amount = ((int)$paymentIntent->amount) / 100.0;
+										} catch (\Throwable $_e) { $amount = null; }
+
+										$pago = Pago::create([
+											'reserva_id' => $foundReservaByLocalizador->id,
+											'stripe_payment_intent_id' => $paymentIntentId,
+											'monto' => $amount ?? 0,
+											'moneda' => isset($paymentIntent->currency) ? $paymentIntent->currency : 'eur',
+											'estado' => ($status === 'succeeded') ? 'completado' : 'procesando',
+											'descripcion' => 'Pago creado heurísticamente desde description del PaymentIntent',
+											'stripe_response' => is_object($paymentIntent) && method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent,
+										]);
+
+										Log::info('confirmarPaymentIntent: creado Pago heurístico por description/localizador', ['pago_id' => $pago->id, 'reserva_id' => $foundReservaByLocalizador->id, 'localizador' => $localizadorCandidate, 'payment_intent_id' => $paymentIntentId]);
+									} else {
+										// Último recurso: crear un Pago sin reserva para evitar estados "Pago no encontrado"
+										$amount = null;
+										try {
+											if (isset($paymentIntent->amount_received)) $amount = ((int)$paymentIntent->amount_received) / 100.0;
+											elseif (isset($paymentIntent->amount)) $amount = ((int)$paymentIntent->amount) / 100.0;
+										} catch (\Throwable $_e) { $amount = null; }
+
+										// Crear una reserva placeholder para evitar violaciones NOT NULL en pagos
+										try {
+DB::transaction(function () use (&$pago, &$placeholderReserva, $paymentIntentId, $paymentIntent, $amount, $status) {
+										$placeholderLocator = 'AUTO-PI-' . substr($paymentIntentId, 0, 10) . '-' . time();
+										$checkIn = Carbon::now()->toDateString();
+										$checkOut = Carbon::now()->addDay()->toDateString();
+
+										$placeholderReserva = Reserva::create([
+											'localizador' => $placeholderLocator,
+											'check_in' => $checkIn,
+											'check_out' => $checkOut,
+											'precio_total' => $amount ?? 0,
+											'status' => 'pendiente',
+											'pago' => ($status === 'succeeded') ? 'pagado' : 'pendiente',
+										]);
+
+										if (! $placeholderReserva || ! $placeholderReserva->id) {
+											throw new \RuntimeException('No se pudo crear Reserva placeholder para ' . $paymentIntentId);
+										}
+
+										$pago = Pago::create([
+											'reserva_id' => $placeholderReserva->id,
+											'stripe_payment_intent_id' => $paymentIntentId,
+											'monto' => $amount ?? 0,
+											'moneda' => isset($paymentIntent->currency) ? $paymentIntent->currency : 'eur',
+											'estado' => ($status === 'succeeded') ? 'completado' : 'procesando',
+											'descripcion' => 'Pago creado desde PaymentIntent sin metadata (fallback)',
+											'stripe_response' => is_object($paymentIntent) && method_exists($paymentIntent, 'toArray') ? $paymentIntent->toArray() : (array)$paymentIntent,
+										]);
+
+										if (! $pago || ! $pago->id || ! $pago->reserva_id) {
+											throw new \RuntimeException('Pago creado sin reserva_id para ' . $paymentIntentId);
+										}
+									});
+
+											Log::warning('confirmarPaymentIntent: creado Pago y Reserva placeholder automáticamente (fallback).', ['pago_id' => $pago->id, 'reserva_id' => $placeholderReserva->id, 'payment_intent_id' => $paymentIntentId, 'billing_email' => $billingEmail ?? null, 'description' => $desc]);
+										} catch (\Throwable $e) {
+											Log::error('confirmarPaymentIntent: no se pudo crear Reserva placeholder: ' . $e->getMessage());
+											// Si falla la creación de la reserva, no prosigamos con crear un Pago sin reserva
+											return ['success' => false, 'error' => 'Pago no encontrado'];
+										}
+									}
+								}
+							} catch (\Throwable $e) {
+								Log::warning('confirmarPaymentIntent: fallo en heurísticas adicionales: ' . $e->getMessage());
+								return ['success' => false, 'error' => 'Pago no encontrado'];
+							}
+						}
+					} catch (\Throwable $e) {
+						Log::warning('confirmarPaymentIntent: fallo al crear Pago desde metadata: ' . $e->getMessage());
+						return ['success' => false, 'error' => 'Pago no encontrado'];
+					}
 				}
 			}
 

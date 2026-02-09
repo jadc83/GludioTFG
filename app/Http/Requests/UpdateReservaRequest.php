@@ -18,8 +18,9 @@ class UpdateReservaRequest extends FormRequest
         return [
             'check_in' => ['required', 'date', 'after_or_equal:today'],
             'check_out' => ['required', 'date', 'after:check_in'],
-            'status' => ['required', 'in:pendiente,confirmado,checked_in,checked_out,cancelado,no_presentado,reembolso_parcial_pendiente,reembolso_total_pendiente,reembolso_parcial_confirmado'],
-            'pago' => ['required', 'in:pendiente,parcial,pagado,devuelto'],
+            // Allow partial updates (e.g. only changing dates) so the frontend doesn't have to send status/pago every time.
+            'status' => ['sometimes', 'in:pendiente,confirmado,checked_in,checked_out,cancelado,no_presentado,reembolso_parcial_pendiente,reembolso_total_pendiente,reembolso_parcial_confirmado'],
+            'pago' => ['sometimes', 'in:pendiente,parcial,pagado,devuelto'],
             // Las habitaciones son optativas para ediciones de fechas (se asignan en check-in)
             'habitacion_ids' => ['sometimes', 'array'],
             'habitacion_ids.*' => ['integer', 'exists:habitaciones,id'],
@@ -51,5 +52,24 @@ class UpdateReservaRequest extends FormRequest
             'notas.max' => 'Las notas no pueden exceder 1000 caracteres',
             'motivo.max' => 'El motivo no puede exceder 500 caracteres',
         ];
+    }
+
+    /**
+     * Log validation failures to help debug 400 responses from update.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        try {
+            \Illuminate\Support\Facades\Log::warning('UpdateReservaRequest validation failed', [
+                'input' => $this->all(),
+                'errors' => $validator->errors()->toArray(),
+                'route' => $this->path(),
+                'user_id' => optional($this->user())->id,
+            ]);
+        } catch (\Throwable $e) {
+            // swallow to not break default behaviour
+        }
+
+        parent::failedValidation($validator);
     }
 }

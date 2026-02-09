@@ -451,7 +451,9 @@ function FormularioPagoInterno({
                                             const montoFloat = Number(monto) || 0;
                                             let piResp = null;
                                             try {
-                                                piResp = await pagosApi.crearPaymentIntentStandalone(montoFloat, { receipt_email: email });
+                                                // Permitimos crear el PaymentIntent sin metadata en este flujo (se creará la reserva
+                                                // inmediatamente después y el backend asociará el PaymentIntent usando payment_intent_id)
+                                                piResp = await pagosApi.crearPaymentIntentStandalone(montoFloat, { receipt_email: email, allow_without_metadata: true });
                                                 if (!piResp || piResp.success === false) {
                                                     throw new Error(piResp?.error || 'No se pudo crear PaymentIntent');
                                                 }

@@ -48,7 +48,25 @@ export async function crearPaymentIntent(reservaId, monto) {
 
 export async function crearPaymentIntentStandalone(monto, opts = {}) {
     try {
-        const res = await axios.post('/pagos/crear-payment-intent-standalone', { monto, ...opts }, {
+        // Normalizar payload: mover campos relevantes a `metadata` para que el backend
+        // reciba `metadata.reserva_id` o `metadata.localizador` y pueda mapear el Pago.
+        const payload = { monto };
+
+        // Pasar receipt_email como campo separado (Stripe acepta receipt_email)
+        if (opts.receipt_email) payload.receipt_email = opts.receipt_email;
+
+        // Construir metadata a partir de opciones conocidas
+        const metadata = {};
+        if (opts.reserva_id) metadata.reserva_id = String(opts.reserva_id);
+        if (opts.localizador) metadata.localizador = String(opts.localizador);
+        if (opts.pago_id) metadata.pago_id = String(opts.pago_id);
+
+        if (Object.keys(metadata).length > 0) payload.metadata = metadata;
+
+        // Permitir forzar creación sin metadata (opción de emergencia)
+        if (opts.allow_without_metadata) payload.allow_without_metadata = true;
+
+        const res = await axios.post('/pagos/crear-payment-intent-standalone', payload, {
             headers: { 'Content-Type': 'application/json' },
         });
         return res?.data ?? null;

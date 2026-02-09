@@ -424,6 +424,16 @@ class ReservaController extends Controller
      */
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
+        // Log incoming payload for debugging purposes
+        try {
+            Log::info('ReservaController::update called', [
+                'user_id' => Auth::id(),
+                'reserva_id' => $reserva->id ?? null,
+                'raw_input' => $request->all(),
+                'route' => $request->path(),
+            ]);
+        } catch (\Throwable $_) {}
+
         $validated = $request->validated();
 
         try {

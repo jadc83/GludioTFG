@@ -97,6 +97,8 @@ class PagoController extends Controller
             'metadata' => 'nullable|array',
             'metadata.reserva_id' => 'nullable|integer|exists:reservas,id',
             'reserva_id' => 'nullable|integer|exists:reservas,id',
+            // Permitir flag explícito para flujos que crean PI antes de la reserva
+            'allow_without_metadata' => 'nullable|boolean',
         ]);
 
         try {
@@ -109,6 +111,7 @@ class PagoController extends Controller
             $serviceResp = $this->paymentService->crearPaymentIntentStandalone((float)$validated['monto'], [
                 'receipt_email' => $validated['receipt_email'] ?? null,
                 'metadata' => $metadata,
+                'allow_without_metadata' => !empty($validated['allow_without_metadata']),
             ]);
 
             if (!empty($serviceResp['success'])) {
@@ -184,6 +187,36 @@ class PagoController extends Controller
 
             $resp = $this->paymentService->confirmarPaymentIntent($request->payment_intent_id, $pago);
 
+            // Registrar la respuesta del servicio para depuración
+            try { Log::info('confirmarPago: paymentService response', ['resp' => $resp]); } catch (\Throwable $_e) { }
+
+            // Si no tenemos un Pago en el controlador, intentar buscarlo localmente como fallback
+            if (!$pago) {
+                try {
+                    $pago = Pago::where('stripe_payment_intent_id', $request->payment_intent_id)->first()
+                        ?? Pago::where('stripe_response', 'like', '%' . $request->payment_intent_id . '%')->first();
+                    if ($pago) {
+                        Log::info('confirmarPago: Pago recuperado mediante fallback DB', ['pago_id' => $pago->id, 'payment_intent_id' => $request->payment_intent_id]);
+                    }
+                } catch (\Throwable $_e) {
+                    Log::warning('confirmarPago: fallo en fallback DB buscando Pago: ' . $_e->getMessage());
+                }
+            }
+
+            // Si el servicio indica éxito pero seguimos sin Pago, pedir al servicio que reprocese como si fuera webhook
+            if (empty($pago) && !empty($resp) && empty($resp['success']) ) {
+                try {
+                    // Reintentar procesar el payment_intent en el servicio (idempotente)
+                    $this->paymentService->handlePaymentIntentSucceeded($request->payment_intent_id);
+                    // reintentar recuperar Pago
+                    $pago = Pago::where('stripe_payment_intent_id', $request->payment_intent_id)->first()
+                        ?? Pago::where('stripe_response', 'like', '%' . $request->payment_intent_id . '%')->first();
+                    if ($pago) Log::info('confirmarPago: Pago encontrado tras reintentar handlePaymentIntentSucceeded', ['pago_id' => $pago->id]);
+                } catch (\Throwable $_e) {
+                    Log::warning('confirmarPago: error al reintentar handlePaymentIntentSucceeded: ' . $_e->getMessage());
+                }
+            }
+
             if (!empty($resp['success']) && ($resp['status'] ?? '') === 'succeeded') {
                 // Si el controlador no recibió un Pago pero el servicio devolvió pago_id, cargarlo
                 if (!$pago && !empty($resp['pago_id'])) {
@@ -209,9 +242,11 @@ class PagoController extends Controller
                     $cambioReserva = $reserva->reservable;
 
                     // Comprueba si ya existe una notificación de pago para este pago
+                    // Some DBs store `notifications.data` as text; cast to JSON for Postgres compatibility
+                    $existsQuery = "(data::json->>'pago_id')::int = ?";
                     $exists = \Illuminate\Support\Facades\DB::table('notifications')
                         ->where('type', '\\App\\Notifications\\PagoConfirmadoNotification')
-                        ->whereRaw("(data->>'pago_id')::int = ?", [$pago->id])
+                        ->whereRaw($existsQuery, [$pago->id])
                         ->exists();
 
                     if (! $exists) {
