@@ -141,6 +141,16 @@ export default function EditarReserva({
                                 />
                             </div>
 
+                                              {/* Contenido principal debajo del resumen: habitaciones a ancho completo */}
+                            <div className="col-span-12">
+                                <AssignedHabitaciones
+                                    habitaciones={reserva.habitaciones}
+                                    onDesasignar={desasignarHabitacion}
+                                    guardando={guardandoHabitaciones}
+                                    reserva={reserva}
+                                />
+                            </div>
+
                             <div className="col-span-12 mt-4">
                                 <div className="w-full">
                                     <div className="w-full border rounded-lg bg-white overflow-hidden">
@@ -194,15 +204,7 @@ export default function EditarReserva({
                                 </div>
                             </div>
 
-                            {/* Contenido principal debajo del resumen: habitaciones a ancho completo */}
-                            <div className="col-span-12">
-                                <AssignedHabitaciones
-                                    habitaciones={reserva.habitaciones}
-                                    onDesasignar={desasignarHabitacion}
-                                    guardando={guardandoHabitaciones}
-                                    reserva={reserva}
-                                />
-                            </div>
+
 
                             {(viewerIsAdmin || viewerIsRecepcion) && !isCheckedIn && !isCheckedOut && (
                                 <div className="col-span-12">

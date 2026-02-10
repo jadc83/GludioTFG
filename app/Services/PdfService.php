@@ -26,8 +26,19 @@ class PdfService
         $checkOut = Carbon::parse($reserva->check_out);
         $noches = max(1, $checkIn->diffInDays($checkOut));
 
+        $reservaFormateada = null;
+        try {
+            $reservaFormateada = app(\App\Services\ReservaFormatterService::class)->formatearReservaParaEdicion($reserva);
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo formatear reserva para PDF: ' . $e->getMessage());
+            $reservaFormateada = null;
+        }
+
         $data = [
-            'reserva' => $reserva,
+            // Pasamos la reserva formateada (array) como `reserva` para que la vista
+            // PDF use los mismos campos que la interfaz de edición.
+            'reserva' => $reservaFormateada ?? [],
+            'reserva_model' => $reserva,
             'cliente' => app(\App\Services\ReservaService::class)->formatearCliente($reserva),
             'noches' => $noches,
             'fecha_generacion' => now()->format('d/m/Y H:i'),

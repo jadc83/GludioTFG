@@ -43,7 +43,7 @@ export default function AssignedHabitaciones({ habitaciones = [], onDesasignar, 
                                 {/* Action buttons moved to ReservaPayments (global) as per new flow */}
                             </div>
                         ) : (
-                            <div className="text-sm italic text-gray-400">Sin asignar</div>
+                            <div className="text-sm italic text-gray-400">Completa el check in para asignar automáticamente</div>
                         )}
                     </div>
                 ))}

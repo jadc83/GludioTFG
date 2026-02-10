@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 	<meta charset="UTF-8">
-	<title>Factura {{ $reserva->localizador }} - Hotel Gludio</title>
+	<title>Factura {{ $reserva['localizador'] ?? $reserva_model->localizador ?? '' }} - Hotel Gludio</title>
 	<style>
 		/* Configuraciones de página para PDF (DomPDF compatible) */
 		@page { size: A4; margin: 0; }
@@ -66,6 +66,8 @@
 			padding-left: 10px;
 			border-left: 4px solid #7a0202;
 		}
+
+		.status-refund { background: #7a0202; color: #fff; }
 
 		/* Tablas */
 		table.modern-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
@@ -131,7 +133,15 @@
 			</div>
 			<div class="meta-cell" style="text-align:right;">
 				<div class="label">Factura Nº</div>
-				<div class="localizador-badge">FAC-{{ $reserva->localizador }}</div>
+				<div class="localizador-badge">FAC-{{ $reserva['localizador'] ?? $reserva_model->localizador ?? '' }}</div>
+				@php
+					$hasRefund = isset($reserva['refundRequests']) && count($reserva['refundRequests']);
+				@endphp
+				@if(!empty($hasRefund))
+					<div style="margin-top:8px;">
+						<span class="status-badge status-refund">Reembolso solicitado</span>
+					</div>
+				@endif
 				<div style="margin-top:8px; font-size:11px; color:#6b7280;">
 					<div class="label">Emitida</div>
 					<div class="value">{{ $fecha_generacion ?? now()->format('d/m/Y H:i') }}</div>
@@ -143,15 +153,15 @@
 			<tr>
 				<td class="summary-item">
 					<div class="label">Huésped</div>
-					<div class="value">{{ $reserva->reservable?->name ?? 'N/A' }}</div>
+					<div class="value">{{ $reserva['cliente']['name'] ?? ($reserva_model->reservable?->name ?? 'N/A') }}</div>
 				</td>
 				<td class="summary-item">
 					<div class="label">Check-in</div>
-					<div class="value">{{ \Carbon\Carbon::parse($reserva->check_in)->format('d/m/Y') }}</div>
+					<div class="value">{{ isset($reserva['check_in']) ? \Carbon\Carbon::parse($reserva['check_in'])->format('d/m/Y') : (isset($reserva_model->check_in) ? \Carbon\Carbon::parse($reserva_model->check_in)->format('d/m/Y') : '-') }}</div>
 				</td>
 				<td class="summary-item">
 					<div class="label">Check-out</div>
-					<div class="value">{{ \Carbon\Carbon::parse($reserva->check_out)->format('d/m/Y') }}</div>
+					<div class="value">{{ isset($reserva['check_out']) ? \Carbon\Carbon::parse($reserva['check_out'])->format('d/m/Y') : (isset($reserva_model->check_out) ? \Carbon\Carbon::parse($reserva_model->check_out)->format('d/m/Y') : '-') }}</div>
 				</td>
 				<td class="summary-item">
 					<div class="label">Estancia</div>
@@ -172,31 +182,46 @@
 				</tr>
 			</thead>
 			<tbody>
-				@foreach($reserva->habitaciones as $hr)
-					@php
-						$tipo = $hr->habitacion?->tipo ?? ($hr->tipo ?? 'Habitación');
-						$precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
-					@endphp
-					<tr>
-						<td style="font-weight: 500;">Habitación {{ ucfirst(strtolower($tipo)) }}</td>
-						<td style="text-align: center;">{{ $noches }}</td>
-						<td style="text-align: right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
-					</tr>
-				@endforeach
+				@php $habs = $reserva['habitaciones'] ?? null; @endphp
+				@if($habs && count($habs))
+					@foreach($habs as $hr)
+						@php
+							$tipo = $hr['tipo'] ?? 'Habitación';
+							$precio_por_noche = $hr['precio_noche'] ?? ($hr['precio'] ? round($hr['precio'] / max(1, $noches), 2) : 0);
+						@endphp
+						<tr>
+							<td style="font-weight: 500;">Habitación {{ ucfirst(strtolower($tipo)) }}</td>
+							<td style="text-align: center;">{{ $noches }}</td>
+							<td style="text-align: right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
+						</tr>
+					@endforeach
+				@else
+					@foreach($reserva_model->habitaciones as $hr)
+						@php
+							$tipo = $hr->habitacion?->tipo ?? ($hr->tipo ?? 'Habitación');
+							$precio_por_noche = ($noches > 0) ? ($hr->precio / max(1, $noches)) : $hr->precio;
+						@endphp
+						<tr>
+							<td style="font-weight: 500;">Habitación {{ ucfirst(strtolower($tipo)) }}</td>
+							<td style="text-align: center;">{{ $noches }}</td>
+							<td style="text-align: right;">€ {{ number_format($precio_por_noche, 2, ',', '.') }}</td>
+						</tr>
+					@endforeach
+				@endif
 			</tbody>
 		</table>
 
 		@php
-			$tarifasArr = (isset($reserva->tarifas) && count($reserva->tarifas)) ? $reserva->tarifas : (isset($reserva->tarifa) ? collect([$reserva->tarifa]) : collect());
+			$tarifasArr = $reserva['tarifas'] ?? null;
 		@endphp
 
-		@if($tarifasArr->count())
+		@if($tarifasArr && count($tarifasArr))
 			<div class="section-title">Extras y Tarifas</div>
 			<table class="modern-table" style="margin-bottom: 10px;">
 				@foreach($tarifasArr as $t)
 					@php
-						$name = $t->name ?? $t['name'] ?? $t->nombre ?? $t['nombre'] ?? 'Suplemento';
-						$price = $t->price ?? $t['price'] ?? $t->modificador_precio ?? $t['modificador_precio'] ?? 0;
+						$name = $t['name'] ?? 'Suplemento';
+						$price = $t['price'] ?? 0;
 					@endphp
 					<tr>
 						<td style="color: #4b5563;">{{ $name }}</td>
@@ -213,33 +238,31 @@
 				<div style="margin-top: 6px;">
 					<div class="section-title">Cliente (datos fiscales)</div>
 					<div style="font-size:11px; color:#4b5563; margin-top:6px;">
-						<strong>{{ $reserva->reservable?->name ?? ($reserva->reservable?->nombre ?? 'Cliente') }}</strong><br>
-						{{ $reserva->reservable?->direccion ?? $reserva->reservable?->address ?? '-' }}<br>
-						NIF/CIF: {{ $reserva->reservable?->numero_documento ?? '-' }}<br>
-						Email: {{ $reserva->reservable?->email ?? '-' }} · Tel: {{ $reserva->reservable?->telefono ?? '-' }}
+						<strong>{{ $reserva['cliente']['name'] ?? ($reserva_model->reservable?->name ?? 'Cliente') }}</strong><br>
+						{{ $reserva['cliente']['direccion'] ?? ($reserva_model->reservable?->direccion ?? $reserva_model->reservable?->address ?? '-') }}<br>
+						NIF/CIF: {{ $reserva['cliente']['numero_documento'] ?? ($reserva_model->reservable?->numero_documento ?? '-') }}<br>
+						Email: {{ $reserva['cliente']['email'] ?? ($reserva_model->reservable?->email ?? '-') }} · Tel: {{ $reserva['cliente']['telefono'] ?? ($reserva_model->reservable?->telefono ?? '-') }}
 					</div>
 				</div>
 			</div>
 
 			<div class="totals-right">
-				<div class="total-row">
-					<div class="total-label">Base imponible</div>
-					<div class="total-value">€ {{ number_format($reserva->precio_total, 2, ',', '.') }}</div>
-				</div>
+				{{-- Base imponible eliminado para igualar resumen de interfaz --}}
 				<div class="total-row">
 					<div class="total-label">IVA (21%)</div>
-					<div class="total-value">€ {{ number_format(round($reserva->precio_total * 0.21, 2), 2, ',', '.') }}</div>
+					@php $total = $reserva['precio_total'] ?? $reserva_model->precio_total ?? 0; @endphp
+					<div class="total-value">€ {{ number_format(round($total * 0.21, 2), 2, ',', '.') }}</div>
 				</div>
 				<div class="total-row grand-total">
 					<div class="total-label">TOTAL FACTURA</div>
-					<div class="total-value">€ {{ number_format(round($reserva->precio_total * 1.21, 2), 2, ',', '.') }}</div>
+					<div class="total-value">€ {{ number_format(round($total * 1.21, 2), 2, ',', '.') }}</div>
 				</div>
 
 				<div class="qr-box" style="margin-top: 20px;">
 					@php
-						$qrUrl = !empty($qr_data_uri) ? $qr_data_uri : "https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=" . urlencode(url('/reserva/'.$reserva->localizador));
+						$qrUrl = !empty($qr_data_uri) ? $qr_data_uri : (isset($reserva['localizador']) ? "https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=" . urlencode(url('/reserva/'.$reserva['localizador'])) : "https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=" . urlencode(url('/reserva/'.$reserva_model->localizador)));
 					@endphp
-					<img src="{{ $qrUrl }}" alt="QR" style="width:80px; height:80px;" />
+					<img src="{{ $qrUrl }}" alt="QR" style="width:120px; height:120px;" />
 				</div>
 			</div>
 		</div>
