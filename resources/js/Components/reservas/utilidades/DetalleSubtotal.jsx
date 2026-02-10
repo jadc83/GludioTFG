@@ -69,8 +69,17 @@ export default function DetalleSubtotal({
 
     const subtotal = subtotalHabitaciones + cargoTarifas;
 
-    // Si el subtotal es 0, no mostrar nada (evita mostrar "€0.00" en la UI)
-    if (subtotal === 0) return null;
+    // Si el subtotal es 0, mostrar un texto guía en lugar de ocultarlo completamente
+    if (subtotal === 0 && !soloSubtotal) {
+        return (
+            <div className="w-full rounded bg-gris p-2">
+                <div className="flex items-center justify-between text-[12px]">
+                    <span className="font-medium text-gray-700">Subtotal</span>
+                    <span className="text-sm text-gray-400">Selecciona habitaciones para ver el subtotal</span>
+                </div>
+            </div>
+        );
+    }
 
     if (soloSubtotal) {
         return (

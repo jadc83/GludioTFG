@@ -9,7 +9,7 @@
 .hero-section {
     width: 100%; 
     height: calc(100vh - 64px); 
-    background-image: url('/hall2.jpg');
+    background-image: url('/fondo3.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

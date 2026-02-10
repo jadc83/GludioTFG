@@ -83,6 +83,11 @@ export default function EmpleadoProfile({ habitaciones = [], showAssignState = t
                                                     if (!res.ok) {
                                                         if (res.status === 419) {
                                                             console.error('assign failed: CSRF token invalid or expired');
+                                                            try {
+                                                                // Mostrar aviso al usuario y recargar para renovar sesión/CSRF
+                                                                window.alert('Sesión expirada o token inválido. Se recargará la página para renovarla.');
+                                                            } catch (e) {}
+                                                            window.location.reload();
                                                             return;
                                                         }
                                                         const err = await res.json().catch(() => ({}));
