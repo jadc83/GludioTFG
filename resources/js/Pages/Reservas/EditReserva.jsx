@@ -148,6 +148,7 @@ export default function EditarReserva({
                                     onDesasignar={desasignarHabitacion}
                                     guardando={guardandoHabitaciones}
                                     reserva={reserva}
+                                    viewerIsAdmin={viewerIsAdmin}
                                 />
                             </div>
 

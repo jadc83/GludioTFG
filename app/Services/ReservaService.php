@@ -203,6 +203,8 @@ class ReservaService
 
                 return [
                     'id' => $hr->habitacion?->id ?? $hr->id,
+                    'habitacion_id' => $hr->habitacion?->id ?? null,
+                    'slot_id' => $hr->id,
                     'numero' => $hr->habitacion?->numero ?? null,
                     'tipo' => $tipo,
                     'precio_noche' => $precioAsignado ? round($precioAsignado / max(1, $noches), 2) : null,
@@ -216,19 +218,15 @@ class ReservaService
     }
 
     /**
-     * Obtiene las habitaciones disponibles y calcula precios para la vista de edición
-     * Devuelve una colección mapeada lista para enviar a la vista.
-     * Usado por: formatearReservaParaEdicion()
-     * Retorna: colección de habitaciones con precios calculados
-     *
      * @param \App\Models\Reserva $reserva
      * @param \Carbon\Carbon $checkIn
      * @param \Carbon\Carbon $checkOut
      * @return \Illuminate\Support\Collection<int, array<string,mixed>>
      */
+
     public function obtenerHabitacionesYPreciosParaEdicion(Reserva $reserva, Carbon $checkIn, Carbon $checkOut): \Illuminate\Support\Collection
     {
-        // Aceptar también strings por seguridad: coerción a Carbon
+
         if (!($checkIn instanceof Carbon)) {
             $checkIn = Carbon::parse($checkIn);
         }
@@ -236,12 +234,11 @@ class ReservaService
             $checkOut = Carbon::parse($checkOut);
         }
 
-        $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
+        $habitacionesActuales = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
 
         $checkInStr = $checkIn->toDateString();
         $checkOutStr = $checkOut->toDateString();
 
-        // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas
         $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
             ->where('estado', 'disponible')
             ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
@@ -249,7 +246,7 @@ class ReservaService
                     ->where('check_in', '<', $checkOutStr)
                     ->where('check_out', '>', $checkInStr);
             })
-            ->whereNotIn('id', $habitacionesActualesIds) // Excluir habitaciones ya asignadas a esta reserva
+            ->whereNotIn('id', $habitacionesActuales)
             ->orderBy('numero')
             ->get();
 

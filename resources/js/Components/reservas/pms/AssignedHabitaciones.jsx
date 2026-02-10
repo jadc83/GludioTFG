@@ -1,6 +1,6 @@
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 
-export default function AssignedHabitaciones({ habitaciones = [], onDesasignar, guardando, reserva = null, abrirReembolso = () => {}, refundAmount = null }) {
+export default function AssignedHabitaciones({ habitaciones = [], onDesasignar, guardando, reserva = null, abrirReembolso = () => {}, refundAmount = null, viewerIsAdmin = false }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 bg-[#7a0202] px-6 py-4">
@@ -39,6 +39,8 @@ export default function AssignedHabitaciones({ habitaciones = [], onDesasignar, 
                                         {guardando ? <LoadingSpinner /> : '✕'}
                                     </button>
                                 </div>
+
+                                {/* IDs internos ocultos: no mostrar habitacion_id/slot_id en la UI */}
 
                                 {/* Action buttons moved to ReservaPayments (global) as per new flow */}
                             </div>

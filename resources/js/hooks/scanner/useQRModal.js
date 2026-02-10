@@ -1,32 +1,29 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
-/**
- * Hook personalizado para manejar modales en el escáner QR
- */
+/* Hook personalizado para manejar modales en el escáner QR */
 export function useQRModal() {
-    const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState(null);
+    const [mostrarModal, setmostrarModal] = useState(false);
+    const [tipoModal, settipoModal] = useState(null);
     const [reservaInfo, setReservaInfo] = useState(null);
 
-    const openModal = (type, reserva = null) => {
-        setModalType(type);
+    const abrirModal = (type, reserva = null) => {
+        settipoModal(type);
         setReservaInfo(reserva);
-        setShowModal(true);
+        setmostrarModal(true);
     };
 
-    const closeModal = () => {
-        setShowModal(false);
+    const cerrarModal = () => {
+        setmostrarModal(false);
 
-        if (modalType === 'checkin') {
+        if (tipoModal === 'checkin') {
             const loc = reservaInfo?.localizador || '';
             if (loc) {
                 router.visit(`/reserva/${encodeURIComponent(loc)}`);
             }
-        } else if (modalType === 'checkout') {
+        } else if (tipoModal === 'checkout') {
             router.visit('/');
-        } else if (modalType === 'success') {
-            // Para escaneos sin acción específica, ir al detalle de la reserva
+        } else if (tipoModal === 'success') {
             const loc = reservaInfo?.localizador || '';
             if (loc) {
                 router.visit(route('reserva.show', { reserva: loc }));
@@ -34,11 +31,5 @@ export function useQRModal() {
         }
     };
 
-    return {
-        showModal,
-        modalType,
-        reservaInfo,
-        openModal,
-        closeModal,
-    };
+    return { mostrarModal, tipoModal, reservaInfo, abrirModal, cerrarModal };
 }

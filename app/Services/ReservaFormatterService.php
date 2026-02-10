@@ -3,14 +3,15 @@
 namespace App\Services;
 
 use App\Models\Habitacion;
+use App\Models\HabitacionReserva;
+use App\Models\Refund;
 use App\Models\Reserva;
 use Carbon\Carbon;
 
 /**
- * Servicio especializado en formateo de datos de reservas
+ * Formatear datos de reservas
  * Transforma modelos de BD en arrays listos para enviar a frontend
  *
- * Responsabilidades:
  * - Formatear colecciones de reservas
  * - Preparar datos para vistas de edición
  * - Formatear información de clientes
@@ -27,18 +28,12 @@ class ReservaFormatterService
     }
 
     /**
-     * Formatea una colección de reservas para respuesta API
-     * Incluye cliente, habitaciones, precios y estadísticas
-     * Usado por: controladores de listado de reservas
-     * Retorna: array formateado de reservas
-     */
-    /**
      * @param \Illuminate\Support\Collection<int, \App\Models\Reserva> $reservas
      * @return array<int, array<string,mixed>>
      */
     public function formatearReservas(\Illuminate\Support\Collection $reservas): array
     {
-        return $reservas->map(function (\App\Models\Reserva $reserva): array {
+        return $reservas->map(function (Reserva $reserva): array {
             $nombreCliente = 'Sin cliente';
             if ($reserva->reservable) {
                 $nombreCliente = $reserva->reservable?->name ?? 'Sin cliente';
@@ -61,20 +56,13 @@ class ReservaFormatterService
                 'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
                 'habitacion_numero' => (function() use ($reserva) {
-                    $nums = $reserva->habitaciones->map(function(\App\Models\HabitacionReserva $hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
+                    $nums = $reserva->habitaciones->map(function(HabitacionReserva $hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
                     return $nums->count() ? $nums->implode(', ') : 's/a';
                 })(),
             ];
         })->toArray();
     }
 
-    /**
-     * Formatea datos de reserva para interfaz de edición
-     * Sobrecargado: puede recibir (Reserva) o (Reserva, Carbon, Carbon)
-     * Incluye habitaciones, precios y estadísticas
-     * Usado por: controladores de edición de reserva
-     * Retorna: array con todos los datos formateados para edición
-     */
     /**
      * @param \App\Models\Reserva $reserva
      * @param \Carbon\Carbon|null $checkIn
@@ -95,6 +83,7 @@ class ReservaFormatterService
 
         // Recalcular desglose por tipo para asegurar consistencia entre
         // suma de habitaciones y `precio_total` mostrado
+
         $tiposCount = [];
         foreach ($reserva->habitaciones as $hr) {
             $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? 'unknown';
@@ -179,7 +168,6 @@ class ReservaFormatterService
         if ($tar) {
             $reservaData['tarifa'] = [
                 'id' => $tar->id ?? null,
-                // Tarifa model uses Spanish field names
                 'name' => $tar->nombre ?? ($tar->name ?? ($tar->descripcion ?? null)),
                 'price' => $tar->modificador_precio ?? ($tar->price ?? null),
             ];
@@ -187,7 +175,6 @@ class ReservaFormatterService
             $reservaData['tarifa'] = null;
         }
 
-        // Export all tarifas associated to the reserva (pivot `reserva_tarifas`), mapping Spanish fields
         try {
             $tarifasCollection = $reserva->tarifas ?? collect();
             $reservaData['tarifas'] = $tarifasCollection->map(function ($t) {
@@ -201,11 +188,10 @@ class ReservaFormatterService
             $reservaData['tarifas'] = [];
         }
 
-        // Incluir solicitudes de reembolso (RefundRequest) para que el frontend pueda
-        // mostrar si hay una solicitud pendiente y deshabilitar el botón.
+        // Incluir solicitudes de reembolso para mostrar si hay una solicitud pendiente y deshabilitar el botón.
         try {
-            $refundRequestsCollection = $reserva->refundRequests ?? collect();
-            $reservaData['refundRequests'] = $refundRequestsCollection->map(function ($rr) {
+            $solicitudes = $reserva->refundRequests ?? collect();
+            $reservaData['refundRequests'] = $solicitudes->map(function ($rr) {
                 return [
                     'id' => $rr->id ?? null,
                     'status' => $rr->status ?? null,
@@ -228,6 +214,7 @@ class ReservaFormatterService
      * Usado por: formatearReservas(), detalles de reserva
      * Retorna: array con tipo y nombre del cliente
      */
+
     public function formatearCliente(Reserva $reserva): array
     {
         if ($reserva->reservable_type === 'App\\Models\\User') {
@@ -243,27 +230,20 @@ class ReservaFormatterService
     }
 
     /**
-     * Formatea lista de reembolsos con tipos (parcial/completo)
-     * Calcula los tipos según el monto acumulado vs total de la reserva
-     * Usado por: controlador show(), detalles de reserva
-     * Retorna: array de reembolsos formateados
-     */
-    /**
      * @param \App\Models\Reserva $reserva
      * @return array<int, array<string, mixed>>
      */
     public function formatearReembolsos(Reserva $reserva): array
     {
         $reservaTotal = $reserva->precio_total ?? 0;
-        $cumulative = 0;
+        $acumulado = 0;
 
-        return $reserva->reembolsos->sortBy('created_at')->values()->map(function (\App\Models\Refund $r) use ($reservaTotal, &$cumulative): array {
+        return $reserva->reembolsos->sortBy('created_at')->values()->map(function (Refund $r) use ($reservaTotal, &$acumulado): array {
             $amount = ($r->amount_cents ?? 0) / 100;
-            $cumulative += $amount;
+            $acumulado += $amount;
 
-            // Determinar si es reembolso parcial o completo
             $tipo = 'parcial';
-            if ($reservaTotal > 0 && $cumulative >= $reservaTotal) {
+            if ($reservaTotal > 0 && $acumulado >= $reservaTotal) {
                 $tipo = 'completo';
             }
 
@@ -278,12 +258,6 @@ class ReservaFormatterService
         })->values()->toArray();
     }
 
-    /**
-     * Obtiene las habitaciones disponibles y calcula precios para la vista de edición
-     * Devuelve una colección mapeada lista para enviar a la vista.
-     * Usado por: formatearReservaParaEdicion()
-     * Retorna: colección de habitaciones con precios calculados
-     */
     /**
      * @param \App\Models\Reserva $reserva
      * @param \Carbon\Carbon $checkIn
@@ -300,7 +274,7 @@ class ReservaFormatterService
             $checkOut = Carbon::parse($checkOut);
         }
 
-        $habitacionesActualesIds = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
+        $habitacionesActuales = $reserva->habitaciones->pluck('habitacion.id')->filter()->values()->toArray();
 
         $checkInStr = $checkIn->toDateString();
         $checkOutStr = $checkOut->toDateString();
@@ -308,8 +282,8 @@ class ReservaFormatterService
         // Obtener TODAS las habitaciones disponibles en las fechas seleccionadas, incluyendo las ya asignadas para permitir reasignación
         $habitaciones = Habitacion::select('id', 'numero', 'tipo', 'capacidad', 'estado')
             ->where('estado', 'disponible')
-            ->whereDoesntHave('reservas', function ($subQ) use ($reserva, $checkInStr, $checkOutStr) {
-                $subQ->where('reserva_id', '!=', $reserva->id)
+            ->whereDoesntHave('reservas', function ($subconsulta) use ($reserva, $checkInStr, $checkOutStr) {
+                $subconsulta->where('reserva_id', '!=', $reserva->id)
                     ->where('check_in', '<', $checkOutStr)
                     ->where('check_out', '>', $checkInStr);
             })
