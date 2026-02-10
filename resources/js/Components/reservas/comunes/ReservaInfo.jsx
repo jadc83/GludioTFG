@@ -1,33 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatearFecha, formatearMoneda, formatearHora } from '@/utils/formatters';
 
-export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
+export default function ReservaInfo({ reserva, total, preview, onSolicitarReembolso, refundRequested = false }) {
 	if (!reserva) return null;
 
+	const [qrOpen, setQrOpen] = useState(false);
+
 	const qrData = encodeURIComponent(reserva.localizador || '');
-	const qrSize = 160;
-	const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${qrData}`;
+	const qrSizeSmall = 160; // thumbnail
+	const qrSizeLarge = 320; // modal (2x)
+	const qrUrlSmall = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSizeSmall}x${qrSizeSmall}&data=${qrData}`;
+	const qrUrlLarge = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSizeLarge}x${qrSizeLarge}&data=${qrData}`;
 
 	const status = String(reserva?.status || '').toLowerCase();
 	const isCheckedIn = status === 'checked_in';
 	const isCheckedOut = status === 'checked_out';
 
 	return (
+		<>
 		<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
 			{/* Cabecera Principal */}
-			<div className="border-b border-gray-100 bg-gray-50/50 p-6">
-				<div className="flex items-center justify-between">
-					<div>
-						<h3 className="text-xl font-black text-gray-900">Resumen de reserva</h3>
-						<p className="text-sm text-gray-500">
-							ID Localizador: <span className="font-mono font-bold text-rose-700 uppercase">{reserva.localizador}</span>
-						</p>
+			<div className="border-b border-gray-100 bg-[#7a0202] p-6">
+				<div className="flex items-center justify-between bg-[#7a0202]">
+					<div className="flex items-center gap-4">
+						<div className="flex items-center justify-center w-10 h-10 rounded-md bg-black text-white">
+							<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M3 21h18V7H3v14zM7 10h2v2H7v-2zM11 10h2v2h-2v-2zM15 10h2v2h-2v-2zM7 14h2v2H7v-2zM11 14h2v2h-2v-2zM15 14h2v2h-2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+								<path d="M2 7h20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+							</svg>
+						</div>
+						<div>
+							<h3 className="text-xl font-black text-white">Resumen de reserva</h3>
+							<p className="text-lg">
+						<span className="font-mono font-bold uppercase text-white">{reserva.localizador}</span>
+							</p>
+						</div>
 					</div>
-					<div className="text-right">
-						<span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-							reserva?.pago === 'pagado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-						}`}>
-							{reserva?.pago === 'pagado' ? 'Abonado' : 'Pendiente'}
+					{/* Estado de la reserva dentro del resumen */}
+					<div>
+						<span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${String(reserva.status || '').toLowerCase().includes('cancel') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+							{reserva.status}
 						</span>
 					</div>
 				</div>
@@ -39,7 +51,7 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 					<div className="grid grid-cols-2 gap-8">
 						{/* Huésped */}
 						<div className="col-span-2">
-							<p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Huésped Principal</p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-200"><svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM6 20a6 6 0 0112 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> <span className="text-white">Huésped Principal</span></p>
 							<p className="mt-1 text-lg font-bold text-gray-900">{reserva.reservable?.name ?? reserva.cliente?.name ?? 'N/A'}</p>
 							<div className="mt-1 flex gap-3 text-sm text-gray-500">
 								<span>{reserva.cliente?.email}</span>
@@ -49,32 +61,71 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 
 						{/* Fechas */}
 						<div className="rounded-lg border border-gray-100 p-4">
-							<p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Entrada (Check-In)</p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Entrada (Check-In)</p>
 							<p className="mt-1 text-base font-bold text-gray-900">{formatearFecha(reserva.check_in)}</p>
 							<p className="text-sm text-gray-500">{reserva.check_in_time ?? formatearHora(reserva.check_in)}</p>
 						</div>
 
 						<div className="rounded-lg border border-gray-100 p-4">
-							<p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Salida (Check-Out)</p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Salida (Check-Out)</p>
 							<p className="mt-1 text-base font-bold text-gray-900">{formatearFecha(reserva.check_out)}</p>
 							<p className="text-sm text-gray-500">{reserva.check_out_time ?? formatearHora(reserva.check_out)}</p>
 						</div>
 
 						{/* Habitaciones */}
 						<div className="col-span-2 mt-2">
-							<p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Desglose de Alojamiento</p>
+							<p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M7 7v10a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Desglose de Alojamiento</p>
 							<div className="space-y-3">
-								{reserva.habitaciones?.map((h, i) => {
-									const tipo = h.habitacion?.tipo ?? h.tipo ?? 'Habitación';
-									const precioTotalHab = h.precio ?? 0;
-									const precioNoche = (reserva.noches > 0) ? (precioTotalHab / reserva.noches) : precioTotalHab;
-									return (
-										<div key={i} className="flex justify-between border-b border-gray-50 pb-2 italic text-gray-700">
-											<span className="capitalize font-medium">Habitación {tipo} <span className="not-italic text-xs font-normal text-gray-400">({reserva.noches} nts)</span></span>
-											<span className="font-bold">{formatearMoneda(precioNoche)}/nt</span>
-										</div>
-									);
-								})}
+								{(() => {
+									const habitacionesArr = reserva.habitaciones || [];
+									const sumaAsignados = habitacionesArr.reduce((s, hh) => s + Number(hh.precio ?? 0), 0);
+									const perNightChange = Number(preview?.per_night_change ?? 0);
+
+									return habitacionesArr.map((h, i) => {
+										const tipo = h.habitacion?.tipo ?? h.tipo ?? 'Habitación';
+										const precioTotalHab = Number(h.precio ?? 0);
+
+										// Cálculo de noches
+										let noches = Number(reserva.noches || 0);
+										if (!noches && reserva.check_in && reserva.check_out) {
+											const ci = new Date(reserva.check_in);
+											const co = new Date(reserva.check_out);
+											const diff = Math.ceil((co - ci) / (1000 * 60 * 60 * 24));
+											noches = diff > 0 ? diff : 0;
+										}
+
+										const precioNoche = noches > 0 ? (precioTotalHab / noches) : precioTotalHab;
+
+										// Distribución de cambio en preview: calcular total extra para la habitación y promediar por noches nuevas
+										const extraNights = Number(preview?.extra_nights ?? 0);
+										let allocatedExtraTotalForRoom = 0;
+										if (perNightChange !== 0 && extraNights > 0) {
+											if (sumaAsignados > 0) {
+												allocatedExtraTotalForRoom = perNightChange * extraNights * (precioTotalHab / sumaAsignados);
+											} else {
+												allocatedExtraTotalForRoom = (perNightChange * extraNights) / Math.max(1, habitacionesArr.length);
+											}
+										}
+
+										const nightsNew = Number(preview?.nights_new ?? noches);
+										const precioNocheAjustado = nightsNew > 0 ? ((precioTotalHab + allocatedExtraTotalForRoom) / nightsNew) : precioNoche;
+										const nochesVisual = nightsNew;
+
+										return (
+											<div key={i} className="flex justify-between border-b border-gray-50 pb-2 text-gray-700">
+												<span className="capitalize font-medium">Habitación {tipo}</span>
+												<div className="text-right">
+													<div className="font-bold">{formatearMoneda(precioNocheAjustado)}/nt</div>
+													{nochesVisual > 0 && (
+														<div className="text-xs text-gray-500">
+															{nochesVisual} {nochesVisual === 1 ? 'noche' : 'noches'}
+														</div>
+													)}
+												</div>
+											</div>
+										);
+									});
+								})()}
 							</div>
 						</div>
 					</div>
@@ -83,10 +134,12 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 					<div className="mt-10 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-6">
 						<a
 							href={reserva?.localizador ? route('reservas.descargar-comprobante', { localizador: reserva.localizador }) : '#'}
-							className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800"
+							className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gray-900"
 							onClick={(e) => { if (!reserva?.localizador) e.preventDefault(); }}
 						>
-							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+							</svg>
 							Descargar PDF
 						</a>
 
@@ -95,21 +148,29 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 								<>
 									<button
 										onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkin`)}
-										className="rounded-lg bg-rose-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-rose-800"
+										className="rounded-lg bg-[#7a0202] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#5f0101]"
 									>
 										Realizar Check-In
 									</button>
-									{reserva?.pago === 'pagado' && onSolicitarReembolso && (
-										<button onClick={onSolicitarReembolso} className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-red-50 hover:text-red-700 transition">
-											Solicitar Reembolso
-										</button>
-									)}
+											{reserva?.pago === 'pagado' && onSolicitarReembolso && (
+												<>
+													{refundRequested ? (
+														<button disabled className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-400 bg-gray-50">
+															Reembolso solicitado
+														</button>
+													) : (
+														<button onClick={onSolicitarReembolso} className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-red-50 hover:text-red-700">
+															Solicitar Reembolso
+														</button>
+													)}
+												</>
+											)}
 								</>
 							)}
 							{isCheckedIn && (
 								<button
 									onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkout`)}
-									className="rounded-lg border-2 border-rose-700 px-5 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 transition"
+									className="rounded-lg border-2 border-rose-700 px-5 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
 								>
 									Realizar Check-Out
 								</button>
@@ -121,9 +182,9 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 				{/* Columna Derecha: QR y Totales */}
 				<div className="col-span-12 border-l border-gray-100 bg-gray-50/30 p-6 lg:col-span-4">
 					<div className="flex flex-col items-center">
-						<div className="mb-6 rounded-xl bg-white p-3 shadow-sm border border-gray-100">
-							<img src={qrUrl} alt="QR de acceso" className="h-32 w-32" />
-							<p className="mt-2 text-center text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Pase de acceso rápido</p>
+						<div className="mb-6 border border-gray-100 rounded-xl bg-white p-3 shadow-sm flex flex-col items-center">
+							<img src={qrUrlSmall} alt="QR de acceso" className="h-40 w-40 cursor-pointer" onClick={() => setQrOpen(true)} />
+							<p className="mt-2 text-center text-[10px] font-bold uppercase tracking-tighter text-gray-400">Pase de acceso rápido</p>
 						</div>
 
 						<div className="w-full space-y-4">
@@ -131,7 +192,7 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 								<p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Tarifas y Extras</p>
 								<div className="space-y-2">
 									{(() => {
-										const tarifasArr = (reserva.tarifas?.length) ? reserva.tarifas : (reserva.tarifa ? [reserva.tarifa] : []);
+										const tarifasArr = reserva.tarifas?.length ? reserva.tarifas : (reserva.tarifa ? [reserva.tarifa] : []);
 										if (tarifasArr.length) {
 											return tarifasArr.map((t, idx) => (
 												<div key={idx} className="flex justify-between text-sm text-gray-600">
@@ -140,21 +201,32 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 												</div>
 											));
 										}
-										return <p className="text-xs text-gray-400 italic">No hay cargos adicionales</p>;
+										return <p className="text-xs italic text-gray-400">No hay cargos adicionales</p>;
 									})()}
 								</div>
 							</div>
 
-							<div className="mt-6 border-t border-gray-200 pt-4">
-								<div className="flex justify-between text-sm text-gray-500">
-									<span>Base imponible</span>
-									<span>{formatearMoneda(Number(reserva.precio_total ?? total ?? 0))}</span>
-								</div>
-								<div className="mt-2 flex justify-between items-end">
-									<span className="text-sm font-bold text-gray-900 uppercase">Total Final</span>
-									<span className="text-2xl font-black text-rose-800 tracking-tight">
-										{formatearMoneda(Number(reserva.precio_total ?? total ?? 0))}
-									</span>
+								<div className="mt-6 border-t border-gray-200 pt-4">
+								<div className="mt-2">
+									<div className="flex w-full items-end justify-between">
+										<span className="text-sm font-bold uppercase text-gray-900">Total Final</span>
+										<span className="text-2xl font-black tracking-tight text-white bg-black px-3 py-1 rounded-md">
+											{formatearMoneda(Number(reserva.precio_total ?? total ?? 0))}
+										</span>
+									</div>
+
+									<div className="mt-2 flex justify-end">
+										<span
+											role="status"
+											className={`inline-flex items-center justify-center rounded-full border-2 px-3 py-1 text-xs font-extrabold uppercase tracking-widest select-none ${
+												reserva?.pago === 'pagado'
+													? 'border-green-700 bg-green-50/60 text-green-700 rotate-3'
+													: 'border-amber-700 bg-amber-50/60 text-amber-700 -rotate-3'
+											}`}
+										>
+											{reserva?.pago === 'pagado' ? 'Pagada' : 'Pendiente'}
+										</span>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -162,5 +234,20 @@ export default function ReservaInfo({ reserva, total, onSolicitarReembolso }) {
 				</div>
 			</div>
 		</section>
+
+		{qrOpen && (
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" onClick={() => setQrOpen(false)}>
+				<div className="rounded-lg bg-white p-4 shadow-lg max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+					<div className="flex justify-end">
+						<button onClick={() => setQrOpen(false)} className="text-gray-600 hover:text-gray-900">✕</button>
+					</div>
+					<div className="flex items-center justify-center">
+						<img src={qrUrlLarge} alt="QR ampliado" className="w-80 h-80 object-contain" />
+					</div>
+
+				</div>
+			</div>
+		)}
+		</>
 	);
 }

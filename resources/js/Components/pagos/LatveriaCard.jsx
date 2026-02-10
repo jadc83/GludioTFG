@@ -6,6 +6,7 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
+    const [completed, setCompleted] = useState(false);
     const { confirmarPaymentIntent } = usePayments();
 
     // Configuración de Stripe
@@ -24,6 +25,7 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
     };
 
     const handleConfirm = async () => {
+        if (completed) return; // prevent duplicate submissions after success
         if (!stripe || !elements) {
             onError && onError('Stripe no inicializado');
             return;
@@ -47,6 +49,7 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp = await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
+                    setCompleted(true);
                     onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
                 } else {
                     onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
@@ -123,8 +126,14 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
                         </div>
 
                         <div className="mt-3 flex justify-end">
-                            <button onClick={handleConfirm} disabled={loadingConfirm} className="rounded bg-[#7a0202] px-4 py-2 font-bold text-white mt-4">
-                                {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
+                            <button
+                                onClick={handleConfirm}
+                                disabled={loadingConfirm || completed}
+                                aria-busy={loadingConfirm}
+                                aria-disabled={loadingConfirm || completed}
+                                className={`rounded px-4 py-2 font-bold text-white mt-4 ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                            >
+                                {completed ? 'Confirmado' : (loadingConfirm ? 'Confirmando...' : 'Confirmar pago')}
                             </button>
                         </div>
 

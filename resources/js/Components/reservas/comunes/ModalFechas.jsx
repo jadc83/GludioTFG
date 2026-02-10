@@ -3,7 +3,7 @@ import Modal from '@/Components/Modal';
 import { formatearMoneda } from '@/utils/formatters';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { Elements } from '@stripe/react-stripe-js';
@@ -38,6 +38,20 @@ export default function ModalFechas({
     const [needPayment, setNeedPayment] = useState(false);
     const [piClientSecret, setPiClientSecret] = useState(null);
     const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
+    const [showPreviewLoader, setShowPreviewLoader] = useState(false);
+
+    useEffect(() => {
+        let timer;
+        if (!vistaPreviaCargada || cargandoVistaPrevia) {
+            // show loader immediately when preview is loading or not yet loaded
+            setShowPreviewLoader(true);
+        } else {
+            // keep loader visible for at least 300ms to avoid a quick flash
+            timer = setTimeout(() => setShowPreviewLoader(false), 300);
+        }
+        return () => clearTimeout(timer);
+    }, [vistaPreviaCargada, cargandoVistaPrevia]);
+
     const page = usePage();
     const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
     const stripePromise = useMemo(() => getStripePromise(stripePublicKey), [stripePublicKey]);
@@ -87,6 +101,19 @@ export default function ModalFechas({
 
     const renderPorNoche = () => {
         if (!vistaPrevia) return null;
+
+        // While preview is being calculated, show a small loader and avoid showing action buttons
+        if (showPreviewLoader) {
+            return (
+                <div className="flex items-center justify-center bg-white p-8">
+                    <div className="flex items-center gap-3">
+                        <LoadingSpinner />
+                        <span className="text-sm text-gray-500">Cargando vista previa...</span>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="flex gap-3 bg-white p-8">
 
@@ -113,11 +140,12 @@ export default function ModalFechas({
                                             setCreatingPi(false);
                                         }
                                     }}
-                                    className="ml-auto flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                                    disabled={showPreviewLoader || creatingPi || needPayment}
+                                    aria-busy={showPreviewLoader}
+                                    className={`ml-auto flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader || creatingPi || needPayment ? 'cursor-not-allowed opacity-70 bg-[#7a0202]' : 'bg-[#7a0202] hover:bg-[#5a0101]'}`}
                                 >{creatingPi ? 'Preparando pago...' : 'Estoy de acuerdo'}</button>
                             </div>
                         )}
-
                         {needPayment && piClientSecret && stripePromise && (
                             <div className="mt-4 w-full">
                                 <Elements stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
@@ -163,14 +191,15 @@ export default function ModalFechas({
                                     />
                                 </Elements>
                             </div>
-                        )}
-                    </div>
+                        )}                    </div>
                 ) : (
                     // Sin cargo adicional: botón simple para aplicar cambios
                     <div className="flex-1">
                         <div className="flex gap-3">
                             <button
                                 type="button"
+                                disabled={showPreviewLoader || creatingPi || needPayment}
+                                aria-busy={showPreviewLoader}
                                 onClick={() => {
                                     try {
                                         if (typeof clearPreview === 'function') clearPreview();
@@ -180,7 +209,7 @@ export default function ModalFechas({
                                         setModalCheckOut(reserva?.check_out || '');
                                     }
                                 }}
-                                className="rounded-2xl border border-gray-200 bg-white py-3 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 hover:bg-gray-50"
+                                className={`rounded-2xl border border-gray-200 bg-white py-3 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 ${showPreviewLoader || creatingPi || needPayment ? 'cursor-not-allowed opacity-70' : 'hover:bg-gray-50'}`}
                             >Limpiar</button>
 
                             <button
@@ -216,7 +245,9 @@ export default function ModalFechas({
                                         emitToast(msg, 'error');
                                     }
                                 }}
-                                className="flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition hover:bg-[#5a0101] disabled:opacity-50"
+                                disabled={showPreviewLoader}
+                                aria-busy={showPreviewLoader}
+                                className={`flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader ? 'cursor-not-allowed opacity-70' : 'hover:bg-[#5a0101]'}`}
                             >Aplicar Cambios</button>
                         </div>
                     </div>

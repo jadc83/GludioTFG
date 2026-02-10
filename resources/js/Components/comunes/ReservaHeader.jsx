@@ -15,12 +15,7 @@ export default function ReservaHeader({ reserva, isCancelled, onOpenDateModal })
                             </span>
                         </h1>
 
-                        {/* Estado de reserva */}
-                        <span
-                            className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
-                        >
-                            {reserva.status}
-                        </span>
+                        {/* Estado de reserva: movido al resumen principal */}
 
                         {/* Estado de pago mostrado en el sidebar; oculto en la cabecera para evitar duplicidad */}
                     </div>

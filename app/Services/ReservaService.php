@@ -155,6 +155,28 @@ class ReservaService
     {
         $noches = max(1, $checkIn->diffInDays($checkOut));
 
+        // Recalcular desglose por tipo/habitación usando PrecioService para garantizar
+        // que la suma de precios por habitación coincide con el precio_total de la reserva
+        $tiposCount = [];
+        foreach ($reserva->habitaciones as $hr) {
+            $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? 'unknown';
+            $tiposCount[$tipo] = ($tiposCount[$tipo] ?? 0) + 1;
+        }
+
+        $habitacionesParaPrecio = [];
+        foreach ($tiposCount as $tipo => $cantidad) {
+            $habitacionesParaPrecio[] = ['tipo' => $tipo, 'cantidad' => $cantidad];
+        }
+
+        $precioDetalle = $this->servicioPrecio->precioConTarifas($habitacionesParaPrecio, $checkIn, $checkOut, []);
+
+        $precioPorTipo = [];
+        if (isset($precioDetalle['habitaciones']) && is_array($precioDetalle['habitaciones'])) {
+            foreach ($precioDetalle['habitaciones'] as $h) {
+                $precioPorTipo[$h['tipo']] = $h['precioTotal'] ?? ($h['precioAvg'] ?? 0);
+            }
+        }
+
         $reservaData = [
             'id' => $reserva->id,
             'localizador' => $reserva->localizador,
@@ -172,14 +194,20 @@ class ReservaService
                 'numero_documento' => $reserva->reservable->numero_documento ?? null,
                 'tipo_documento' => $reserva->reservable->tipo_documento ?? null,
             ],
-            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches) {
+            'habitaciones' => $reserva->habitaciones->map(function ($hr) use ($noches, $precioPorTipo, $tiposCount) {
+                $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
+                $precioTotalTipo = $tipo && isset($precioPorTipo[$tipo]) ? $precioPorTipo[$tipo] : null;
+                $cantidadTipo = $tipo && isset($tiposCount[$tipo]) ? $tiposCount[$tipo] : 1;
+
+                $precioAsignado = $precioTotalTipo !== null ? round($precioTotalTipo / max(1, $cantidadTipo), 2) : $hr->precio;
+
                 return [
                     'id' => $hr->habitacion?->id ?? $hr->id,
                     'numero' => $hr->habitacion?->numero ?? null,
-                    'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
-                    'precio_noche' => $hr->precio ? round($hr->precio / max(1, $noches), 2) : null,
+                    'tipo' => $tipo,
+                    'precio_noche' => $precioAsignado ? round($precioAsignado / max(1, $noches), 2) : null,
                     'capacidad' => $hr->habitacion?->capacidad ?? null,
-                    'precio' => $hr->precio,
+                    'precio' => $precioAsignado,
                 ];
             })->values(),
         ];

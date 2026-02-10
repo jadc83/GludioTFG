@@ -93,6 +93,28 @@ class ReservaFormatterService
 
         $noches = max(1, $checkIn->diffInDays($checkOut));
 
+        // Recalcular desglose por tipo para asegurar consistencia entre
+        // suma de habitaciones y `precio_total` mostrado
+        $tiposCount = [];
+        foreach ($reserva->habitaciones as $hr) {
+            $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? 'unknown';
+            $tiposCount[$tipo] = ($tiposCount[$tipo] ?? 0) + 1;
+        }
+
+        $habitacionesParaPrecio = [];
+        foreach ($tiposCount as $tipo => $cantidad) {
+            $habitacionesParaPrecio[] = ['tipo' => $tipo, 'cantidad' => $cantidad];
+        }
+
+        $precioDetalle = $this->servicioPrecio->precioConTarifas($habitacionesParaPrecio, $checkIn, $checkOut, []);
+
+        $precioPorTipo = [];
+        if (isset($precioDetalle['habitaciones']) && is_array($precioDetalle['habitaciones'])) {
+            foreach ($precioDetalle['habitaciones'] as $h) {
+                $precioPorTipo[$h['tipo']] = $h['precioTotal'] ?? ($h['precioAvg'] ?? 0);
+            }
+        }
+
         $reservaData = [
             'id' => $reserva->id,
             'localizador' => $reserva->localizador,
@@ -120,15 +142,21 @@ class ReservaFormatterService
                 'name' => $reserva->bookedBy?->name ?? ($reserva->booked_by_user ?? 'Sistema'),
                 'email' => $reserva->bookedBy?->email ?? null,
             ],
-            'habitaciones' => $reserva->habitaciones->map(function (\App\Models\HabitacionReserva $hr) use ($noches): array {
+            'habitaciones' => $reserva->habitaciones->map(function (\App\Models\HabitacionReserva $hr) use ($noches, $precioPorTipo, $tiposCount): array {
+                $tipo = $hr->tipo ?? $hr->habitacion?->tipo ?? null;
+                $precioTotalTipo = $tipo && isset($precioPorTipo[$tipo]) ? $precioPorTipo[$tipo] : null;
+                $cantidadTipo = $tipo && isset($tiposCount[$tipo]) ? $tiposCount[$tipo] : 1;
+
+                $precioAsignado = $precioTotalTipo !== null ? round($precioTotalTipo / max(1, $cantidadTipo), 2) : $hr->precio;
+
                 return [
-                    'habitacion_id' => $hr->habitacion_id, // Usar directamente el ID de la habitación física (puede ser null)
-                    'slot_id' => $hr->id, // Agregar explícitamente el ID del registro de la tabla pivot
+                    'habitacion_id' => $hr->habitacion_id,
+                    'slot_id' => $hr->id,
                     'numero' => $hr->habitacion?->numero ?? null,
-                    'tipo' => $hr->tipo ?? $hr->habitacion?->tipo ?? null,
-                    'precio_noche' => $hr->precio ? round($hr->precio / max(1, $noches), 2) : null,
+                    'tipo' => $tipo,
+                    'precio_noche' => $precioAsignado ? round($precioAsignado / max(1, $noches), 2) : null,
                     'capacidad' => $hr->habitacion?->capacidad ?? null,
-                    'precio' => $hr->precio,
+                    'precio' => $precioAsignado,
                 ];
             })->values(),
         ];
@@ -171,6 +199,24 @@ class ReservaFormatterService
             })->values()->toArray();
         } catch (\Throwable $__e) {
             $reservaData['tarifas'] = [];
+        }
+
+        // Incluir solicitudes de reembolso (RefundRequest) para que el frontend pueda
+        // mostrar si hay una solicitud pendiente y deshabilitar el botón.
+        try {
+            $refundRequestsCollection = $reserva->refundRequests ?? collect();
+            $reservaData['refundRequests'] = $refundRequestsCollection->map(function ($rr) {
+                return [
+                    'id' => $rr->id ?? null,
+                    'status' => $rr->status ?? null,
+                    'requested_amount' => isset($rr->requested_amount_cents) ? round($rr->requested_amount_cents / 100, 2) : null,
+                    'created_at' => $rr->created_at?->toIso8601String() ?? null,
+                    'pending_check_in' => $rr->pending_check_in ?? null,
+                    'pending_check_out' => $rr->pending_check_out ?? null,
+                ];
+            })->values()->toArray();
+        } catch (\Throwable $__e) {
+            $reservaData['refundRequests'] = [];
         }
 
         return $reservaData;

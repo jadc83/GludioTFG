@@ -6,9 +6,11 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onSucce
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
+    const [completed, setCompleted] = useState(false);
     const { confirmarPaymentIntent } = usePayments();
 
     const handleConfirm = async () => {
+        if (completed) return; // prevent double submits when already completed
         if (!stripe || !elements) {
             onError && onError('Stripe no inicializado');
             return;
@@ -32,6 +34,7 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onSucce
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp = await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
+                    setCompleted(true);
                     onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
                 } else {
                     onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
@@ -42,6 +45,7 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onSucce
         } catch (e) {
             onError && onError(e?.message || String(e));
         } finally {
+            // keep button disabled if completed; otherwise allow retry
             setLoadingConfirm(false);
         }
     };
@@ -53,8 +57,14 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onSucce
                 <CardElement options={{ hidePostalCode: true }} />
             </div>
             <div className="mt-3 flex justify-end">
-                <button onClick={handleConfirm} disabled={loadingConfirm} className="rounded bg-[#7a0202] px-4 py-2 font-bold text-white">
-                    {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
+                <button
+                    onClick={handleConfirm}
+                    disabled={loadingConfirm || completed}
+                    aria-busy={loadingConfirm}
+                    aria-disabled={loadingConfirm || completed}
+                    className={`rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                >
+                    {completed ? 'Confirmado' : (loadingConfirm ? 'Confirmando...' : 'Confirmar pago')}
                 </button>
             </div>
         </div>

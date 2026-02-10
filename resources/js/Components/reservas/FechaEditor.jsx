@@ -12,7 +12,8 @@ export default function FechaEditor({
 	errorVistaPrevia = null,
 	obtenerPreview = null,
 	onRequestConfirmDates = null,
-	clearPreview = null
+	clearPreview = null,
+	noWrapper = false,
 }) {
 	const status = String(reserva?.status || '').toLowerCase();
 	if (status === 'checked_in' || status === 'checked_out') return null;
@@ -75,12 +76,11 @@ export default function FechaEditor({
 		}
 	};
 
-	return (
-		<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-			<form onSubmit={onSave} className="p-5">
-				<div className="flex flex-col md:flex-row md:items-end gap-4">
+	const formContent = (
+		<form onSubmit={onSave} className={`${noWrapper ? 'w-full p-0' : 'p-5 w-full'}`}>
+				<div className="flex flex-col md:flex-row md:items-end gap-4 w-full">
 					{/* Inputs de Fecha */}
-					<div className="grid grid-cols-2 gap-4 flex-1">
+					<div className="grid grid-cols-2 gap-4 flex-1 w-full">
 						<div className="space-y-1">
 							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-in</label>
 							<div className="relative">
@@ -117,7 +117,7 @@ export default function FechaEditor({
 								setCheckOut(reserva?.check_out || '');
 								if (clearPreview) clearPreview();
 							}}
-							className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all border border-transparent hover:border-gray-200"
+							className="p-2.5 bg-black text-white rounded-lg transition-all hover:bg-gray-800"
 							title="Restablecer fechas originales"
 						>
 							<ArrowPathIcon className="w-5 h-5" />
@@ -127,7 +127,7 @@ export default function FechaEditor({
 							<button
 								type="submit"
 								disabled={saving}
-								className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+								className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7a0202] hover:bg-[#5f0101] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
 							>
 								{saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <CheckIcon className="w-4 h-4" />}
 								<span>{saving ? 'Guardando...' : 'Actualizar'}</span>
@@ -142,9 +142,9 @@ export default function FechaEditor({
 
 				{/* Panel de Vista Previa (Solo aparece si hay cambios) */}
 				{(cargandoVistaPrevia || previewLoaded || errorVistaPrevia) && (
-					<div className={`mt-5 p-4 rounded-lg border ${errorVistaPrevia ? 'bg-red-50 border-red-100' : 'bg-blue-50/30 border-blue-100'}`}>
+					<div className={`mt-5 p-4 rounded-lg border ${errorVistaPrevia ? 'bg-red-50 border-red-100' : 'bg-[#7a0202]/8 border-[#7a0202]/30'}`}>
 						{cargandoVistaPrevia ? (
-							<div className="flex items-center gap-3 text-sm text-blue-600 font-medium">
+							<div className="flex items-center gap-3 text-sm text-[#7a0202] font-medium">
 								<ArrowPathIcon className="w-4 h-4 animate-spin" />
 								Calculando disponibilidad y precios...
 							</div>
@@ -158,7 +158,7 @@ export default function FechaEditor({
 								<div className="flex gap-8">
 									{/* Diferencia Monetaria */}
 									<div>
-										<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Impacto Económico</p>
+										<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Incremento en factura</p>
 										<p className={`text-lg font-bold ${Number(vistaPrevia.nuevo_total) > Number(vistaPrevia.viejo_total) ? 'text-amber-600' : 'text-green-600'}`}>
 											{Number(vistaPrevia.nuevo_total) > Number(vistaPrevia.viejo_total) ? '+' : ''}
 											{(Number(vistaPrevia.nuevo_total) - Number(vistaPrevia.viejo_total)).toFixed(2)}€
@@ -184,11 +184,11 @@ export default function FechaEditor({
 								</div>
 
 								{/* Badge de Disponibilidad */}
-								<div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-tight shadow-sm ${vistaPrevia.available ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+								<div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-tight shadow-sm">
 									{vistaPrevia.available ? (
-										<><CheckIcon className="w-3.5 h-3.5" /> Disponible</>
+										<CheckIcon className="w-6 h-6 text-green-500" aria-hidden="true" />
 									) : (
-										<><XMarkIcon className="w-3.5 h-3.5" /> Sin Cupo</>
+										<XMarkIcon className="w-6 h-6 text-red-500" aria-hidden="true" />
 									)}
 								</div>
 							</div>
@@ -196,6 +196,13 @@ export default function FechaEditor({
 					</div>
 				)}
 			</form>
+	);
+
+	if (noWrapper) return formContent;
+
+	return (
+		<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full">
+			{formContent}
 		</div>
 	);
 }

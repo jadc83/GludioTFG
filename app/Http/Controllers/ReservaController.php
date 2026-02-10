@@ -347,7 +347,7 @@ class ReservaController extends Controller
      */
     public function show(Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos', 'tarifa', 'tarifas']);
+        $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos', 'tarifa', 'tarifas', 'refundRequests']);
         // Use the formatter service to ensure the frontend receives the full, consistent
         // structure used by the EditReserva page (includes `tarifa`, `cliente`, `habitaciones`, etc.).
         try {
@@ -402,7 +402,7 @@ class ReservaController extends Controller
      */
     public function edit(Request $request, Reserva $reserva)
     {
-        $reserva->load(['reservable', 'habitaciones.habitacion.fotos', 'tarifa', 'tarifas']);
+        $reserva->load(['reservable', 'habitaciones.habitacion.fotos', 'tarifa', 'tarifas', 'refundRequests']);
 
         [$checkIn, $checkOut] = $this->reservaService->prepararFechasParaEdicion($request->all(), $reserva);
 
@@ -464,10 +464,21 @@ class ReservaController extends Controller
                 $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
             }
 
-            // Refrescar y formatear la reserva para devolver datos útiles al frontend
+            // Refrescar y asegurarnos de cargar relaciones necesarias antes de formatear
             $reserva->refresh();
+            // Load missing relations to avoid losing 'reservable' or habitaciones on formatted output
+            try {
+                $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'bookedBy', 'tarifas', 'pagos', 'reembolsos']);
+            } catch (\Throwable $__e) {
+                // no-op: carga de relaciones no crítica, seguimos con formateo
+            }
+
             try {
                 $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
+                // Log para depuración: confirmamos que estamos devolviendo el objeto formateado con cliente
+                try {
+                    Log::info('ReservaController::update - returning formatted reserva', ['reserva_formateada' => $reservaFormateada, 'reserva_id' => $reserva->id]);
+                } catch (\Throwable $__log_e) {}
             } catch (\Throwable $e) {
                 $reservaFormateada = ['id' => $reserva->id, 'precio_total' => $reserva->precio_total ?? null, 'check_in' => $reserva->check_in ?? null, 'check_out' => $reserva->check_out ?? null];
             }

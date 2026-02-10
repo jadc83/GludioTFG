@@ -11,8 +11,6 @@ import ReservaInfo from '@/Components/reservas/comunes/ReservaInfo';
 import { usePage } from '@inertiajs/react';
 import ModalFechas from '@/Components/reservas/comunes/ModalFechas';
 import FechaEditor from '@/Components/reservas/FechaEditor';
-import ReservaHeader from '@/Components/comunes/ReservaHeader';
-import ReservaSidebar from '@/Components/reservas/comunes/ReservaSidebar';
 import ModalReembolso from '@/Components/reservas/comunes/ModalReembolso';
 import ModalPago from '@/Components/reservas/comunes/ModalPago';
 
@@ -47,6 +45,7 @@ export default function EditarReserva({
     const previewError = pErrorHook;
 
     const [originalPrecioBackup, setOriginalPrecioBackup] = useState(null);
+    const [showFechaEditor, setShowFechaEditor] = useState(false);
 
     useReservaEvents(reserva, { onRefresh: refresh, onUpdated: setReserva, suppressToast: true });
 
@@ -69,6 +68,9 @@ export default function EditarReserva({
         setAceptaTerminosPago, isProcessing, pagoExitoso
 
     } = useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles: habitaciones || [], refresh, showToast, aplicarCambioFechas: aplicarCambioFechas, obtenerPreview: fetchPreviewHook, clearPreview: clearPreviewHook });
+
+    // Estado local para reflejar que el usuario ya ha solicitado un reembolso
+    const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
 
     useEffect(() => {
         if (hookHabitacionesDisponibles) {
@@ -122,39 +124,88 @@ export default function EditarReserva({
                 `}} />
 
                 <div className="relative z-20">
-                    <ReservaHeader reserva={reserva} isCancelled={isCancelled} onOpenDateModal={abrirModalFechas} />
 
-                    <div className="mx-auto mt-4 max-w-7xl px-4">
-                        <FechaEditor
-                            reserva={reserva}
-                            setReserva={setReserva}
-                            refresh={refresh}
-                            vistaPrevia={preview}
-                            cargandoVistaPrevia={previewLoading}
-                            errorVistaPrevia={previewError}
-                            obtenerPreview={fetchPreviewHook}
-                            clearPreview={clearPreviewHook}
-                            onRequestConfirmDates={(ci, co) => {
-                                setFechaModalCheckIn(ci);
-                                setFechaModalCheckOut(co);
-                                setMostrarModalFechas(true);
-                            }}
-                        />
-                    </div>
+
+
 
                     <main className="mx-auto mt-8 max-w-7xl px-4">
                         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                            <div className="space-y-6 lg:col-span-8">
-                                <ReservaInfo reserva={reserva} total={totalToCharge} onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)} />
+                            {/* ReservaInfo: ocupar todo el ancho del grid (alineado con FechaEditor) */}
+                            <div className="col-span-12">
+                                <ReservaInfo
+                                    reserva={reserva}
+                                    total={totalToCharge}
+                                    preview={preview}
+                                    refundRequested={reembolsoSolicitado || (Array.isArray(reserva?.refundRequests) && reserva.refundRequests.some(r => String(r.status || '').toLowerCase() === 'pending'))}
+                                    onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)}
+                                />
+                            </div>
 
+                            <div className="col-span-12 mt-4">
+                                <div className="w-full">
+                                    <div className="w-full border rounded-lg bg-white overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowFechaEditor(s => !s)}
+                                            aria-expanded={showFechaEditor}
+                                            className="w-full flex items-center justify-between px-4 py-3 bg-[#7a0202] text-white hover:bg-[#5f0101]"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center justify-center w-9 h-9 rounded-md bg-black text-white">
+                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                </div>
+                                                <span className="font-medium">Necesito modificar las fechas de mi reserva</span>
+                                            </div>
+                                            <svg
+                                                className={`w-5 h-5 text-white transform transition-transform duration-200 ${showFechaEditor ? 'rotate-180' : 'rotate-0'}`}
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                aria-hidden="true"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        {showFechaEditor && (
+                                            <div className="p-4">
+                                                <FechaEditor
+                                                    reserva={reserva}
+                                                    setReserva={setReserva}
+                                                    refresh={refresh}
+                                                    vistaPrevia={preview}
+                                                    cargandoVistaPrevia={previewLoading}
+                                                    errorVistaPrevia={previewError}
+                                                    obtenerPreview={fetchPreviewHook}
+                                                    clearPreview={clearPreviewHook}
+                                                    noWrapper={true}
+                                                    onRequestConfirmDates={(ci, co) => {
+                                                        setFechaModalCheckIn(ci);
+                                                        setFechaModalCheckOut(co);
+                                                        setMostrarModalFechas(true);
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contenido principal debajo del resumen: habitaciones a ancho completo */}
+                            <div className="col-span-12">
                                 <AssignedHabitaciones
                                     habitaciones={reserva.habitaciones}
                                     onDesasignar={desasignarHabitacion}
                                     guardando={guardandoHabitaciones}
                                     reserva={reserva}
                                 />
+                            </div>
 
-                                {(viewerIsAdmin || viewerIsRecepcion) && !isCheckedIn && !isCheckedOut && (
+                            {(viewerIsAdmin || viewerIsRecepcion) && !isCheckedIn && !isCheckedOut && (
+                                <div className="col-span-12">
                                     <AsignacionHabitaciones
                                         reserva={reserva}
                                         reservaSlots={reserva.habitaciones}
@@ -165,19 +216,11 @@ export default function EditarReserva({
                                         onGuardar={actualizarHabitaciones}
                                         guardando={guardandoHabitaciones}
                                     />
-                                )}
+                                </div>
+                            )}
 
-                            </div>
-
-                            <ReservaSidebar
-                                reserva={
-                                    preview
-                                        ? { ...reserva, precio_total: Number(reserva.precio_total ?? 0) + Number(preview.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0) }
-                                        : reserva
-                                }
-                                estaCancelada={isCancelled}
-                                onSolicitarReembolso={() => abrirReembolso((Number(reserva.precio_total ?? 0) + Number(preview?.estimate_charge ?? 0) - Number(preview?.estimate_refund ?? 0)) - reserva.reembolsos_total)}
-                            />
+                            {/* Mantener la columna derecha (sidebar) alineada en su propia fila */}
+                            <div className="lg:col-span-8" />
                         </div>
                     </main>
                 </div>
@@ -198,8 +241,6 @@ export default function EditarReserva({
                         onCerrar={() => setMostrarModalFechas(false)}
                     onConfirmar={confirmarModalFechas}
                     onApplied={(resData) => {
-                        // Close modal and update reserva in memory.
-                        // Backup original precio_total before overriding so we can restore if preview disappears
                         setMostrarModalFechas(false);
                         try {
                             const currentPrecio = Number(reserva.precio_total ?? 0);
@@ -207,7 +248,6 @@ export default function EditarReserva({
                         } catch (e) {}
 
                         if (resData && resData.reserva) {
-                            // Set immediately to server-returned reserva to reflect persisted changes
                             setReserva(resData.reserva);
                             try {
                                 clearPreviewHook();
@@ -247,7 +287,10 @@ export default function EditarReserva({
                             notes: notasReembolso,
                         };
                         const res = await enviarSolicitudReembolso(payload);
-                        if (res?.success) cerrarReembolso();
+                        if (res?.success) {
+                            try { setReembolsoSolicitado(true); } catch (e) {}
+                            cerrarReembolso();
+                        }
                     }}
                     procesando={enviandoSolicitudReembolso}
                 />
@@ -270,13 +313,8 @@ export default function EditarReserva({
                     onCambioAceptaTerminos={setAceptaTerminosPago}
                 />
 
-                {/* Toasts handled by shared `Toast` component in layout */}
             </div>
         </AuthenticatedLayout>
     );
 }
 
-// Restore original price if preview disappears
-// (keeps UI consistent when user reverts to original dates)
-// Note: this effect runs in the component scope using the preview and backup state
-// so it should be defined inside the component. We add it below export to keep file edits minimal.
