@@ -1,13 +1,10 @@
-/**
- * Servicio para manejar operaciones relacionadas con el escaneo de QR
- */
 import axios from 'axios';
 export class QRScannerService {
-    /**
-     * Extrae el localizador de un texto escaneado (puede ser URL o texto directo)
-     */
-    static extractLocalizador(decodedText) {
-        let localizador = String(decodedText || '').trim();
+
+    /* Extrae el localizador de un escaneo */
+
+    static extraerLocalizador(texto) {
+        let localizador = String(texto || '').trim();
         if (!localizador) return null;
 
         try {
@@ -19,27 +16,20 @@ export class QRScannerService {
                 }
             }
         } catch (e) {
-            // Si no es una URL válida, usar el texto tal cual
+            console.log('No se pudo parsear como URL, usando texto completo como localizador');
         }
 
         return localizador;
     }
 
-    /**
-     * Procesa un escaneo de QR enviándolo al backend
-     */
-    static async processScan(localizador, action = null) {
-        // Obtener CSRF token
+    /* Procesa un escaneo de QR enviándolo al backend */
+    static async procesar(localizador, action = null) {
+
         const csrf =
-            typeof document !== 'undefined'
-                ? document
-                      .querySelector('meta[name="csrf-token"]')
-                      ?.getAttribute('content')
-                : null;
+            typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') : null;
 
         const payload = { localizador: localizador };
         if (action) {
-            // Enviar tanto 'action' como 'accion' para compatibilidad con backend en español
             payload.action = action;
             payload.accion = action;
         }
@@ -56,34 +46,23 @@ export class QRScannerService {
         }
     }
 
-    /**
-     * Determina qué hacer después de un escaneo exitoso basado en la acción
-     */
-    static getPostScanAction(action, response, reservaInfo) {
+    /* Qué hacer después de un escaneo correcto */
+    static postEscaneo(action, response, reservaInfo) {
         if (action === 'checkin') {
             if (response?.success === false) {
-                throw new Error(
-                    response?.error ||
-                        response?.message ||
-                        'Error procesando check-in',
-                );
+                throw new Error( response?.error ||  response?.message || 'Error procesando check-in' );
             }
-            // Mostrar modal de éxito antes de redirigir
-            return { type: 'modal', modalType: 'checkin' };
+
+            return { type: 'modal', tipoModal: 'checkin' };
         }
 
         if (action === 'checkout') {
             if (response?.success === false) {
-                throw new Error(
-                    response?.error ||
-                        response?.message ||
-                        'Error procesando check-out',
-                );
+                throw new Error( response?.error || response?.message || 'Error procesando check-out' );
             }
-            return { type: 'modal', modalType: 'checkout' };
+            return { type: 'modal', tipoModal: 'checkout' };
         }
 
-        // Sin acción: mostrar modal de éxito antes de redirigir
-        return { type: 'modal', modalType: 'success' };
+        return { type: 'modal', tipoModal: 'success' };
     }
 }

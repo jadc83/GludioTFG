@@ -65,7 +65,12 @@ class ScannerController extends Controller
 
                 try { event(new ReservaActualizada($reserva, null)); } catch (\Throwable $e) { /* ignore */ }
 
-                return response()->json(['success' => true, 'message' => 'Check-in realizado', 'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status]]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-in realizado',
+                    'reserva' => ['localizador' => $reserva->localizador, 'status' => $reserva->status],
+                    'asignaciones' => $asignaciones,
+                ]);
             }
 
             if ($accion === 'checkout') {

@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import { formatearFecha, formatearMoneda, formatearHora } from '@/utils/formatters';
+import QRScanner from '@/Components/reservas/utilidades/QRScanner';
+import { useQRScanner } from '@/hooks/scanner/useQRScanner';
+import { useQRModal } from '@/hooks/scanner/useQRModal';
 
 export default function ReservaInfo({ reserva, total, preview, onSolicitarReembolso, refundRequested = false }) {
 	if (!reserva) return null;
 
 	const [qrOpen, setQrOpen] = useState(false);
+	const [scannerOpen, setScannerOpen] = useState(false);
+	const [scannerAction, setScannerAction] = useState(null);
+
+	const { handleScanSuccess, isProcessing } = useQRScanner(scannerAction);
+	const { mostrarModal, tipoModal, reservaInfo, abrirModal, cerrarModal } = useQRModal();
 
 	const qrData = encodeURIComponent(reserva.localizador || '');
 	const qrSizeSmall = 160; // thumbnail
@@ -147,7 +155,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 							{!isCheckedIn && !isCheckedOut && (
 								<>
 									<button
-										onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkin`)}
+										onClick={() => { setScannerAction('checkin'); setScannerOpen(true); }}
 										className="rounded-lg bg-[#7a0202] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#5f0101]"
 									>
 										Realizar Check-In
@@ -169,7 +177,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 							)}
 							{isCheckedIn && (
 								<button
-									onClick={() => (window.location.href = route('scan-qr') + `?localizador=${reserva?.localizador}&action=checkout`)}
+									onClick={() => { setScannerAction('checkout'); setScannerOpen(true); }}
 									className="rounded-lg border-2 border-rose-700 px-5 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
 								>
 									Realizar Check-Out
@@ -237,17 +245,111 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 
 		{qrOpen && (
 			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" onClick={() => setQrOpen(false)}>
-				<div className="rounded-lg bg-white p-4 shadow-lg max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
-					<div className="flex justify-end">
-						<button onClick={() => setQrOpen(false)} className="text-gray-600 hover:text-gray-900">✕</button>
+				<div className="rounded-xl border border-gray-200 bg-white shadow-md max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+					<div className="flex items-center justify-between bg-[#7a0202] p-4">
+						<h4 className="text-white font-bold">Pase de acceso rápido</h4>
+						<button onClick={() => setQrOpen(false)} className="text-white hover:opacity-90">✕</button>
 					</div>
-					<div className="flex items-center justify-center">
+					<div className="p-6 flex items-center justify-center">
 						<img src={qrUrlLarge} alt="QR ampliado" className="w-80 h-80 object-contain" />
 					</div>
-
 				</div>
 			</div>
 		)}
+
+		{mostrarModal && (
+			<div className="fixed inset-0 z-50 flex items-center justify-center">
+				<div className="absolute inset-0 bg-black opacity-50"></div>
+				<div className="relative w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
+					<div className="flex items-center justify-between bg-[#7a0202] p-4">
+						<div />
+						<button onClick={cerrarModal} className="text-white hover:opacity-90">✕</button>
+					</div>
+					<div className="p-6 text-center">
+						{tipoModal === 'checkin' && (
+						<>
+							<div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
+								<svg className="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+							</div>
+							<h2 className="mt-2 text-2xl font-bold">¡Bienvenido!</h2>
+							<p className="mt-2 text-gray-700">La reserva <span className="font-mono">{reservaInfo?.localizador}</span> ha sido marcada como <strong>check-in</strong>.</p>
+							<p className="mt-2 text-gray-600">¡Que disfrute su estancia!</p>
+
+							{reservaInfo?.asignaciones && reservaInfo.asignaciones.filter(a => a.assigned).length > 0 && (
+								<div className="mt-4">
+									<p className="text-sm font-bold text-gray-700">Habitación(es) asignada(s)</p>
+									<div className="mt-2 flex flex-wrap justify-center gap-3">
+										{reservaInfo.asignaciones.filter(a => a.assigned).map((a, idx) => (
+											<span key={idx} className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium">
+												Habitación {a.numero ?? a.habitacion_id}
+											</span>
+										))}
+									</div>
+								</div>
+							)}
+						</>
+					)}
+
+					{tipoModal === 'checkout' && (
+						<>
+							<div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+								<svg className="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M10 9l6 6M16 9l-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+							</div>
+							<h2 className="mt-2 text-2xl font-bold">¡Hasta pronto!</h2>
+							<p className="mt-2 text-gray-700">La reserva <span className="font-mono">{reservaInfo?.localizador}</span> ha sido marcada como <strong>check-out</strong>.</p>
+							<p className="mt-2 text-gray-600">Gracias por su visita.</p>
+						</>
+					)}
+
+					{tipoModal === 'success' && (
+						<>
+							<div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+								<svg className="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+							</div>
+							<h2 className="mt-2 text-2xl font-bold">¡Reserva encontrada!</h2>
+							<p className="mt-2 text-gray-700">Se ha encontrado la reserva <span className="font-mono">{reservaInfo?.localizador}</span>.</p>
+							<p className="mt-2 text-gray-600">Haga clic en continuar para ver los detalles.</p>
+						</>
+					)}
+
+					<div className="mt-6">
+						<button onClick={cerrarModal} className="rounded-lg bg-[#7a0202] px-4 py-2 text-white font-bold">Cerrar</button>
+					</div>
+					</div>
+				</div>
+			</div>
+		)}
+
+			{scannerOpen && (
+				<div className="fixed inset-0 z-50 flex items-start justify-center pt-28 bg-black/60" role="dialog" aria-modal="true" onClick={() => setScannerOpen(false)}>
+					<div className="rounded-xl border border-gray-200 bg-white shadow-md max-w-3xl w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+						<div className="flex items-center justify-between bg-[#7a0202] p-4">
+							<div className="flex items-center gap-4">
+								<div className="w-10 h-10 flex items-center justify-center rounded-md bg-black text-white">
+									<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M7 7v10a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+								</div>
+								<h3 className="text-white text-lg font-bold">Escanear código QR</h3>
+							</div>
+							<button onClick={() => setScannerOpen(false)} className="text-white hover:opacity-90">✕</button>
+						</div>
+						<div className="p-6">
+							<p className="text-sm text-gray-600">Acerca el código QR al recuadro. El escáner detectará el código automáticamente.</p>
+							<ul className="mt-2 text-xs text-gray-500 list-disc list-inside">
+								<li>Sujeta el dispositivo firme y evita reflejos en el código.</li>
+							</ul>
+							<div className="mt-4 rounded-md border-2 border-dashed border-gray-200 overflow-hidden">
+								<QRScanner onScanSuccess={async (decoded) => {
+									const result = await handleScanSuccess(decoded);
+									if (result && result.type === 'modal') {
+										setScannerOpen(false);
+										abrirModal(result.tipoModal, result.reservaInfo);
+									}
+								}} />
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }
