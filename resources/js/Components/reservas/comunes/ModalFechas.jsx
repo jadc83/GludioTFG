@@ -125,16 +125,19 @@ export default function ModalFechas({
                             <div className="flex justify-end">
                                 <button
                                     onClick={async () => {
+                                        console.log('--- [ModalFechas] create PI clicked');
                                         if (creatingPi) return;
                                         setCreatingPi(true);
                                         try {
                                             // Incluir metadata para que el backend pueda mapear el PaymentIntent a la reserva
                                             const resp = await pagosApi.crearPaymentIntentStandalone(Number(vistaPrevia.estimate_charge || 0), { receipt_email: reserva?.reservable?.email, reserva_id: reserva?.id, localizador: reserva?.localizador });
+                                            console.log('--- [ModalFechas] crearPaymentIntentStandalone response:', resp);
                                             if (!resp || resp.success === false) throw new Error(resp?.error || 'No se pudo crear PaymentIntent');
                                             setPiClientSecret(resp.clientSecret ?? null);
                                             setPiPaymentIntentId(resp.paymentIntentId ?? null);
                                             setNeedPayment(true);
                                         } catch (e) {
+                                            console.error('--- [ModalFechas] crearPaymentIntentStandalone error:', e);
                                             emitToast(e?.message || 'Error creando PaymentIntent', 'error');
                                         } finally {
                                             setCreatingPi(false);
@@ -154,11 +157,13 @@ export default function ModalFechas({
                                         paymentIntentId={piPaymentIntentId}
                                         reserva={reserva}
                                         amount={Number(vistaPrevia.penalizacion ?? vistaPrevia.estimate_charge ?? 0)}
-                                        onConfirmed={async (paymentIntentId) => {
+                                        onConfirmed={async (confirmed) => {
+                                            console.log('--- [ModalFechas] PaymentBox confirmed:', confirmed);
                                             const getCookie = (name) => {
                                                 const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
                                                 return match ? decodeURIComponent(match[2]) : null;
                                             };
+                                            const paymentIntentId = (confirmed && typeof confirmed === 'object') ? (confirmed.paymentIntentId || confirmed.paymentIntent || confirmed.id || null) : confirmed;
                                             const payload2 = {
                                                 check_in: modalCheckIn,
                                                 check_out: modalCheckOut,
@@ -176,6 +181,7 @@ export default function ModalFechas({
                                                         ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
                                                     },
                                                 });
+                                                console.log('--- [ModalFechas] update response:', res2?.data);
                                                 if (res2?.data?.success) {
                                                     emitToast('Fechas actualizadas', 'success');
                                                     onApplied && onApplied(res2.data);
@@ -183,6 +189,7 @@ export default function ModalFechas({
                                                     emitToast(res2?.data?.message || 'No se pudo actualizar', 'error');
                                                 }
                                             } catch (e) {
+                                                console.error('--- [ModalFechas] error applying changes:', e);
                                                 emitToast(e?.response?.data?.error || e?.message || 'Error aplicando cambios', 'error');
                                             } finally {
                                                 setNeedPayment(false);
@@ -214,6 +221,7 @@ export default function ModalFechas({
 
                             <button
                                 onClick={async () => {
+                                    console.log('--- [ModalFechas] apply changes (no payment) clicked with modalCheckIn/modalCheckOut:', modalCheckIn, modalCheckOut);
                                     const getCookie = (name) => {
                                         const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
                                         return match ? decodeURIComponent(match[2]) : null;
@@ -225,6 +233,7 @@ export default function ModalFechas({
                                             status: reserva.status || 'pendiente',
                                             pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
                                         };
+                                        console.log('--- [ModalFechas] apply payload:', payload);
                                         const xsrf = getCookie('XSRF-TOKEN');
                                         const res = await axios.put(`/reservas/${reserva.id}`, payload, {
                                             withCredentials: true,
@@ -234,6 +243,7 @@ export default function ModalFechas({
                                                 ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
                                             },
                                         });
+                                        console.log('--- [ModalFechas] apply response:', res?.data);
                                         if (res?.data?.success) {
                                             emitToast('Fechas actualizadas', 'success');
                                             onApplied && onApplied(res.data);
@@ -241,6 +251,7 @@ export default function ModalFechas({
                                             emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
                                         }
                                     } catch (err) {
+                                        console.error('--- [ModalFechas] apply error:', err);
                                         const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
                                         emitToast(msg, 'error');
                                     }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import usePayments from '@/hooks/pagos/usePayments';
 
-export default function CardConfirmForm({ clientSecret, paymentIntentId, onSuccess, onError, name, email }) {
+export default function CardConfirmForm({ clientSecret, paymentIntentId, onCompleted, onSuccess, onError, name, email, localizador }) {
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
@@ -35,7 +35,17 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onSucce
                 const backendResp = await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
-                    onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
+                    // LOGS exhaustivos para depuración
+                    console.log('--- [CardConfirmForm] ---');
+                    console.log('Respuesta backend confirmarPaymentIntent:', backendResp);
+                    console.log('Prop localizador recibido:', localizador);
+                    const loc = backendResp.localizador || localizador;
+                    console.log('Localizador extraído para callback:', loc);
+                    console.log('¿onCompleted existe?', typeof onCompleted === 'function');
+                    console.log('¿onSuccess existe?', typeof onSuccess === 'function');
+                    const resultData = { pago_id: backendResp.pago_id, paymentIntentId, localizador: loc };
+                    onCompleted && onCompleted(resultData);
+                    onSuccess && onSuccess(resultData);
                 } else {
                     onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
                 }

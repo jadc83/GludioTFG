@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripePromise } from '@/utils/stripe';
 import { crearPaymentIntentStandalone } from '@/api/pagos';
@@ -116,11 +116,24 @@ export default function CheckoutSimulada() {
                                     name={page.props?.auth?.user?.name}
                                     email={page.props?.auth?.user?.email}
                                     onSuccess={(data) => {
+                                        console.log('--- [CheckoutSimulada] onSuccess invoked:', data);
                                         // Si tenemos una reserva en contexto, ir al editor de reserva
                                         if (reservaId) {
-                                            window.location.href = `/reservas/${reservaId}/edit`;
+                                            console.log('Redirecting to reservaId:', reservaId);
+                                            try {
+                                                router.visit(`/reservas/${reservaId}/edit`);
+                                            } catch (e) {
+                                                console.error('router.visit failed, falling back to location.href', e);
+                                                window.location.href = `/reservas/${reservaId}/edit`;
+                                            }
                                         } else {
-                                            window.location.href = '/reservas';
+                                            console.log('Redirecting to /reservas');
+                                            try {
+                                                router.visit('/reservas');
+                                            } catch (e) {
+                                                console.error('router.visit failed, falling back to location.href', e);
+                                                window.location.href = '/reservas';
+                                            }
                                         }
                                     }}
                                     onError={(msg) => setMensaje(msg)}

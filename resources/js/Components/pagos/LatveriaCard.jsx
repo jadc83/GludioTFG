@@ -48,9 +48,12 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
 
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp = await confirmarPaymentIntent(paymentIntentId);
+                console.log('--- [LatveriaCard] backendResp:', backendResp);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
-                    onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId });
+                    console.log('--- [LatveriaCard] about to call onSuccess, pago_id:', backendResp.pago_id);
+                    console.log('Is onSuccess a function?', typeof onSuccess === 'function');
+                    onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId, localizador: backendResp.localizador });
                 } else {
                     onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
                 }

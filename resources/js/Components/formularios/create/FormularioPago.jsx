@@ -1,6 +1,6 @@
+import { usePage, router } from '@inertiajs/react';
 import Campo from '@/Components/reservas/utilidades/Campo';
 import Modal from '@/Components/Modal';
-import { usePage } from '@inertiajs/react';
 
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripePromise } from '@/utils/stripe';
@@ -500,7 +500,7 @@ function FormularioPagoInterno({
                                                 // que simula Checkout y montará Stripe Elements para confirmar.
                                                 // Pasamos reserva_id y monto por query params.
                                                 const params = new URLSearchParams({ reserva_id: String(resId), monto: String(monto) });
-                                                window.location.href = `/checkout-simulado?${params.toString()}`;
+                                                router.visit(`/checkout-simulado?${params.toString()}`);
                                         }
                                     } catch (e) {
                                         console.error('Error checkout:', e);
@@ -527,7 +527,8 @@ function FormularioPagoInterno({
                                     paymentIntentId={piPaymentIntentId}
                                     name={name}
                                     email={email}
-                                    onSuccess={(data) => {
+                                    localizador={reservaData?.localizador}
+                                    onCompleted={(data) => {
                                         setShowCardForm(false);
                                         if (typeof onPagoExitoso === 'function') onPagoExitoso(data);
                                     }}

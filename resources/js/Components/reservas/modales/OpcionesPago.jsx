@@ -7,6 +7,7 @@ import {
     ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 
 export default function OpcionesPago({
     pagarAlLlegar,
@@ -150,6 +151,10 @@ export default function OpcionesPago({
                                                     setAceptaTerminos
                                                 }
                                                 onPagoExitoso={(data) => {
+                                                    console.log('--- [OpcionesPago] ---');
+                                                    console.log('onCompleted callback ejecutado');
+                                                    console.log('data recibido:', data);
+                                                    console.log('localizador prop:', localizador);
                                                     setDatosReservaConfirmada({
                                                         localizador:
                                                             data?.localizador ||
@@ -162,9 +167,16 @@ export default function OpcionesPago({
                                                         precio_total: monto,
                                                         pagoAlLlegar: false,
                                                     });
-                                                    setMostrarModalConfirmacion(
-                                                        true,
-                                                    );
+                                                    setMostrarModalConfirmacion(true);
+                                                    // LOG para depurar redirección
+                                                    const loc = data?.localizador || localizador;
+                                                    console.log('Localizador usado para redirección:', loc);
+                                                    if (loc) {
+                                                        console.log('Redirigiendo a: /reservas/' + loc + '/edit');
+                                                        window.location.href = `/reservas/${loc}/edit`;
+                                                    } else {
+                                                        console.warn('No se pudo redirigir: localizador no definido');
+                                                    }
                                                 }}
                                                 onError={setErrorPago}
                                             />

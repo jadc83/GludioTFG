@@ -26,6 +26,8 @@ export default function EditarReserva({
             console.log('reserva (debug):', reserva);
         } catch (e) {}
     }, [reserva]);
+
+
     const motivosReembolso = [
         { value: 'billing_error', label: 'Error de facturación' },
         { value: 'change_to_cheaper', label: 'Cambio a habitación más barata' },
@@ -71,6 +73,30 @@ export default function EditarReserva({
 
     // Estado local para reflejar que el usuario ya ha solicitado un reembolso
     const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
+
+    // Debug: track modal fecha state when available
+    useEffect(() => {
+        try {
+            console.log('--- [EditReserva] showModalFechas change:', { showModalFechas: typeof mostrarModalFechas !== 'undefined' ? mostrarModalFechas : null, fechaModalCheckIn: typeof fechaModalCheckIn !== 'undefined' ? fechaModalCheckIn : null, fechaModalCheckOut: typeof fechaModalCheckOut !== 'undefined' ? fechaModalCheckOut : null });
+        } catch (e) {}
+    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut]);
+
+    // Fallback listener: if FechaEditor dispatches a fallback event, open modal here
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const d = e && e.detail ? e.detail : {};
+                console.log('--- [EditReserva] showModalFechasFallback received:', d);
+                if (d.checkIn) setFechaModalCheckIn(d.checkIn);
+                if (d.checkOut) setFechaModalCheckOut(d.checkOut);
+                setMostrarModalFechas(true);
+            } catch (err) {
+                console.error('--- [EditReserva] showModalFechasFallback handler error:', err);
+            }
+        };
+        window.addEventListener('showModalFechasFallback', handler);
+        return () => window.removeEventListener('showModalFechasFallback', handler);
+    }, [setFechaModalCheckIn, setFechaModalCheckOut, setMostrarModalFechas]);
 
     useEffect(() => {
         if (hookHabitacionesDisponibles) {
@@ -194,6 +220,7 @@ export default function EditarReserva({
                                                     clearPreview={clearPreviewHook}
                                                     noWrapper={true}
                                                     onRequestConfirmDates={(ci, co) => {
+                                                        console.log('--- [EditReserva] onRequestConfirmDates called:', { ci, co });
                                                         setFechaModalCheckIn(ci);
                                                         setFechaModalCheckOut(co);
                                                         setMostrarModalFechas(true);
