@@ -2,31 +2,31 @@
 
 use App\Models\User;
 
-test('confirm password screen can be rendered', function () {
-    $user = User::factory()->create();
+test('la_pantalla_confirmar_contrasena_se_puede_renderizar', function () {
+    $usuario = User::factory()->create();
 
-    $response = $this->actingAs($user)->get('/confirm-password');
+    $respuesta = $this->actingAs($usuario)->get('/confirm-password');
 
-    $response->assertStatus(200);
+    $respuesta->assertStatus(200);
 });
 
-test('password can be confirmed', function () {
-    $user = User::factory()->create();
+test('la_contrasena_puede_ser_confirmada', function () {
+    $usuario = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/confirm-password', [
+    $respuesta = $this->actingAs($usuario)->post('/confirm-password', [
         'password' => 'password',
     ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasNoErrors();
+    $respuesta->assertRedirect();
+    $respuesta->assertSessionHasNoErrors();
 });
 
-test('password is not confirmed with invalid password', function () {
-    $user = User::factory()->create();
+test('la_contrasena_no_se_confirma_con_contrasena_invalida', function () {
+    $usuario = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/confirm-password', [
+    $respuesta = $this->actingAs($usuario)->post('/confirm-password', [
         'password' => 'wrong-password',
     ]);
 
-    $response->assertSessionHasErrors();
+    $respuesta->assertSessionHasErrors();
 });
