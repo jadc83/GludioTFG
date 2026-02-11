@@ -32,6 +32,10 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified', \App\Http\Middleware\EnsureEncargado::class]);
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
+// Páginas públicas: política, términos y contacto
+Route::get('/politica-privacidad', function () { return Inertia::render('PoliticaPrivacidad'); })->name('politica.privacidad');
+Route::get('/terminos-servicio', function () { return Inertia::render('TerminosServicio'); })->name('terminos.servicio');
+Route::get('/contacto', function () { return Inertia::render('Contacto'); })->name('contacto');
 Route::get('/scan-qr', function () { return Inertia::render('Scan/ScanQR'); })->name('scan-qr');
 Route::post('/reservas/{localizador}/checkin', [ReservaController::class, 'marcarCheckIn'])->where('localizador', '[A-Z0-9]+')->name('reservas.checkin');
 Route::post('/reservas/{localizador}/checkout', [ReservaController::class, 'marcarCheckOut'])->where('localizador', '[A-Z0-9]+')->name('reservas.checkout');

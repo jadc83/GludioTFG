@@ -9,13 +9,13 @@ export default function Footer() {
                     derechos reservados.
                 </p>
                 <nav className="space-x-4">
-                    <Link href="#" className="hover:underline">
-                        Politica de privacidad
+                    <Link href="/politica-privacidad" className="hover:underline">
+                        Política de privacidad
                     </Link>
-                    <Link href="#" className="hover:underline">
-                        Terminos del servicio
+                    <Link href="/terminos-servicio" className="hover:underline">
+                        Términos del servicio
                     </Link>
-                    <Link href="#" className="hover:underline">
+                    <Link href="/contacto" className="hover:underline">
                         Contacto
                     </Link>
                 </nav>

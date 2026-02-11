@@ -9,9 +9,10 @@ export default function FormularioDatosCliente({
     onNext,
     hideDates = false,
     hideNextButton = false,
+    formId = 'form-datos-cliente',
 }) {
     return (
-        <form onSubmit={onNext} className="flex h-full flex-col p-2 text-sm">
+        <form id={formId} onSubmit={onNext} className="flex h-full flex-col p-2 text-sm">
             <div className="divider text-xs uppercase opacity-50">
                 Datos de la Reserva
             </div>
