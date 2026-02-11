@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import { t } from '@/i18n';
-import { usePage } from '@inertiajs/react';
 import { emitToast } from '@/utils/toast';
+import { usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 const debounce = (fn, wait = 300) => {
     let t;
@@ -13,7 +13,12 @@ const debounce = (fn, wait = 300) => {
 
 export default function useReservaEvents(
     reserva,
-    { onRefresh = () => {}, onDeleted = () => {}, onUpdated = null, suppressToast = false } = {},
+    {
+        onRefresh = () => {},
+        onDeleted = () => {},
+        onUpdated = null,
+        suppressToast = false,
+    } = {},
 ) {
     const { props } = usePage();
     const isAuthedUserId = Boolean(props?.auth?.user?.id);
@@ -29,17 +34,24 @@ export default function useReservaEvents(
             try {
                 const updated = await onRefresh();
                 if (updated && typeof onUpdated === 'function') {
-                    try { onUpdated(updated); } catch (e) { /* noop */ }
+                    try {
+                        onUpdated(updated);
+                    } catch (e) {
+                        /* noop */
+                    }
                 }
 
-                if (!suppressToast) emitToast(t('toasts.reserva_updated'), 'success');
+                if (!suppressToast)
+                    emitToast(t('toasts.reserva_updated'), 'success');
             } catch (e) {
-                if (!suppressToast) emitToast(t('toasts.reserva_update_error'), 'error');
+                if (!suppressToast)
+                    emitToast(t('toasts.reserva_update_error'), 'error');
             }
         }, 250);
 
-        const isAuthed = Boolean(props?.auth?.user);
-        const subscribeMethod = isAuthed && echo.private ? 'private' : 'channel';
+        const isAuthed = isAuthedUserId;
+        const subscribeMethod =
+            isAuthed && echo.private ? 'private' : 'channel';
 
         const subscriber = echo[subscribeMethod](canal);
 
@@ -56,5 +68,13 @@ export default function useReservaEvents(
             listener.stopListening('ReservaCreada');
             listener.stopListening('ReservaBorrada');
         };
-    }, [reserva?.id, reserva?.localizador, onRefresh, onDeleted, onUpdated, suppressToast, isAuthedUserId]);
+    }, [
+        reserva?.id,
+        reserva?.localizador,
+        onRefresh,
+        onDeleted,
+        onUpdated,
+        suppressToast,
+        isAuthedUserId,
+    ]);
 }

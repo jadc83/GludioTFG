@@ -62,9 +62,13 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                 })) || [],
             );
         }
-    }, [habitacion]);
+    }, [habitacion, cargarDatos]);
 
-    const tiposHabitacion = usePage().props.tiposHabitacion || {};
+    const page = usePage();
+    const tiposHabitacion = useMemo(
+        () => page.props.tiposHabitacion || {},
+        [page.props.tiposHabitacion],
+    );
 
     const capacidadFija = useMemo(() => {
         const tipo = (formulario.tipo || '').toString().toLowerCase();
@@ -401,7 +405,22 @@ const InputFotos = ({
                     </div>
                 ))}
                 {totalFotos < maxFotos && (
-                    <label className="foto-agregar">
+                    <label
+                        className="foto-agregar"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Añadir fotos"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const input =
+                                    e.currentTarget.querySelector(
+                                        'input[type=file]',
+                                    );
+                                if (input) input.click();
+                            }
+                        }}
+                    >
                         <input
                             type="file"
                             accept="image/*"
@@ -409,7 +428,9 @@ const InputFotos = ({
                             hidden
                             onChange={onAgregar}
                         />
-                        <span className="foto-agregar-icon">+</span>
+                        <span className="foto-agregar-icon" aria-hidden="true">
+                            +
+                        </span>
                         <span className="foto-agregar-text">Añadir</span>
                     </label>
                 )}

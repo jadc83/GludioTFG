@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import * as pagosService from '@/services/pagosService';
+import { useEffect, useRef } from 'react';
 
 /**
  * usePaymentCheck
@@ -7,7 +7,13 @@ import * as pagosService from '@/services/pagosService';
  * - If sessionId provided, runs exponential-backoff polling against `/pagos/check-session` until paid or attempts exhausted
  * - Calls onConfirmed(response) when either the event arrives or poll detects paid
  */
-export default function usePaymentCheck({ reservaId, sessionId = null, onConfirmed = () => {}, opts = {} }) {
+export default function usePaymentCheck({
+    reservaId,
+    sessionId = null,
+    onConfirmed = () => {},
+    opts = {},
+}) {
+    const { maxAttempts = 5, initialDelay = 3000, factor = 2 } = opts || {};
     const stoppedRef = useRef(false);
     const eventReceivedRef = useRef(false);
 
@@ -18,7 +24,11 @@ export default function usePaymentCheck({ reservaId, sessionId = null, onConfirm
         const channelName = `reservas.${reservaId}`;
         let listener = null;
 
-        if (typeof window !== 'undefined' && window.Echo && typeof window.Echo.private === 'function') {
+        if (
+            typeof window !== 'undefined' &&
+            window.Echo &&
+            typeof window.Echo.private === 'function'
+        ) {
             try {
                 const ch = window.Echo.private(channelName);
                 listener = ch.listen('ReservaActualizada', (event) => {
@@ -31,15 +41,12 @@ export default function usePaymentCheck({ reservaId, sessionId = null, onConfirm
                     }
                 });
             } catch (e) {
-                // ignore
+                console.debug(e);
             }
         }
 
         // Polling fallback for Checkout redirect (session_id)
         let attempts = 0;
-        const maxAttempts = opts.maxAttempts || 5;
-        const initialDelay = opts.initialDelay || 3000;
-        const factor = opts.factor || 2;
         let timerId = null;
 
         const doPoll = async () => {
@@ -54,10 +61,14 @@ export default function usePaymentCheck({ reservaId, sessionId = null, onConfirm
                     return;
                 }
             } catch (e) {
-                // ignore errors
+                console.debug(e);
             }
 
-            if (!stoppedRef.current && !eventReceivedRef.current && attempts < maxAttempts) {
+            if (
+                !stoppedRef.current &&
+                !eventReceivedRef.current &&
+                attempts < maxAttempts
+            ) {
                 const wait = initialDelay * Math.pow(factor, attempts - 1);
                 timerId = setTimeout(doPoll, wait);
             }
@@ -71,9 +82,11 @@ export default function usePaymentCheck({ reservaId, sessionId = null, onConfirm
             if (listener && typeof listener.stopListening === 'function') {
                 try {
                     listener.stopListening();
-                } catch (e) {}
+                } catch (e) {
+                    console.debug(e);
+                }
             }
             if (typeof timerId === 'number') clearTimeout(timerId);
         };
-    }, [reservaId, sessionId]);
+    }, [reservaId, sessionId, onConfirmed, maxAttempts, initialDelay, factor]);
 }

@@ -1,11 +1,15 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
-import usePreview from '@/hooks/usePreview';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
-import dayjs from 'dayjs';
-import { emitToast } from '@/utils/toast';
+import usePreview from '@/hooks/usePreview';
 import { t } from '@/i18n';
+import { emitToast } from '@/utils/toast';
+import dayjs from 'dayjs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export default function useDetalleReserva({ reserva, refresh, aplicarCambioFechas } = {}) {
+export default function useDetalleReserva({
+    reserva,
+    refresh,
+    aplicarCambioFechas,
+} = {}) {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Fecha modal
@@ -19,12 +23,24 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
     const [refundNotes, setRefundNotes] = useState('');
     const [refundAmountInput, setRefundAmountInput] = useState(0);
 
-    const motivosReembolso = useMemo(() => [
-        { value: 'billing_error', label: t('edit_reserva.refund_reasons.billing_error') },
-        { value: 'change_to_cheaper', label: t('edit_reserva.refund_reasons.change_to_cheaper') },
-        { value: 'prefer_credit', label: t('edit_reserva.refund_reasons.prefer_credit') },
-        { value: 'other', label: t('edit_reserva.refund_reasons.other') },
-    ], []);
+    const motivosReembolso = useMemo(
+        () => [
+            {
+                value: 'billing_error',
+                label: t('edit_reserva.refund_reasons.billing_error'),
+            },
+            {
+                value: 'change_to_cheaper',
+                label: t('edit_reserva.refund_reasons.change_to_cheaper'),
+            },
+            {
+                value: 'prefer_credit',
+                label: t('edit_reserva.refund_reasons.prefer_credit'),
+            },
+            { value: 'other', label: t('edit_reserva.refund_reasons.other') },
+        ],
+        [],
+    );
 
     const {
         preview,
@@ -36,7 +52,11 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
     // Track if preview corresponds to the current modal dates
     const [vistaPreviaCargada, setVistaPreviaCargada] = useState(false);
 
-    const paymentModal = usePaymentModal({ aplicarCambioFechas, refresh, showToast: (m, t) => emitToast(m, t) });
+    const paymentModal = usePaymentModal({
+        aplicarCambioFechas,
+        refresh,
+        showToast: (m, t) => emitToast(m, t),
+    });
 
     useEffect(() => {
         // when modal opens we want to reset loaded flag
@@ -46,10 +66,15 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
     // Fetch preview when modal dates change and differ from original reserva dates
     useEffect(() => {
         let mounted = true;
-        const originalCi = reserva?.check_in ? (new Date(reserva.check_in)).toISOString().split('T')[0] : null;
-        const originalCo = reserva?.check_out ? (new Date(reserva.check_out)).toISOString().split('T')[0] : null;
+        const originalCi = reserva?.check_in
+            ? new Date(reserva.check_in).toISOString().split('T')[0]
+            : null;
+        const originalCo = reserva?.check_out
+            ? new Date(reserva.check_out).toISOString().split('T')[0]
+            : null;
 
-        const esFechaOriginal = (ci, co) => ci === originalCi && co === originalCo;
+        const esFechaOriginal = (ci, co) =>
+            ci === originalCi && co === originalCo;
 
         const tryFetch = async () => {
             if (!showDateModal) return;
@@ -73,20 +98,34 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
         };
 
         tryFetch();
-        return () => { mounted = false; };
+        return () => {
+            mounted = false;
+        };
     }, [showDateModal, modalCheckIn, modalCheckOut, fetchPreviewHook, reserva]);
 
     const openDateModal = useCallback(() => {
-        setModalCheckIn(reserva?.check_in ? dayjs(reserva.check_in).format('YYYY-MM-DD') : '');
-        setModalCheckOut(reserva?.check_out ? dayjs(reserva.check_out).format('YYYY-MM-DD') : '');
+        setModalCheckIn(
+            reserva?.check_in
+                ? dayjs(reserva.check_in).format('YYYY-MM-DD')
+                : '',
+        );
+        setModalCheckOut(
+            reserva?.check_out
+                ? dayjs(reserva.check_out).format('YYYY-MM-DD')
+                : '',
+        );
         setShowDateModal(true);
-        if (reserva?.check_in && reserva?.check_out) fetchPreviewHook(reserva.check_in, reserva.check_out);
+        if (reserva?.check_in && reserva?.check_out)
+            fetchPreviewHook(reserva.check_in, reserva.check_out);
     }, [reserva, fetchPreviewHook]);
 
     const confirmDateModal = useCallback(async () => {
         try {
             setIsProcessing(true);
-            const latestPreview = await fetchPreviewHook(modalCheckIn, modalCheckOut);
+            const latestPreview = await fetchPreviewHook(
+                modalCheckIn,
+                modalCheckOut,
+            );
 
             if (latestPreview?.available === false) {
                 emitToast(t('toasts.no_availability_new_dates'), 'error');
@@ -112,7 +151,14 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
         } finally {
             setIsProcessing(false);
         }
-    }, [modalCheckIn, modalCheckOut, fetchPreviewHook, paymentModal, aplicarCambioFechas, refresh]);
+    }, [
+        modalCheckIn,
+        modalCheckOut,
+        fetchPreviewHook,
+        paymentModal,
+        aplicarCambioFechas,
+        refresh,
+    ]);
 
     const handleRefundSubmit = useCallback(async () => {
         setIsProcessing(true);
@@ -135,8 +181,17 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
         }
     }, [refundAmountInput, refundNotes, refundReason, reserva, refresh]);
 
-    const isCancelled = useMemo(() => String(reserva?.status || '').toLowerCase().includes('cancelado'), [reserva]);
-    const isCheckedIn = useMemo(() => String(reserva?.status || '').toLowerCase() === 'checked_in', [reserva]);
+    const isCancelled = useMemo(
+        () =>
+            String(reserva?.status || '')
+                .toLowerCase()
+                .includes('cancelado'),
+        [reserva],
+    );
+    const isCheckedIn = useMemo(
+        () => String(reserva?.status || '').toLowerCase() === 'checked_in',
+        [reserva],
+    );
 
     return {
         // states

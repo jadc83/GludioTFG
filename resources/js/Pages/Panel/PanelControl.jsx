@@ -1,13 +1,14 @@
 import CreateCliente from '@/Components/formularios/create/CreateCliente';
-import IndexCliente from '@/Components/indexes/IndexCliente';
 import CreateCupon from '@/Components/formularios/create/CreateCupon';
 import CreateEmpleado from '@/Components/formularios/create/CreateEmpleado';
-import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
 import CreateHabitacion from '@/Components/formularios/create/CreateHabitacion';
-import IndexHabitacion from '@/Components/indexes/IndexHabitacion';
+import IndexCliente from '@/Components/indexes/IndexCliente';
 import IndexDepartamentos from '@/Components/indexes/IndexDepartamentos';
-import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
+import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
+import IndexHabitacion from '@/Components/indexes/IndexHabitacion';
 import IndexReserva from '@/Components/indexes/IndexReserva';
+import CreateReserva from '@/Components/reservas/formularios/CreateReserva';
+import Tabs from '@/Components/UI/Tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     BriefcaseIcon,
@@ -18,7 +19,6 @@ import {
     UsersIcon,
 } from '@heroicons/react/24/outline';
 import React, { Suspense, useEffect, useState } from 'react';
-import Tabs from '@/Components/UI/Tabs';
 
 const TABS = [
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
@@ -30,17 +30,7 @@ const TABS = [
     { id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon },
 ];
 
-function BotonTab({ id, icon: Icon, label, activa, onClick }) {
-    return (
-        <button
-            onClick={() => onClick(id)}
-            className={`flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium transition-all duration-200 md:gap-2 md:px-4 md:text-sm ${activa ? 'bg-white text-[#920303] shadow-sm ring-1 ring-black/5' : 'text-[#6b1212] hover:bg-gray-200/50 hover:text-[#920303]'}`}
-        >
-            <Icon className="h-3 w-3 md:h-4 md:w-4" />{' '}
-            <span className="hidden sm:inline">{label}</span>
-        </button>
-    );
-}
+// `BotonTab` was removed because it was defined but not used.
 
 import TabConfiguracion from '@/Components/tabs/TabConfiguracion';
 
@@ -164,7 +154,12 @@ export default function PanelControl({
                     <div className="envoltorioContenido">
                         <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md">
                             <div className="flex flex-wrap justify-center gap-1 md:gap-2">
-                                <Tabs tabs={TABS} active={tabActiva} onChange={cambiarTab} variant="panel" />
+                                <Tabs
+                                    tabs={TABS}
+                                    active={tabActiva}
+                                    onChange={cambiarTab}
+                                    variant="panel"
+                                />
                             </div>
                         </div>
 

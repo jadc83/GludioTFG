@@ -48,12 +48,15 @@ export default function Boton({
             type={type}
             onClick={onClick}
             disabled={disabled || loading}
+            aria-disabled={disabled || loading ? 'true' : undefined}
+            aria-busy={loading ? 'true' : undefined}
             className={`${baseClasses} ${variantClasses} ${sizeClasses} ${className}`}
             {...props}
         >
             {loading ? (
                 <>
                     <LoadingSpinner className="!py-0" />
+                    <span className="sr-only">Cargando</span>
                     {children}
                 </>
             ) : (

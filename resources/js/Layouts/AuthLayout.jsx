@@ -39,7 +39,8 @@ export default function AuthLayout({ children }) {
             <div className="filter fixed -bottom-8 right-0 -z-10 h-80 w-80 rounded-full bg-[#920303] opacity-5 mix-blend-multiply blur-3xl"></div>
 
             <div className="grid min-h-screen lg:grid-cols-2">
-                <div
+                <aside
+                    aria-hidden="true"
                     className="relative hidden flex-col items-center justify-center bg-cover bg-center bg-no-repeat px-4 py-12 lg:flex"
                     style={{
                         backgroundImage:
@@ -81,9 +82,13 @@ export default function AuthLayout({ children }) {
                             })}
                         </div>
                     </div>
-                </div>
+                </aside>
 
-                <div className="flex flex-col justify-center bg-[#E2E0DC] px-4 py-8 sm:px-6 lg:py-0">
+                <main
+                    role="main"
+                    aria-label="Contenido principal"
+                    className="flex flex-col justify-center bg-[#E2E0DC] px-4 py-8 sm:px-6 lg:py-0"
+                >
                     <div className="mb-6 text-center lg:hidden">
                         <Link href="/">
                             <ApplicationLogo className="mx-auto h-12 w-12 fill-current text-[#7a0202]" />
@@ -98,7 +103,7 @@ export default function AuthLayout({ children }) {
                     <p className="mt-4 text-center text-xs text-gray-600">
                         Con protección de privacidad y seguridad de datos
                     </p>
-                </div>
+                </main>
             </div>
 
             <CookieBanner />

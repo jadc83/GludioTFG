@@ -1,6 +1,4 @@
-import React from 'react';
 import { HomeIcon } from '@heroicons/react/24/outline';
-import Campo from '@/Components/reservas/utilidades/Campo';
 
 export default function HabitacionesSelector({
     formulario,
@@ -25,12 +23,15 @@ export default function HabitacionesSelector({
                 </div>
             ) : cargando ? (
                 <div className="rounded-lg bg-gray-50 p-6 text-center">
-                    <p className="text-sm text-gray-500">Cargando habitaciones...</p>
+                    <p className="text-sm text-gray-500">
+                        Cargando habitaciones...
+                    </p>
                 </div>
             ) : Object.keys(habitacionesPorTipo).length === 0 ? (
                 <div className="rounded-lg bg-red-50 p-6 text-center">
                     <p className="text-sm text-red-600">
-                        No hay habitaciones disponibles para las fechas seleccionadas
+                        No hay habitaciones disponibles para las fechas
+                        seleccionadas
                     </p>
                 </div>
             ) : (
@@ -58,7 +59,10 @@ export default function HabitacionesSelector({
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            cambiarCantidadHabitaciones(tipo, info.cantidad - 1)
+                                            cambiarCantidadHabitaciones(
+                                                tipo,
+                                                info.cantidad - 1,
+                                            )
                                         }
                                         disabled={info.cantidad === 0}
                                         className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
@@ -71,9 +75,14 @@ export default function HabitacionesSelector({
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            cambiarCantidadHabitaciones(tipo, info.cantidad + 1)
+                                            cambiarCantidadHabitaciones(
+                                                tipo,
+                                                info.cantidad + 1,
+                                            )
                                         }
-                                        disabled={info.cantidad >= info.disponibles}
+                                        disabled={
+                                            info.cantidad >= info.disponibles
+                                        }
                                         className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-gray-700 transition-all hover:border-[#7a0202] hover:bg-red-50 hover:text-[#7a0202] disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         +

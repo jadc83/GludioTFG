@@ -34,7 +34,11 @@ export default function Paginacion({
     };
 
     return (
-        <div className="flex flex-col items-center justify-between gap-6 border-t border-gray-100 bg-gray-50/50 px-8 py-6 sm:flex-row">
+        <nav
+            role="navigation"
+            aria-label="Paginación"
+            className="flex flex-col items-center justify-between gap-6 border-t border-gray-100 bg-gray-50/50 px-8 py-6 sm:flex-row"
+        >
             {/* Información de registros */}
             <div className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
                 Mostrando <span className="text-gray-900">{inicio + 1}</span> —{' '}
@@ -49,39 +53,62 @@ export default function Paginacion({
                 <button
                     onClick={irAPaginaAnterior}
                     disabled={paginaActual === 1}
+                    aria-label="Página anterior"
+                    aria-disabled={paginaActual === 1 ? 'true' : undefined}
                     className="rounded-xl border border-gray-200 bg-white p-2 shadow-sm transition hover:text-[#7a0202] disabled:opacity-30"
                 >
-                    <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+                    <ChevronLeftIcon
+                        className="h-5 w-5 text-gray-600"
+                        aria-hidden="true"
+                    />
                 </button>
 
                 {/* Botones de página */}
-                <div className="flex gap-1.5">
+                <ul role="list" className="flex gap-1.5">
                     {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(
                         (pagina) => (
-                            <button
-                                key={pagina}
-                                onClick={() => onCambiarPagina(pagina)}
-                                className={`h-10 w-10 rounded-xl text-xs font-black transition-all ${
-                                    paginaActual === pagina
-                                        ? 'scale-110 bg-[#7a0202] text-white shadow-lg shadow-red-100'
-                                        : 'border border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
-                                }`}
-                            >
-                                {pagina}
-                            </button>
+                            <li key={pagina} role="listitem">
+                                <button
+                                    onClick={() => onCambiarPagina(pagina)}
+                                    aria-current={
+                                        paginaActual === pagina
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                    aria-label={
+                                        paginaActual === pagina
+                                            ? `Página ${pagina}, página actual`
+                                            : `Ir a la página ${pagina}`
+                                    }
+                                    className={`h-10 w-10 rounded-xl text-xs font-black transition-all ${
+                                        paginaActual === pagina
+                                            ? 'scale-110 bg-[#7a0202] text-white shadow-lg shadow-red-100'
+                                            : 'border border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {pagina}
+                                </button>
+                            </li>
                         ),
                     )}
-                </div>
+                </ul>
 
                 {/* Botón siguiente */}
                 <button
                     onClick={irAPaginaSiguiente}
                     disabled={paginaActual === totalPaginas}
+                    aria-disabled={
+                        paginaActual === totalPaginas ? 'true' : undefined
+                    }
+                    aria-label="Página siguiente"
                     className="rounded-xl border border-gray-200 bg-white p-2 shadow-sm transition hover:text-[#7a0202] disabled:opacity-30"
                 >
-                    <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+                    <ChevronRightIcon
+                        className="h-5 w-5 text-gray-600"
+                        aria-hidden="true"
+                    />
                 </button>
             </div>
-        </div>
+        </nav>
     );
 }

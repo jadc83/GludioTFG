@@ -15,13 +15,7 @@ export default function ScanQR() {
             : new URLSearchParams();
     const action = params.get('action') || null;
 
-    const {
-        datosEscaner,
-        error,
-        asignarDetalles,
-        isProcessing,
-        handleScanSuccess,
-    } = useQRScanner(action);
+    const { error, asignarDetalles, handleScanSuccess } = useQRScanner(action);
     const { mostrarModal, tipoModal, reservaInfo, abrirModal, cerrarModal } =
         useQRModal();
 

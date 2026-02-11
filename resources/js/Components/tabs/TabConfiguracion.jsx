@@ -1,10 +1,9 @@
 import HeaderPanel from '@/Components/UI/HeaderPanel';
+import ElegirPrecio from '@/Components/utilidades/ElegirPrecio';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import React, { Suspense } from 'react';
-import ElegirPrecio from '@/Components/utilidades/ElegirPrecio';
 
 const TabCupones = React.lazy(() => import('@/Components/tabs/TabCupones'));
-
 
 export default function TabConfiguracion({ cupones, tiposHabitacion }) {
     return (

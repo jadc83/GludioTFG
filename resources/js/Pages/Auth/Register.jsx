@@ -1,8 +1,8 @@
-import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Campo from '@/Components/reservas/utilidades/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { t } from '@/i18n';
 import {
     EnvelopeIcon,
     GlobeAltIcon,
@@ -11,23 +11,21 @@ import {
     UserIcon,
 } from '@heroicons/react/24/outline';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { t } from '@/i18n';
 
 export default function Register() {
-    const { data, setData, post, processing, errors, reset, clearErrors } =
-        useForm({
-            name: '',
-            email: '',
-            password: '',
-            password_confirmation: '',
-            tipo_documento: 'dni',
-            numero_documento: '',
-            nacionalidad: '',
-            direccion: '',
-            ciudad: '',
-            codigo_postal: '',
-            telefono: '',
-        });
+    const { data, setData, post, processing, reset, clearErrors } = useForm({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+        tipo_documento: 'dni',
+        numero_documento: '',
+        nacionalidad: '',
+        direccion: '',
+        ciudad: '',
+        codigo_postal: '',
+        telefono: '',
+    });
 
     const submit = (e) => {
         e.preventDefault();
@@ -83,7 +81,10 @@ export default function Register() {
                     {/* Name & Email */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="name" value={t('auth.name_label')} />
+                            <InputLabel
+                                htmlFor="name"
+                                value={t('auth.name_label')}
+                            />
                             <div className="relative mt-0.5">
                                 <UserIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -100,14 +101,13 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.name}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="email" value={t('auth.email_label')} />
+                            <InputLabel
+                                htmlFor="email"
+                                value={t('auth.email_label')}
+                            />
                             <div className="relative mt-0.5">
                                 <EnvelopeIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -124,39 +124,40 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.email}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
                     </div>
 
                     {/* Document Type & Number */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="tipo_documento" value={t('auth.doc_type_label')} />
-                            <select
+                            <InputLabel
+                                htmlFor="tipo_documento"
+                                value={t('auth.doc_type_label')}
+                            />
+                            <Campo
                                 id="tipo_documento"
                                 name="tipo_documento"
+                                as="select"
+                                clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 value={data.tipo_documento}
-                                className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                                 onChange={(e) =>
                                     setData('tipo_documento', e.target.value)
                                 }
                                 required
                             >
                                 <option value="dni">{t('auth.doc_dni')}</option>
-                                <option value="pasaporte">{t('auth.doc_passport')}</option>
+                                <option value="pasaporte">
+                                    {t('auth.doc_passport')}
+                                </option>
                                 <option value="tie">{t('auth.doc_tie')}</option>
-                            </select>
-                            <InputError
-                                message={errors.tipo_documento}
-                                className="mt-0.5 text-xs"
-                            />
+                            </Campo>
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="numero_documento" value={t('auth.doc_number_label')} />
+                            <InputLabel
+                                htmlFor="numero_documento"
+                                value={t('auth.doc_number_label')}
+                            />
                             <Campo
                                 id="numero_documento"
                                 name="numero_documento"
@@ -168,17 +169,16 @@ export default function Register() {
                                 placeholder={t('auth.doc_number_placeholder')}
                                 required
                             />
-                            <InputError
-                                message={errors.numero_documento}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
                     </div>
 
                     {/* Nationality & Phone */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="nacionalidad" value={t('auth.country_label')} />
+                            <InputLabel
+                                htmlFor="nacionalidad"
+                                value={t('auth.country_label')}
+                            />
                             <div className="relative mt-0.5">
                                 <GlobeAltIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -193,14 +193,13 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.nacionalidad}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="telefono" value={t('auth.phone_label')} />
+                            <InputLabel
+                                htmlFor="telefono"
+                                value={t('auth.phone_label')}
+                            />
                             <div className="relative mt-0.5">
                                 <PhoneIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -216,21 +215,21 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.telefono}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
                     </div>
 
                     {/* Address */}
                     <div>
-                        <InputLabel htmlFor="direccion" value={t('auth.address_label')} />
-                        <textarea
+                        <InputLabel
+                            htmlFor="direccion"
+                            value={t('auth.address_label')}
+                        />
+                        <Campo
                             id="direccion"
                             name="direccion"
+                            as="textarea"
+                            clase="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                             value={data.direccion}
-                            className="mt-0.5 block w-full rounded-lg border border-[#E2E0DC] px-2.5 py-1 text-xs text-gray-900 transition focus:border-[#7a0202] focus:ring-2 focus:ring-[#7a0202] focus:ring-opacity-10"
                             onChange={(e) =>
                                 setData('direccion', e.target.value)
                             }
@@ -238,15 +237,14 @@ export default function Register() {
                             rows="2"
                             required
                         />
-                        <InputError
-                            message={errors.direccion}
-                            className="mt-0.5 text-xs"
-                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="ciudad" value={t('auth.city_label')} />
+                            <InputLabel
+                                htmlFor="ciudad"
+                                value={t('auth.city_label')}
+                            />
                             <Campo
                                 id="ciudad"
                                 name="ciudad"
@@ -256,10 +254,6 @@ export default function Register() {
                                     setData('ciudad', e.target.value)
                                 }
                                 placeholder={t('auth.city_placeholder')}
-                            />
-                            <InputError
-                                message={errors.ciudad}
-                                className="mt-0.5 text-xs"
                             />
                         </div>
 
@@ -278,17 +272,16 @@ export default function Register() {
                                 }
                                 placeholder={t('auth.postal_placeholder')}
                             />
-                            <InputError
-                                message={errors.codigo_postal}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
                     </div>
 
                     {/* Password & Confirmation */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="password" value={t('auth.password_label')} />
+                            <InputLabel
+                                htmlFor="password"
+                                value={t('auth.password_label')}
+                            />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -305,10 +298,6 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.password}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
 
                         <div>
@@ -335,10 +324,6 @@ export default function Register() {
                                     required
                                 />
                             </div>
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-0.5 text-xs"
-                            />
                         </div>
                     </div>
 

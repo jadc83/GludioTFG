@@ -1,8 +1,8 @@
 import Campo from '@/Components/reservas/utilidades/Campo';
+import { t } from '@/i18n';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { t } from '@/i18n';
 
 export default function BuscadorNavbar() {
     const [localizador, setLocalizador] = useState('');

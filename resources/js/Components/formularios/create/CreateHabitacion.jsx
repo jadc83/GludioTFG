@@ -40,7 +40,7 @@ export default function CreateHabitacion({ iconOnly = false }) {
     const MAX_FOTOS = 4;
     const [fotosNuevas, setFotosNuevas] = useState([]);
     const [fotosGuardadas, setFotosGuardadas] = useState([]);
-    const [fotosAEliminar, setFotosAEliminar] = useState([]);
+    const [, setFotosAEliminar] = useState([]);
 
     const previsualizaciones = [
         ...fotosGuardadas.map((f) => f.url),
@@ -360,7 +360,22 @@ const InputFotos = ({
             ))}
 
             {fotos.length < maxFotos && (
-                <label className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 transition-all hover:border-[#7a0202] hover:bg-red-50/30">
+                <label
+                    className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 transition-all hover:border-[#7a0202] hover:bg-red-50/30"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Subir fotos"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const input =
+                                e.currentTarget.querySelector(
+                                    'input[type=file]',
+                                );
+                            if (input) input.click();
+                        }
+                    }}
+                >
                     <input
                         type="file"
                         accept="image/*"
@@ -368,7 +383,10 @@ const InputFotos = ({
                         hidden
                         onChange={onAgregar}
                     />
-                    <PhotoIcon className="h-6 w-6 text-gray-300 transition-colors group-hover:text-[#7a0202]" />
+                    <PhotoIcon
+                        className="h-6 w-6 text-gray-300 transition-colors group-hover:text-[#7a0202]"
+                        aria-hidden="true"
+                    />
                     <span className="mt-2 text-[9px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-[#7a0202]">
                         Subir
                     </span>

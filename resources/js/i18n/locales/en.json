@@ -1,242 +1,234 @@
 {
-  "booking": {
-    "confirmation": "Booking Confirmation",
-    "step_review_and_pay": "Step 4: Review details and proceed to payment",
-    "details_stay": "Stay Details",
-    "locator": "Locator",
-    "primary_holder": "Primary Holder",
-    "identity_registration": "Identity Registration",
-    "registration_information": "Registration Information",
-    "data_linked": "The data will be linked to the selected asset.",
-    "back_to_units": "Back to Units",
-    "stay_dates": "Stay Dates",
-    "back_and_edit": "Back and edit details",
-    "review_booking": "Review Booking →"
-  },
-  "subtotal": {
-    "label": "Subtotal",
-    "select_rooms": "Select rooms to see the subtotal",
-    "total_price": "Total Price"
-  },
-  "payment": {
-    "number_of_guests": "Number of Guests",
-    "payment_method": "Payment Method",
-    "notes_optional": "Notes / Remarks (Optional)",
-    "pay_at_reception": "Pay at Reception",
-    "credit_card": "Credit Card",
-    "bank_transfer": "Bank Transfer"
-    ,"method_and_completion": "Payment Method & Completion"
-  }
-  ,
-  "home": {
-    "hero": {
-      "title": "Where elegance meets comfort",
-      "subtitle": "Enjoy a unique experience with our exclusive service."
+    "booking": {
+        "confirmation": "Booking Confirmation",
+        "step_review_and_pay": "Step 4: Review details and proceed to payment",
+        "details_stay": "Stay Details",
+        "locator": "Locator",
+        "primary_holder": "Primary Holder",
+        "identity_registration": "Identity Registration",
+        "registration_information": "Registration Information",
+        "data_linked": "The data will be linked to the selected asset.",
+        "back_to_units": "Back to Units",
+        "stay_dates": "Stay Dates",
+        "back_and_edit": "Back and edit details",
+        "review_booking": "Review Booking →"
     },
-    "services": {
-      "title": "An almost otherworldly experience",
-      "subtitle": "At Hotel Gludio, every moment is carefully orchestrated to create lasting memories. From our world-class spa to exceptional dining experiences."
+    "subtotal": {
+        "label": "Subtotal",
+        "select_rooms": "Select rooms to see the subtotal",
+        "total_price": "Total Price"
     },
-    "cards": {
-      "rooms_title": "Luxury Rooms",
-      "rooms_desc": "Spacious spaces, elegant design and all the amenities for maximum comfort.",
-      "pool_title": "Heated Pool",
-      "pool_desc": "Indoor and outdoor pool available year-round to relax in any season.",
-      "restaurant_title": "Gourmet Restaurant",
-      "restaurant_desc": "Enjoy high-end international cuisine without leaving the hotel, with fresh ingredients and impeccable presentation.",
-      "wifi_title": "Ultra-fast Wifi",
-      "wifi_desc": "Stable and fast connection throughout the premises, perfect for work or entertainment without limits."
+    "payment": {
+        "number_of_guests": "Number of Guests",
+        "payment_method": "Payment Method",
+        "notes_optional": "Notes / Remarks (Optional)",
+        "pay_at_reception": "Pay at Reception",
+        "credit_card": "Credit Card",
+        "bank_transfer": "Bank Transfer",
+        "method_and_completion": "Payment Method & Completion"
+    },
+    "home": {
+        "hero": {
+            "title": "Where elegance meets comfort",
+            "subtitle": "Enjoy a unique experience with our exclusive service."
+        },
+        "services": {
+            "title": "An almost otherworldly experience",
+            "subtitle": "At Hotel Gludio, every moment is carefully orchestrated to create lasting memories. From our world-class spa to exceptional dining experiences."
+        },
+        "cards": {
+            "rooms_title": "Luxury Rooms",
+            "rooms_desc": "Spacious spaces, elegant design and all the amenities for maximum comfort.",
+            "pool_title": "Heated Pool",
+            "pool_desc": "Indoor and outdoor pool available year-round to relax in any season.",
+            "restaurant_title": "Gourmet Restaurant",
+            "restaurant_desc": "Enjoy high-end international cuisine without leaving the hotel, with fresh ingredients and impeccable presentation.",
+            "wifi_title": "Ultra-fast Wifi",
+            "wifi_desc": "Stable and fast connection throughout the premises, perfect for work or entertainment without limits."
+        }
+    },
+    "barra": {
+        "entrada": "Check-in",
+        "salida": "Check-out",
+        "huespedes": "Guests",
+        "aria_entrada": "Select check-in date",
+        "aria_salida": "Select check-out date"
+    },
+    "buscador": {
+        "placeholder": "Search your booking...",
+        "not_found": "No booking found with that locator",
+        "error": "Error searching booking"
+    },
+    "cookie": {
+        "title": "Cookie Policy",
+        "desc": "We use cookies to improve your experience on our website.",
+        "accept_essential": "Essential Only",
+        "accept_all": "Accept All"
+    },
+    "footer": {
+        "copyright": "© {{year}} HOTEL GLUDIO. All rights reserved.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "contact": "Contact"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "continue": "Continue",
+        "next": "Next",
+        "close": "Close",
+        "back_change_dates": "← Change dates"
+    },
+    "paso2": {
+        "title": "Where do you want to sleep?",
+        "step_label": "Step 2 — Stay selection",
+        "regimen": "Regimen",
+        "adjust": "Adjust",
+        "options_stay": "Stay options",
+        "searching_availability": "We're searching\navailability for you...",
+        "subtotal": "Subtotal",
+        "volver": "Back",
+        "continue": "Continue",
+        "persons": "persons",
+        "price_per_night": "average price / night",
+        "remove": "Remove",
+        "selected": "Selected",
+        "select": "Select",
+        "breadcrumbs": {
+            "dates": "Dates",
+            "room": "Room",
+            "data": "Data",
+            "confirm": "Confirm"
+        },
+        "services_title": "Available services",
+        "services_subtitle": "Customize your stay",
+        "loading_services": "Loading services...",
+        "free": "Free",
+        "coupon_label": "Special code",
+        "coupon_placeholder": "Enter your code",
+        "coupon_apply": "Apply",
+        "summary_title": "Summary",
+        "nights": "night(s)",
+        "taxes_included": "Taxes included",
+        "total": "Total",
+        "supplements": "Supplements",
+        "room_type": {
+            "single": "Single",
+            "double": "Double",
+            "suite": "Suite"
+        }
+    },
+    "tarifas": {
+        "media_pension": { "name": "Half Board" },
+        "pension_completa": { "name": "Full Board" },
+        "todo_incluido": { "name": "All Inclusive" },
+        "catalogo_almohadas": { "name": "Pillow Catalogue" },
+        "spa_bienestar": { "name": "Spa & Wellness" },
+        "gym_premium": { "name": "Premium Gym Access" },
+        "city_tour": { "name": "City Tour" },
+        "excursion_aventura": { "name": "Adventure Excursion" }
+    },
+    "booking": {
+        "existing_client_detected": "Existing Client Detected",
+        "existing_client_message": "The provided identity document matches a client already registered in our database."
+    },
+    "auth": {
+        "login_title": "Login",
+        "login_subtitle": "Access your account",
+        "email_label": "Email",
+        "email_placeholder": "you@email.com",
+        "password_label": "Password",
+        "password_placeholder": "••••••••",
+        "forgot_password": "Forgot your password?",
+        "remember_me": "Remember me",
+        "processing": "Signing in...",
+        "login_button": "Sign in",
+        "create_account": "Create account",
+        "trust_secure": "Secure",
+        "trust_247": "24/7",
+        "register_title": "Register",
+        "register_header": "Join now",
+        "register_subtitle": "Create your account in 2 minutes",
+        "benefit_instant": "Instant bookings",
+        "benefit_free": "100% Free",
+        "benefit_history": "Full history",
+        "benefit_no_commitment": "No commitments",
+        "name_label": "Name",
+        "name_placeholder": "John",
+        "doc_type_label": "Doc",
+        "doc_dni": "DNI",
+        "doc_passport": "Passport",
+        "doc_tie": "TIE",
+        "doc_number_label": "No.",
+        "doc_number_placeholder": "123456",
+        "country_label": "Country",
+        "country_placeholder": "Spain",
+        "phone_label": "Tel",
+        "phone_placeholder": "+34600000",
+        "address_label": "Address",
+        "address_placeholder": "Main St, 123",
+        "city_label": "City",
+        "city_placeholder": "Madrid",
+        "postal_label": "Postal Code",
+        "postal_placeholder": "28001",
+        "password_confirm_label": "Confirm",
+        "register_button": "Register",
+        "already_have_account": "Already have an account?",
+        "terms_prefix": "By registering you accept our",
+        "terms": "terms"
+    },
+    "dashboard": {
+        "title": "Welcome to your Stay",
+        "experience_tag": "Exclusive Experience",
+        "headline_part1": "Where every detail",
+        "headline_emphasis": "tells a story.",
+        "subtitle": "We're preparing your arrival so your only concern is enjoying the rest you deserve.",
+        "cta": "Enter the Hotel",
+        "brand": "Hotel Gludio"
+    },
+    "modal": {
+        "gallery": {
+            "room_badge": "Gludio Room",
+            "meters": "Meters",
+            "guests": "Guests",
+            "description_title": "Description",
+            "amenities_title": "Included Services",
+            "price_per_night": "Price per night",
+            "back": "Back",
+            "quick_pass": "Quick Pass"
+        }
+    },
+    "edit_reserva": {
+        "modify_dates_button": "I need to modify my booking dates",
+        "refund_reasons": {
+            "billing_error": "Billing error",
+            "change_to_cheaper": "Change to a cheaper room",
+            "prefer_credit": "Customer prefers credit",
+            "other": "Other"
+        },
+        "header_title": "Booking summary",
+        "guest_primary": "Primary Guest",
+        "checkin_label": "Check-in",
+        "checkout_label": "Check-out",
+        "accommodation_breakdown": "Accommodation breakdown",
+        "room_format": "Room {{type}}",
+        "download_pdf": "Download PDF",
+        "checkin_button": "Do Check-In",
+        "checkin_out_button": "Do Check-Out",
+        "refund_requested": "Refund requested",
+        "request_refund": "Request refund",
+        "rates_and_extras": "Rates & Extras",
+        "no_additional_charges": "No additional charges",
+        "total_final": "Total",
+        "paid": "Paid",
+        "pending": "Pending",
+        "room_assigned_title": "Assigned room(s)",
+        "refund_processing": "Processing refund...",
+        "refund_amount": "Refund amount",
+        "refund_reason_label": "Select a reason",
+        "refund_notes_placeholder": "Add optional notes about your refund request",
+        "sending": "Sending...",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
     }
-  }
-  ,
-  "barra": {
-    "entrada": "Check-in",
-    "salida": "Check-out",
-    "huespedes": "Guests",
-    "aria_entrada": "Select check-in date",
-    "aria_salida": "Select check-out date"
-  },
-  "buscador": {
-    "placeholder": "Search your booking...",
-    "not_found": "No booking found with that locator",
-    "error": "Error searching booking"
-  },
-  "cookie": {
-    "title": "Cookie Policy",
-    "desc": "We use cookies to improve your experience on our website.",
-    "accept_essential": "Essential Only",
-    "accept_all": "Accept All"
-  },
-  "footer": {
-    "copyright": "© {{year}} HOTEL GLUDIO. All rights reserved.",
-    "privacy": "Privacy Policy",
-    "terms": "Terms of Service",
-    "contact": "Contact"
-  }
-  ,
-  "actions": {
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "continue": "Continue",
-    "next": "Next",
-    "close": "Close",
-    "back_change_dates": "← Change dates"
-  },
-  "paso2": {
-    "title": "Where do you want to sleep?",
-    "step_label": "Step 2 — Stay selection",
-    "regimen": "Regimen",
-    "adjust": "Adjust",
-    "options_stay": "Stay options",
-    "searching_availability": "We're searching\navailability for you...",
-    "subtotal": "Subtotal",
-    "volver": "Back",
-    "continue": "Continue",
-    "persons": "persons",
-    "price_per_night": "average price / night",
-    "remove": "Remove",
-    "selected": "Selected",
-    "select": "Select",
-    "breadcrumbs": {
-      "dates": "Dates",
-      "room": "Room",
-      "data": "Data",
-      "confirm": "Confirm"
-    },
-    "services_title": "Available services",
-    "services_subtitle": "Customize your stay",
-    "loading_services": "Loading services...",
-    "free": "Free"
-    ,
-    "coupon_label": "Special code",
-    "coupon_placeholder": "Enter your code",
-    "coupon_apply": "Apply",
-    "summary_title": "Summary",
-    "nights": "night(s)",
-    "taxes_included": "Taxes included",
-    "total": "Total",
-    "supplements": "Supplements",
-    "room_type": {
-      "single": "Single",
-      "double": "Double",
-      "suite": "Suite"
-    }
-  },
-  "tarifas": {
-    "media_pension": { "name": "Half Board" },
-    "pension_completa": { "name": "Full Board" },
-    "todo_incluido": { "name": "All Inclusive" },
-    "catalogo_almohadas": { "name": "Pillow Catalogue" },
-    "spa_bienestar": { "name": "Spa & Wellness" },
-    "gym_premium": { "name": "Premium Gym Access" },
-    "city_tour": { "name": "City Tour" },
-    "excursion_aventura": { "name": "Adventure Excursion" }
-  },
-  "booking": {
-    "existing_client_detected": "Existing Client Detected",
-    "existing_client_message": "The provided identity document matches a client already registered in our database."
-  }
-  ,
-  "auth": {
-    "login_title": "Login",
-    "login_subtitle": "Access your account",
-    "email_label": "Email",
-    "email_placeholder": "you@email.com",
-    "password_label": "Password",
-    "password_placeholder": "••••••••",
-    "forgot_password": "Forgot your password?",
-    "remember_me": "Remember me",
-    "processing": "Signing in...",
-    "login_button": "Sign in",
-    "create_account": "Create account",
-    "trust_secure": "Secure",
-    "trust_247": "24/7",
-    "register_title": "Register",
-    "register_header": "Join now",
-    "register_subtitle": "Create your account in 2 minutes",
-    "benefit_instant": "Instant bookings",
-    "benefit_free": "100% Free",
-    "benefit_history": "Full history",
-    "benefit_no_commitment": "No commitments",
-    "name_label": "Name",
-    "name_placeholder": "John",
-    "doc_type_label": "Doc",
-    "doc_dni": "DNI",
-    "doc_passport": "Passport",
-    "doc_tie": "TIE",
-    "doc_number_label": "No.",
-    "doc_number_placeholder": "123456",
-    "country_label": "Country",
-    "country_placeholder": "Spain",
-    "phone_label": "Tel",
-    "phone_placeholder": "+34600000",
-    "address_label": "Address",
-    "address_placeholder": "Main St, 123",
-    "city_label": "City",
-    "city_placeholder": "Madrid",
-    "postal_label": "Postal Code",
-    "postal_placeholder": "28001",
-    "password_confirm_label": "Confirm",
-    "register_button": "Register",
-    "already_have_account": "Already have an account?",
-    "terms_prefix": "By registering you accept our",
-    "terms": "terms"
-  }
-  ,
-  "dashboard": {
-    "title": "Welcome to your Stay",
-    "experience_tag": "Exclusive Experience",
-    "headline_part1": "Where every detail",
-    "headline_emphasis": "tells a story.",
-    "subtitle": "We're preparing your arrival so your only concern is enjoying the rest you deserve.",
-    "cta": "Enter the Hotel",
-    "brand": "Hotel Gludio"
-  }
-  ,
-  "modal": {
-    "gallery": {
-      "room_badge": "Gludio Room",
-      "meters": "Meters",
-      "guests": "Guests",
-      "description_title": "Description",
-      "amenities_title": "Included Services",
-      "price_per_night": "Price per night",
-      "back": "Back",
-      "quick_pass": "Quick Pass"
-    }
-  }
-  ,
-  "edit_reserva": {
-    "modify_dates_button": "I need to modify my booking dates",
-    "refund_reasons": {
-      "billing_error": "Billing error",
-      "change_to_cheaper": "Change to a cheaper room",
-      "prefer_credit": "Customer prefers credit",
-      "other": "Other"
-    },
-    "header_title": "Booking summary",
-    "guest_primary": "Primary Guest",
-    "checkin_label": "Check-in",
-    "checkout_label": "Check-out",
-    "accommodation_breakdown": "Accommodation breakdown",
-    "room_format": "Room {{type}}",
-    "download_pdf": "Download PDF",
-    "checkin_button": "Do Check-In",
-    "checkin_out_button": "Do Check-Out",
-    "refund_requested": "Refund requested",
-    "request_refund": "Request refund",
-    "rates_and_extras": "Rates & Extras",
-    "no_additional_charges": "No additional charges",
-    "total_final": "Total",
-    "paid": "Paid",
-    "pending": "Pending",
-    "room_assigned_title": "Assigned room(s)",
-    "refund_processing": "Processing refund...",
-    "refund_amount": "Refund amount",
-    "refund_reason_label": "Select a reason",
-    "refund_notes_placeholder": "Add optional notes about your refund request",
-    "sending": "Sending...",
-    "confirm": "Confirm",
-    "cancel": "Cancel"
-  }
 }

@@ -13,7 +13,8 @@ export default function MobileStickyBar({ children, className = '' }) {
         if (mq.addEventListener) mq.addEventListener('change', onChange);
         else mq.addListener(onChange);
         return () => {
-            if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+            if (mq.removeEventListener)
+                mq.removeEventListener('change', onChange);
             else mq.removeListener(onChange);
         };
     }, []);

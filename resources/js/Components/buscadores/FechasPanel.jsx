@@ -1,4 +1,3 @@
-import React from 'react';
 import Campo from '@/Components/reservas/utilidades/Campo';
 
 export default function FechasPanel({ formulario, cambiar, errores }) {

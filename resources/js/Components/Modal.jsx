@@ -11,6 +11,7 @@ export default function Modal({
     maxWidth = '2xl',
     closeable = true,
     onClose = () => {},
+    ariaLabel = 'Diálogo',
 }) {
     const close = () => {
         if (closeable) {
@@ -31,6 +32,9 @@ export default function Modal({
             <Dialog
                 as="div"
                 id="modal"
+                role="dialog"
+                aria-modal="true"
+                aria-label={ariaLabel}
                 className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
                 onClose={close}
             >
@@ -42,7 +46,7 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="absolute inset-0" />
+                    <div className="absolute inset-0" aria-hidden="true" />
                 </TransitionChild>
 
                 <TransitionChild

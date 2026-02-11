@@ -1,3 +1,4 @@
+import InputError from '@/Components/InputError';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 const Campo = forwardRef(
@@ -112,6 +113,8 @@ const Campo = forwardRef(
         const contenido = typeof hijos !== 'undefined' ? hijos : props.children;
 
         const atributos = { ...props };
+        // Añadir atributo ARIA para campos requeridos (se añade aquí para evitar usar `atributos` antes de su declaración)
+        if (atributos.required) atributos['aria-required'] = true;
         // eliminar props en español y variantes en inglés para que no lleguen al DOM
         delete atributos.clase;
         delete atributos.claseExtra;
@@ -355,9 +358,11 @@ const Campo = forwardRef(
                     </InputTag>
                 )}
                 {error && (
-                    <span id={descritoPor} className={claseError}>
-                        {Array.isArray(error) ? error[0] : error}
-                    </span>
+                    <InputError
+                        id={descritoPor}
+                        className={claseError}
+                        message={Array.isArray(error) ? error[0] : error}
+                    />
                 )}
             </div>
         );

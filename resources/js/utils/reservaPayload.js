@@ -37,10 +37,12 @@ export function getReservaPayload({
         typeof getValues === 'function' ? getValues() : getValues || {};
     const habitaciones = mapHabitaciones(habitacionesSeleccionadas);
 
-    if (process.env.NODE_ENV !== 'production' && (!rango || !rango.from || !rango.to)) {
+    if (
+        process.env.NODE_ENV !== 'production' &&
+        (!rango || !rango.from || !rango.to)
+    ) {
         // Debugging statements removed to keep console clean during development
     }
-
 
     const reservableId =
         idClienteSeleccionado !== undefined && idClienteSeleccionado !== null

@@ -1,17 +1,30 @@
-import { useEffect, useState, useRef } from 'react';
-import dayjs from 'dayjs';
 import * as reservasApi from '@/api/reservas';
-import usePayments from '@/hooks/pagos/usePayments';
 import usePaymentCheck from '@/hooks/pagos/usePaymentCheck';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
 import axios from 'axios';
+import dayjs from 'dayjs';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-export default function useEditarReserva({ reserva, setReserva, initialHabitacionesDisponibles = [], refresh, showToast, aplicarCambioFechas, obtenerPreview, clearPreview = null }) {
-    const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState([]);
-    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(initialHabitacionesDisponibles);
+export default function useEditarReserva({
+    reserva,
+    setReserva,
+    initialHabitacionesDisponibles = [],
+    refresh,
+    showToast,
+    aplicarCambioFechas,
+    obtenerPreview,
+    clearPreview = null,
+}) {
+    const [habitacionesSeleccionadas, setHabitacionesSeleccionadas] = useState(
+        [],
+    );
+    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState(
+        initialHabitacionesDisponibles,
+    );
     const loadedAvailRef = useRef(false);
     const [guardandoHabitaciones, setGuardandoHabitaciones] = useState(false);
-    const [enviandoSolicitudReembolso, setEnviandoSolicitudReembolso] = useState(false);
+    const [enviandoSolicitudReembolso, setEnviandoSolicitudReembolso] =
+        useState(false);
 
     // Reembolso: estado local para el modal de reembolso
     const [mostrarReembolso, setMostrarReembolso] = useState(false);
@@ -21,9 +34,14 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
 
     const abrirReembolso = (monto = null) => {
         // Si no se pasa monto, asumimos reembolso total disponible de la reserva
-        const disponible = (reserva?.precio_total ?? 0) - (reserva?.reembolsos_total ?? 0);
+        const disponible =
+            (reserva?.precio_total ?? 0) - (reserva?.reembolsos_total ?? 0);
         let efectivo = monto;
-        if (efectivo === null || efectivo === undefined || Number.isNaN(Number(efectivo))) {
+        if (
+            efectivo === null ||
+            efectivo === undefined ||
+            Number.isNaN(Number(efectivo))
+        ) {
             efectivo = Math.max(0, Number(disponible || 0));
         }
         setMontoReembolso(efectivo);
@@ -39,25 +57,87 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const [vistaPreviaCargada, setVistaPreviaCargada] = useState(false);
 
     // Reuse `usePaymentModal` to orchestrate payment modal behavior and keep the public API
-    const paymentModal = usePaymentModal({ aplicarCambioFechas, refresh, showToast });
+    const paymentModal = usePaymentModal({
+        aplicarCambioFechas,
+        refresh,
+        showToast,
+    });
 
     const mostrarModalPago = paymentModal.mostrar;
-    const setMostrarModalPago = (val) => { if (val) paymentModal.open(paymentModal.monto, { pendingApply: paymentModal.pendienteAplicar }); else paymentModal.close(); };
+    const setMostrarModalPago = (val) => {
+        if (val)
+            paymentModal.open(paymentModal.monto, {
+                pendingApply: paymentModal.pendienteAplicar,
+            });
+        else paymentModal.close();
+    };
     const montoPago = paymentModal.monto;
-    const setMontoPago = (v) => paymentModal.open(v, { pendingApply: paymentModal.pendienteAplicar });
+    const setMontoPago = (v) =>
+        paymentModal.open(v, { pendingApply: paymentModal.pendienteAplicar });
     const pendienteAplicarTrasPago = paymentModal.pendienteAplicar;
-    const setPendienteAplicTrasPago = (v) => paymentModal.open(paymentModal.monto, { pendingApply: v });
     const aceptaTerminosPago = paymentModal.aceptaTerminos;
     const setAceptaTerminosPago = (v) => paymentModal.setAceptaTerminos(v);
     // Local processing state for date-change operations (separate from payment modal processing)
     // Unified name: use `isProcessing` across hooks/components for consistency
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const cargarHabitacionesDisponibles = useCallback(async () => {
+        try {
+            const response = await axios.get(
+                `/habitaciones/disponibles?individuales=true&check_in=${reserva.check_in}&check_out=${reserva.check_out}`,
+            );
+            const data = response.data;
+            console.debug(
+                '[useEditarReserva] cargarHabitacionesDisponibles response',
+                {
+                    url: response.config.url,
+                    data,
+                },
+            );
+            if (data) {
+                let habitaciones = [];
+                if (
+                    Array.isArray(data) &&
+                    data.length > 0 &&
+                    (data[0].habitaciones || data[0].id)
+                ) {
+                    if (data[0].habitaciones) {
+                        habitaciones = data.flatMap(
+                            (grupo) => grupo.habitaciones || [],
+                        );
+                    } else {
+                        habitaciones = data;
+                    }
+                } else {
+                    habitaciones = Array.isArray(data)
+                        ? data.flatMap((grupo) => grupo.habitaciones || [])
+                        : [];
+                }
+                console.debug(
+                    '[useEditarReserva] cargarHabitacionesDisponibles parsed habitaciones',
+                    { count: habitaciones.length },
+                );
+                setHabitacionesDisponibles(habitaciones);
+            }
+        } catch (error) {
+            console.error('Error cargando habitaciones disponibles:', error);
+        }
+    }, [reserva?.check_in, reserva?.check_out]);
+
     // Debugging: log initial values to help trace repeated requests / empty disponible lists
     try {
         // eslint-disable-next-line no-console
-        console.debug('[useEditarReserva] init', { reservaId: reserva?.id, initialHabitacionesDisponiblesLength: Array.isArray(initialHabitacionesDisponibles) ? initialHabitacionesDisponibles.length : null });
-    } catch (e) {}
+        console.debug('[useEditarReserva] init', {
+            reservaId: reserva?.id,
+            initialHabitacionesDisponiblesLength: Array.isArray(
+                initialHabitacionesDisponibles,
+            )
+                ? initialHabitacionesDisponibles.length
+                : null,
+        });
+    } catch (e) {
+        console.debug(e);
+    }
 
     useEffect(() => {
         // Update selected rooms only if the id list actually changed to avoid
@@ -65,7 +145,10 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         if (!Array.isArray(reserva?.habitaciones)) return;
         const newIds = reserva.habitaciones.map((h) => h.habitacion_id || null);
         setHabitacionesSeleccionadas((prev) => {
-            if (prev.length === newIds.length && prev.every((v, i) => v === newIds[i])) {
+            if (
+                prev.length === newIds.length &&
+                prev.every((v, i) => v === newIds[i])
+            ) {
                 return prev;
             }
             return newIds;
@@ -77,13 +160,26 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         // `initialHabitacionesDisponibles` is a new array reference but
         // contains the same content. Do a shallow compare by id and length.
         try {
-            if (Array.isArray(initialHabitacionesDisponibles) && initialHabitacionesDisponibles.length > 0) {
+            if (
+                Array.isArray(initialHabitacionesDisponibles) &&
+                initialHabitacionesDisponibles.length > 0
+            ) {
                 const prev = habitacionesDisponibles || [];
-                const prevIds = prev.map(h => h.id ?? h.habitacion_id ?? '').join(',');
-                const newIds = initialHabitacionesDisponibles.map(h => h.id ?? h.habitacion_id ?? '').join(',');
+                const prevIds = prev
+                    .map((h) => h.id ?? h.habitacion_id ?? '')
+                    .join(',');
+                const newIds = initialHabitacionesDisponibles
+                    .map((h) => h.id ?? h.habitacion_id ?? '')
+                    .join(',');
                 if (prevIds !== newIds) {
                     // eslint-disable-next-line no-console
-                    console.debug('[useEditarReserva] setting habitacionesDisponibles from initial prop', { prevCount: prev.length, newCount: initialHabitacionesDisponibles.length });
+                    console.debug(
+                        '[useEditarReserva] setting habitacionesDisponibles from initial prop',
+                        {
+                            prevCount: prev.length,
+                            newCount: initialHabitacionesDisponibles.length,
+                        },
+                    );
                     setHabitacionesDisponibles(initialHabitacionesDisponibles);
                 }
                 loadedAvailRef.current = true;
@@ -91,55 +187,34 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 // Si no hay iniciales, cargar dinámicamente sólo una vez
                 if (!loadedAvailRef.current) {
                     // eslint-disable-next-line no-console
-                    console.debug('[useEditarReserva] initialHabitacionesDisponibles empty, loading from API (first time)');
+                    console.debug(
+                        '[useEditarReserva] initialHabitacionesDisponibles empty, loading from API (first time)',
+                    );
                     cargarHabitacionesDisponibles();
                     loadedAvailRef.current = true;
                 } else {
                     // eslint-disable-next-line no-console
-                    console.debug('[useEditarReserva] initialHabitacionesDisponibles empty, skipping repeated load');
+                    console.debug(
+                        '[useEditarReserva] initialHabitacionesDisponibles empty, skipping repeated load',
+                    );
                 }
             }
         } catch (e) {
             // Fallback: set directly if anything unexpected
             // eslint-disable-next-line no-console
-            console.debug('[useEditarReserva] fallback set habitacionesDisponibles', { err: String(e) });
+            console.debug(
+                '[useEditarReserva] fallback set habitacionesDisponibles',
+                { err: String(e) },
+            );
             setHabitacionesDisponibles(initialHabitacionesDisponibles || []);
         }
-    }, [initialHabitacionesDisponibles]);
+    }, [
+        initialHabitacionesDisponibles,
+        cargarHabitacionesDisponibles,
+        habitacionesDisponibles,
+    ]);
 
-    const cargarHabitacionesDisponibles = async () => {
-        try {
-            const response = await axios.get(`/habitaciones/disponibles?individuales=true&check_in=${reserva.check_in}&check_out=${reserva.check_out}`);
-            const data = response.data;
-            // eslint-disable-next-line no-console
-            console.debug('[useEditarReserva] cargarHabitacionesDisponibles response', { url: response.config.url, data });
-            if (data) {
-                    // La API puede devolver dos formatos:
-                    // 1) Array de grupos: [{ habitaciones: [...] }, ...]
-                    // 2) Array directo de habitaciones: [{ id, numero, tipo, ... }, ...]
-                    let habitaciones = [];
-                    if (Array.isArray(data) && data.length > 0 && (data[0].habitaciones || data[0].id)) {
-                        if (data[0].habitaciones) {
-                            // formato grupos
-                            habitaciones = data.flatMap(grupo => grupo.habitaciones || []);
-                        } else {
-                            // formato directo de habitaciones
-                            habitaciones = data;
-                        }
-                    } else {
-                        // fallback: intentar aplanar por seguridad
-                        habitaciones = Array.isArray(data) ? data.flatMap(grupo => grupo.habitaciones || []) : [];
-                    }
-
-                    // eslint-disable-next-line no-console
-                    console.debug('[useEditarReserva] cargarHabitacionesDisponibles parsed habitaciones', { count: habitaciones.length });
-                    setHabitacionesDisponibles(habitaciones);
-                }
-        } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Error cargando habitaciones disponibles:', error);
-        }
-    };
+    // (Implementation moved above and memoized with useCallback)
 
     const desasignarHabitacion = async (habitacionId) => {
         // Prevent concurrent desasignaciones
@@ -150,23 +225,37 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
 
         // Resolve habitacion_id from the parameter which may be a habitacion_id or a slot_id (or string)
         let resolvedHabitacionId = null;
-        const parsedParam = (typeof habitacionId === 'string' || typeof habitacionId === 'number') ? Number(habitacionId) : habitacionId;
-        const hrList = Array.isArray(reserva?.habitaciones) ? reserva.habitaciones : [];
+        const parsedParam =
+            typeof habitacionId === 'string' || typeof habitacionId === 'number'
+                ? Number(habitacionId)
+                : habitacionId;
+        const hrList = Array.isArray(reserva?.habitaciones)
+            ? reserva.habitaciones
+            : [];
 
         // If the passed value directly matches an existing habitacion_id, use it
-        const directMatch = hrList.find(h => Number(h.habitacion_id) === parsedParam);
-        if (directMatch) resolvedHabitacionId = Number(directMatch.habitacion_id);
+        const directMatch = hrList.find(
+            (h) => Number(h.habitacion_id) === parsedParam,
+        );
+        if (directMatch)
+            resolvedHabitacionId = Number(directMatch.habitacion_id);
 
         // Otherwise try to find a slot with slot_id equal to the passed param and use its habitacion_id
         if (!resolvedHabitacionId) {
-            const slotMatch = hrList.find(h => Number(h.slot_id) === parsedParam || Number(h.id) === parsedParam);
-            if (slotMatch && slotMatch.habitacion_id) resolvedHabitacionId = Number(slotMatch.habitacion_id);
+            const slotMatch = hrList.find(
+                (h) =>
+                    Number(h.slot_id) === parsedParam ||
+                    Number(h.id) === parsedParam,
+            );
+            if (slotMatch && slotMatch.habitacion_id)
+                resolvedHabitacionId = Number(slotMatch.habitacion_id);
         }
 
         // As a last resort, if the caller passed a non-numeric falsy value, try to find any non-null habitacion_id for the same slot index
         if (!resolvedHabitacionId && !Number.isFinite(parsedParam)) {
-            const anyAssigned = hrList.find(h => h && h.habitacion_id);
-            if (anyAssigned) resolvedHabitacionId = Number(anyAssigned.habitacion_id);
+            const anyAssigned = hrList.find((h) => h && h.habitacion_id);
+            if (anyAssigned)
+                resolvedHabitacionId = Number(anyAssigned.habitacion_id);
         }
 
         if (!resolvedHabitacionId) {
@@ -177,26 +266,53 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         setGuardandoHabitaciones(true);
         try {
             // eslint-disable-next-line no-console
-            console.debug('[useEditarReserva] desasignarHabitacion', { reservaId: reserva?.id, habitacionId: resolvedHabitacionId, originalParam: habitacionId });
-            const data = await reservasApi.desasignarHabitaciones(reserva.id, [resolvedHabitacionId]);
+            console.debug('[useEditarReserva] desasignarHabitacion', {
+                reservaId: reserva?.id,
+                habitacionId: resolvedHabitacionId,
+                originalParam: habitacionId,
+            });
+            const data = await reservasApi.desasignarHabitaciones(reserva.id, [
+                resolvedHabitacionId,
+            ]);
             if (data?.success && data.reserva) {
                 setReserva(data.reserva);
                 showToast?.('Habitación desasignada con éxito', 'success');
             } else {
                 // mostrar detalle de error devuelto por la API si lo hay
                 // eslint-disable-next-line no-console
-                console.warn('[useEditarReserva] desasignarHabitacion api returned error', data);
-                showToast?.(data?.error || data?.message || 'Error al desasignar', 'error');
+                console.warn(
+                    '[useEditarReserva] desasignarHabitacion api returned error',
+                    data,
+                );
+                showToast?.(
+                    data?.error || data?.message || 'Error al desasignar',
+                    'error',
+                );
             }
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.error('[useEditarReserva] desasignarHabitacion error', error);
+            console.error(
+                '[useEditarReserva] desasignarHabitacion error',
+                error,
+            );
             // intentar mostrar el cuerpo de la respuesta si existe
-            const apiErr = error?.response?.data || error?.response || error?.message || String(error);
+            const apiErr =
+                error?.response?.data ||
+                error?.response ||
+                error?.message ||
+                String(error);
             // eslint-disable-next-line no-console
-            console.debug('[useEditarReserva] desasignarHabitacion response body', apiErr);
+            console.debug(
+                '[useEditarReserva] desasignarHabitacion response body',
+                apiErr,
+            );
             if (apiErr && typeof apiErr === 'object') {
-                showToast?.(apiErr.error || apiErr.message || 'Error al desasignar habitación', 'error');
+                showToast?.(
+                    apiErr.error ||
+                        apiErr.message ||
+                        'Error al desasignar habitación',
+                    'error',
+                );
             } else {
                 showToast?.(String(apiErr), 'error');
             }
@@ -220,8 +336,12 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     useEffect(() => {
         let mounted = true;
         const esFechaOriginal = (ci, co) => {
-            const originalCi = reserva?.check_in ? dayjs(reserva.check_in).format('YYYY-MM-DD') : null;
-            const originalCo = reserva?.check_out ? dayjs(reserva.check_out).format('YYYY-MM-DD') : null;
+            const originalCi = reserva?.check_in
+                ? dayjs(reserva.check_in).format('YYYY-MM-DD')
+                : null;
+            const originalCo = reserva?.check_out
+                ? dayjs(reserva.check_out).format('YYYY-MM-DD')
+                : null;
             return ci === originalCi && co === originalCo;
         };
 
@@ -235,7 +355,9 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
                 // If user reverted to the original dates, clear any preview to restore original total
                 try {
                     if (clearPreview) clearPreview();
-                } catch (e) {}
+                } catch (e) {
+                    console.debug(e);
+                }
                 setVistaPreviaCargada(false);
                 return;
             }
@@ -243,7 +365,11 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             if (!obtenerPreview) return;
             setVistaPreviaCargada(false);
             try {
-                await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut, reserva);
+                await obtenerPreview(
+                    fechaModalCheckIn,
+                    fechaModalCheckOut,
+                    reserva,
+                );
                 if (mounted) setVistaPreviaCargada(true);
             } catch (e) {
                 if (mounted) setVistaPreviaCargada(false);
@@ -255,11 +381,22 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         return () => {
             mounted = false;
         };
-    // Only depend on the modal flags, preview function and the original check-in/out values
-    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut, obtenerPreview, reserva?.check_in, reserva?.check_out]);
+        // Only depend on the modal flags, preview function and the original check-in/out values
+    }, [
+        mostrarModalFechas,
+        fechaModalCheckIn,
+        fechaModalCheckOut,
+        obtenerPreview,
+        reserva?.check_in,
+        reserva?.check_out,
+        clearPreview,
+        reserva,
+    ]);
 
     // Use centralized hybrid listener/polling for Checkout redirect + realtime update
-    const sessionIdParam = new URLSearchParams(window.location.search).get('session_id');
+    const sessionIdParam = new URLSearchParams(window.location.search).get(
+        'session_id',
+    );
     usePaymentCheck({
         reservaId: reserva.id,
         sessionId: sessionIdParam,
@@ -276,7 +413,9 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             }
             const params = new URLSearchParams(window.location.search);
             params.delete('session_id');
-            const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+            const newUrl =
+                window.location.pathname +
+                (params.toString() ? '?' + params.toString() : '');
             window.history.replaceState({}, document.title, newUrl);
         },
     });
@@ -287,9 +426,17 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             // obtener último preview
             let ultimoPreview = null;
             if (obtenerPreview) {
-                ultimoPreview = await obtenerPreview(fechaModalCheckIn, fechaModalCheckOut, reserva);
+                ultimoPreview = await obtenerPreview(
+                    fechaModalCheckIn,
+                    fechaModalCheckOut,
+                    reserva,
+                );
             } else {
-                ultimoPreview = await reservasApi.getDisponibles(fechaModalCheckIn, fechaModalCheckOut, reserva?.id || reserva?.reserva_id || null);
+                ultimoPreview = await reservasApi.getDisponibles(
+                    fechaModalCheckIn,
+                    fechaModalCheckOut,
+                    reserva?.id || reserva?.reserva_id || null,
+                );
             }
 
             if (ultimoPreview?.available === false) {
@@ -300,14 +447,28 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
             if (ultimoPreview?.estimate_charge > 0) {
                 // Si la reserva ya está pagada, abrir modal de pago; si no, aplicar el cambio sin modal (sumar al total)
                 if (reserva?.pago === 'pagado') {
-                    paymentModal.open(ultimoPreview.estimate_charge, { pendingApply: true, requireAcceptance: true, meta: { check_in: fechaModalCheckIn, check_out: fechaModalCheckOut } });
+                    paymentModal.open(ultimoPreview.estimate_charge, {
+                        pendingApply: true,
+                        requireAcceptance: true,
+                        meta: {
+                            check_in: fechaModalCheckIn,
+                            check_out: fechaModalCheckOut,
+                        },
+                    });
                     return { success: true, pendingPayment: true };
                 }
 
                 // No está pagada: aplicar el cambio directamente (no abrir modal de pago)
                 if (aplicarCambioFechas) {
-                    const res = await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut);
-                    showToast?.(res?.message || 'Fechas actualizadas (importe añadido al total)', 'success');
+                    const res = await aplicarCambioFechas(
+                        fechaModalCheckIn,
+                        fechaModalCheckOut,
+                    );
+                    showToast?.(
+                        res?.message ||
+                            'Fechas actualizadas (importe añadido al total)',
+                        'success',
+                    );
                     setMostrarModalFechas(false);
                     refresh?.();
                     return { success: true, res };
@@ -316,7 +477,10 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
 
             // Aplicar cambio de fechas inmediatamente (reducción o sin cargo)
             if (aplicarCambioFechas) {
-                const res = await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut);
+                const res = await aplicarCambioFechas(
+                    fechaModalCheckIn,
+                    fechaModalCheckOut,
+                );
                 showToast?.(res?.message || 'Fechas actualizadas', 'success');
                 setMostrarModalFechas(false);
                 refresh?.();
@@ -334,11 +498,20 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
 
     const pagoExitoso = async (paymentResult) => {
         setMostrarModalPago(false);
-        if (!pendienteAplicarTrasPago) return { success: false, reason: 'no_pending' };
+        if (!pendienteAplicarTrasPago)
+            return { success: false, reason: 'no_pending' };
         try {
             setIsProcessing(true);
-            if (!aplicarCambioFechas) return { success: false, message: 'aplicarCambioFechas missing' };
-            await aplicarCambioFechas(fechaModalCheckIn, fechaModalCheckOut, paymentResult?.pago_id);
+            if (!aplicarCambioFechas)
+                return {
+                    success: false,
+                    message: 'aplicarCambioFechas missing',
+                };
+            await aplicarCambioFechas(
+                fechaModalCheckIn,
+                fechaModalCheckOut,
+                paymentResult?.pago_id,
+            );
             showToast?.('Cambio aplicado tras pago.', 'success');
             setMostrarModalFechas(false);
             refresh?.();
@@ -355,17 +528,33 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         setGuardandoHabitaciones(true);
         try {
             // Ensure we send an array aligned with reservation slots: one entry per slot (null when empty)
-            const slotsCount = Array.isArray(reserva?.habitaciones) ? reserva.habitaciones.length : habitacionesSeleccionadas.length;
-            const habitacionIds = Array.from({ length: slotsCount }).map((_, idx) => (Array.isArray(habitacionesSeleccionadas) ? (habitacionesSeleccionadas[idx] ?? null) : null));
-            const data = await reservasApi.asignarHabitaciones(reserva.id, habitacionIds);
+            const slotsCount = Array.isArray(reserva?.habitaciones)
+                ? reserva.habitaciones.length
+                : habitacionesSeleccionadas.length;
+            const habitacionIds = Array.from({ length: slotsCount }).map(
+                (_, idx) =>
+                    Array.isArray(habitacionesSeleccionadas)
+                        ? (habitacionesSeleccionadas[idx] ?? null)
+                        : null,
+            );
+            const data = await reservasApi.asignarHabitaciones(
+                reserva.id,
+                habitacionIds,
+            );
             if (data?.success && data.reserva) {
                 setReserva(data.reserva);
-                setHabitacionesSeleccionadas(data.reserva.habitaciones.map((h) => h.habitacion_id));
+                setHabitacionesSeleccionadas(
+                    data.reserva.habitaciones.map((h) => h.habitacion_id),
+                );
                 showToast?.('Habitaciones actualizadas con éxito', 'success');
 
                 // Si requiere pago adicional, abrir modal de pago
                 if (data.requiere_pago && data.monto_pago > 0) {
-                    paymentModal.open(data.monto_pago, { pendingApply: false, requireAcceptance: true, meta: { tipo: 'habitaciones' } });
+                    paymentModal.open(data.monto_pago, {
+                        pendingApply: false,
+                        requireAcceptance: true,
+                        meta: { tipo: 'habitaciones' },
+                    });
                 }
             } else {
                 showToast?.(data?.error || 'Error al actualizar', 'error');
@@ -380,7 +569,10 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
     const enviarSolicitudReembolso = async (payload) => {
         setEnviandoSolicitudReembolso(true);
         try {
-            const res = await reservasApi.crearSolicitudReembolso(reserva.localizador, payload);
+            const res = await reservasApi.crearSolicitudReembolso(
+                reserva.localizador,
+                payload,
+            );
             if (res?.success) {
                 showToast?.('Solicitud enviada correctamente', 'success');
                 refresh?.();
@@ -431,7 +623,8 @@ export default function useEditarReserva({ reserva, setReserva, initialHabitacio
         montoPago,
         setMontoPago,
         pendienteAplicarTrasPago,
-        setPendienteAplicTrasPago: (v) => paymentModal.open(paymentModal.monto, { pendingApply: v }),
+        setPendienteAplicTrasPago: (v) =>
+            paymentModal.open(paymentModal.monto, { pendingApply: v }),
         aceptaTerminosPago,
         setAceptaTerminosPago,
         isProcessing,

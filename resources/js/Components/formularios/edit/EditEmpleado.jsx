@@ -45,7 +45,16 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         // cargar lista de roles disponibles
         fetch('/api/roles', { credentials: 'same-origin' })
             .then((r) => r.json())
-            .then((data) => setRoles((Array.isArray(data) ? data : []).filter((r) => !['admin','user'].includes((r||'').toString().trim().toLowerCase()))))
+            .then((data) =>
+                setRoles(
+                    (Array.isArray(data) ? data : []).filter(
+                        (r) =>
+                            !['admin', 'user'].includes(
+                                (r || '').toString().trim().toLowerCase(),
+                            ),
+                    ),
+                ),
+            )
             .catch(() => setRoles([]));
 
         // cargar lista de departamentos
@@ -61,7 +70,11 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
 
                 departamento_id: empleado.departamento_id || null,
 
-                role: empleado.role || (empleado.roles && empleado.roles.length ? empleado.roles[0] : ''),
+                role:
+                    empleado.role ||
+                    (empleado.roles && empleado.roles.length
+                        ? empleado.roles[0]
+                        : ''),
                 tipo_documento: empleado.tipo_documento || 'dni',
                 numero_documento: empleado.numero_documento || '',
                 nacionalidad: empleado.nacionalidad || '',
@@ -73,7 +86,7 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         } else {
             limpiar();
         }
-    }, [empleado?.id]);
+    }, [empleado, cargarDatos, limpiar]);
 
     const handleCerrar = () => {
         onCerrar?.();
@@ -163,7 +176,6 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-
                                 <Campo
                                     id="departamento_id"
                                     name="departamento_id"
@@ -173,12 +185,13 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                                     onChange={cambiar}
                                 >
                                     <option value="">Sin departamento</option>
-                                    {Array.isArray(departamentos) && departamentos.map((d) => (
-                                        <option key={d.id} value={d.id}>{d.name.toUpperCase()}</option>
-                                    ))}
+                                    {Array.isArray(departamentos) &&
+                                        departamentos.map((d) => (
+                                            <option key={d.id} value={d.id}>
+                                                {d.name.toUpperCase()}
+                                            </option>
+                                        ))}
                                 </Campo>
-
-
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -190,9 +203,12 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
                                     onChange={cambiar}
                                 >
                                     <option value="">Sin rol</option>
-                                    {Array.isArray(roles) && roles.map((r) => (
-                                        <option key={r} value={r}>{r.toUpperCase()}</option>
-                                    ))}
+                                    {Array.isArray(roles) &&
+                                        roles.map((r) => (
+                                            <option key={r} value={r}>
+                                                {r.toUpperCase()}
+                                            </option>
+                                        ))}
                                 </Campo>
 
                                 <Campo

@@ -1,5 +1,13 @@
 import BuscadorNavbar from '@/Components/buscadores/BuscadorNavbar';
+import ModalPaso from '@/Components/reservas/pasos/ModalPaso';
+import Paso2Habitaciones from '@/Components/reservas/pasos/Paso2Habitaciones';
+import Paso3Datos from '@/Components/reservas/pasos/Paso3Datos';
+import Paso4Confirmacion from '@/Components/reservas/pasos/Paso4Confirmacion';
+import CalendarioPicker, {
+    CalendarioStyles,
+} from '@/Components/reservas/utilidades/CalendarioPicker';
 import Campo from '@/Components/reservas/utilidades/Campo';
+import { t } from '@/i18n';
 import {
     ArrowDownOnSquareIcon,
     ArrowUpOnSquareIcon,
@@ -15,12 +23,6 @@ import useCalendarioDia from '../../hooks/calendario/useCalendarioDia';
 import useCalendarioPrecios from '../../hooks/calendario/useCalendarioPrecios';
 import useReservaForm from '../../hooks/reservas/useReservaForm';
 import { formatearFecha } from '../../utils/formatters';
-import CalendarioPicker, { CalendarioStyles } from '@/Components/reservas/utilidades/CalendarioPicker';
-import ModalPaso from '@/Components/reservas/pasos/ModalPaso';
-import Paso2Habitaciones from '@/Components/reservas/pasos/Paso2Habitaciones';
-import Paso3Datos from '@/Components/reservas/pasos/Paso3Datos';
-import Paso4Confirmacion from '@/Components/reservas/pasos/Paso4Confirmacion';
-import { t } from '@/i18n';
 
 export default function BarraReservas() {
     const formularioReserva = useReservaForm();
@@ -228,7 +230,7 @@ export default function BarraReservas() {
                                 </div>
 
                                 <div className="flex flex-row items-center gap-1.5 rounded bg-gris px-2 py-1">
-                                        <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
+                                    <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
                                         <span className="hidden sm:inline">
                                             {t('barra.huespedes')}:
                                         </span>
@@ -249,7 +251,9 @@ export default function BarraReservas() {
                                                     4,
                                                     Math.max(
                                                         1,
-                                                        Number(e.target.value) || 1,
+                                                        Number(
+                                                            e.target.value,
+                                                        ) || 1,
                                                     ),
                                                 ),
                                             )

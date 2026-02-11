@@ -24,8 +24,15 @@ export function useQRScanner(action = null) {
 
                 setDatosEscaner(localizador);
 
-                const response = await QRScannerService.procesar( localizador, action );
-                const postAction = QRScannerService.postEscaneo( action, response, response?.reserva );
+                const response = await QRScannerService.procesar(
+                    localizador,
+                    action,
+                );
+                const postAction = QRScannerService.postEscaneo(
+                    action,
+                    response,
+                    response?.reserva,
+                );
 
                 if (postAction.type === 'redirect') {
                     router.visit(postAction.url);
@@ -33,7 +40,10 @@ export function useQRScanner(action = null) {
                     // Adjuntar posibles asignaciones que vengan en la respuesta
                     const reservaAug = {
                         ...(response?.reserva || {}),
-                        asignaciones: response?.asignaciones || postAction?.asignaciones || null,
+                        asignaciones:
+                            response?.asignaciones ||
+                            postAction?.asignaciones ||
+                            null,
                     };
 
                     return {
@@ -57,5 +67,12 @@ export function useQRScanner(action = null) {
         setAsignarDetalles(null);
     }, []);
 
-    return { datosEscaner, error, asignarDetalles, isProcessing, handleScanSuccess, clearError };
+    return {
+        datosEscaner,
+        error,
+        asignarDetalles,
+        isProcessing,
+        handleScanSuccess,
+        clearError,
+    };
 }

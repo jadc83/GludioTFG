@@ -5,7 +5,7 @@ import Nav from '@/Components/UI/Nav';
 import Toast from '@/Components/UI/Toast';
 import { emitToast } from '@/utils/toast';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function AuthenticatedLayout({ children }) {
     const page = usePage();
@@ -36,7 +36,10 @@ export default function AuthenticatedLayout({ children }) {
 
             if (msg) {
                 if (typeof msg === 'string' && msg.length <= 1) {
-                    console.warn('Ignored suspicious short error message in page.props.errors:', page.props.errors);
+                    console.warn(
+                        'Ignored suspicious short error message in page.props.errors:',
+                        page.props.errors,
+                    );
                 } else {
                     emitToast(msg, 'error');
                 }
@@ -52,16 +55,25 @@ export default function AuthenticatedLayout({ children }) {
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            emitToast(`Se ha solicitado un reembolso parcial de ${amt}€`, 'success');
+            emitToast(
+                `Se ha solicitado un reembolso parcial de ${amt}€`,
+                'success',
+            );
         }
 
         // Mostrar flash.success como toast (si existe)
         const successMsg = page?.props?.flash?.success;
         if (successMsg) {
-            const safeMsg = typeof successMsg === 'string' ? successMsg : JSON.stringify(successMsg);
+            const safeMsg =
+                typeof successMsg === 'string'
+                    ? successMsg
+                    : JSON.stringify(successMsg);
             // Evitar toasts demasiado cortos (p. ej. un solo carácter 'D') que suelen indicar un valor no esperado
             if (typeof safeMsg === 'string' && safeMsg.length === 1) {
-                console.warn('Ignored suspicious short flash.success:', page.props.flash);
+                console.warn(
+                    'Ignored suspicious short flash.success:',
+                    page.props.flash,
+                );
             } else {
                 emitToast(safeMsg, 'success');
             }

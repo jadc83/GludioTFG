@@ -156,11 +156,12 @@ export default function IndexReembolsos({
                                                 >
                                                     <div className="flex flex-col">
                                                         <span className="text-base font-black text-[#7a0202]">
-                                                            {r.requested_amount_cents != null
+                                                            {r.requested_amount_cents !=
+                                                            null
                                                                 ? `${(r.requested_amount_cents / 100).toFixed(2)}€`
                                                                 : r.reserva
-                                                                ? `${((r.reserva.precio_total ?? 0) - (r.reserva.reembolsos_total ?? 0)).toFixed(2)}€`
-                                                                : '—'}
+                                                                  ? `${((r.reserva.precio_total ?? 0) - (r.reserva.reembolsos_total ?? 0)).toFixed(2)}€`
+                                                                  : '—'}
                                                         </span>
                                                         {r.processed_refund && (
                                                             <span className="text-[10px] font-bold uppercase tracking-tighter text-emerald-600">
@@ -182,7 +183,6 @@ export default function IndexReembolsos({
                                                     data-label="Motivo y Notas"
                                                 >
                                                     <div className="max-w-[200px]">
-
                                                         <p
                                                             className="truncate text-xs italic text-gray-500"
                                                             title={r.notes}

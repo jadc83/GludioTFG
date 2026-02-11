@@ -5,18 +5,21 @@ export default function QRScanner({ onScanSuccess }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [permissionDenied, setPermissionDenied] = useState(false);
-    const animationIdRef = useRef(null);
 
     useEffect(() => {
+        const videoEl = videoRef.current;
+        const canvasEl = canvasRef.current;
+        let rafId = null;
+
         const initCamera = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' },
                 });
 
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.play();
+                if (videoEl) {
+                    videoEl.srcObject = stream;
+                    videoEl.play();
                     scan();
                 }
             } catch (err) {
@@ -25,8 +28,8 @@ export default function QRScanner({ onScanSuccess }) {
         };
 
         const scan = () => {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
+            const video = videoEl;
+            const canvas = canvasEl;
 
             if (
                 video &&
@@ -98,18 +101,21 @@ export default function QRScanner({ onScanSuccess }) {
                 }
             }
 
-            animationIdRef.current = requestAnimationFrame(scan);
+            rafId = requestAnimationFrame(scan);
         };
 
         initCamera();
 
         return () => {
-            if (animationIdRef.current)
-                cancelAnimationFrame(animationIdRef.current);
-            if (videoRef.current && videoRef.current.srcObject) {
-                videoRef.current.srcObject
-                    .getTracks()
-                    .forEach((track) => track.stop());
+            if (rafId) cancelAnimationFrame(rafId);
+            if (videoEl && videoEl.srcObject) {
+                try {
+                    videoEl.srcObject
+                        .getTracks()
+                        .forEach((track) => track.stop());
+                } catch (e) {
+                    console.debug(e);
+                }
             }
         };
     }, [onScanSuccess]);

@@ -47,11 +47,15 @@ export default function CreateCliente({ iconOnly = false }) {
             {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
             <div
                 className={`fixed inset-0 z-[9999] overflow-hidden transition-all duration-300 md:top-16 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="create-client-title"
             >
                 {/* Backdrop (Oscurecimiento del fondo) */}
                 <div
                     className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
                     onClick={handleCerrar}
+                    aria-hidden="true"
                 />
 
                 {/* Panel Lateral (Slide-over) */}
@@ -61,7 +65,10 @@ export default function CreateCliente({ iconOnly = false }) {
                     {/* Header estilo Gludio */}
                     <header className="flex flex-none items-center justify-between border-b border-gray-100 bg-white p-6">
                         <div>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-gray-900">
+                            <h3
+                                className="text-xl font-black uppercase tracking-tight text-gray-900"
+                                id="create-client-title"
+                            >
                                 Alta de{' '}
                                 <span className="text-[#7a0202]">Cliente</span>
                             </h3>
@@ -72,6 +79,7 @@ export default function CreateCliente({ iconOnly = false }) {
                         <button
                             onClick={handleCerrar}
                             className="rounded-2xl border border-gray-100 bg-gray-50 p-3 text-gray-400 shadow-sm transition-all hover:bg-red-50 hover:text-[#7a0202]"
+                            aria-label="Cerrar panel crear cliente"
                         >
                             <XMarkIcon className="h-6 w-6" />
                         </button>
@@ -80,6 +88,8 @@ export default function CreateCliente({ iconOnly = false }) {
                     {/* Formulario con scroll independiente */}
                     <form
                         onSubmit={guardar}
+                        role="form"
+                        aria-label="Formulario crear cliente"
                         className="flex min-h-0 flex-1 flex-col bg-white"
                     >
                         <div className="flex-1 space-y-8 overflow-y-auto p-8">
@@ -162,6 +172,7 @@ export default function CreateCliente({ iconOnly = false }) {
                         <div className="flex-none border-t border-gray-100 bg-gray-50 p-6">
                             <button
                                 type="submit"
+                                aria-label="Guardar cliente"
                                 disabled={estaCargando}
                                 className="w-full rounded-2xl bg-gray-900 py-5 text-[11px] font-black uppercase tracking-[0.25em] text-white shadow-xl transition-all hover:bg-[#7a0202] disabled:opacity-50"
                             >

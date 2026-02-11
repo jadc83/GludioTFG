@@ -1,14 +1,16 @@
-import { calcularNoches, formatearMoneda, formatearModificador } from '@/utils/formatters';
 import { t } from '@/i18n';
+import {
+    calcularNoches,
+    formatearModificador,
+    formatearMoneda,
+} from '@/utils/formatters';
 
 export default function DesgloseFactura({
     habitacionesSeleccionadas,
     rango,
     monto,
-    getTotalHabitaciones,
     agruparHabitacionesPorTipo,
     tarifasAplicadas = [],
-    cargoTarifas = 0,
     ultimoResultadoPrecio = null,
     preciosPorTipo = {},
 }) {
@@ -34,7 +36,9 @@ export default function DesgloseFactura({
                 return Number(
                     match.precioAvg ?? match.precio ?? match.precioMinimo ?? 0,
                 );
-        } catch (e) {}
+        } catch (e) {
+            console.debug(e);
+        }
 
         const datosHabitacion = agruparHabitacionesPorTipo()[tipo] || {};
         return (
@@ -70,7 +74,14 @@ export default function DesgloseFactura({
                                                 {t(`paso2.room_type.${tipo}`)}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {r.cantidad} {t('paso2.nights', { count: r.cantidad })} × {numeroNoches} {t('paso2.nights', { count: numeroNoches })}
+                                                {r.cantidad}{' '}
+                                                {t('paso2.nights', {
+                                                    count: r.cantidad,
+                                                })}{' '}
+                                                × {numeroNoches}{' '}
+                                                {t('paso2.nights', {
+                                                    count: numeroNoches,
+                                                })}
                                             </p>
                                         </div>
                                         <p className="text-sm font-bold text-gray-900">
@@ -122,7 +133,10 @@ export default function DesgloseFactura({
                                     <span className="font-medium">
                                         {valorFinal === 0
                                             ? 'Gratis'
-                                            : formatearModificador(valorFinal, 'fijo')}
+                                            : formatearModificador(
+                                                  valorFinal,
+                                                  'fijo',
+                                              )}
                                     </span>
                                 </div>
                             );

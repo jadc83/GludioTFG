@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     CalendarIcon,
     CreditCardIcon,
@@ -6,7 +5,11 @@ import {
     UserIcon,
 } from '@heroicons/react/24/outline';
 
-export default function CreateReservaTabs({ tabActiva, setTabActiva, errores = {} }) {
+export default function CreateReservaTabs({
+    tabActiva,
+    setTabActiva,
+    errores = {},
+}) {
     const tieneErrores = (campos) => campos.some((campo) => !!errores[campo]);
 
     const getTabClass = (id, campos) => {
@@ -64,7 +67,10 @@ export default function CreateReservaTabs({ tabActiva, setTabActiva, errores = {
 
             <button
                 type="button"
-                className={getTabClass('pago', ['metodo_pago', 'num_huespedes'])}
+                className={getTabClass('pago', [
+                    'metodo_pago',
+                    'num_huespedes',
+                ])}
                 onClick={() => setTabActiva('pago')}
             >
                 <CreditCardIcon className="h-4 w-4" /> Pago

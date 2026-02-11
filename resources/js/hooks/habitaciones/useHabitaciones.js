@@ -30,67 +30,65 @@ export default function useHabitaciones({ paso, rango, setRango }) {
 
     // Carga de datos con limpieza automática
     // Encapsular la carga en una función para permitir recarga manual
-    const cargarHabitaciones = async (signal) => {
-        const rangoValido = rango?.from && rango?.to;
-        if (!rangoValido) {
-            setHabitaciones([]);
-            return;
-        }
-
-        setCargando(true);
-        try {
-            const datos = await fetchHabitacionesDisponibles(
-                formatearFecha(rango.from),
-                formatearFecha(rango.to),
-                { signal },
-            );
-            // Debug: loguear respuesta para verificar formato y claves de precio
-            try {
-                // debug preview removed
-            } catch (e) {
-                /* noop */
+    const cargarHabitaciones = React.useCallback(
+        async (signal) => {
+            const rangoValido = rango?.from && rango?.to;
+            if (!rangoValido) {
+                setHabitaciones([]);
+                return;
             }
-            setHabitaciones(Array.isArray(datos) ? datos : []);
 
-            // Intentar obtener precios por tipo mediante la API de cálculo de precios
+            setCargando(true);
             try {
-                const tiposUnicos = Array.from(
-                    new Set(
-                        (Array.isArray(datos) ? datos : []).map((d) => d.tipo),
-                    ),
+                const datos = await fetchHabitacionesDisponibles(
+                    formatearFecha(rango.from),
+                    formatearFecha(rango.to),
+                    { signal },
                 );
-                if (tiposUnicos.length > 0 && rango?.from && rango?.to) {
-                    const payload = {
-                        check_in: formatearFecha(rango.from),
-                        check_out: formatearFecha(rango.to),
-                        habitaciones: tiposUnicos.map((t) => ({
-                            tipo: t,
-                            cantidad: 1,
-                        })),
-                        tarifas: [],
-                    };
-                    // No almacenar mapa de precios aquí; dejamos el cálculo a las funciones
-                    // específicas (por ejemplo `precioSinTarifas` en useReservaForm) que ya
-                    // llaman a `calcularPrecio` cuando sea necesario.
+                // Debug: loguear respuesta para verificar formato y claves de precio
+                try {
+                    // debug preview removed
+                } catch (e) {
+                    console.debug(e);
+                }
+                setHabitaciones(Array.isArray(datos) ? datos : []);
+
+                // Intentar obtener precios por tipo mediante la API de cálculo de precios
+                try {
+                    const tiposUnicos = Array.from(
+                        new Set(
+                            (Array.isArray(datos) ? datos : []).map(
+                                (d) => d.tipo,
+                            ),
+                        ),
+                    );
+                    if (tiposUnicos.length > 0 && rango?.from && rango?.to) {
+                        // Tenemos tipos únicos detectados. No calculamos ni almacenamos
+                        // el payload aquí porque el cálculo de precios se delega a
+                        // funciones dedicadas (por ejemplo `precioSinTarifas` en
+                        // `useReservaForm`). Mantener la detección para posibles
+                        // optimizaciones futuras.
+                    }
+                } catch (err) {
+                    console.debug(err);
                 }
             } catch (err) {
-                // noop: precios pueden no estar disponibles
+                if (err?.name !== 'AbortError') setHabitaciones([]);
+            } finally {
+                setCargando(false);
             }
-        } catch (err) {
-            if (err?.name !== 'AbortError') setHabitaciones([]);
-        } finally {
-            setCargando(false);
-        }
-    };
+        },
+        [rango?.from, rango?.to],
+    );
 
     useEffect(() => {
-        // Cargar habitaciones cuando el rango cambia (así están listas antes de abrir el modal)
+        // Cargar habitaciones cuando cambian las fechas del rango
         const controller = new AbortController();
         if (rango?.from && rango?.to) {
             cargarHabitaciones(controller.signal);
         }
         return () => controller.abort();
-    }, [paso, rango]);
+    }, [paso, rango?.from, rango?.to, cargarHabitaciones]);
 
     // Resetear la selección SOLO cuando cambian las fechas del rango.
     useEffect(() => {
@@ -175,14 +173,18 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                                 const n = parseNumber(v);
                                 if (!Number.isNaN(n)) return n;
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            console.debug(e);
+                        }
                     }
                     // Recurse into children
                     for (const v of Object.values(obj)) {
                         try {
                             const r = walk(v);
                             if (!Number.isNaN(r)) return r;
-                        } catch (e) {}
+                        } catch (e) {
+                            console.debug(e);
+                        }
                     }
                     return NaN;
                 };
@@ -312,7 +314,12 @@ export default function useHabitaciones({ paso, rango, setRango }) {
         // Acciones
         actualizarSeleccionHabitacion: actualizarSeleccion,
         eliminarTipoHabitacion: (tipo) =>
-            setSeleccion(({ [tipo]: _, ...resto }) => resto),
+            setSeleccion((prev) => {
+                const entries = Object.entries(prev).filter(
+                    ([k]) => k !== tipo,
+                );
+                return Object.fromEntries(entries);
+            }),
         resetSeleccion: () => setSeleccion({}),
         limpiarRango: () => setRango(null),
         // Permitir recarga manual desde UI

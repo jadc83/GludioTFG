@@ -5,14 +5,25 @@ export async function buscarReserva(localizador) {
     return res?.data?.reserva ?? null;
 }
 
-export async function modificarEstancia(localizador, payload) {
+export async function modificarEstancia() {
     // Endpoint removed server-side. Return controlled error to avoid accidental calls.
-    return { success: false, error: 'funcionalidad_eliminada', message: 'La modificación de estancia ha sido eliminada', status: 410 };
+    return {
+        success: false,
+        error: 'funcionalidad_eliminada',
+        message: 'La modificación de estancia ha sido eliminada',
+        status: 410,
+    };
 }
 
-export async function previewModificarEstancia(localizador, params) {
+export async function previewModificarEstancia() {
     // Endpoint removed server-side. Return controlled response.
-    return { success: false, error: 'funcionalidad_eliminada', message: 'La vista previa de modificación de estancia ha sido eliminada', status: 410 };
+    return {
+        success: false,
+        error: 'funcionalidad_eliminada',
+        message:
+            'La vista previa de modificación de estancia ha sido eliminada',
+        status: 410,
+    };
 }
 
 export async function solicitarReembolso(reservaId, payload) {

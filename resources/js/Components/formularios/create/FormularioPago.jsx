@@ -1,12 +1,11 @@
-import { usePage, router } from '@inertiajs/react';
-import Campo from '@/Components/reservas/utilidades/Campo';
 import Modal from '@/Components/Modal';
-import { Elements } from '@stripe/react-stripe-js';
-import { getStripePromise } from '@/utils/stripe';
 import CardConfirmForm from '@/Components/pagos/CardConfirmForm';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import usePayments from '@/hooks/pagos/usePayments';
+import { getStripePromise } from '@/utils/stripe';
+import { router, usePage } from '@inertiajs/react';
+import { Elements } from '@stripe/react-stripe-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
 
 import { processPaymentIntentResult as processPaymentIntentResultHelper } from '@/utils/pagos/processPaymentIntentResult';
 
@@ -20,10 +19,6 @@ function FormularioPagoInterno({
     onCambioAceptaTerminos = null,
 }) {
     const page = usePage();
-    const csrfToken =
-        page?.props?.csrf_token ||
-        document.querySelector('meta[name="csrf-token"]')?.content ||
-        '';
 
     const [procesando, setProcesando] = useState(false);
     const [mensaje, setMensaje] = useState('');
@@ -31,8 +26,14 @@ function FormularioPagoInterno({
     const [fieldErrors, setFieldErrors] = useState({});
     const [debugErrorJson, setDebugErrorJson] = useState(null);
     const { createPaymentIntent, confirmarPaymentIntent } = usePayments();
-    const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || page?.props?.stripe_public || null;
-    const stripePromise = useMemo(() => getStripePromise(stripePublicKey), [stripePublicKey]);
+    const stripePublicKey =
+        import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
+        page?.props?.stripe_public ||
+        null;
+    const stripePromise = useMemo(
+        () => getStripePromise(stripePublicKey),
+        [stripePublicKey],
+    );
     const [piClientSecret, setPiClientSecret] = useState(null);
     const [piPaymentIntentId, setPiPaymentIntentId] = useState(null);
     const [showCardForm, setShowCardForm] = useState(false);
@@ -61,15 +62,20 @@ function FormularioPagoInterno({
         try {
             const resPI = await createPaymentIntent(reservaId, monto);
             dataPI = resPI;
-            if (!dataPI || dataPI.success === false) throw new Error(dataPI?.error || 'Error en comunicación');
+            if (!dataPI || dataPI.success === false)
+                throw new Error(dataPI?.error || 'Error en comunicación');
         } catch (err) {
-            const message = err?.message || err?.error || 'Error en comunicación';
+            const message =
+                err?.message || err?.error || 'Error en comunicación';
             throw new Error(message);
         }
 
-        const handled = await processPaymentIntentResultHelper({ dataPI, confirmarPaymentIntent, onPagoExitoso });
+        const handled = await processPaymentIntentResultHelper({
+            dataPI,
+            confirmarPaymentIntent,
+            onPagoExitoso,
+        });
         if (handled) return;
-
 
         if (!telefono || !telefono.trim()) {
             setMensaje('Por favor, ingresa tu teléfono.');
@@ -79,7 +85,7 @@ function FormularioPagoInterno({
         }
 
         setProcesando(true);
-        let crearPayload = null;
+        // usar `crearPayloadRef` para almacenar el payload actual
         try {
             setFieldErrors({});
             setDebugErrorJson(null);
@@ -98,22 +104,44 @@ function FormularioPagoInterno({
                     );
 
                     if (!dataReserva) {
-                        console.error('crearReserva returned null/undefined:', dataReserva);
-                        throw new Error('No se pudo crear la reserva. Respuesta vacía del servidor.');
+                        console.error(
+                            'crearReserva returned null/undefined:',
+                            dataReserva,
+                        );
+                        throw new Error(
+                            'No se pudo crear la reserva. Respuesta vacía del servidor.',
+                        );
                     }
 
                     if (dataReserva.success === false) {
-                        const serverMsg = dataReserva.error || dataReserva.message || JSON.stringify(dataReserva);
-                        console.error('crearReserva responded with success=false:', dataReserva);
+                        const serverMsg =
+                            dataReserva.error ||
+                            dataReserva.message ||
+                            JSON.stringify(dataReserva);
+                        console.error(
+                            'crearReserva responded with success=false:',
+                            dataReserva,
+                        );
                         throw new Error(serverMsg);
                     }
 
-                    if (!dataReserva.reserva_id && !(dataReserva.reserva && dataReserva.reserva.id)) {
-                        console.error('crearReserva returned invalid response:', dataReserva);
-                        throw new Error('No se pudo crear la reserva. Respuesta inesperada del servidor.');
+                    if (
+                        !dataReserva.reserva_id &&
+                        !(dataReserva.reserva && dataReserva.reserva.id)
+                    ) {
+                        console.error(
+                            'crearReserva returned invalid response:',
+                            dataReserva,
+                        );
+                        throw new Error(
+                            'No se pudo crear la reserva. Respuesta inesperada del servidor.',
+                        );
                     }
 
-                    resId = dataReserva.reserva_id ?? dataReserva.reserva?.id ?? resId;
+                    resId =
+                        dataReserva.reserva_id ??
+                        dataReserva.reserva?.id ??
+                        resId;
                 } catch (err) {
                     if (err && err.status === 409 && err.cliente_existente) {
                         setClienteExistente(err.cliente_existente);
@@ -147,7 +175,9 @@ function FormularioPagoInterno({
                             window.dispatchEvent(
                                 new CustomEvent('faltanFechas', { detail: {} }),
                             );
-                    } catch (e) {}
+                    } catch (e) {
+                        console.debug(e);
+                    }
                 } else {
                     const joined = Object.values(err.errors).flat().join('; ');
                     setMensaje(joined || err.message || 'Error de validación');
@@ -208,7 +238,7 @@ function FormularioPagoInterno({
                         });
                     }
                 } catch (e) {
-                    /* noop */
+                    console.debug(e);
                 }
             }, 50);
 
@@ -256,7 +286,7 @@ function FormularioPagoInterno({
                     ),
                 );
             } catch (e) {
-                /* noop */
+                console.debug(e);
             }
         } finally {
             setProcesando(false);
@@ -276,7 +306,9 @@ function FormularioPagoInterno({
                         },
                     }),
                 );
-        } catch (e) {}
+        } catch (e) {
+            console.debug(e);
+        }
     };
 
     return (
@@ -310,25 +342,32 @@ function FormularioPagoInterno({
                         <button
                             onClick={() => setShowClienteModal(false)}
                             className="rounded border border-gray-200 bg-white px-4 py-2"
+                            aria-label="Cerrar diálogo - cancelar"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={editClientDocument}
                             className="rounded bg-yellow-500 px-4 py-2 font-bold text-white"
+                            aria-label="Editar documento del cliente"
                         >
                             Editar documento
                         </button>
                         <button
                             onClick={retryUsingExistingClient}
                             className="rounded bg-[#7a0202] px-4 py-2 font-bold text-white"
+                            aria-label="Usar cliente existente para reserva"
                         >
                             Usar este cliente
                         </button>
                     </div>
                 </div>
             </Modal>
-            <div role="form" className="w-full space-y-6">
+            <div
+                role="form"
+                aria-busy={procesando ? 'true' : 'false'}
+                className="w-full space-y-6"
+            >
                 <div className="space-y-4">
                     {!reservaData?.name && (
                         <div>
@@ -406,49 +445,103 @@ function FormularioPagoInterno({
                                 onClick={async () => {
                                     try {
                                         if (!acepta) {
-                                            setMensaje('Acepta los términos para continuar.');
+                                            setMensaje(
+                                                'Acepta los términos para continuar.',
+                                            );
                                             return;
                                         }
                                         setProcesando(true);
 
                                         const esExtension = Boolean(
-                                            reservaData?.es_extension || reservaData?.es_edicion_pago,
+                                            reservaData?.es_extension ||
+                                            reservaData?.es_edicion_pago,
                                         );
                                         let resId = reservaData?.reserva_id;
 
                                         if (!esExtension) {
-                                            const pagosApi = await import('@/api/pagos');
-                                            const montoFloat = Number(monto) || 0;
+                                            const pagosApi =
+                                                await import('@/api/pagos');
+                                            const montoFloat =
+                                                Number(monto) || 0;
                                             let piResp = null;
                                             try {
-                                                piResp = await pagosApi.crearPaymentIntentStandalone(montoFloat, { receipt_email: email, allow_without_metadata: true });
-                                                if (!piResp || piResp.success === false) {
-                                                    throw new Error(piResp?.error || 'No se pudo crear PaymentIntent');
+                                                piResp =
+                                                    await pagosApi.crearPaymentIntentStandalone(
+                                                        montoFloat,
+                                                        {
+                                                            receipt_email:
+                                                                email,
+                                                            allow_without_metadata: true,
+                                                        },
+                                                    );
+                                                if (
+                                                    !piResp ||
+                                                    piResp.success === false
+                                                ) {
+                                                    throw new Error(
+                                                        piResp?.error ||
+                                                            'No se pudo crear PaymentIntent',
+                                                    );
                                                 }
                                             } catch (e) {
-                                                setMensaje(e?.message || 'Error creando PaymentIntent');
+                                                setMensaje(
+                                                    e?.message ||
+                                                        'Error creando PaymentIntent',
+                                                );
                                                 throw e;
                                             }
 
-                                            const service = await import('@/hooks/reservas/service');
-                                            const nuevoPayload = { ...reservaData, name, email, telefono };
-                                            if (piResp && piResp.paymentIntentId) {
-                                                nuevoPayload.payment_intent_id = piResp.paymentIntentId;
-                                                nuevoPayload.pago_monto = montoFloat;
+                                            const service =
+                                                await import('@/hooks/reservas/service');
+                                            const nuevoPayload = {
+                                                ...reservaData,
+                                                name,
+                                                email,
+                                                telefono,
+                                            };
+                                            if (
+                                                piResp &&
+                                                piResp.paymentIntentId
+                                            ) {
+                                                nuevoPayload.payment_intent_id =
+                                                    piResp.paymentIntentId;
+                                                nuevoPayload.pago_monto =
+                                                    montoFloat;
                                                 if (piResp.clientSecret) {
-                                                    setPiClientSecret(piResp.clientSecret);
-                                                    setPiPaymentIntentId(piResp.paymentIntentId);
+                                                    setPiClientSecret(
+                                                        piResp.clientSecret,
+                                                    );
+                                                    setPiPaymentIntentId(
+                                                        piResp.paymentIntentId,
+                                                    );
                                                 }
                                             }
 
                                             try {
-                                                const dataReserva = await service.crearReserva(nuevoPayload);
-                                                if (!dataReserva || dataReserva.success === false) {
-                                                    throw new Error(dataReserva?.error || dataReserva?.message || 'Error creando reserva');
+                                                const dataReserva =
+                                                    await service.crearReserva(
+                                                        nuevoPayload,
+                                                    );
+                                                if (
+                                                    !dataReserva ||
+                                                    dataReserva.success ===
+                                                        false
+                                                ) {
+                                                    throw new Error(
+                                                        dataReserva?.error ||
+                                                            dataReserva?.message ||
+                                                            'Error creando reserva',
+                                                    );
                                                 }
-                                                resId = dataReserva.reserva_id ?? dataReserva.reserva?.id ?? resId;
+                                                resId =
+                                                    dataReserva.reserva_id ??
+                                                    dataReserva.reserva?.id ??
+                                                    resId;
                                             } catch (e) {
-                                                setMensaje(e?.message || 'Error creando la reserva');
+                                                setMensaje(
+                                                    e?.message ||
+                                                        'Error creando la reserva',
+                                                );
                                                 throw e;
                                             }
                                         }
@@ -456,24 +549,43 @@ function FormularioPagoInterno({
                                         if (piClientSecret && stripePromise) {
                                             setShowCardForm(true);
                                         } else {
-                                                const params = new URLSearchParams({ reserva_id: String(resId), monto: String(monto) });
-                                                router.visit(`/checkout-simulado?${params.toString()}`);
+                                            const params = new URLSearchParams({
+                                                reserva_id: String(resId),
+                                                monto: String(monto),
+                                            });
+                                            router.visit(
+                                                `/checkout-simulado?${params.toString()}`,
+                                            );
                                         }
                                     } catch (e) {
                                         console.error('Error checkout:', e);
-                                        setMensaje(e?.message || e?.error || 'Error al iniciar Checkout');
+                                        setMensaje(
+                                            e?.message ||
+                                                e?.error ||
+                                                'Error al iniciar Checkout',
+                                        );
                                     } finally {
                                         setProcesando(false);
                                     }
                                 }}
-                                disabled={procesando || !name?.trim() || !email?.trim() || !telefono?.trim()}
+                                disabled={
+                                    procesando ||
+                                    !name?.trim() ||
+                                    !email?.trim() ||
+                                    !telefono?.trim()
+                                }
                                 className="flex w-full items-center justify-center rounded-xl bg-yellow-600 py-3 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-yellow-700 disabled:opacity-50"
-                            >Pagar con Stripe (Checkout)</button>
+                            >
+                                Pagar con Stripe (Checkout)
+                            </button>
                         </div>
                     </div>
                     {showCardForm && piClientSecret && stripePromise && (
                         <div className="mt-4">
-                            <Elements stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
+                            <Elements
+                                stripe={stripePromise}
+                                options={{ clientSecret: piClientSecret }}
+                            >
                                 <CardConfirmForm
                                     clientSecret={piClientSecret}
                                     paymentIntentId={piPaymentIntentId}
@@ -482,7 +594,8 @@ function FormularioPagoInterno({
                                     localizador={reservaData?.localizador}
                                     onCompleted={(data) => {
                                         setShowCardForm(false);
-                                        if (typeof onPagoExitoso === 'function') onPagoExitoso(data);
+                                        if (typeof onPagoExitoso === 'function')
+                                            onPagoExitoso(data);
                                     }}
                                     onError={(msg) => setMensaje(msg)}
                                 />
@@ -524,8 +637,15 @@ function FormularioPagoInterno({
                     </div>
                 )}
                 {mensaje && (
-                    <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-4 transition-all duration-300">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-red-600"></div>
+                    <div
+                        id="form-payment-message"
+                        aria-live="assertive"
+                        className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-4 transition-all duration-300"
+                    >
+                        <div
+                            className="h-2 w-2 animate-pulse rounded-full bg-red-600"
+                            aria-hidden="true"
+                        ></div>
                         <span className="text-[10px] font-black uppercase tracking-widest text-red-900">
                             {mensaje}
                         </span>

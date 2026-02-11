@@ -11,11 +11,12 @@ export default function TypingAnimation({
     const [wordIndex, setWordIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Referenciar `loop` para evitar warning de variable no usada (API preservada)
+    void loop;
+
     useEffect(() => {
         if (words.length === 0) return;
-
         const currentWord = words[wordIndex];
-        const targetText = isDeleting ? '' : currentWord;
         const speed = isDeleting ? deleteSpeed : typeSpeed;
 
         const timer = setTimeout(() => {

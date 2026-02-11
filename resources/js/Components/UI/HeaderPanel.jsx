@@ -7,7 +7,11 @@ export default function HeaderPanel({
     children,
 }) {
     return (
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <header
+            className="mb-8 flex flex-wrap items-center justify-between gap-3"
+            role="region"
+            aria-label={`Encabezado de ${titulo}`}
+        >
             <div>
                 <h1 className="text-xl font-black uppercase leading-tight tracking-tight text-gray-900 md:text-2xl">
                     Gestión de <span className="text-[#7a0202]">{titulo}</span>
@@ -18,10 +22,13 @@ export default function HeaderPanel({
             </div>
             <div className="flex flex-wrap items-center gap-3 md:gap-4">
                 {children}
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
+                <div
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50"
+                    aria-hidden="true"
+                >
                     <Icono className="h-6 w-6 text-gray-400" />
                 </div>
             </div>
-        </div>
+        </header>
     );
 }

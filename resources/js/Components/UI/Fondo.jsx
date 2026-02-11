@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import '../../../css/fondoLanding.css';
 import { t } from '@/i18n';
+import { useEffect, useState } from 'react';
+import '../../../css/fondoLanding.css';
 
 export default function Fondo() {
     // Lógica para las partículas (añadido)
@@ -13,7 +13,7 @@ export default function Fondo() {
             top: Math.random() * 100 + '%',
             size: Math.random() * 3 + 1 + 'px',
             delay: Math.random() * 5 + 's',
-            duration: Math.random() * 10 + 10 + 's'
+            duration: Math.random() * 10 + 10 + 's',
         }));
         setParticles(newParticles);
     }, []);
@@ -54,20 +54,23 @@ export default function Fondo() {
                 className="hero-section"
                 role="img"
                 aria-label="Un hall de hotel elegante con el texto 'Donde la elegancia encuentra el confort'."
-                style={{ backgroundImage: `url('/fondo3.jpg?v=${Date.now()}')` }}
+                style={{
+                    backgroundImage: `url('/fondo3.jpg?v=${Date.now()}')`,
+                }}
             >
                 {/* Partículas añadidas sobre el fondo */}
-                {particles.map(p => (
+                {particles.map((p) => (
                     <div
                         key={p.id}
                         className="particle"
+                        aria-hidden="true"
                         style={{
                             left: p.left,
                             top: p.top,
                             width: p.size,
                             height: p.size,
                             animationDelay: p.delay,
-                            animationDuration: p.duration
+                            animationDuration: p.duration,
                         }}
                     />
                 ))}

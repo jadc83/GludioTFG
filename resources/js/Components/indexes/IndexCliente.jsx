@@ -16,6 +16,7 @@ export default function IndexCliente({
     users = [],
     clientesFiltrados = [],
 }) {
+    // props recibidas
     const [clienteEditar, setClienteEditar] = useState(null);
     const [drawerAbierto, setDrawerAbierto] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
@@ -60,6 +61,8 @@ export default function IndexCliente({
             <HeaderPanel
                 titulo="Clientes"
                 subtitulo="Directorio y gestión de clientes"
+                role="region"
+                aria-label="Panel clientes"
             />
 
             {/* Barra de filtros */}
@@ -112,25 +115,50 @@ export default function IndexCliente({
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="responsive-table w-full border-collapse text-left">
+                            <table
+                                className="responsive-table w-full border-collapse text-left"
+                                role="table"
+                                aria-label="Tabla de clientes"
+                            >
+                                <caption className="sr-only">
+                                    Listado de clientes
+                                </caption>
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Nombre
                                         </th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Email
                                         </th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Documento
                                         </th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Teléfono
                                         </th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Dirección
                                         </th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th
+                                            scope="col"
+                                            className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"
+                                        >
                                             Acciones
                                         </th>
                                     </tr>

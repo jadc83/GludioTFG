@@ -95,12 +95,26 @@ class PanelController extends Controller
             return $data;
         });
 
+        // snapshot de clientes (logging temporal eliminado)
+
+        // Marcar tipo de origen y combinar clientes+usuarios, prefiriendo Cliente en caso de duplicado
+        $clientes->each(function ($c) { $c->tipo_usuario = 'cliente'; });
+        $usuarios->each(function ($u) { $u->tipo_usuario = 'user'; });
+
+        // Excluir usuarios cuyo id ya exista en clientes para preferir el registro de Cliente
+        $clientesIds = $clientes->pluck('id')->all();
+        $usuariosFiltrados = $usuarios->reject(function ($u) use ($clientesIds) {
+            return in_array($u->id, $clientesIds);
+        });
+
+        $clientesFiltrados = $clientes->concat($usuariosFiltrados)->sortBy('name')->values();
+
         return Inertia::render('Panel/PanelControl', [
             'habitaciones'            => $habitaciones,
             'habitacionesDisponibles' => HabitacionController::getDisponibles($request->check_in, $request->check_out),
             'clientes'                => Cliente::orderBy('name')->get(),
             'users'                   => User::orderBy('name')->get(),
-            'clientesFiltrados'       => $clientes->merge($usuarios)->sortBy('name')->values(),
+            'clientesFiltrados'       => $clientesFiltrados,
             'reservas'                => $this->reservaService->formatearReservas($reservas),
             'empleados'               => $empleados,
             'cupones'                 => Cupon::paginate(15),

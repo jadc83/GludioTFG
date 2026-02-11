@@ -1,6 +1,6 @@
 import * as api from '@/api/reservas';
 import IndexReembolsos from '@/Components/indexes/IndexReembolsos';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function TabReembolsos() {
     const [loading, setLoading] = useState(false);
@@ -8,27 +8,31 @@ export default function TabReembolsos() {
     const [pagination, setPagination] = useState(null);
     const [page, setPage] = useState(1);
 
-    const fetchData = async (p = page) => {
-        setLoading(true);
-        try {
-            const res = await api.listarSolicitudesReembolso({ page: p });
-            const paginator = res?.data ?? res ?? null;
-            const rows =
-                paginator?.data ?? (Array.isArray(paginator) ? paginator : []);
-            setItems(rows);
-            setPagination(paginator);
-        } catch (e) {
-            console.error('Error loading refunds', e);
-            setItems([]);
-            setPagination(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const fetchData = useCallback(
+        async (p = page) => {
+            setLoading(true);
+            try {
+                const res = await api.listarSolicitudesReembolso({ page: p });
+                const paginator = res?.data ?? res ?? null;
+                const rows =
+                    paginator?.data ??
+                    (Array.isArray(paginator) ? paginator : []);
+                setItems(rows);
+                setPagination(paginator);
+            } catch (e) {
+                console.error('Error loading refunds', e);
+                setItems([]);
+                setPagination(null);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [page],
+    );
 
     useEffect(() => {
         fetchData(page);
-    }, [page]);
+    }, [page, fetchData]);
 
     // Suscribirse a broadcasts para refrescar la tabla cuando una nueva solicitud llega
     useEffect(() => {
@@ -41,7 +45,7 @@ export default function TabReembolsos() {
             // no bloquear por falta de echo
             console.warn('Echo no disponible para reembolsos', e);
         }
-    }, []);
+    }, [fetchData]);
 
     const aprobar = async (id) => {
         if (!confirm('Aprobar y ejecutar reembolso?')) return;

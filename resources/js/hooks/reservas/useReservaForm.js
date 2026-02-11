@@ -57,9 +57,7 @@ export default function useReservaForm() {
         setSelectedTarifas(nuevasTarifas);
     }, []);
 
-    useEffect(() => {
-        // track rango changes (no global debug exposure in production)
-    }, [rango]);
+    // Nota: se eliminó efecto vacío que no hacía nada útil
 
     useEffect(() => {
         if (flash.reserva_id) setIdReserva(flash.reserva_id);
@@ -158,7 +156,9 @@ export default function useReservaForm() {
                     );
                     setValue('nacionalidad', usuarioActual.nacionalidad || '');
                     setValue('direccion', usuarioActual.direccion || '');
-                } catch (e) {}
+                } catch (e) {
+                    console.debug(e);
+                }
                 setPasoActual(4);
                 return;
             }
@@ -179,7 +179,7 @@ export default function useReservaForm() {
         }
 
         const habs = Object.entries(habitaciones.habitacionesSeleccionadas)
-            .filter(([_, s]) => s.cantidad > 0)
+            .filter(([, s]) => s.cantidad > 0)
             .map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
         if (!habs.length) return 0;
         try {
@@ -249,7 +249,7 @@ export default function useReservaForm() {
                 return;
             }
             let habs = Object.entries(habitaciones.habitacionesSeleccionadas)
-                .filter(([_, s]) => s.cantidad > 0)
+                .filter(([, s]) => s.cantidad > 0)
                 .map(([tipo, s]) => ({ tipo, cantidad: s.cantidad }));
             if (!habs.length) {
                 const tiposDisponibles = Object.keys(

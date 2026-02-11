@@ -1,6 +1,5 @@
 import axios from 'axios';
 export class QRScannerService {
-
     /* Extrae el localizador de un escaneo */
 
     static extraerLocalizador(texto) {
@@ -16,7 +15,9 @@ export class QRScannerService {
                 }
             }
         } catch (e) {
-            console.log('No se pudo parsear como URL, usando texto completo como localizador');
+            console.log(
+                'No se pudo parsear como URL, usando texto completo como localizador',
+            );
         }
 
         return localizador;
@@ -24,9 +25,12 @@ export class QRScannerService {
 
     /* Procesa un escaneo de QR enviándolo al backend */
     static async procesar(localizador, action = null) {
-
         const csrf =
-            typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') : null;
+            typeof document !== 'undefined'
+                ? document
+                      .querySelector('meta[name="csrf-token"]')
+                      ?.getAttribute('content')
+                : null;
 
         const payload = { localizador: localizador };
         if (action) {
@@ -36,21 +40,33 @@ export class QRScannerService {
 
         try {
             const { data } = await axios.post(route('scan.procesar'), payload, {
-                headers: { 'X-CSRF-TOKEN': csrf || '', Accept: 'application/json' },
+                headers: {
+                    'X-CSRF-TOKEN': csrf || '',
+                    Accept: 'application/json',
+                },
                 withCredentials: true,
             });
             return data;
         } catch (err) {
             const body = err?.response?.data;
-            throw new Error(body?.error || body?.message || err?.message || 'Error procesando escaneo');
+            throw new Error(
+                body?.error ||
+                    body?.message ||
+                    err?.message ||
+                    'Error procesando escaneo',
+            );
         }
     }
 
     /* Qué hacer después de un escaneo correcto */
-    static postEscaneo(action, response, reservaInfo) {
+    static postEscaneo(action, response) {
         if (action === 'checkin') {
             if (response?.success === false) {
-                throw new Error( response?.error ||  response?.message || 'Error procesando check-in' );
+                throw new Error(
+                    response?.error ||
+                        response?.message ||
+                        'Error procesando check-in',
+                );
             }
 
             return { type: 'modal', tipoModal: 'checkin' };
@@ -58,7 +74,11 @@ export class QRScannerService {
 
         if (action === 'checkout') {
             if (response?.success === false) {
-                throw new Error( response?.error || response?.message || 'Error procesando check-out' );
+                throw new Error(
+                    response?.error ||
+                        response?.message ||
+                        'Error procesando check-out',
+                );
             }
             return { type: 'modal', tipoModal: 'checkout' };
         }

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
+import legacy from '@vitejs/plugin-legacy';
 
 export default defineConfig({
     plugins: [
@@ -12,6 +13,9 @@ export default defineConfig({
             refresh: true,
         }),
         react(),
+        legacy({
+            targets: ['defaults', 'not IE 11']
+        }),
     ],
     server: {
         host: 'localhost', // avoid IPv6 ::1 mismatches

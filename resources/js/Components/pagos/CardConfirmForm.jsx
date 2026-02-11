@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import usePayments from '@/hooks/pagos/usePayments';
+import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { useState } from 'react';
 
-export default function CardConfirmForm({ clientSecret, paymentIntentId, onCompleted, onSuccess, onError, name, email, localizador }) {
+export default function CardConfirmForm({
+    clientSecret,
+    paymentIntentId,
+    onCompleted,
+    onSuccess,
+    onError,
+    name,
+    email,
+    localizador,
+}) {
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
@@ -26,28 +35,47 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onCompl
             });
 
             if (res.error) {
-                onError && onError(res.error.message || 'Error confirmando el pago');
+                onError &&
+                    onError(res.error.message || 'Error confirmando el pago');
                 setLoadingConfirm(false);
                 return;
             }
 
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
-                const backendResp = await confirmarPaymentIntent(paymentIntentId);
+                const backendResp =
+                    await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
                     // LOGS exhaustivos para depuración
                     console.log('--- [CardConfirmForm] ---');
-                    console.log('Respuesta backend confirmarPaymentIntent:', backendResp);
+                    console.log(
+                        'Respuesta backend confirmarPaymentIntent:',
+                        backendResp,
+                    );
                     console.log('Prop localizador recibido:', localizador);
                     const loc = backendResp.localizador || localizador;
                     console.log('Localizador extraído para callback:', loc);
-                    console.log('¿onCompleted existe?', typeof onCompleted === 'function');
-                    console.log('¿onSuccess existe?', typeof onSuccess === 'function');
-                    const resultData = { pago_id: backendResp.pago_id, paymentIntentId, localizador: loc };
+                    console.log(
+                        '¿onCompleted existe?',
+                        typeof onCompleted === 'function',
+                    );
+                    console.log(
+                        '¿onSuccess existe?',
+                        typeof onSuccess === 'function',
+                    );
+                    const resultData = {
+                        pago_id: backendResp.pago_id,
+                        paymentIntentId,
+                        localizador: loc,
+                    };
                     onCompleted && onCompleted(resultData);
                     onSuccess && onSuccess(resultData);
                 } else {
-                    onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
+                    onError &&
+                        onError(
+                            backendResp?.error ||
+                                'Confirmado en Stripe, pero fallo al notificar al backend',
+                        );
                 }
             } else {
                 onError && onError('Pago no confirmado');
@@ -62,7 +90,9 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onCompl
 
     return (
         <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">Datos de tarjeta</label>
+            <label className="block text-sm font-medium text-gray-700">
+                Datos de tarjeta
+            </label>
             <div className="mt-2 rounded-md border border-gray-200 p-3">
                 <CardElement options={{ hidePostalCode: true }} />
             </div>
@@ -74,7 +104,11 @@ export default function CardConfirmForm({ clientSecret, paymentIntentId, onCompl
                     aria-disabled={loadingConfirm || completed}
                     className={`rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
                 >
-                    {completed ? 'Confirmado' : (loadingConfirm ? 'Confirmando...' : 'Confirmar pago')}
+                    {completed
+                        ? 'Confirmado'
+                        : loadingConfirm
+                          ? 'Confirmando...'
+                          : 'Confirmar pago'}
                 </button>
             </div>
         </div>

@@ -4,6 +4,7 @@ namespace App\Actions\Reservas;
 
 use App\Models\Reserva;
 use App\Services\ReservaService;
+use Carbon\Carbon;
 
 class BuscarPorLocalizadorAction
 {
@@ -24,9 +25,9 @@ class BuscarPorLocalizadorAction
         }
 
         // Return a consistent formatted reservation (same shape used by edit view)
-        $formatter = app(\App\Services\ReservaFormatterService::class);
+        $formateador = app(\App\Services\ReservaFormatterService::class);
         try {
-            $reservaFormateada = $formatter->formatearReservaParaEdicion($reserva, \Carbon\Carbon::parse($reserva->check_in), \Carbon\Carbon::parse($reserva->check_out));
+            $reservaFormateada = $formateador->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
         } catch (\Throwable $_e) {
             $reservaFormateada = [
                 'id' => $reserva->id,

@@ -1,6 +1,6 @@
+import { t } from '@/i18n';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
-import { t } from '@/i18n';
 
 export default function Servicios() {
     return (
@@ -80,25 +80,28 @@ export default function Servicios() {
                             },
                         ].map((imagen, index) => (
                             <SplideSlide key={index}>
-                                <div className="group relative h-[400px] cursor-pointer overflow-hidden rounded-2xl shadow-lg transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl md:h-[480px]">
+                                <article className="group relative h-[400px] overflow-hidden rounded-2xl shadow-lg transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl md:h-[480px]">
                                     <img
                                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         src={imagen.src}
                                         alt={imagen.alt}
                                     />
 
-                                    <div className="from-neutral/90 via-neutral/40 absolute inset-0 bg-gradient-to-t to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100" />
+                                    <div
+                                        className="from-neutral/90 via-neutral/40 absolute inset-0 bg-gradient-to-t to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100"
+                                        aria-hidden="true"
+                                    />
 
                                     <div className="absolute bottom-0 left-0 right-0 p-6">
                                         <h3 className="mb-2 text-2xl font-bold text-white">
                                             {imagen.alt}
                                         </h3>
                                         <p className="translate-y-4 text-sm text-white/80 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                                                            {imagen.descripcion}
+                                            {imagen.descripcion}
                                         </p>
                                         <div className="mt-4 h-0.5 w-0 bg-white transition-all duration-500 group-hover:w-full" />
                                     </div>
-                                </div>
+                                </article>
                             </SplideSlide>
                         ))}
                     </Splide>

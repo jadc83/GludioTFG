@@ -1,10 +1,10 @@
 import Boton from '@/Components/UI/Boton';
+import { t } from '@/i18n';
+import { obtenerDiaDelaSemana } from '@/utils/formatters';
 import { es } from 'date-fns/locale';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { obtenerDiaDelaSemana } from '@/utils/formatters';
-import { t } from '@/i18n';
 
 const CalendarioStyles = () => (
     <style>{`.rdp { --rdp-cell_size: 2.5rem; --rdp-accent_color: #7a0202; --rdp-background_color: #fef2f2; } .rdp-caption { font-weight: 600; color: #1f2937; padding-bottom: 1rem; } .rdp-head_cell { font-weight: 600; color: #6b7280; font-size: 0.875rem; } .rdp-cell { position: relative; } .rdp-day_selected { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_range_middle { background-color: #fee2e2 !important; color: #1f2937; } .rdp-day_range_start, .rdp-day_range_end { background: linear-gradient(135deg, #7a0202 0%, #920303 100%); font-weight: 600; } .rdp-day_today { font-weight: 700; color: #7a0202; }`}</style>
@@ -53,7 +53,11 @@ const BotonesCalendario = ({
                 }}
                 className={esMobile ? 'flex-1' : ''}
             >
-                {t('actions.close') /* 'Limpiar' used as clear; reuse close key or add specific key if needed */}
+                {
+                    t(
+                        'actions.close',
+                    ) /* 'Limpiar' used as clear; reuse close key or add specific key if needed */
+                }
             </Boton>
             <Boton
                 variant="primary"
@@ -87,7 +91,8 @@ function CalendarioPicker({
     calendarioRef,
     components,
 }) {
-    const innerRef = calendarioRef || useRef(null);
+    const innerRefLocal = useRef(null);
+    const innerRef = calendarioRef || innerRefLocal;
     const [visibleMonth, setVisibleMonth] = useState(() => {
         try {
             return formularioReserva?.rango?.from

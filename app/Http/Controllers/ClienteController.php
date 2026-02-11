@@ -89,7 +89,16 @@ class ClienteController extends Controller
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
         $validado = $request->validated();
+
+        // actualización recibida
+
         $cliente->update($validado);
+
+        // Devolver JSON solo para peticiones API/JSON puras. No devolver JSON para peticiones Inertia
+        // (Inertia espera una respuesta con cabeceras especiales). Si es Inertia, mantener la redirección.
+        if (($request->ajax() || $request->wantsJson()) && !$request->header('X-Inertia')) {
+            return response()->json(['success' => true, 'cliente' => $cliente]);
+        }
 
         return redirect()->route('panel');
 

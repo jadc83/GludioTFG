@@ -8,12 +8,14 @@ export default function TabClientes({
 }) {
     return (
         <div className="p-3 md:p-6">
-            <IndexCliente
-                clientes={clientes}
-                users={users}
-                estadisticas={estadisticas}
-                clientesFiltrados={clientesFiltrados}
-            />
+            <section aria-label="Pestaña clientes">
+                <IndexCliente
+                    clientes={clientes}
+                    users={users}
+                    estadisticas={estadisticas}
+                    clientesFiltrados={clientesFiltrados}
+                />
+            </section>
         </div>
     );
 }

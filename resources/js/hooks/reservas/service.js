@@ -1,7 +1,7 @@
 // Servicio local para reservas. Reexporta las funciones del módulo API central
 // Esto permite cambiar la implementación sólo en este archivo en el futuro.
-import axios from 'axios';
 import * as api from '@/api/reservas';
+import axios from 'axios';
 
 export const buscarReserva = async (localizador) =>
     api.buscarReserva(localizador);
@@ -31,7 +31,11 @@ export async function calcularPrecio(payload) {
         return res?.data ?? null;
     } catch (err) {
         // Normalizar error para que todos los clientes manejen el mismo formato
-        const message = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error calculando precio';
+        const message =
+            err?.response?.data?.error ||
+            err?.response?.data?.message ||
+            err?.message ||
+            'Error calculando precio';
         // Logging removed for cleanliness; error propagated to caller
         throw { status: err?.response?.status || 500, error: message };
     }
@@ -62,7 +66,10 @@ export async function crearReserva(payload) {
 export async function extenderReserva(/* localizador, payload */) {
     // Esta funcionalidad fue eliminada intencionalmente.
     // Si algún componente aún la invoca, devolvemos un error controlado para evitar llamadas al backend.
-    throw { status: 410, error: 'La funcionalidad de cambio de fechas ha sido eliminada' };
+    throw {
+        status: 410,
+        error: 'La funcionalidad de cambio de fechas ha sido eliminada',
+    };
 }
 
 export async function obtenerClientes() {
@@ -104,6 +111,5 @@ export async function obtenerTarifas() {
         return [];
     }
 }
-
 
 // Nota: si en el futuro queremos cambiar la fuente (fetch, cache, worker), modificar aquí.
