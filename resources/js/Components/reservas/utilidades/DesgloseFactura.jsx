@@ -1,4 +1,5 @@
 import { calcularNoches, formatearMoneda, formatearModificador } from '@/utils/formatters';
+import { t } from '@/i18n';
 
 export default function DesgloseFactura({
     habitacionesSeleccionadas,

@@ -50,13 +50,29 @@ function lookup(obj, path) {
     return path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj);
 }
 
-export function t(key, fallback = null) {
+function interpolate(str, params = {}) {
+    if (!str || typeof str !== 'string') return str;
+    return str.replace(/{{\s*(\w+)\s*}}/g, (_, k) => {
+        if (params && Object.prototype.hasOwnProperty.call(params, k)) {
+            const v = params[k];
+            return v === null || v === undefined ? '' : String(v);
+        }
+        return '';
+    });
+}
+
+export function t(key, maybe = null) {
+    // `maybe` can be a fallback string or an object with params for interpolation
+    const params = maybe && typeof maybe === 'object' && !Array.isArray(maybe) ? maybe : null;
+    const fallback = params ? null : maybe;
+
     const localeObj = LOCALES[currentLocale] || LOCALES.es;
     const val = lookup(localeObj, key);
-    if (val !== null) return val;
+    if (val !== null) return params ? interpolate(val, params) : val;
     // try fallback locale (es)
     const fb = lookup(LOCALES.es, key);
-    return fb !== null ? fb : fallback || key;
+    if (fb !== null) return params ? interpolate(fb, params) : fb;
+    return fallback || key;
 }
 
 import { useState, useEffect } from 'react';

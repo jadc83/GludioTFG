@@ -4,6 +4,7 @@ import Boton from '@/Components/UI/Boton';
 import useConfirmacionReserva from '@/hooks/reservas/useConfirmacionReserva';
 import { ArrowLeftIcon, CheckBadgeIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
+import { calcularNoches } from '@/utils/formatters';
 import axios from 'axios';
 import '../../../../css/paso4Confirmacion.css';
 import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
@@ -45,9 +46,35 @@ export default function Paso4Confirmacion({
     const fechasRef = useRef(null);
     const highlightFechas = false;
 
+    useEffect(() => {
+        try {
+            const noches = rango?.from && rango?.to ? calcularNoches(rango.from, rango.to) : 1;
+            const tipos = Object.entries(habitacionesSeleccionadas || {}).filter(([, r]) => (r.cantidad || 0) > 0);
+            const tiposInfo = agruparHabitacionesPorTipo();
+
+            const total = tipos.reduce((acc, [tipo, r]) => {
+                const cantidad = Number(r.cantidad || 0);
+                let precioPorNoche = 0;
+
+                if (preciosPorTipo && preciosPorTipo[tipo] !== undefined) {
+                    precioPorNoche = Number(preciosPorTipo[tipo] || 0);
+                } else {
+                    const datos = tiposInfo[tipo] || {};
+                    precioPorNoche = Number(datos.precioEntreNoche ?? datos.precioNoche ?? datos.precioTipo ?? datos.precioMinimo ?? 0);
+                }
+
+                return acc + precioPorNoche * noches * cantidad;
+            }, 0);
+
+            setMonto(total);
+        } catch (e) {
+            // keep monto as-is on error
+        }
+    }, [habitacionesSeleccionadas, preciosPorTipo, rango, agruparHabitacionesPorTipo]);
+
     return (
         <div className={`flex min-h-0 max-h-[92vh] md:max-h-[80vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-zinc-300 bg-white shadow-2xl`}>
-            <header className={`flex-none border-b border-${vinoBorder} bg-${vinoColor} px-4 py-4 sm:px-8 sm:py-6 shadow-md`}>
+            <header className={`flex-none border-b border-[#7a0202] bg-[#7a0202] px-4 py-4 sm:px-8 sm:py-6 shadow-md`}>
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{t('booking.confirmation')}</h1>
@@ -61,7 +88,7 @@ export default function Paso4Confirmacion({
                 <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-12">
                     <div className="space-y-6 lg:col-span-5">
                         <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-                            <div className={`border-b border-${vinoBorder} bg-${vinoColor} px-5 py-4`}>
+                            <div className={`border-b border-[#7a0202] bg-[#7a0202] px-5 py-4`}>
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
                                     <CheckBadgeIcon className="h-5 w-5 text-zinc-100" /> {t('booking.details_stay')}
                                 </h3>
@@ -69,9 +96,9 @@ export default function Paso4Confirmacion({
 
                             <div className="p-4 space-y-4">
                                 {localizador && (
-                                    <div className={`flex items-center justify-between rounded-lg bg-${vinoColor}/10 px-4 py-3 border border-${vinoColor}/20`}>
-                                        <span className={`text-[11px] font-black uppercase text-${vinoColor} tracking-wider`}>{t('booking.locator')}</span>
-                                        <span className={`font-mono text-xl font-black text-${vinoColor} tracking-widest`}>{localizador}</span>
+                                    <div className={`flex items-center justify-between rounded-lg bg-[#7a0202]/10 px-4 py-3 border border-[#7a0202]/20`}>
+                                        <span className={`text-[11px] font-black uppercase text-[#7a0202] tracking-wider`}>{t('booking.locator')}</span>
+                                        <span className={`font-mono text-xl font-black text-[#7a0202] tracking-widest`}>{localizador}</span>
                                     </div>
                                 )}
 
@@ -81,7 +108,7 @@ export default function Paso4Confirmacion({
                                         <p className="text-sm font-bold text-zinc-900 truncate">{formData.name || '—'}</p>
                                         <p className="text-xs text-zinc-500 truncate">{formData.email}</p>
                                     </div>
-                                    <div ref={fechasRef} className={`transition-all duration-500 rounded-md p-2 -m-2 ${highlightFechas ? `bg-${vinoColor}/5 ring-2 ring-${vinoColor}` : ''}`}>
+                                        <div ref={fechasRef} className={`transition-all duration-500 rounded-md p-2 -m-2 ${highlightFechas ? `bg-[#7a0202]/5 ring-2 ring-[#7a0202]` : ''}`}>
                                         <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1 block">{t('booking.stay_dates')}</label>
                                         <p className="text-sm font-bold text-zinc-900">
                                             {rango?.from?.toLocaleDateString()} <span className="text-zinc-400 mx-1">→</span> {rango?.to?.toLocaleDateString()}
@@ -106,7 +133,7 @@ export default function Paso4Confirmacion({
 
                     <div className="lg:col-span-7">
                         <section className="h-full rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-                            <div className={`border-b border-${vinoBorder} bg-${vinoColor} px-5 py-4`}>
+                            <div className={`border-b border-[#7a0202] bg-[#7a0202] px-5 py-4`}>
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
                                     <CreditCardIcon className="h-5 w-5 text-zinc-100" /> {t('payment.method_and_completion')}
                                 </h3>
@@ -157,8 +184,8 @@ export default function Paso4Confirmacion({
 
             <Modal show={false} onClose={() => {}} maxWidth="md">
                 <div className="p-6">
-                    <div className={`mb-4 flex items-center gap-3 text-${vinoColor}`}>
-                        <div className={`rounded-full bg-${vinoColor}/10 p-2`}>
+                    <div className={`mb-4 flex items-center gap-3 text-[#7a0202]`}>
+                        <div className={`rounded-full bg-[#7a0202]/10 p-2`}>
                             <CheckBadgeIcon className="h-6 w-6" />
                         </div>
                         <h3 className="text-lg font-black">{t('booking.existing_client_detected')}</h3>
@@ -168,7 +195,7 @@ export default function Paso4Confirmacion({
 
                     <div className="flex justify-end gap-3">
                         <Boton variant="secondary">{t('actions.cancel')}</Boton>
-                        <Boton className={`bg-${vinoColor} hover:bg-${vinoColor}/90 text-white border-transparent`}>{t('actions.confirm')}</Boton>
+                        <Boton className={`bg-[#7a0202] hover:bg-[#7a0202]/90 text-white border-transparent`}>{t('actions.confirm')}</Boton>
                     </div>
                 </div>
             </Modal>
