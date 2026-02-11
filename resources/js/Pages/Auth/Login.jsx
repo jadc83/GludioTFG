@@ -6,6 +6,7 @@ import AuthLayout from '@/Layouts/AuthLayout';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { t } from '@/i18n';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -25,7 +26,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <AuthLayout>
-            <Head title="Iniciar sesión" />
+            <Head title={t('auth.login_title')} />
 
             <div className="px-5 py-8">
                 {/* Header */}
@@ -34,7 +35,7 @@ export default function Login({ status, canResetPassword }) {
                         Hotel Gludio
                     </h2>
                     <p className="mt-0.5 text-xs text-gray-600">
-                        Accede a tu cuenta
+                        {t('auth.login_subtitle')}
                     </p>
                 </div>
 
@@ -49,7 +50,7 @@ export default function Login({ status, canResetPassword }) {
                 <form onSubmit={submit} className="space-y-3.5">
                     {/* Email */}
                     <div>
-                        <InputLabel htmlFor="email" value="Correo" />
+                        <InputLabel htmlFor="email" value={t('auth.email_label')} />
                         <div className="relative mt-1">
                             <EnvelopeIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Campo
@@ -63,7 +64,7 @@ export default function Login({ status, canResetPassword }) {
                                 onChange={(e) =>
                                     setData('email', e.target.value)
                                 }
-                                placeholder="tu@email.com"
+                                placeholder={t('auth.email_placeholder')}
                             />
                         </div>
                         <InputError
@@ -74,7 +75,7 @@ export default function Login({ status, canResetPassword }) {
 
                     {/* Password */}
                     <div>
-                        <InputLabel htmlFor="password" value="Contraseña" />
+                        <InputLabel htmlFor="password" value={t('auth.password_label')} />
                         <div className="relative mt-1">
                             <LockClosedIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Campo
@@ -87,7 +88,7 @@ export default function Login({ status, canResetPassword }) {
                                 onChange={(e) =>
                                     setData('password', e.target.value)
                                 }
-                                placeholder="••••••••"
+                                placeholder={t('auth.password_placeholder')}
                             />
                         </div>
                         <InputError
@@ -99,12 +100,12 @@ export default function Login({ status, canResetPassword }) {
                     {/* Remember me & Forgot password */}
                     <div className="flex items-center justify-between text-xs">
                         {canResetPassword && (
-                            <Link
-                                href={route('password.request')}
-                                className="font-medium text-[#7a0202] transition hover:text-[#920303]"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
+                                <Link
+                                    href={route('password.request')}
+                                    className="font-medium text-[#7a0202] transition hover:text-[#920303]"
+                                >
+                                    {t('auth.forgot_password')}
+                                </Link>
                         )}
                         <label className="flex items-center">
                             <Checkbox
@@ -115,7 +116,7 @@ export default function Login({ status, canResetPassword }) {
                                 }
                                 className="rounded border-[#E2E0DC] text-[#7a0202] focus:ring-[#7a0202]"
                             />
-                            <span className="ms-1.5">Recuérdame</span>
+                            <span className="ms-1.5">{t('auth.remember_me')}</span>
                         </label>
                     </div>
 
@@ -146,10 +147,10 @@ export default function Login({ status, canResetPassword }) {
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     />
                                 </svg>
-                                Iniciando...
+                                {t('auth.processing')}
                             </span>
                         ) : (
-                            'Iniciar sesión'
+                            t('auth.login_button')
                         )}
                     </button>
                 </form>
@@ -166,7 +167,7 @@ export default function Login({ status, canResetPassword }) {
                     href={route('register')}
                     className="block w-full rounded-lg border-2 border-[#E2E0DC] px-3 py-1.5 text-center text-sm font-semibold text-[#7a0202] transition hover:border-[#7a0202] hover:bg-[#7a0202]/5"
                 >
-                    Crear cuenta
+                    {t('auth.create_account')}
                 </Link>
 
                 {/* Trust badges */}
@@ -174,12 +175,12 @@ export default function Login({ status, canResetPassword }) {
                     <div className="flex items-center justify-center gap-2 text-xs">
                         <span className="inline-flex items-center gap-0.5">
                             <span className="text-[#7a0202]">✓</span>
-                            Seguro
+                                {t('auth.trust_secure')}
                         </span>
                         <span className="text-gray-300">•</span>
                         <span className="inline-flex items-center gap-0.5">
                             <span className="text-[#7a0202]">✓</span>
-                            24/7
+                            {t('auth.trust_247')}
                         </span>
                     </div>
                 </div>

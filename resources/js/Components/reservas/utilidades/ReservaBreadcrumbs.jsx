@@ -1,4 +1,5 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import { t } from '@/i18n';
 
 export default function ReservaBreadcrumbs({
     activeIndex = 0,
@@ -7,7 +8,7 @@ export default function ReservaBreadcrumbs({
     textClass = '',
     align = 'left'
 }) {
-    const labels = ['Fechas', 'Habitación', 'Datos', 'Confirmar'];
+    const labels = [t('paso2.breadcrumbs.dates'), t('paso2.breadcrumbs.room'), t('paso2.breadcrumbs.data'), t('paso2.breadcrumbs.confirm')];
 
     const containerClasses = `flex items-center gap-1 sm:gap-2 ${align === 'center' ? 'justify-center mx-auto' : ''} ${className}`;
 

@@ -3,6 +3,7 @@ import Modal from '@/Components/Modal';
 import { formatearMoneda } from '@/utils/formatters';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
+import { t } from '@/i18n';
 import { useState, useMemo, useEffect } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
@@ -106,9 +107,9 @@ export default function ModalFechas({
         if (showPreviewLoader) {
             return (
                 <div className="flex items-center justify-center bg-white p-8">
-                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                         <LoadingSpinner />
-                        <span className="text-sm text-gray-500">Cargando vista previa...</span>
+                        <span className="text-sm text-gray-500">{t('actions_extra.loading_preview')}</span>
                     </div>
                 </div>
             );
@@ -138,7 +139,7 @@ export default function ModalFechas({
                                             setNeedPayment(true);
                                         } catch (e) {
                                             console.error('--- [ModalFechas] crearPaymentIntentStandalone error:', e);
-                                            emitToast(e?.message || 'Error creando PaymentIntent', 'error');
+                                            emitToast(e?.message || t('toasts.payment_error'), 'error');
                                         } finally {
                                             setCreatingPi(false);
                                         }
@@ -146,7 +147,7 @@ export default function ModalFechas({
                                     disabled={showPreviewLoader || creatingPi || needPayment}
                                     aria-busy={showPreviewLoader}
                                     className={`ml-auto flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader || creatingPi || needPayment ? 'cursor-not-allowed opacity-70 bg-[#7a0202]' : 'bg-[#7a0202] hover:bg-[#5a0101]'}`}
-                                >{creatingPi ? 'Preparando pago...' : 'Estoy de acuerdo'}</button>
+                                >{creatingPi ? t('actions_extra.preparing_payment') : t('actions_extra.i_agree')}</button>
                             </div>
                         )}
                         {needPayment && piClientSecret && stripePromise && (
@@ -183,14 +184,14 @@ export default function ModalFechas({
                                                 });
                                                 console.log('--- [ModalFechas] update response:', res2?.data);
                                                 if (res2?.data?.success) {
-                                                    emitToast('Fechas actualizadas', 'success');
+                                                    emitToast(t('toasts.dates_updated'), 'success');
                                                     onApplied && onApplied(res2.data);
                                                 } else {
-                                                    emitToast(res2?.data?.message || 'No se pudo actualizar', 'error');
+                                                    emitToast(res2?.data?.message || t('toasts.could_not_update'), 'error');
                                                 }
                                             } catch (e) {
                                                 console.error('--- [ModalFechas] error applying changes:', e);
-                                                emitToast(e?.response?.data?.error || e?.message || 'Error aplicando cambios', 'error');
+                                                emitToast(e?.response?.data?.error || e?.message || t('toasts.could_not_update'), 'error');
                                             } finally {
                                                 setNeedPayment(false);
                                             }
@@ -217,7 +218,7 @@ export default function ModalFechas({
                                     }
                                 }}
                                 className={`rounded-2xl border border-gray-200 bg-white py-3 px-4 text-xs font-bold uppercase tracking-widest text-gray-700 ${showPreviewLoader || creatingPi || needPayment ? 'cursor-not-allowed opacity-70' : 'hover:bg-gray-50'}`}
-                            >Limpiar</button>
+                                >{t('actions_extra.clear')}</button>
 
                             <button
                                 onClick={async () => {
@@ -245,21 +246,21 @@ export default function ModalFechas({
                                         });
                                         console.log('--- [ModalFechas] apply response:', res?.data);
                                         if (res?.data?.success) {
-                                            emitToast('Fechas actualizadas', 'success');
+                                            emitToast(t('toasts.dates_updated'), 'success');
                                             onApplied && onApplied(res.data);
                                         } else {
-                                            emitToast(res?.data?.message || 'No se pudo actualizar', 'error');
+                                            emitToast(res?.data?.message || t('toasts.could_not_update'), 'error');
                                         }
                                     } catch (err) {
                                         console.error('--- [ModalFechas] apply error:', err);
-                                        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error actualizando fechas';
+                                        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || t('toasts.could_not_update');
                                         emitToast(msg, 'error');
                                     }
                                 }}
                                 disabled={showPreviewLoader}
                                 aria-busy={showPreviewLoader}
                                 className={`flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader ? 'cursor-not-allowed opacity-70' : 'hover:bg-[#5a0101]'}`}
-                            >Aplicar Cambios</button>
+                            >{t('actions_extra.apply_changes')}</button>
                         </div>
                     </div>
                 )}

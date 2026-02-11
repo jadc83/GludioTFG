@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import '../../../css/fondoLanding.css';
+import { t } from '@/i18n';
 
 export default function Fondo() {
     // Lógica para las partículas (añadido)
@@ -73,14 +74,8 @@ export default function Fondo() {
 
                 <div className="overlay" aria-hidden="true"></div>
                 <div className="contenido">
-                    <h1>
-                        Donde la elegancia <br /> encuentra el confort
-                    </h1>
-                    <p>
-                        {' '}
-                        Disfruta de una experiencia única con nuestro servicio
-                        exclusivo.
-                    </p>
+                    <h1>{t('home.hero.title')}</h1>
+                    <p>{t('home.hero.subtitle')}</p>
                 </div>
             </section>
         </div>

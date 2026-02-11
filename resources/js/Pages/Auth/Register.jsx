@@ -11,6 +11,7 @@ import {
     UserIcon,
 } from '@heroicons/react/24/outline';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { t } from '@/i18n';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -43,16 +44,16 @@ export default function Register() {
 
     return (
         <AuthLayout>
-            <Head title="Registrarse" />
+            <Head title={t('auth.register_title')} />
 
             <div className="px-5 py-8">
                 {/* Header */}
                 <div className="mb-4">
                     <h2 className="text-2xl font-bold text-[#7a0202]">
-                        Únete ahora
+                        {t('auth.register_header')}
                     </h2>
                     <p className="mt-0.5 text-xs text-gray-600">
-                        Crea tu cuenta en 2 minutos
+                        {t('auth.register_subtitle')}
                     </p>
                 </div>
 
@@ -61,19 +62,19 @@ export default function Register() {
                     <div className="grid grid-cols-2 gap-1.5 text-xs">
                         <div className="flex items-center gap-1">
                             <span className="text-[#7a0202]">✓</span>
-                            <span>Reservas instantáneas</span>
+                            <span>{t('auth.benefit_instant')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <span className="text-[#7a0202]">✓</span>
-                            <span>100% Gratuito</span>
+                            <span>{t('auth.benefit_free')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <span className="text-[#7a0202]">✓</span>
-                            <span>Historial completo</span>
+                            <span>{t('auth.benefit_history')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <span className="text-[#7a0202]">✓</span>
-                            <span>Sin compromisos</span>
+                            <span>{t('auth.benefit_no_commitment')}</span>
                         </div>
                     </div>
                 </div>
@@ -82,7 +83,7 @@ export default function Register() {
                     {/* Name & Email */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="name" value="Nombre" />
+                            <InputLabel htmlFor="name" value={t('auth.name_label')} />
                             <div className="relative mt-0.5">
                                 <UserIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -95,7 +96,7 @@ export default function Register() {
                                     onChange={(e) =>
                                         setData('name', e.target.value)
                                     }
-                                    placeholder="Juan"
+                                    placeholder={t('auth.name_placeholder')}
                                     required
                                 />
                             </div>
@@ -106,7 +107,7 @@ export default function Register() {
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="email" value="Email" />
+                            <InputLabel htmlFor="email" value={t('auth.email_label')} />
                             <div className="relative mt-0.5">
                                 <EnvelopeIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -119,7 +120,7 @@ export default function Register() {
                                     onChange={(e) =>
                                         setData('email', e.target.value)
                                     }
-                                    placeholder="tu@email.com"
+                                    placeholder={t('auth.email_placeholder')}
                                     required
                                 />
                             </div>
@@ -133,7 +134,7 @@ export default function Register() {
                     {/* Document Type & Number */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="tipo_documento" value="Doc" />
+                            <InputLabel htmlFor="tipo_documento" value={t('auth.doc_type_label')} />
                             <select
                                 id="tipo_documento"
                                 name="tipo_documento"
@@ -144,9 +145,9 @@ export default function Register() {
                                 }
                                 required
                             >
-                                <option value="dni">DNI</option>
-                                <option value="pasaporte">Pasaporte</option>
-                                <option value="tie">TIE</option>
+                                <option value="dni">{t('auth.doc_dni')}</option>
+                                <option value="pasaporte">{t('auth.doc_passport')}</option>
+                                <option value="tie">{t('auth.doc_tie')}</option>
                             </select>
                             <InputError
                                 message={errors.tipo_documento}
@@ -155,7 +156,7 @@ export default function Register() {
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="numero_documento" value="Nº" />
+                            <InputLabel htmlFor="numero_documento" value={t('auth.doc_number_label')} />
                             <Campo
                                 id="numero_documento"
                                 name="numero_documento"
@@ -164,7 +165,7 @@ export default function Register() {
                                 onChange={(e) =>
                                     setData('numero_documento', e.target.value)
                                 }
-                                placeholder="123456"
+                                placeholder={t('auth.doc_number_placeholder')}
                                 required
                             />
                             <InputError
@@ -177,7 +178,7 @@ export default function Register() {
                     {/* Nationality & Phone */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="nacionalidad" value="País" />
+                            <InputLabel htmlFor="nacionalidad" value={t('auth.country_label')} />
                             <div className="relative mt-0.5">
                                 <GlobeAltIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -188,7 +189,7 @@ export default function Register() {
                                     onChange={(e) =>
                                         setData('nacionalidad', e.target.value)
                                     }
-                                    placeholder="España"
+                                    placeholder={t('auth.country_placeholder')}
                                     required
                                 />
                             </div>
@@ -199,7 +200,7 @@ export default function Register() {
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="telefono" value="Tlf" />
+                            <InputLabel htmlFor="telefono" value={t('auth.phone_label')} />
                             <div className="relative mt-0.5">
                                 <PhoneIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -211,7 +212,7 @@ export default function Register() {
                                     onChange={(e) =>
                                         setData('telefono', e.target.value)
                                     }
-                                    placeholder="+34600000"
+                                    placeholder={t('auth.phone_placeholder')}
                                     required
                                 />
                             </div>
@@ -224,7 +225,7 @@ export default function Register() {
 
                     {/* Address */}
                     <div>
-                        <InputLabel htmlFor="direccion" value="Dirección" />
+                        <InputLabel htmlFor="direccion" value={t('auth.address_label')} />
                         <textarea
                             id="direccion"
                             name="direccion"
@@ -233,7 +234,7 @@ export default function Register() {
                             onChange={(e) =>
                                 setData('direccion', e.target.value)
                             }
-                            placeholder="Calle Principal, 123"
+                            placeholder={t('auth.address_placeholder')}
                             rows="2"
                             required
                         />
@@ -245,7 +246,7 @@ export default function Register() {
 
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="ciudad" value="Ciudad" />
+                            <InputLabel htmlFor="ciudad" value={t('auth.city_label')} />
                             <Campo
                                 id="ciudad"
                                 name="ciudad"
@@ -254,7 +255,7 @@ export default function Register() {
                                 onChange={(e) =>
                                     setData('ciudad', e.target.value)
                                 }
-                                placeholder="Madrid"
+                                placeholder={t('auth.city_placeholder')}
                             />
                             <InputError
                                 message={errors.ciudad}
@@ -265,7 +266,7 @@ export default function Register() {
                         <div>
                             <InputLabel
                                 htmlFor="codigo_postal"
-                                value="Código Postal"
+                                value={t('auth.postal_label')}
                             />
                             <Campo
                                 id="codigo_postal"
@@ -275,7 +276,7 @@ export default function Register() {
                                 onChange={(e) =>
                                     setData('codigo_postal', e.target.value)
                                 }
-                                placeholder="28001"
+                                placeholder={t('auth.postal_placeholder')}
                             />
                             <InputError
                                 message={errors.codigo_postal}
@@ -287,7 +288,7 @@ export default function Register() {
                     {/* Password & Confirmation */}
                     <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                            <InputLabel htmlFor="password" value="Contraseña" />
+                            <InputLabel htmlFor="password" value={t('auth.password_label')} />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
                                 <Campo
@@ -300,7 +301,7 @@ export default function Register() {
                                     onChange={(e) =>
                                         setData('password', e.target.value)
                                     }
-                                    placeholder="••••••"
+                                    placeholder={t('auth.password_placeholder')}
                                     required
                                 />
                             </div>
@@ -313,7 +314,7 @@ export default function Register() {
                         <div>
                             <InputLabel
                                 htmlFor="password_confirmation"
-                                value="Confirmar"
+                                value={t('auth.password_confirm_label')}
                             />
                             <div className="relative mt-0.5">
                                 <LockClosedIcon className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
@@ -330,7 +331,7 @@ export default function Register() {
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="••••••"
+                                    placeholder={t('auth.password_placeholder')}
                                     required
                                 />
                             </div>
@@ -368,10 +369,10 @@ export default function Register() {
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     />
                                 </svg>
-                                Creando...
+                                {t('auth.processing')}
                             </span>
                         ) : (
-                            'Registrarse'
+                            t('auth.register_button')
                         )}
                     </button>
                 </form>
@@ -379,21 +380,21 @@ export default function Register() {
                 {/* Login CTA */}
                 <div className="mt-3 border-t border-[#E2E0DC] pt-2.5">
                     <p className="mb-1.5 text-center text-xs text-gray-700">
-                        ¿Tienes cuenta?
+                        {t('auth.already_have_account')}
                     </p>
                     <Link
                         href={route('login')}
                         className="block text-center text-xs font-semibold text-[#7a0202] transition hover:text-[#920303]"
                     >
-                        Inicia sesión
+                        {t('auth.login_button')}
                     </Link>
                 </div>
 
                 {/* Terms */}
                 <p className="mt-3 text-center text-xs text-gray-600">
-                    Al registrarte aceptas nuestros{' '}
+                    {t('auth.terms_prefix')}{' '}
                     <a href="#" className="text-[#7a0202] hover:underline">
-                        términos
+                        {t('auth.terms')}
                     </a>
                 </p>
             </div>

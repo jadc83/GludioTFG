@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { emitToast } from '@/utils/toast';
+import { t } from '@/i18n';
 import { CalendarIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function FechaEditor({
@@ -45,8 +46,8 @@ export default function FechaEditor({
 
 	const onSave = async (e) => {
 		e?.preventDefault();
-		if (!checkIn || !checkOut) return emitToast('Rellena ambas fechas', 'error');
-		if (new Date(checkIn) >= new Date(checkOut)) return emitToast('El check-out debe ser posterior', 'error');
+		if (!checkIn || !checkOut) return emitToast(t('toasts.fill_both_dates'), 'error');
+		if (new Date(checkIn) >= new Date(checkOut)) return emitToast(t('toasts.checkout_must_be_after'), 'error');
 
 		setSaving(true);
 		try {
@@ -81,10 +82,10 @@ if (!esFechaOriginal(checkIn, checkOut)) {
 			};
 
 			await axios.put(`/reservas/${reserva.id}`, payload);
-			emitToast('Fechas actualizadas', 'success');
+			emitToast(t('toasts.dates_updated'), 'success');
 			if (refresh) await refresh();
 		} catch (err) {
-			emitToast(err.response?.data?.message || 'Error al actualizar', 'error');
+			emitToast(err.response?.data?.message || t('toasts.could_not_update'), 'error');
 		} finally {
 			setSaving(false);
 		}
@@ -96,7 +97,7 @@ if (!esFechaOriginal(checkIn, checkOut)) {
 					{/* Inputs de Fecha */}
 					<div className="grid grid-cols-2 gap-4 flex-1 w-full">
 						<div className="space-y-1">
-							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-in</label>
+							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('edit_reserva.checkin_label')}</label>
 							<div className="relative">
 								<CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 								<input
@@ -109,7 +110,7 @@ if (!esFechaOriginal(checkIn, checkOut)) {
 						</div>
 
 						<div className="space-y-1">
-							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Check-out</label>
+							<label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('edit_reserva.checkout_label')}</label>
 							<div className="relative">
 								<CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 								<input
@@ -144,11 +145,11 @@ if (!esFechaOriginal(checkIn, checkOut)) {
 								className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7a0202] hover:bg-[#5f0101] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
 							>
 								{saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <CheckIcon className="w-4 h-4" />}
-								<span>{saving ? 'Guardando...' : 'Actualizar'}</span>
+								<span>{saving ? t('actions_extra.saving') : t('actions_extra.update')}</span>
 							</button>
 						) : (
 							<button type="button" disabled className="px-6 py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-lg border border-gray-200 cursor-not-allowed italic">
-								Sin cambios
+								{t('actions_extra.no_changes')}
 							</button>
 						)}
 					</div>
@@ -160,7 +161,7 @@ if (!esFechaOriginal(checkIn, checkOut)) {
 						{cargandoVistaPrevia ? (
 							<div className="flex items-center gap-3 text-sm text-[#7a0202] font-medium">
 								<ArrowPathIcon className="w-4 h-4 animate-spin" />
-								Calculando disponibilidad y precios...
+								{t('actions_extra.loading_preview')}
 							</div>
 						) : errorVistaPrevia ? (
 							<div className="flex items-center gap-2 text-sm text-red-600 font-medium">

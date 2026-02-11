@@ -3,6 +3,7 @@ import ApplicationLogo from '@/Components/UI/ApplicationLogo';
 import NavLink from '@/Components/UI/NavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { setLocale, getLocale } from '@/i18n';
 
 export default function Navbar() {
     const { user } = usePage().props.auth;
@@ -104,6 +105,31 @@ export default function Navbar() {
                                 </Link>
                             </div>
                         )}
+
+                        <div className="hidden sm:flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (getLocale() !== 'es') {
+                                        setLocale('es', { persist: true });
+                                        if (typeof window !== 'undefined') window.location.reload();
+                                    }
+                                }}
+                                className={`px-2 py-1 rounded text-sm ${getLocale() === 'es' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                            >
+                                ES
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (getLocale() !== 'en') {
+                                        setLocale('en', { persist: true });
+                                        if (typeof window !== 'undefined') window.location.reload();
+                                    }
+                                }}
+                                className={`px-2 py-1 rounded text-sm ${getLocale() === 'en' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                            >
+                                EN
+                            </button>
+                        </div>
 
                         <div className="flex lg:hidden">
                             <button

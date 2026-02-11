@@ -4,6 +4,7 @@ import FormularioPago from '@/Components/formularios/create/FormularioPago';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { emitToast } from '@/utils/toast';
+import { t } from '@/i18n';
 
 export default function PagoPanel({
     formulario,
@@ -38,7 +39,7 @@ export default function PagoPanel({
             <div className="grid grid-cols-2 gap-4">
                 <Campo
                     id="num_huespedes"
-                    label="Número de Huéspedes"
+                    label={t('payment.number_of_guests')}
                     type="number"
                     min={1}
                     max={4}
@@ -48,22 +49,22 @@ export default function PagoPanel({
 
                 <Campo
                     id="metodo_pago"
-                    label="Método de Pago"
+                    label={t('payment.payment_method')}
                     as="select"
                     value={formulario.metodo_pago}
                     onChange={cambiar}
                     error={errores.metodo_pago}
                     required
                 >
-                    <option value="recepcion">Pagar en Recepción</option>
-                    <option value="tarjeta">Tarjeta de Crédito</option>
-                    <option value="transferencia">Transferencia</option>
+                    <option value="recepcion">{t('payment.pay_at_reception')}</option>
+                    <option value="tarjeta">{t('payment.credit_card')}</option>
+                    <option value="transferencia">{t('payment.bank_transfer')}</option>
                 </Campo>
             </div>
 
             <Campo
                 id="notas"
-                label="Notas / Observaciones (Opcional)"
+                label={t('payment.notes_optional')}
                 as="textarea"
                 rows={3}
                 value={formulario.notas}
@@ -76,7 +77,7 @@ export default function PagoPanel({
                 <div className="rounded-xl border-2 border-[#7a0202] bg-red-50 p-6">
                     <div className="flex items-center justify-between">
                         <span className="text-lg font-black uppercase tracking-tight text-gray-900">
-                            Precio Total
+                            {t('subtotal.total_price')}
                         </span>
                         <span className="text-3xl font-black text-[#7a0202]">
                             €{precioCalculado.toFixed(2)}
@@ -95,7 +96,7 @@ export default function PagoPanel({
                         mostrarAceptacion={true}
                         onCambioAceptaTerminos={setAceptaTerminos}
                         onPagoExitoso={onPagoExitoso}
-                        onError={(err) => emitToast('Error en pago: ' + (err?.message || ''), 'error')}
+                        onError={(err) => emitToast(t('toasts.payment_error') + (err?.message ? ': ' + (err?.message || '') : ''), 'error')}
                     />
                 </div>
             )}

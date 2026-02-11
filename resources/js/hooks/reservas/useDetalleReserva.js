@@ -3,6 +3,7 @@ import usePreview from '@/hooks/usePreview';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
 import dayjs from 'dayjs';
 import { emitToast } from '@/utils/toast';
+import { t } from '@/i18n';
 
 export default function useDetalleReserva({ reserva, refresh, aplicarCambioFechas } = {}) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -19,10 +20,10 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
     const [refundAmountInput, setRefundAmountInput] = useState(0);
 
     const motivosReembolso = useMemo(() => [
-        { value: 'billing_error', label: 'Error de facturación' },
-        { value: 'change_to_cheaper', label: 'Cambio a habitación más barata' },
-        { value: 'prefer_credit', label: 'Cliente prefiere crédito' },
-        { value: 'other', label: 'Otra' },
+        { value: 'billing_error', label: t('edit_reserva.refund_reasons.billing_error') },
+        { value: 'change_to_cheaper', label: t('edit_reserva.refund_reasons.change_to_cheaper') },
+        { value: 'prefer_credit', label: t('edit_reserva.refund_reasons.prefer_credit') },
+        { value: 'other', label: t('edit_reserva.refund_reasons.other') },
     ], []);
 
     const {
@@ -88,7 +89,7 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
             const latestPreview = await fetchPreviewHook(modalCheckIn, modalCheckOut);
 
             if (latestPreview?.available === false) {
-                emitToast('Sin disponibilidad para las nuevas fechas', 'error');
+                emitToast(t('toasts.no_availability_new_dates'), 'error');
                 return;
             }
 
@@ -103,11 +104,11 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
             }
 
             await aplicarCambioFechas(modalCheckIn, modalCheckOut);
-            emitToast('Cambio realizado correctamente', 'success');
+            emitToast(t('toasts.change_success'), 'success');
             setShowDateModal(false);
             refresh();
         } catch (err) {
-            emitToast('Error al actualizar las fechas', 'error');
+            emitToast(t('toasts.dates_update_error'), 'error');
         } finally {
             setIsProcessing(false);
         }
@@ -123,12 +124,12 @@ export default function useDetalleReserva({ reserva, refresh, aplicarCambioFecha
                 notes: refundNotes,
             });
             if (res.success) {
-                emitToast('Solicitud enviada correctamente', 'success');
+                emitToast(t('toasts.request_sent'), 'success');
                 setShowRefundModal(false);
                 refresh();
             }
         } catch (e) {
-            emitToast('Error al procesar solicitud', 'error');
+            emitToast(t('toasts.request_error'), 'error');
         } finally {
             setIsProcessing(false);
         }

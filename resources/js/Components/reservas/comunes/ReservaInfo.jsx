@@ -3,6 +3,7 @@ import { formatearFecha, formatearMoneda, formatearHora } from '@/utils/formatte
 import QRScanner from '@/Components/reservas/utilidades/QRScanner';
 import { useQRScanner } from '@/hooks/scanner/useQRScanner';
 import { useQRModal } from '@/hooks/scanner/useQRModal';
+import { t } from '@/i18n';
 
 export default function ReservaInfo({ reserva, total, preview, onSolicitarReembolso, refundRequested = false }) {
 	if (!reserva) return null;
@@ -38,7 +39,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 							</svg>
 						</div>
 						<div>
-							<h3 className="text-xl font-black text-white">Resumen de reserva</h3>
+							<h3 className="text-xl font-black text-white">{t('edit_reserva.header_title')}</h3>
 							<p className="text-lg">
 						<span className="font-mono font-bold uppercase text-white">{reserva.localizador}</span>
 							</p>
@@ -59,7 +60,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 					<div className="grid grid-cols-2 gap-8">
 						{/* Huésped */}
 						<div className="col-span-2">
-							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-200"><svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM6 20a6 6 0 0112 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> <span className="text-white">Huésped Principal</span></p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-200"><svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM6 20a6 6 0 0112 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> <span className="text-white">{t('edit_reserva.guest_primary')}</span></p>
 							<p className="mt-1 text-lg font-bold text-gray-900">{reserva.reservable?.name ?? reserva.cliente?.name ?? 'N/A'}</p>
 							<div className="mt-1 flex gap-3 text-sm text-gray-500">
 								<span>{reserva.cliente?.email}</span>
@@ -69,20 +70,20 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 
 						{/* Fechas */}
 						<div className="rounded-lg border border-gray-100 p-4">
-							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Entrada (Check-In)</p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> {t('edit_reserva.checkin_label')}</p>
 							<p className="mt-1 text-base font-bold text-gray-900">{formatearFecha(reserva.check_in)}</p>
 							<p className="text-sm text-gray-500">{reserva.check_in_time ?? formatearHora(reserva.check_in)}</p>
 						</div>
 
 						<div className="rounded-lg border border-gray-100 p-4">
-							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Salida (Check-Out)</p>
+							<p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> {t('edit_reserva.checkout_label')}</p>
 							<p className="mt-1 text-base font-bold text-gray-900">{formatearFecha(reserva.check_out)}</p>
 							<p className="text-sm text-gray-500">{reserva.check_out_time ?? formatearHora(reserva.check_out)}</p>
 						</div>
 
 						{/* Habitaciones */}
 						<div className="col-span-2 mt-2">
-							<p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M7 7v10a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Desglose de Alojamiento</p>
+							<p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400"><svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M7 7v10a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> {t('edit_reserva.accommodation_breakdown')}</p>
 							<div className="space-y-3">
 								{(() => {
 									const habitacionesArr = reserva.habitaciones || [];
@@ -121,12 +122,12 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 
 										return (
 											<div key={i} className="flex justify-between border-b border-gray-50 pb-2 text-gray-700">
-												<span className="capitalize font-medium">Habitación {tipo}</span>
+												<span className="capitalize font-medium">{t('edit_reserva.room_format', { type: tipo })}</span>
 												<div className="text-right">
 													<div className="font-bold">{formatearMoneda(precioNocheAjustado)}/nt</div>
 													{nochesVisual > 0 && (
 														<div className="text-xs text-gray-500">
-															{nochesVisual} {nochesVisual === 1 ? 'noche' : 'noches'}
+															{nochesVisual} {t('paso2.nights')}
 														</div>
 													)}
 												</div>
@@ -148,7 +149,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
 							</svg>
-							Descargar PDF
+							{t('edit_reserva.download_pdf')}
 						</a>
 
 						<div className="flex gap-2">
@@ -158,17 +159,17 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 										onClick={() => { setScannerAction('checkin'); setScannerOpen(true); }}
 										className="rounded-lg bg-[#7a0202] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#5f0101]"
 									>
-										Realizar Check-In
+										{t('edit_reserva.checkin_button')}
 									</button>
 											{reserva?.pago === 'pagado' && onSolicitarReembolso && (
 												<>
 													{refundRequested ? (
 														<button disabled className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-400 bg-gray-50">
-															Reembolso solicitado
+															{t('edit_reserva.refund_requested')}
 														</button>
 													) : (
 														<button onClick={onSolicitarReembolso} className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-red-50 hover:text-red-700">
-															Solicitar Reembolso
+															{t('edit_reserva.request_refund')}
 														</button>
 													)}
 												</>
@@ -190,14 +191,14 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 				{/* Columna Derecha: QR y Totales */}
 				<div className="col-span-12 border-l border-gray-100 bg-gray-50/30 p-6 lg:col-span-4">
 					<div className="flex flex-col items-center">
-						<div className="mb-6 border border-gray-100 rounded-xl bg-white p-3 shadow-sm flex flex-col items-center">
+								<div className="mb-6 border border-gray-100 rounded-xl bg-white p-3 shadow-sm flex flex-col items-center">
 							<img src={qrUrlSmall} alt="QR de acceso" className="h-40 w-40 cursor-pointer" onClick={() => setQrOpen(true)} />
-							<p className="mt-2 text-center text-[10px] font-bold uppercase tracking-tighter text-gray-400">Pase de acceso rápido</p>
+							<p className="mt-2 text-center text-[10px] font-bold uppercase tracking-tighter text-gray-400">{t('modal.gallery.quick_pass')}</p>
 						</div>
 
 						<div className="w-full space-y-4">
 							<div>
-								<p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Tarifas y Extras</p>
+								<p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">{t('edit_reserva.rates_and_extras')}</p>
 								<div className="space-y-2">
 									{(() => {
 										const tarifasArr = reserva.tarifas?.length ? reserva.tarifas : (reserva.tarifa ? [reserva.tarifa] : []);
@@ -209,7 +210,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 												</div>
 											));
 										}
-										return <p className="text-xs italic text-gray-400">No hay cargos adicionales</p>;
+										return <p className="text-xs italic text-gray-400">{t('edit_reserva.no_additional_charges')}</p>;
 									})()}
 								</div>
 							</div>
@@ -217,7 +218,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 								<div className="mt-6 border-t border-gray-200 pt-4">
 								<div className="mt-2">
 									<div className="flex w-full items-end justify-between">
-										<span className="text-sm font-bold uppercase text-gray-900">Total Final</span>
+										<span className="text-sm font-bold uppercase text-gray-900">{t('edit_reserva.total_final')}</span>
 										<span className="text-2xl font-black tracking-tight text-white bg-black px-3 py-1 rounded-md">
 											{formatearMoneda(Number(reserva.precio_total ?? total ?? 0))}
 										</span>
@@ -232,7 +233,7 @@ export default function ReservaInfo({ reserva, total, preview, onSolicitarReembo
 													: 'border-amber-700 bg-amber-50/60 text-amber-700 -rotate-3'
 											}`}
 										>
-											{reserva?.pago === 'pagado' ? 'Pagada' : 'Pendiente'}
+											{reserva?.pago === 'pagado' ? t('edit_reserva.paid') : t('edit_reserva.pending')}
 										</span>
 									</div>
 								</div>

@@ -2,6 +2,7 @@ import Campo from '@/Components/reservas/utilidades/Campo';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import { t } from '@/i18n';
 
 export default function BuscadorNavbar() {
     const [localizador, setLocalizador] = useState('');
@@ -20,10 +21,10 @@ export default function BuscadorNavbar() {
             if (r) {
                 router.visit(route('reserva.show', localizador.trim()));
             } else {
-                alert('No se encontró la reserva con ese localizador');
+                alert(t('buscador.not_found'));
             }
         } catch (err) {
-            alert('Error al buscar la reserva');
+            alert(t('buscador.error'));
         } finally {
             setBuscando(false);
         }
@@ -39,7 +40,7 @@ export default function BuscadorNavbar() {
                     onChange={(e) =>
                         setLocalizador(e.target.value.toUpperCase())
                     }
-                    placeholder="Busca tu reserva..."
+                    placeholder={t('buscador.placeholder')}
                     className="input-bordered input input-sm w-48 focus:outline-none"
                     disabled={buscando}
                 />

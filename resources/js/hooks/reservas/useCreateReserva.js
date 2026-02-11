@@ -6,6 +6,7 @@ import {
     calcularPrecio,
 } from './service';
 import { emitToast } from '@/utils/toast';
+import { t } from '@/i18n';
 import * as reservasApi from '@/api/reservas';
 import { getReservaPayload } from '@/utils/reservaPayload';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
@@ -258,9 +259,9 @@ export default function useCreateReserva() {
             setTabActiva('fechas');
             const counts = Object.entries(habitacionesPorTipo).map(([t, i]) => `${t}:${i.cantidad}`).join(', ');
             if (import.meta.env.DEV && counts && counts.length) {
-                emitToast(`Debes seleccionar al menos una habitación (actual: ${counts})`, 'error');
+                emitToast(t('toasts.select_room_required') + ` (actual: ${counts})`, 'error');
             } else {
-                emitToast('Debes seleccionar al menos una habitación', 'error');
+                emitToast(t('toasts.select_room_required'), 'error');
             }
             return;
         }
@@ -374,7 +375,7 @@ export default function useCreateReserva() {
         const habitacionesConCantidad = Object.entries(habitacionesPorTipo).filter(([_, info]) => info.cantidad > 0);
 
         if (habitacionesConCantidad.length === 0) {
-            emitToast('Debes seleccionar al menos una habitación', 'error');
+            emitToast(t('toasts.select_room_required'), 'error');
             return;
         }
 
@@ -429,7 +430,7 @@ export default function useCreateReserva() {
             }
         } catch (err) {
             // Error handled by user-facing toast; removed console logging for cleanliness
-            emitToast('Error iniciando Checkout: ' + (err?.message || ''), 'error');
+            emitToast(t('toasts.error_starting_checkout') + (err?.message ? ': ' + (err?.message || '') : ''), 'error');
         } finally {
             setCreandoConCheckout(false);
         }
