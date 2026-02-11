@@ -22,12 +22,33 @@ return new class extends Migration
             $copyColumns = array_values(array_diff($existing, ['numero_empleado']));
 
             if (!empty($copyColumns)) {
+                // Create a temp table preserving the primary key and all existing columns (generic types)
+                $colsDef = [];
+                $colsToCreate = array_filter($copyColumns, fn($c) => $c !== 'id');
+
+                foreach ($colsToCreate as $col) {
+                    // Heuristic typing: common foreign keys as INTEGER, timestamps/text otherwise
+                    if (in_array($col, ['user_id', 'departamento_id', 'numero_empleado'])) {
+                        $colsDef[] = '"'.$col.'" INTEGER';
+                    } else {
+                        $colsDef[] = '"'.$col.'" TEXT';
+                    }
+                }
+
                 $colsSql = implode(', ', array_map(function ($c) { return '"'.str_replace('"', '""', $c).'"'; }, $copyColumns));
 
-                // Create temporary table with same columns (no rows)
-                DB::statement("CREATE TABLE empleados_tmp AS SELECT $colsSql FROM empleados WHERE 0");
+                // If id exists in the original columns, include it in CREATE TABLE; otherwise create it as primary key
+                $createCols = '';
+                if (in_array('id', $copyColumns)) {
+                    // keep original id column and make it PRIMARY KEY
+                    $createCols = '"id" INTEGER PRIMARY KEY, ' . implode(', ', $colsDef);
+                } else {
+                    $createCols = '"id" INTEGER PRIMARY KEY, ' . implode(', ', $colsDef);
+                }
 
-                // Copy rows into temporary table
+                DB::statement("CREATE TABLE empleados_tmp ($createCols)");
+
+                // Copy rows into temporary table preserving ids when present
                 DB::statement("INSERT INTO empleados_tmp ($colsSql) SELECT $colsSql FROM empleados");
 
                 Schema::drop('empleados');
