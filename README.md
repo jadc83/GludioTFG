@@ -1,59 +1,79 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hotel Gludio - Property Management System (PMS)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 1. Introducción
+**Hotel Gludio** es una solución integral de gestión hotelera desarrollada con un stack moderno. La plataforma permite la gestión completa del ciclo de vida de una estancia, incluyendo la reserva de habitaciones, procesamiento de pagos, gestión de tareas del personal y análisis estadístico de ocupación.
 
-## About Laravel
+## 2. Arquitectura Tecnológica
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Backend
+* **Framework:** Laravel 12.0.
+* **Lenguaje:** PHP 8.3.
+* **Autenticación:** Laravel Breeze y Sanctum.
+* **Procesamiento de Pagos:** Stripe mediante Laravel Cashier.
+* **Comunicación en Tiempo Real:** Laravel Reverb (WebSockets).
+* **Generación de Documentos:** Barryvdh Laravel DomPDF.
+* **Gestión de Permisos:** Spatie Laravel Permission.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Frontend
+* **Core:** React 18.2.
+* **Adaptador:** Inertia.js 2.0.
+* **Estilos:** Tailwind CSS v3 y DaisyUI v5.
+* **Gestión de Estado:** TanStack React Query v5.
+* **Componentes de UI:** Headless UI y Heroicons.
+* **Gráficos:** Recharts y Chart.js.
+* **Calendarios:** FullCalendar.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 3. Características Principales
 
-## Learning Laravel
+### Gestión de Reservas y Clientes
+* **Motor de Reservas:** Flujo de reserva dividido en pasos (selección de fechas, habitaciones, datos y confirmación).
+* **Detección de Clientes:** Sistema automático para identificar clientes existentes mediante documentos de identidad.
+* **Check-in/out:** Acciones específicas para marcar la entrada y salida de los huéspedes.
+* **Escaneo QR:** Integración de lector de códigos QR para agilizar procesos.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Operaciones del Hotel
+* **Gestión de Tareas:** Asignación y seguimiento de labores para el personal (limpieza, mantenimiento, etc.).
+* **Control de Turnos:** Calendario de turnos para empleados integrado en el perfil.
+* **Departamentos:** Organización del personal por áreas operativas.
+* **Cupones:** Sistema de descuentos aplicables a las reservas.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Finanzas y Análisis
+* **Pagos Seguros:** Integración completa con la pasarela Stripe para cobros y reembolsos.
+* **Gestión de Reembolsos:** Flujo de aprobación para solicitudes de devolución.
+* **Panel de Control:** Visualización de métricas de ocupación y estadísticas en tiempo real.
 
-## Laravel Sponsors
+## 4. Estructura del Proyecto
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Lógica de Negocio (Acciones y Servicios)
+El proyecto utiliza el patrón de diseño *Action* y *Service* para desacoplar la lógica de los controladores:
+* `app/Actions/`: Contiene lógica atómica como `CreateReservaAction` o `CalcularPrecioAction`.
+* `app/Services/`: Agrupa lógica compleja como `PaymentService`, `ReservaDisponibilidadService` y `PdfService`.
 
-### Premium Partners
+### Base de Datos
+El esquema incluye tablas para:
+* Habitaciones y sus tipos (Single, Double, Suite).
+* Servicios y tarifas dinámicas.
+* Gestión de personal y nóminas operativas.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 5. Instalación y Despliegue
 
-## Contributing
+1.  **Configuración Inicial:**
+    ```bash
+    composer run setup
+    ```
+    *Este comando instala dependencias, genera claves, crea la base de datos SQLite y compila los assets.*
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2.  **Ejecución del Entorno de Desarrollo:**
+    El proyecto incluye un script de automatización para iniciar todos los servicios necesarios simultáneamente (Servidor Laravel, Vite y Reverb):
+    ```bash
+    ./iniciar.sh
+    ```
+   
 
-## Code of Conduct
+## 6. Pruebas y Calidad
+* **Backend:** Utiliza Pest PHP para pruebas de características (Auth, Pagos, Reservas).
+* **Frontend:** Vitest y React Testing Library para componentes y hooks.
+* **Análisis Estático:** Configurado con PHPStan y ESLint.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+*Desarrollado para la gestión eficiente de Hotel Gludio.*
