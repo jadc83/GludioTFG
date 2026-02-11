@@ -3,6 +3,7 @@ import Boton from '@/Components/UI/Boton';
 import { IdentificationIcon } from '@heroicons/react/24/outline';
 import '../../../../css/paso3Datos.css';
 import FormularioDatosCliente from '@/Components/formularios/create/FormularioDatosCliente';
+import { t } from '@/i18n';
 
 export default function Paso3Datos({
     watch,
@@ -19,9 +20,10 @@ export default function Paso3Datos({
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-gray-900">
-                            DATOS DEL <span className="text-[#7a0202]">TITULAR</span>
+                            {t('booking.primary_holder').toUpperCase ? t('booking.primary_holder').toUpperCase() : t('booking.primary_holder')}
+                            <span className="text-[#7a0202]">{t('booking.primary_holder')}</span>
                         </h1>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">Registro de Identidad</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">{t('booking.identity_registration') || 'Registro de Identidad'}</p>
                     </div>
                     <div className="hidden md:block">
                         <ReservaBreadcrumbs activeIndex={2} separator="chevron" textClass="text-sm" />
@@ -36,11 +38,10 @@ export default function Paso3Datos({
                             <IdentificationIcon className="h-6 w-6 text-gray-900 opacity-20" />
                             <div>
                                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-900">
-                                    Información de Registro
+                                    {t('booking.registration_information') || 'Información de Registro'}
                                 </h2>
                                 <p className="mt-1 text-[10px] uppercase tracking-widest text-gray-400">
-                                    Los datos se vincularán al activo
-                                    seleccionado.
+                                    {t('booking.data_linked') || 'Los datos se vincularán al activo seleccionado.'}
                                 </p>
                             </div>
                         </div>
@@ -74,7 +75,7 @@ export default function Paso3Datos({
             <footer className="flex-none border-t border-gray-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
                 <div className="mx-auto max-w-5xl flex items-center justify-between">
                     <Boton variant="ghost" size="sm" onClick={retrocederPaso}>
-                        ← Volver a Unidades
+                        ← {t('booking.back_to_units') || 'Volver a Unidades'}
                     </Boton>
 
                     <Boton
@@ -101,7 +102,7 @@ export default function Paso3Datos({
                             !formData.direccion
                         }
                     >
-                        Revisar Reserva →
+                        {t('booking.review_booking') || 'Revisar Reserva →'}
                     </Boton>
                 </div>
             </footer>

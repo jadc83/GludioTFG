@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
+import { t } from '@/i18n';
 
 export default function ModalGaleria({
     titulo,
@@ -116,7 +117,7 @@ export default function ModalGaleria({
                 <div className="w-full lg:w-2/5 p-8 md:p-12 flex flex-col bg-white overflow-y-auto">
 
                     <div className="mb-8">
-                        <span className="text-[#7a0202] font-bold text-xs uppercase tracking-[0.4em] block mb-3">Habitación Gludio</span>
+                        <span className="text-[#7a0202] font-bold text-xs uppercase tracking-[0.4em] block mb-3">{t('modal.gallery.room_badge')}</span>
                         <h2 className="text-4xl font-serif text-black leading-tight">
                             {titulo}
                         </h2>
@@ -126,11 +127,11 @@ export default function ModalGaleria({
                     <div className="grid grid-cols-3 gap-6 py-8 border-y border-gray-100 my-4 text-black text-center">
                         <div className="space-y-2">
                             <ArrowsPointingOutIcon className="h-6 w-6 text-[#7a0202] mx-auto" />
-                            <p className="text-[10px] uppercase font-black tracking-tighter">{m2} Metros</p>
+                            <p className="text-[10px] uppercase font-black tracking-tighter">{m2} {t('modal.gallery.meters')}</p>
                         </div>
                         <div className="space-y-2">
                             <UsersIcon className="h-6 w-6 text-[#7a0202] mx-auto" />
-                            <p className="text-[10px] uppercase font-black tracking-tighter">{capacidad} Huéspedes</p>
+                            <p className="text-[10px] uppercase font-black tracking-tighter">{capacidad} {t('modal.gallery.guests')}</p>
                         </div>
                         <div className="space-y-2">
                             <MoonIcon className="h-6 w-6 text-[#7a0202] mx-auto" />
@@ -140,14 +141,14 @@ export default function ModalGaleria({
 
                     <div className="flex-1 mt-6 space-y-10">
                         <div>
-                            <h3 className="text-black font-bold uppercase text-[10px] tracking-widest mb-4 opacity-40">Descripción</h3>
+                            <h3 className="text-black font-bold uppercase text-[10px] tracking-widest mb-4 opacity-40">{t('modal.gallery.description_title')}</h3>
                             <p className="text-gray-700 leading-relaxed font-light text-lg">
                                 {descripcion}
                             </p>
                         </div>
 
                         <div>
-                            <h3 className="text-black font-bold uppercase text-[10px] tracking-widest mb-4 opacity-40">Servicios Incluidos</h3>
+                            <h3 className="text-black font-bold uppercase text-[10px] tracking-widest mb-4 opacity-40">{t('modal.gallery.amenities_title')}</h3>
                             <div className="grid grid-cols-1 gap-3">
                                 {amenidades.map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 text-sm text-black font-medium">
@@ -161,7 +162,7 @@ export default function ModalGaleria({
 
                     <div className="mt-12 pt-8 border-t border-gray-100 flex items-end justify-between">
                         <div className="space-y-1">
-                            <span className="text-[10px] text-gray-400 uppercase font-black tracking-[0.2em]">Precio por noche</span>
+                            <span className="text-[10px] text-gray-400 uppercase font-black tracking-[0.2em]">{t('modal.gallery.price_per_night')}</span>
                             <div className="text-black">
                                 <span className="text-4xl font-serif font-bold">{precio}€</span>
                             </div>
@@ -171,7 +172,7 @@ export default function ModalGaleria({
                             onClick={onCerrar}
                             className="bg-[#7a0202] text-white px-10 py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-[0_10px_30px_rgba(122,2,2,0.3)] active:scale-95 uppercase tracking-widest text-xs"
                         >
-                            Volver
+                            {t('modal.gallery.back')}
                         </button>
                     </div>
                 </div>

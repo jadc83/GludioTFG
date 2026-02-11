@@ -1,5 +1,6 @@
 import { formatearMoneda } from '@/utils/formatters';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
+import { t } from '@/i18n';
 
 export default function ModalReembolso({
     mostrar,
@@ -23,17 +24,17 @@ export default function ModalReembolso({
                 {procesando ? (
                     <div className="p-8 flex flex-col items-center justify-center gap-4">
                         <LoadingSpinner size="loading-lg" />
-                        <div className="text-lg font-bold text-gray-700">Solicitando reembolso</div>
+                        <div className="text-lg font-bold text-gray-700">{t('edit_reserva.refund_processing')}</div>
                     </div>
                 ) : (
                     <div className="space-y-6 p-6 bg-white">
                         <div className="text-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Monto a reembolsar</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t('edit_reserva.refund_amount')}</span>
                             <div className="mt-1 text-4xl font-black text-[#7a0202]">{formatearMoneda(monto)}</div>
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-gray-400">Motivo de la solicitud</label>
+                            <label className="text-[10px] font-black uppercase text-gray-400">{t('edit_reserva.refund_reason_label')}</label>
                             <div className="grid grid-cols-1 gap-2">
                                 {motivosReembolso.map((r) => (
                                     <label
@@ -57,7 +58,7 @@ export default function ModalReembolso({
                         <textarea
                             value={notasReembolso}
                             onChange={(e) => setNotasReembolso(e.target.value)}
-                            placeholder="Notas adicionales..."
+                            placeholder={t('edit_reserva.refund_notes_placeholder')}
                             className="min-h-[100px] w-full rounded-xl border-gray-100 bg-gray-50 p-4 text-sm focus:ring-[#7a0202]"
                         />
                     </div>
@@ -68,13 +69,13 @@ export default function ModalReembolso({
                         disabled={procesando}
                         className="flex-1 rounded-2xl bg-[#7a0202] py-3 text-sm font-black uppercase tracking-widest text-white shadow transition disabled:opacity-50"
                     >
-                        {procesando ? 'Enviando...' : 'Confirmar'}
+                        {procesando ? t('edit_reserva.sending') : t('edit_reserva.confirm')}
                     </button>
                     <button
                         onClick={onCerrar}
                         className="ml-3 rounded-2xl py-3 px-6 text-sm font-bold uppercase tracking-widest text-gray-600 transition hover:text-gray-900 border border-gray-100 bg-white"
                     >
-                        Cancelar
+                        {t('edit_reserva.cancel')}
                     </button>
                 </div>
             </div>

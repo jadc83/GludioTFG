@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 export default function Tarjetas() {
     const tarjetas = [
         {
@@ -90,10 +92,10 @@ export default function Tarjetas() {
                             {icon}
                         </svg>
                         <h2 className="mb-1 text-center text-base font-semibold">
-                            {titulo}
+                            {t(`home.cards.${['rooms_title','pool_title','restaurant_title','wifi_title'][idx]}`)}
                         </h2>
                         <p className="text-center text-sm leading-snug text-gray-600">
-                            {descripcion}
+                            {t(`home.cards.${['rooms_desc','pool_desc','restaurant_desc','wifi_desc'][idx]}`)}
                         </p>
                     </div>
                 ))}

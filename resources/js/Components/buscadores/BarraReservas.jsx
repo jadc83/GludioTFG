@@ -20,6 +20,7 @@ import ModalPaso from '@/Components/reservas/pasos/ModalPaso';
 import Paso2Habitaciones from '@/Components/reservas/pasos/Paso2Habitaciones';
 import Paso3Datos from '@/Components/reservas/pasos/Paso3Datos';
 import Paso4Confirmacion from '@/Components/reservas/pasos/Paso4Confirmacion';
+import { t } from '@/i18n';
 
 export default function BarraReservas() {
     const formularioReserva = useReservaForm();
@@ -126,7 +127,7 @@ export default function BarraReservas() {
                                 <div className="relative flex items-center gap-2">
                                     <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
                                         <span className="hidden sm:inline">
-                                            Entrada
+                                            {t('barra.entrada')}
                                         </span>
                                         <span className="inline-flex sm:hidden">
                                             <ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" />
@@ -141,7 +142,7 @@ export default function BarraReservas() {
                                             )
                                         }
                                         className="truncate rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-left text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner"
-                                        aria-label="Seleccionar fecha de entrada"
+                                        aria-label={t('barra.aria_entrada')}
                                     >
                                         {formularioReserva.rango?.from
                                             ? formatearFecha(
@@ -172,7 +173,7 @@ export default function BarraReservas() {
                                 <div className="relative flex items-center gap-2">
                                     <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
                                         <span className="hidden sm:inline">
-                                            Salida
+                                            {t('barra.salida')}
                                         </span>
                                         <span className="inline-flex sm:hidden">
                                             <ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" />
@@ -190,7 +191,7 @@ export default function BarraReservas() {
                                             !formularioReserva.rango?.from
                                         }
                                         className="truncate rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-left text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:cursor-not-allowed disabled:opacity-50"
-                                        aria-label="Seleccionar fecha de salida"
+                                        aria-label={t('barra.aria_salida')}
                                     >
                                         {formularioReserva.rango?.to
                                             ? formatearFecha(
@@ -227,9 +228,9 @@ export default function BarraReservas() {
                                 </div>
 
                                 <div className="flex flex-row items-center gap-1.5 rounded bg-gris px-2 py-1">
-                                    <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
+                                        <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
                                         <span className="hidden sm:inline">
-                                            Huéspedes:
+                                            {t('barra.huespedes')}:
                                         </span>
                                         <span className="inline-flex sm:hidden">
                                             <UserGroupIcon className="h-5 w-5 text-gray-700" />

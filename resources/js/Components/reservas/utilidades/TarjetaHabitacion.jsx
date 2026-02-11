@@ -4,6 +4,7 @@ import {
     PlusIcon,
     UsersIcon,
 } from '@heroicons/react/24/outline';
+import { t } from '@/i18n';
 
 export default function TarjetaHabitacion({
     tipo,
@@ -30,7 +31,7 @@ export default function TarjetaHabitacion({
                     <h4 className="text-sm font-bold text-gray-900 capitalize">{tipo}</h4>
                     <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
                         <UsersIcon className="h-4 w-4" />
-                        <span>{(info.capacidadMaxima ?? info.capacidad) || '—'} personas</span>
+                        <span>{(info.capacidadMaxima ?? info.capacidad) || '—'} {t('paso2.persons')}</span>
                     </div>
                     {info.descripcion && <p className="mt-2 text-sm text-gray-600 line-clamp-2">{info.descripcion}</p>}
                 </div>
@@ -39,17 +40,17 @@ export default function TarjetaHabitacion({
                         <div className="text-base font-extrabold text-[#7a0202]">
                             {preciosPorTipo[tipo] ?? info.precioEntreNoche ?? info.precioTipo ?? info.precioMinimo}€
                         </div>
-                        <div className="text-xs text-gray-400">precio medio / noche</div>
+                        <div className="text-xs text-gray-400">{t('paso2.price_per_night')}</div>
                     </div>
 
                     <div className="ml-4 md:ml-0">
                         {isSelected ? (
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 0)} className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-bold text-[#7a0202]">Quitar</button>
-                                <span className="inline-flex h-10 items-center justify-center rounded-md bg-green-50 px-4 text-sm font-bold text-green-700">Seleccionada</span>
+                                <div className="flex items-center gap-2">
+                                <button onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 0)} className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-bold text-[#7a0202]">{t('paso2.remove')}</button>
+                                <span className="inline-flex h-10 items-center justify-center rounded-md bg-green-50 px-4 text-sm font-bold text-green-700">{t('paso2.selected')}</span>
                             </div>
                         ) : (
-                            <button disabled={!puedoSeleccionarMas} onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 1)} className="inline-flex h-10 items-center justify-center rounded-md bg-[#7a0202] hover:bg-[#5f0101] px-4 text-sm font-bold text-white disabled:opacity-40">Seleccionar</button>
+                            <button disabled={!puedoSeleccionarMas} onClick={() => actualizarSeleccionHabitacion(tipo, 'cantidad', 1)} className="inline-flex h-10 items-center justify-center rounded-md bg-[#7a0202] hover:bg-[#5f0101] px-4 text-sm font-bold text-white disabled:opacity-40">{t('paso2.select')}</button>
                         )}
                     </div>
                 </div>

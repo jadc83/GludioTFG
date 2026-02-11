@@ -49,7 +49,7 @@ export default function DesgloseFactura({
         <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
             <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
                 <h3 className="text-center text-xs font-bold uppercase tracking-wider text-gray-500">
-                    Resumen
+                    {t('paso2.summary_title')}
                 </h3>
             </div>
 
@@ -66,17 +66,10 @@ export default function DesgloseFactura({
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <p className="text-sm font-semibold capitalize text-gray-900">
-                                                {tipo}
+                                                {t(`paso2.room_type.${tipo}`)}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {r.cantidad}{' '}
-                                                {r.cantidad === 1
-                                                    ? 'Habitación'
-                                                    : 'Habitaciones'}{' '}
-                                                × {numeroNoches}{' '}
-                                                {numeroNoches === 1
-                                                    ? 'noche'
-                                                    : 'noches'}
+                                                {r.cantidad} {t('paso2.nights', { count: r.cantidad })} × {numeroNoches} {t('paso2.nights', { count: numeroNoches })}
                                             </p>
                                         </div>
                                         <p className="text-sm font-bold text-gray-900">
@@ -100,7 +93,7 @@ export default function DesgloseFactura({
                 {tarifasAplicadas && tarifasAplicadas.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-[10px] font-bold uppercase tracking-tight text-gray-400">
-                            Suplementos
+                            {t('paso2.supplements')}
                         </p>
                         {tarifasAplicadas.map((t) => {
                             const mod = Number(t.modificador_precio || 0);
@@ -140,7 +133,7 @@ export default function DesgloseFactura({
                     <div className="flex items-end justify-between">
                         <div>
                             <p className="text-[10px] font-bold uppercase text-gray-400">
-                                Total
+                                {t('paso2.total')}
                             </p>
                         </div>
                         <div className="text-right">
@@ -148,7 +141,7 @@ export default function DesgloseFactura({
                                 {formatearMoneda(monto)}
                             </p>
                             <p className="mt-1 text-[9px] uppercase text-gray-400">
-                                Impuestos incluidos
+                                {t('paso2.taxes_included')}
                             </p>
                         </div>
                     </div>

@@ -13,6 +13,7 @@ import ModalFechas from '@/Components/reservas/comunes/ModalFechas';
 import FechaEditor from '@/Components/reservas/FechaEditor';
 import ModalReembolso from '@/Components/reservas/comunes/ModalReembolso';
 import ModalPago from '@/Components/reservas/comunes/ModalPago';
+import { t } from '@/i18n';
 
 export default function EditarReserva({
     reserva: initialReserva,
@@ -29,10 +30,10 @@ export default function EditarReserva({
 
 
     const motivosReembolso = [
-        { value: 'billing_error', label: 'Error de facturación' },
-        { value: 'change_to_cheaper', label: 'Cambio a habitación más barata' },
-        { value: 'prefer_credit', label: 'Cliente prefiere crédito' },
-        { value: 'other', label: 'Otra' },
+        { value: 'billing_error', label: t('edit_reserva.refund_reasons.billing_error') },
+        { value: 'change_to_cheaper', label: t('edit_reserva.refund_reasons.change_to_cheaper') },
+        { value: 'prefer_credit', label: t('edit_reserva.refund_reasons.prefer_credit') },
+        { value: 'other', label: t('edit_reserva.refund_reasons.other') },
     ];
     const {
         preview: pFromHook,
@@ -193,7 +194,7 @@ export default function EditarReserva({
                                                         <path d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 </div>
-                                                <span className="font-medium">Necesito modificar las fechas de mi reserva</span>
+                                                <span className="font-medium">{t('edit_reserva.modify_dates_button')}</span>
                                             </div>
                                             <svg
                                                 className={`w-5 h-5 text-white transform transition-transform duration-200 ${showFechaEditor ? 'rotate-180' : 'rotate-0'}`}

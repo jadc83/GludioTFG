@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
+import { t } from '@/i18n';
 
 export default function Dashboard() {
 	useEffect(() => {
@@ -12,7 +13,7 @@ export default function Dashboard() {
 
 	return (
 		<AuthenticatedLayout header={null}>
-			<Head title="Bienvenido a su Estancia" />
+			<Head title={t('dashboard.title')} />
 
 			<div className="relative min-h-[calc(100vh-65px)] flex items-center justify-center bg-[#1a0101] overflow-hidden">
 				<div className="absolute inset-0 z-0">
@@ -30,16 +31,16 @@ export default function Dashboard() {
 						<div className="absolute -top-24 -left-24 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
 
 						<span className="text-white/80 text-xs tracking-[0.5em] uppercase font-light block mb-6 animate-fade-in">
-							Experiencia Exclusiva
+							{t('dashboard.experience_tag')}
 						</span>
 
 						<h1 className="text-4xl md:text-7xl font-serif text-white leading-tight mb-8 animate-fade-in-up">
-							Donde cada detalle <br/>
-							<span className="text-[#fdfaf6] italic font-light opacity-90">cuenta una historia.</span>
+							{t('dashboard.headline_part1')} <br/>
+							<span className="text-[#fdfaf6] italic font-light opacity-90">{t('dashboard.headline_emphasis')}</span>
 						</h1>
 
 						<p className="text-white/70 text-lg font-light max-w-md mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-							Estamos preparando su llegada para que su única preocupación sea disfrutar del descanso que merece.
+							{t('dashboard.subtitle')}
 						</p>
 
 						<div className="mt-12 flex flex-col items-center gap-6">
@@ -64,7 +65,7 @@ export default function Dashboard() {
 									<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
 										<path d="M10.707 1.707a1 1 0 00-1.414 0l-7 7A1 1 0 003 10h1v6a1 1 0 001 1h4a1 1 0 001-1v-3h2v3a1 1 0 001-1h4a1 1 0 001-1v-6h1a1 1 0 00.707-1.707l-7-7z" />
 									</svg>
-									Entrar al Hotel
+									{t('dashboard.cta')}
 								</span>
 							</button>
 						</div>
@@ -73,7 +74,7 @@ export default function Dashboard() {
 
 				<div className="absolute bottom-8 left-8 flex items-center gap-4 opacity-50 text-white">
 					<div className="w-8 h-[1px] bg-white" />
-					<span className="font-serif tracking-[0.3em] text-xs uppercase">Hotel Gludio</span>
+					<span className="font-serif tracking-[0.3em] text-xs uppercase">{t('dashboard.brand')}</span>
 				</div>
 			</div>
 

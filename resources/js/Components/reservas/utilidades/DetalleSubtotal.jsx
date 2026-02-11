@@ -1,4 +1,5 @@
 import { calcularNoches, formatearMoneda } from '@/utils/formatters';
+import { t } from '@/i18n';
 
 export default function DetalleSubtotal({
     habitacionesSeleccionadas = {},
@@ -68,8 +69,8 @@ export default function DetalleSubtotal({
         return (
             <div className="w-full rounded bg-gris p-2">
                 <div className="flex items-center justify-between text-[12px]">
-                    <span className="font-medium text-gray-700">Subtotal</span>
-                    <span className="text-sm text-gray-400">Selecciona habitaciones para ver el subtotal</span>
+                    <span className="font-medium text-gray-700">{t('subtotal.label')}</span>
+                    <span className="text-sm text-gray-400">{t('subtotal.select_rooms')}</span>
                 </div>
             </div>
         );
@@ -88,7 +89,7 @@ export default function DetalleSubtotal({
     return (
         <div className="w-full rounded bg-gris p-2">
             <div className="flex items-center justify-between text-[12px]">
-                <span className="font-medium text-gray-700">Subtotal</span>
+                <span className="font-medium text-gray-700">{t('subtotal.label')}</span>
                 <span className="text-base font-extrabold text-[#7a0202]">
                     {formatearMoneda(subtotal)}
                 </span>

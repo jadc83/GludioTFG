@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '@/i18n';
 
 export default function CookieBanner() {
     const [showBanner, setShowBanner] = useState(false);
@@ -47,13 +48,8 @@ export default function CookieBanner() {
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
                     <div className="flex-1">
-                        <h3 className="accent-1366 mb-2 text-lg font-bold">
-                            🍪 Política de Cookies
-                        </h3>
-                        <p className="text-sm text-gray-700">
-                            Utilizamos cookies para mejorar tu experiencia en
-                            nuestro sitio web.
-                        </p>
+                        <h3 className="accent-1366 mb-2 text-lg font-bold">🍪 {t('cookie.title')}</h3>
+                        <p className="text-sm text-gray-700">{t('cookie.desc')}</p>
                     </div>
 
                     <div className="flex flex-col gap-3 whitespace-nowrap sm:flex-row">
@@ -61,13 +57,13 @@ export default function CookieBanner() {
                             onClick={handleAcceptEssential}
                             className="btn-outline-accent-1366 rounded-lg border-2 px-6 py-2 text-sm font-medium transition-colors duration-200"
                         >
-                            Solo Esenciales
+                            {t('cookie.accept_essential')}
                         </button>
                         <button
                             onClick={handleAcceptAll}
                             className="btn-accent-1366 rounded-lg px-6 py-2 text-sm font-medium text-white transition-colors duration-200"
                         >
-                            Aceptar Todas
+                            {t('cookie.accept_all')}
                         </button>
                     </div>
                 </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { t } from '@/i18n';
 import { usePage } from '@inertiajs/react';
 import { emitToast } from '@/utils/toast';
 
@@ -31,9 +32,9 @@ export default function useReservaEvents(
                     try { onUpdated(updated); } catch (e) { /* noop */ }
                 }
 
-                if (!suppressToast) emitToast('Reserva actualizada', 'success');
+                if (!suppressToast) emitToast(t('toasts.reserva_updated'), 'success');
             } catch (e) {
-                if (!suppressToast) emitToast('Error al actualizar la reserva', 'error');
+                if (!suppressToast) emitToast(t('toasts.reserva_update_error'), 'error');
             }
         }, 250);
 

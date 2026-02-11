@@ -1,5 +1,6 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
+import { t } from '@/i18n';
 
 export default function Servicios() {
     return (
@@ -7,13 +8,10 @@ export default function Servicios() {
             <div className="container mx-auto px-6 lg:px-12">
                 <div className="mb-8 max-w-3xl md:mb-12">
                     <h2 className="mb-6 text-4xl font-bold leading-tight text-black md:text-5xl lg:text-6xl">
-                        Una experiencia casi del más allá
+                        {t('home.services.title')}
                     </h2>
                     <p className="text-lg leading-relaxed text-black">
-                        En Hotel Gludio, cada momento está cuidadosamente
-                        orquestado para crear recuerdos que perduran. Desde
-                        nuestro spa de clase mundial hasta experiencias
-                        gastronómicas excepcionales.
+                        {t('home.services.subtitle')}
                     </p>
                 </div>
 
@@ -96,7 +94,7 @@ export default function Servicios() {
                                             {imagen.alt}
                                         </h3>
                                         <p className="translate-y-4 text-sm text-white/80 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                                            {imagen.descripcion}
+                                                            {imagen.descripcion}
                                         </p>
                                         <div className="mt-4 h-0.5 w-0 bg-white transition-all duration-500 group-hover:w-full" />
                                     </div>
