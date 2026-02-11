@@ -21,7 +21,10 @@ export default function PaymentBox({ clientSecret, paymentIntentId, reserva, amo
                     paymentIntentId={paymentIntentId}
                     name={name || reserva?.reservable?.name}
                     email={email || reserva?.reservable?.email}
-                    onSuccess={(data) => onConfirmed && onConfirmed(data.paymentIntentId || paymentIntentId)}
+                    onSuccess={(data) => {
+                        console.log('--- [PaymentBox] onSuccess data:', data);
+                        onConfirmed && onConfirmed(data);
+                    }}
                     onError={onError}
                 />
             </div>

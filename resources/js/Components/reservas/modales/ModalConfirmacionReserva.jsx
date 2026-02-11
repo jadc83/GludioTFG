@@ -150,7 +150,7 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
                             onClick={() => {
                                 setAnimarSalida(true);
                                 setTimeout(() => {
-                                    window.location.href = '/';
+                                    router.visit('/');
                                 }, 300);
                             }}
                             className="w-full rounded-xl bg-gray-900 py-3 text-sm font-bold text-white transition-all hover:bg-black hover:shadow-lg active:scale-95"

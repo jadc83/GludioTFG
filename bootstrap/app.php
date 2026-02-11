@@ -15,9 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            // Middlewares personalizados
+            // Los middlewares de roles y permisos de Spatie y EnsureEncargado solo deben usarse en rutas/grupos
         ]);
-
-        //
+        // Puedes agregar otros middlewares aquí si es necesario
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

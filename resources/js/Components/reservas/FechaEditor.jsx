@@ -50,10 +50,24 @@ export default function FechaEditor({
 
 		setSaving(true);
 		try {
-			if (!esFechaOriginal(checkIn, checkOut) && typeof onRequestConfirmDates === 'function') {
-				onRequestConfirmDates(checkIn, checkOut);
-				setSaving(false);
-				return;
+if (!esFechaOriginal(checkIn, checkOut)) {
+						console.log('--- [FechaEditor] Solicitud de confirmacion de fechas:', { checkIn, checkOut });
+						console.log('--- [FechaEditor] typeof onRequestConfirmDates:', typeof onRequestConfirmDates);
+						if (typeof onRequestConfirmDates === 'function') {
+							try {
+								onRequestConfirmDates(checkIn, checkOut);
+							} catch (err) {
+								console.error('--- [FechaEditor] onRequestConfirmDates threw:', err);
+								try { window.dispatchEvent(new CustomEvent('debugOnRequestConfirmDatesError', { detail: { error: String(err), checkIn, checkOut } })); } catch (e) {}
+							}
+							setSaving(false);
+							return;
+						} else {
+							console.warn('--- [FechaEditor] onRequestConfirmDates not provided, dispatching fallback event');
+							try { window.dispatchEvent(new CustomEvent('showModalFechasFallback', { detail: { checkIn, checkOut } })); } catch (e) {}
+							setSaving(false);
+							return;
+						}
 			}
 
 			const payload = {

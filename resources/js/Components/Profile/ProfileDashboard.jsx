@@ -130,6 +130,8 @@ export default function ProfileDashboard({ empleado = null, habitaciones = [], c
         return () => window.removeEventListener('tareas:updated', handler);
     }, []);
 
+
+
     return (
         <div>
             {/* existing grid */}
@@ -153,8 +155,6 @@ export default function ProfileDashboard({ empleado = null, habitaciones = [], c
                                     )}
                                 </div>
                             </div>
-
-
 
                             {empleado ? (
                                 canViewTareas ? (

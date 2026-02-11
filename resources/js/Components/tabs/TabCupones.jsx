@@ -135,16 +135,16 @@ export default function TabCupones({ cupones = {} }) {
             />
 
             {/* --- TABLA DE CUPONES --- */}
-            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 {cuponesFiltrados.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <TicketIcon className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-                        <p className="font-medium text-gray-500">
+                    <div className="flex flex-col items-center justify-center py-32 text-center">
+                        <TicketIcon className="mb-4 h-12 w-12 text-gray-300" />
+                        <h3 className="text-xl font-black uppercase tracking-tight text-gray-900">
                             {cuponesData.length === 0
                                 ? 'No hay cupones registrados'
                                 : 'Sin resultados'}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-400">
+                        </h3>
+                        <p className="mt-2 max-w-xs text-sm text-gray-400">
                             {cuponesData.length === 0
                                 ? 'Crea el primero para comenzar'
                                 : 'No hay cupones que coincidan con los filtros aplicados'}
@@ -160,40 +160,40 @@ export default function TabCupones({ cupones = {} }) {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="responsive-table w-full text-sm">
-                            <thead className="border-b border-gray-100 bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                        <table className="responsive-table w-full border-collapse text-left">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Código
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Tipo
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Valor
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Usos
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Válido Hasta
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Estado
                                     </th>
-                                    <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                                         Acciones
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-50">
                                 {cuponesPaginados.map((cupon) => (
                                     <tr
                                         key={cupon.id}
-                                        className="transition-colors hover:bg-gray-50"
+                                        className="group transition-colors hover:bg-gray-50/50"
                                     >
                                         <td
-                                            className="px-6 py-4"
+                                            className="px-6 py-6"
                                             data-label="Código"
                                         >
                                             <span className="font-mono text-base font-bold text-[#7a0202]">
@@ -201,7 +201,7 @@ export default function TabCupones({ cupones = {} }) {
                                             </span>
                                         </td>
                                         <td
-                                            className="px-6 py-4"
+                                            className="px-6 py-6"
                                             data-label="Tipo"
                                         >
                                             <span className="inline-block rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
@@ -211,20 +211,20 @@ export default function TabCupones({ cupones = {} }) {
                                             </span>
                                         </td>
                                         <td
-                                            className="px-6 py-4 font-semibold text-gray-900"
+                                            className="px-6 py-6 font-semibold text-gray-900"
                                             data-label="Valor"
                                         >
                                             {getValorTexto(cupon)}
                                         </td>
                                         <td
-                                            className="px-6 py-4 text-gray-600"
+                                            className="px-6 py-6 text-gray-600"
                                             data-label="Usos"
                                         >
                                             {cupon.usos_realizados}/
                                             {cupon.usos_maximos || '∞'}
                                         </td>
                                         <td
-                                            className="px-6 py-4 text-gray-600"
+                                            className="px-6 py-6 text-gray-600"
                                             data-label="Válido Hasta"
                                         >
                                             {new Date(
@@ -232,13 +232,13 @@ export default function TabCupones({ cupones = {} }) {
                                             ).toLocaleDateString('es-ES')}
                                         </td>
                                         <td
-                                            className="px-6 py-4"
+                                            className="px-6 py-6"
                                             data-label="Estado"
                                         >
                                             {getEstadoBadge(cupon)}
                                         </td>
                                         <td
-                                            className="px-6 py-4"
+                                            className="px-6 py-6"
                                             data-label="Acciones"
                                         >
                                             <div className="flex gap-2">

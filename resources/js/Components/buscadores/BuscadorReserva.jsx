@@ -210,7 +210,7 @@ export default function BuscadorReserva() {
 
                             <button
                                 onClick={() =>
-                                    (window.location.href = `/reservas/${reserva.localizador}/pdf`)
+                                    router.visit(`/reservas/${reserva.localizador}/pdf`)
                                 }
                                 className="btn btn-primary btn-outline mt-6 w-full gap-2"
                             >

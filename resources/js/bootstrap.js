@@ -10,11 +10,6 @@ window.axios.defaults.withCredentials = true;
 window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
 window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
-// Si existe meta csrf-token, añadirlo como header X-CSRF-TOKEN (compatibilidad)
-const metaCsrf = typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]') : null;
-if (metaCsrf) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = metaCsrf.getAttribute('content');
-}
 
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';

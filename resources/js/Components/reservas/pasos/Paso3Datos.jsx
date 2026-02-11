@@ -14,38 +14,24 @@ export default function Paso3Datos({
     const formData = watch();
 
     return (
-        /* - Eliminado -mt-10 para evitar que se pegue o oculte bajo el header.
-           - Redondeo ajustado de 2.5rem a xl para un look más industrial/limpio.
-           - Altura ajustada para asegurar visibilidad total.
-        */
-        <div className="paso3-datos relative z-10 mx-auto flex h-full max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-            {/* HEADER: Sin margen negativo, alineación corregida */}
-            <header className="flex-none border-b border-gray-100 bg-white px-8 py-6 md:px-12">
-                <div className="flex flex-col items-center justify-between gap-4 md:flex-row md:items-end">
-                    <div className="text-center md:text-left">
-                        <h1 className="text-2xl font-black uppercase leading-none tracking-tighter text-gray-900 sm:text-[26px]">
-                            DATOS DEL{' '}
-                            <span className="text-[#7a0202]">TITULAR</span>
+        <div className="paso3-datos relative flex flex-col min-h-screen md:min-h-0 mx-auto w-full max-w-5xl bg-white md:rounded-xl md:border md:border-gray-200 md:shadow-lg overflow-hidden">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 border-b bg-white sticky top-0 z-30">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-gray-900">
+                            DATOS DEL <span className="text-[#7a0202]">TITULAR</span>
                         </h1>
-                        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
-                            Registro de Identidad / Step 03
-                        </p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">Registro de Identidad</p>
                     </div>
-                    <ReservaBreadcrumbs
-                        activeIndex={2}
-                        separator="chevron"
-                        className="flex items-center gap-3"
-                        textClass="text-[10px]"
-                    />
+                    <div className="hidden md:block">
+                        <ReservaBreadcrumbs activeIndex={2} separator="chevron" textClass="text-sm" />
+                    </div>
                 </div>
             </header>
 
-            {/* CUERPO: Scroll optimizado y padding superior corregido */}
-            <main className="flex flex-1 flex-col items-center justify-start overflow-hidden bg-white">
-                <div className="custom-scrollbar w-full max-w-5xl overflow-y-auto px-6 py-8">
-                    {/* Contenedor del Formulario con redondeo reducido */}
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-white custom-scrollbar">
+                <div className="w-full max-w-5xl mx-auto px-2 md:px-4 py-6">
                     <div className="rounded-lg bg-transparent p-2 md:p-4">
-                        {/* Indicador Industrial: Más sobrio */}
                         <div className="mb-8 flex items-center gap-5 border-l-4 border-[#7a0202] pl-6">
                             <IdentificationIcon className="h-6 w-6 text-gray-900 opacity-20" />
                             <div>
@@ -59,7 +45,6 @@ export default function Paso3Datos({
                             </div>
                         </div>
 
-                        {/* Inyección del formulario */}
                         <div className="bg-transparent">
                             <FormularioDatosCliente
                                 form={formData}
@@ -68,8 +53,14 @@ export default function Paso3Datos({
                                     const { name, value } = e.target;
                                     setValue(name, value);
                                 }}
+                                formId="paso3-form"
                                 onNext={(e) => {
                                     e.preventDefault();
+                                    const formEl = e.target;
+                                    if (typeof formEl.checkValidity === 'function' && !formEl.checkValidity()) {
+                                        if (typeof formEl.reportValidity === 'function') formEl.reportValidity();
+                                        return;
+                                    }
                                     avanzarPaso();
                                 }}
                                 hideDates={true}
@@ -80,9 +71,8 @@ export default function Paso3Datos({
                 </div>
             </main>
 
-            {/* FOOTER: Botones con radio industrial corregido */}
-            <footer className="flex-none border-t border-gray-100 bg-white px-10 py-6">
-                <div className="mx-auto flex max-w-5xl items-center justify-between">
+            <footer className="flex-none border-t border-gray-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
+                <div className="mx-auto max-w-5xl flex items-center justify-between">
                     <Boton variant="ghost" size="sm" onClick={retrocederPaso}>
                         ← Volver a Unidades
                     </Boton>
@@ -91,7 +81,16 @@ export default function Paso3Datos({
                         variant="primary"
                         color="danger"
                         size="md"
-                        onClick={avanzarPaso}
+                        onClick={() => {
+                            const formEl = document.getElementById('paso3-form');
+                            if (formEl) {
+                                if (typeof formEl.checkValidity === 'function' && !formEl.checkValidity()) {
+                                    if (typeof formEl.reportValidity === 'function') formEl.reportValidity();
+                                    return;
+                                }
+                            }
+                            avanzarPaso();
+                        }}
                         disabled={
                             !formData.name ||
                             !formData.tipo_documento ||

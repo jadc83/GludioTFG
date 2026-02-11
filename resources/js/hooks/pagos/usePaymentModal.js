@@ -32,6 +32,7 @@ export default function usePaymentModal({ aplicarCambioFechas, refresh, showToas
     }, []);
 
     const onPagoExitoso = useCallback(async (paymentResult = {}) => {
+        console.log('--- [usePaymentModal] onPagoExitoso called with:', paymentResult);
         setMostrar(false);
         if (!pendienteAplicar) return { success: false, reason: 'no_pending' };
         try {

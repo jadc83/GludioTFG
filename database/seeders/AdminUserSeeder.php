@@ -2,49 +2,36 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 class AdminUserSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        // Intentar marcar usuario específico como admin
-        $email = 'dominguezcamachojose@gmail.com';
-        $user = User::where('email', $email)->first();
+        // Crear el rol admin si no existe
+        Role::findOrCreate('admin', 'web');
 
-        if ($user) {
-            // Asegurar que el rol 'admin' exista y asignarlo
-            if (method_exists($user, 'assignRole')) {
-                $user->assignRole('admin');
-                $this->command->info("Usuario {$email} actualizado con rol admin.");
-            } else {
-                $this->command->info("Usuario {$email} encontrado, pero el método assignRole no está disponible.");
-            }
-            return;
-        }
-
-        // Si no existe, crear el usuario y asignar rol admin si es posible
-        $new = User::create([
-            'name' => 'Jose Dominguez',
-            'email' => $email,
-            'password' => Hash::make(env('ADMIN_PASSWORD', 'ChangeMe123!')),
+        // Crear el usuario admin con todos los campos obligatorios
+        $admin = User::create([
+            'name' => 'Administrador',
+            'email' => 'admin@hotel.com',
+            'password' => bcrypt('josejose'),
             'tipo_documento' => 'dni',
-            'numero_documento' => '00000000T',
+            'numero_documento' => '00000000A',
             'nacionalidad' => 'Española',
-            'direccion' => 'Dirección admin',
-            'telefono' => '000000000',
+            'direccion' => 'Calle Admin 1',
+            'ciudad' => 'Madrid',
+            'codigo_postal' => '28001',
+            'telefono' => '600000000',
+            'email_verified_at' => now(),
         ]);
 
-        if ($new && method_exists($new, 'assignRole')) {
-            $new->assignRole('admin');
-            $this->command->info("Usuario {$email} creado y asignado al rol admin.");
-        } else {
-            $this->command->info("Usuario {$email} creado. Asegúrate de asignar el rol 'admin' manualmente.");
-        }
+        // Asignar el rol admin
+        $admin->assignRole('admin');
     }
 }
