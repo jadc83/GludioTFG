@@ -3,11 +3,11 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
-test('password can be updated', function () {
-    $user = User::factory()->create();
+test('se_puede_actualizar_la_contrasena', function () {
+    $usuario = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $respuesta = $this
+        ->actingAs($usuario)
         ->from('/profile')
         ->put('/password', [
             'current_password' => 'password',
@@ -15,18 +15,18 @@ test('password can be updated', function () {
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
+    $respuesta
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
-    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    $this->assertTrue(Hash::check('new-password', $usuario->refresh()->password));
 });
 
-test('correct password must be provided to update password', function () {
-    $user = User::factory()->create();
+test('se_debe_proporcionar_la_contrasena_correcta_para_actualizar', function () {
+    $usuario = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $respuesta = $this
+        ->actingAs($usuario)
         ->from('/profile')
         ->put('/password', [
             'current_password' => 'wrong-password',
@@ -34,7 +34,7 @@ test('correct password must be provided to update password', function () {
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
+    $respuesta
         ->assertSessionHasErrors('current_password')
         ->assertRedirect('/profile');
 });

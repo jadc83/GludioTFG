@@ -23,9 +23,9 @@ class PaymentServiceCheckSessionTest extends TestCase
 {
     public function test_check_session_with_payment_intent_calls_confirmar()
     {
-        $session = (object) ['id' => 'sess_123', 'payment_intent' => 'pi_123', 'payment_status' => 'paid', 'status' => 'complete'];
+        $sesion = (object) ['id' => 'sess_123', 'payment_intent' => 'pi_123', 'payment_status' => 'paid', 'status' => 'complete'];
 
-        $svc = new class($session) extends PaymentService {
+        $servicio = new class($sesion) extends PaymentService {
             private $session;
             public function __construct($session = null) { parent::__construct(); $this->session = $session; }
             protected function getStripe(): \Stripe\StripeClient {
@@ -40,19 +40,19 @@ class PaymentServiceCheckSessionTest extends TestCase
             }
         };
 
-        $result = $svc->checkSession('sess_123');
+        $resultado = $servicio->checkSession('sess_123');
 
-        $this->assertTrue($result['success']);
-        $this->assertTrue($result['paid']);
-        $this->assertEquals('succeeded', $result['status']);
-        $this->assertEquals(999, $result['pago_id']);
+        $this->assertTrue($resultado['success']);
+        $this->assertTrue($resultado['paid']);
+        $this->assertEquals('succeeded', $resultado['status']);
+        $this->assertEquals(999, $resultado['pago_id']);
     }
 
     public function test_check_session_unpaid_returns_not_paid()
     {
-        $session = (object) ['id' => 'sess_456', 'payment_intent' => null, 'payment_status' => 'unpaid', 'status' => 'open'];
+        $sesion = (object) ['id' => 'sess_456', 'payment_intent' => null, 'payment_status' => 'unpaid', 'status' => 'open'];
 
-        $svc = new class($session) extends PaymentService {
+        $servicio = new class($sesion) extends PaymentService {
             private $session;
             public function __construct($session = null) { parent::__construct(); $this->session = $session; }
             protected function getStripe(): \Stripe\StripeClient {
@@ -64,9 +64,9 @@ class PaymentServiceCheckSessionTest extends TestCase
             }
         };
 
-        $result = $svc->checkSession('sess_456');
-        $this->assertTrue($result['success']);
-        $this->assertFalse($result['paid']);
-        $this->assertEquals('unpaid', $result['status']);
+        $resultado = $servicio->checkSession('sess_456');
+        $this->assertTrue($resultado['success']);
+        $this->assertFalse($resultado['paid']);
+        $this->assertEquals('unpaid', $resultado['status']);
     }
 }

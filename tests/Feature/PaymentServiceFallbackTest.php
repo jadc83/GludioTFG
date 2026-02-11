@@ -13,7 +13,7 @@ class PaymentServiceFallbackTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirmarPaymentIntent_creates_placeholder_reserva_and_pago_when_no_metadata()
+    public function test_confirmar_payment_intent_crea_reserva_placeholder_y_pago_cuando_no_hay_metadata()
     {
         // Crear un stub de PaymentIntent retornado por Stripe
         $piStub = (object) [
@@ -48,7 +48,7 @@ class PaymentServiceFallbackTest extends TestCase
         };
 
         // Crear un partial mock del servicio que devuelva nuestro fake Stripe
-        $service = $this->partialMock(PaymentService::class, function ($mock) use ($fakeStripe) {
+        $servicio = $this->partialMock(PaymentService::class, function ($mock) use ($fakeStripe) {
             $mock->shouldAllowMockingProtectedMethods();
             $mock->shouldReceive('getStripe')->andReturn($fakeStripe);
         });
@@ -84,15 +84,15 @@ class PaymentServiceFallbackTest extends TestCase
 
         // Llamada al servicio que está parcialmente mockeado para devolver nuestro stub Stripe
 
-        $resp = $service->confirmarPaymentIntent($piStub->id);
+        $respuesta = $servicio->confirmarPaymentIntent($piStub->id);
 
         // DEBUG: print response
-        fwrite(STDERR, "confirm_placeholder resp: " . json_encode($resp) . "\n");
+        fwrite(STDERR, "confirm_placeholder resp: " . json_encode($respuesta) . "\n");
 
-        $this->assertTrue(!empty($resp['success']), 'Response should be success');
-        $this->assertNotEmpty($resp['pago_id'] ?? null, 'Debe retornar pago_id');
+        $this->assertTrue(!empty($respuesta['success']), 'Response should be success');
+        $this->assertNotEmpty($respuesta['pago_id'] ?? null, 'Debe retornar pago_id');
 
-        $pago = Pago::find($resp['pago_id']);
+        $pago = Pago::find($respuesta['pago_id']);
         $this->assertNotNull($pago, 'Pago creado');
         $this->assertNotNull($pago->reserva_id, 'Pago debe tener reserva_id');
 
@@ -143,19 +143,19 @@ class PaymentServiceFallbackTest extends TestCase
             public function __construct($pi, $c) { $this->paymentIntents = $pi; $this->checkout = (object)['sessions' => $c]; }
         };
 
-        $service = $this->partialMock(PaymentService::class, function ($mock) use ($fakeStripe) {
+        $servicio = $this->partialMock(PaymentService::class, function ($mock) use ($fakeStripe) {
             $mock->shouldAllowMockingProtectedMethods();
             $mock->shouldReceive('getStripe')->andReturn($fakeStripe);
         });
 
-        $resp = $service->confirmarPaymentIntent($piStub->id);
+        $respuesta = $servicio->confirmarPaymentIntent($piStub->id);
 
         // DEBUG: print response
-        fwrite(STDERR, "confirm_link resp: " . json_encode($resp) . "\n");
+        fwrite(STDERR, "confirm_link resp: " . json_encode($respuesta) . "\n");
 
-        $this->assertTrue(!empty($resp['success']), 'Response should be success');
+        $this->assertTrue(!empty($respuesta['success']), 'Response should be success');
 
-        $pago = Pago::find($resp['pago_id']);
+        $pago = Pago::find($respuesta['pago_id']);
         $this->assertNotNull($pago, 'Pago creado');
         $this->assertEquals($reserva->id, $pago->reserva_id, 'Pago debe mapear a la reserva existente');
     }

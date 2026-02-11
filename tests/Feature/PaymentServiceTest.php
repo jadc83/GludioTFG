@@ -12,7 +12,7 @@ class PaymentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_handle_checkout_session_completed_marks_pago_and_reserva_as_paid()
+    public function test_marca_pago_y_reserva_como_pagado_al_completar_sesion_checkout()
     {
         // Crear reserva y pago asociado (procesando)
         $localizador = strtoupper(\Illuminate\Support\Str::random(6));
@@ -42,11 +42,12 @@ class PaymentServiceTest extends TestCase
             'descripcion' => 'Test checkout',
         ]);
 
-        $service = $this->app->make(PaymentService::class);
 
-        $session = (object)['id' => 'cs_test_123'];
+        $servicio = $this->app->make(PaymentService::class);
 
-        $service->handleCheckoutSessionCompleted($session);
+        $sesion = (object)['id' => 'cs_test_123'];
+
+        $servicio->handleCheckoutSessionCompleted($sesion);
 
         $pago->refresh();
         $reserva->refresh();
