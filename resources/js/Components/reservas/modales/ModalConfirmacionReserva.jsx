@@ -21,13 +21,21 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
             <div
                 className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${animarSalida ? 'opacity-0' : 'opacity-100'}`}
                 onClick={handleClose}
+                role="presentation"
+                aria-hidden="true"
             />
 
             {/* Modal Wrapper */}
             <div
                 className={`fixed left-1/2 top-1/2 z-[70] w-[90%] max-w-[380px] -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${animarSalida ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-confirmacion-title"
             >
-                <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
+                <div
+                    className="overflow-hidden rounded-2xl bg-white shadow-2xl"
+                    role="document"
+                >
                     {/* Header - Estilo "Success" Limpio */}
                     <div className="border-b border-gray-100 bg-gray-50 px-6 py-6 text-center">
                         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
@@ -46,7 +54,10 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
                                 />
                             </svg>
                         </div>
-                        <h2 className="text-lg font-bold text-gray-900">
+                        <h2
+                            id="modal-confirmacion-title"
+                            className="text-lg font-bold text-gray-900"
+                        >
                             ¡Reserva Confirmada!
                         </h2>
                         <p className="mt-1 text-xs font-medium text-gray-500">
@@ -147,6 +158,7 @@ export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
                     {/* Footer - Acción Principal */}
                     <div className="bg-gray-50 p-4 text-center">
                         <button
+                            aria-label="Finalizar y volver al inicio"
                             onClick={() => {
                                 setAnimarSalida(true);
                                 setTimeout(() => {

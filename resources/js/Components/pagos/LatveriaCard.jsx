@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import usePayments from '@/hooks/pagos/usePayments';
+import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { useState } from 'react';
 
-const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name, email }) => {
+const LatveriaCard = ({
+    clientSecret,
+    paymentIntentId,
+    onSuccess,
+    onError,
+    name,
+    email,
+}) => {
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
@@ -41,21 +48,38 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
             });
 
             if (res.error) {
-                onError && onError(res.error.message || 'Error confirmando el pago');
+                onError &&
+                    onError(res.error.message || 'Error confirmando el pago');
                 setLoadingConfirm(false);
                 return;
             }
 
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
-                const backendResp = await confirmarPaymentIntent(paymentIntentId);
+                const backendResp =
+                    await confirmarPaymentIntent(paymentIntentId);
                 console.log('--- [LatveriaCard] backendResp:', backendResp);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
-                    console.log('--- [LatveriaCard] about to call onSuccess, pago_id:', backendResp.pago_id);
-                    console.log('Is onSuccess a function?', typeof onSuccess === 'function');
-                    onSuccess && onSuccess({ pago_id: backendResp.pago_id, paymentIntentId, localizador: backendResp.localizador });
+                    console.log(
+                        '--- [LatveriaCard] about to call onSuccess, pago_id:',
+                        backendResp.pago_id,
+                    );
+                    console.log(
+                        'Is onSuccess a function?',
+                        typeof onSuccess === 'function',
+                    );
+                    onSuccess &&
+                        onSuccess({
+                            pago_id: backendResp.pago_id,
+                            paymentIntentId,
+                            localizador: backendResp.localizador,
+                        });
                 } else {
-                    onError && onError(backendResp?.error || 'Confirmado en Stripe, pero fallo al notificar al backend');
+                    onError &&
+                        onError(
+                            backendResp?.error ||
+                                'Confirmado en Stripe, pero fallo al notificar al backend',
+                        );
                 }
             } else {
                 onError && onError('Pago no confirmado');
@@ -69,7 +93,9 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
 
     return (
         <div className="latveria-container">
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style
+                dangerouslySetInnerHTML={{
+                    __html: `
                 .latveria-container {
                     perspective: 1200px;
                     display: flex;
@@ -108,7 +134,9 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
                 .stripe-input-container:focus-within {
                     border-color: rgba(0,0,0,0.12);
                 }
-            ` }} />
+            `,
+                }}
+            />
 
             <div className="hover-3d-wrapper">
                 <div className="card-layer layer-1"></div>
@@ -117,11 +145,22 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
                 <div className="card-layer layer-4"></div>
                 <div className="card-layer layer-5"></div>
 
-                <div className="card w-[40rem] text-white relative z-10 overflow-hidden border border-white/10 shadow-2xl" style={{ backgroundImage: `linear-gradient(135deg, #8b0000 0%, #3b0000 100%), radial-gradient(circle at bottom left, #ffffff04 35%, transparent 36%), radial-gradient(circle at top right, #ffffff04 35%, transparent 36%)`, backgroundSize: 'cover, 4.95em 4.95em, 4.95em 4.95em', backgroundBlendMode: 'normal, overlay, overlay' }}>
+                <div
+                    className="card relative z-10 w-[40rem] overflow-hidden border border-white/10 text-white shadow-2xl"
+                    style={{
+                        backgroundImage: `linear-gradient(135deg, #8b0000 0%, #3b0000 100%), radial-gradient(circle at bottom left, #ffffff04 35%, transparent 36%), radial-gradient(circle at top right, #ffffff04 35%, transparent 36%)`,
+                        backgroundSize: 'cover, 4.95em 4.95em, 4.95em 4.95em',
+                        backgroundBlendMode: 'normal, overlay, overlay',
+                    }}
+                >
                     <div className="card-body p-8">
-                        <div className="flex justify-between items-start mb-10">
-                            <div className="font-black tracking-[0.2em] text-[10px] text-white/90">BANK OF LATVERIA</div>
-                            <div className="text-5xl opacity-10 select-none leading-none">❁</div>
+                        <div className="mb-10 flex items-start justify-between">
+                            <div className="text-[10px] font-black tracking-[0.2em] text-white/90">
+                                BANK OF LATVERIA
+                            </div>
+                            <div className="select-none text-5xl leading-none opacity-10">
+                                ❁
+                            </div>
                         </div>
 
                         <div className="stripe-input-container">
@@ -134,20 +173,32 @@ const LatveriaCard = ({ clientSecret, paymentIntentId, onSuccess, onError, name,
                                 disabled={loadingConfirm || completed}
                                 aria-busy={loadingConfirm}
                                 aria-disabled={loadingConfirm || completed}
-                                className={`rounded px-4 py-2 font-bold text-white mt-4 ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                                className={`mt-4 rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
                             >
-                                {completed ? 'Confirmado' : (loadingConfirm ? 'Confirmando...' : 'Confirmar pago')}
+                                {completed
+                                    ? 'Confirmado'
+                                    : loadingConfirm
+                                      ? 'Confirmando...'
+                                      : 'Confirmar pago'}
                             </button>
                         </div>
 
-                        <div className="flex justify-between items-end mt-8">
+                        <div className="mt-8 flex items-end justify-between">
                             <div className="space-y-1">
-                                <div className="text-[9px] font-black opacity-30 tracking-[0.2em] uppercase">Card Holder</div>
-                                <div className="text-sm font-bold tracking-tight uppercase italic">{name || 'Titular'}</div>
+                                <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
+                                    Card Holder
+                                </div>
+                                <div className="text-sm font-bold uppercase italic tracking-tight">
+                                    {name || 'Titular'}
+                                </div>
                             </div>
-                            <div className="text-right space-y-1">
-                                <div className="text-[9px] font-black opacity-30 tracking-[0.2em] uppercase">Expires</div>
-                                <div className="text-sm font-bold tracking-tight font-mono">29/08</div>
+                            <div className="space-y-1 text-right">
+                                <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
+                                    Expires
+                                </div>
+                                <div className="font-mono text-sm font-bold tracking-tight">
+                                    29/08
+                                </div>
                             </div>
                         </div>
                     </div>

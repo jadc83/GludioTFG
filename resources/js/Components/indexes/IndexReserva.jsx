@@ -1,3 +1,5 @@
+import * as api from '@/api/reservas';
+import IndexReembolsos from '@/Components/indexes/IndexReembolsos';
 import Badge from '@/Components/UI/Badge';
 import BarraBuscador from '@/Components/UI/BarraBuscador';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
@@ -10,13 +12,10 @@ import {
     TrashIcon,
     UserIcon,
 } from '@heroicons/react/24/outline';
-import * as api from '@/api/reservas';
-import IndexReembolsos from '@/Components/indexes/IndexReembolsos';
-import { router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { router } from '@inertiajs/react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function IndexReserva({ reservas = [] }) {
-    const { props } = usePage();
     // Local copy of reservas so we can update payment status client-side
     const [reservasLocal, setReservasLocal] = useState(reservas);
 
@@ -52,7 +51,10 @@ export default function IndexReserva({ reservas = [] }) {
                 localizador: filtros.localizador || undefined,
                 cliente: filtros.cliente || undefined,
                 habitacion: filtros.habitacion || undefined,
-                trashed: filtros.trashed && filtros.trashed !== 'none' ? filtros.trashed : undefined,
+                trashed:
+                    filtros.trashed && filtros.trashed !== 'none'
+                        ? filtros.trashed
+                        : undefined,
             };
             Object.keys(criterios).forEach(
                 (key) => criterios[key] === undefined && delete criterios[key],
@@ -87,19 +89,31 @@ export default function IndexReserva({ reservas = [] }) {
         let intervalId;
         const tick = async () => {
             try {
-                if (!reservasPaginadas || reservasPaginadas.length === 0) return;
-                const locs = reservasPaginadas.map(r => r.localizador).filter(Boolean).join(',');
+                const inicioLocal = (paginaActual - 1) * itemsPorPagina;
+                const finLocal = inicioLocal + itemsPorPagina;
+                const pageRows = reservasLocal.slice(inicioLocal, finLocal);
+                if (!pageRows || pageRows.length === 0) return;
+
+                const locs = pageRows
+                    .map((r) => r.localizador)
+                    .filter(Boolean)
+                    .join(',');
                 if (!locs) return;
 
-                const url = route('api.reservas.estados') + '?localizadores=' + encodeURIComponent(locs);
-                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const url =
+                    route('api.reservas.estados') +
+                    '?localizadores=' +
+                    encodeURIComponent(locs);
+                const res = await fetch(url, {
+                    headers: { Accept: 'application/json' },
+                });
                 if (!res.ok) return;
                 const json = await res.json();
                 if (json.success && json.data) {
                     // Solo actualizar si hay cambios para evitar re-renders que re-lancen el efecto
-                    setReservasLocal(prev => {
+                    setReservasLocal((prev) => {
                         let changed = false;
-                        const updated = prev.map(r => {
+                        const updated = prev.map((r) => {
                             const newPago = json.data[r.localizador] ?? r.pago;
                             if (newPago !== r.pago) {
                                 changed = true;
@@ -111,7 +125,7 @@ export default function IndexReserva({ reservas = [] }) {
                     });
                 }
             } catch (e) {
-                // noop
+                console.debug(e);
             }
         };
 
@@ -120,7 +134,7 @@ export default function IndexReserva({ reservas = [] }) {
         intervalId = setInterval(tick, 10000);
 
         return () => clearInterval(intervalId);
-    }, [paginaActual, reservas]);
+    }, [paginaActual, reservasLocal]);
 
     const eliminarReserva = async (id) => {
         if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
@@ -143,26 +157,31 @@ export default function IndexReserva({ reservas = [] }) {
     const [refundsPagination, setRefundsPagination] = useState(null);
     const [refundsPage, setRefundsPage] = useState(1);
 
-    const fetchRefunds = async (p = refundsPage) => {
-        setRefundsLoading(true);
-        try {
-            const res = await api.listarSolicitudesReembolso({ page: p });
-            const paginator = res?.data ?? res ?? null;
-            const rows = paginator?.data ?? (Array.isArray(paginator) ? paginator : []);
-            setRefunds(rows);
-            setRefundsPagination(paginator);
-        } catch (e) {
-            console.error('Error loading refunds', e);
-            setRefunds([]);
-            setRefundsPagination(null);
-        } finally {
-            setRefundsLoading(false);
-        }
-    };
+    const fetchRefunds = useCallback(
+        async (p = refundsPage) => {
+            setRefundsLoading(true);
+            try {
+                const res = await api.listarSolicitudesReembolso({ page: p });
+                const paginator = res?.data ?? res ?? null;
+                const rows =
+                    paginator?.data ??
+                    (Array.isArray(paginator) ? paginator : []);
+                setRefunds(rows);
+                setRefundsPagination(paginator);
+            } catch (e) {
+                console.error('Error loading refunds', e);
+                setRefunds([]);
+                setRefundsPagination(null);
+            } finally {
+                setRefundsLoading(false);
+            }
+        },
+        [refundsPage],
+    );
 
     useEffect(() => {
         fetchRefunds(refundsPage);
-    }, [refundsPage]);
+    }, [refundsPage, fetchRefunds]);
 
     useEffect(() => {
         try {
@@ -179,9 +198,11 @@ export default function IndexReserva({ reservas = [] }) {
                 if (window.Echo && window.Echo.leave) {
                     window.Echo.leave('refund-requests');
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.debug(e);
+            }
         };
-    }, []);
+    }, [fetchRefunds]);
 
     const aprobarReembolso = async (id) => {
         if (!confirm('Aprobar y ejecutar reembolso?')) return;
@@ -202,7 +223,9 @@ export default function IndexReserva({ reservas = [] }) {
         const motivo = prompt('Motivo de rechazo (requerido)');
         if (!motivo) return alert('Motivo requerido');
         try {
-            const res = await api.rechazarSolicitud(id, { admin_reason: motivo });
+            const res = await api.rechazarSolicitud(id, {
+                admin_reason: motivo,
+            });
             if (res?.success) {
                 alert('Solicitud rechazada');
                 fetchRefunds(refundsPage);
@@ -215,7 +238,12 @@ export default function IndexReserva({ reservas = [] }) {
     };
 
     const borrarReembolso = async (id) => {
-        if (!confirm('¿Borrar esta solicitud de reembolso? Esta acción marcará la solicitud como eliminada.')) return;
+        if (
+            !confirm(
+                '¿Borrar esta solicitud de reembolso? Esta acción marcará la solicitud como eliminada.',
+            )
+        )
+            return;
         try {
             const res = await api.eliminarSolicitud(id);
             if (res?.success) {
@@ -364,9 +392,23 @@ export default function IndexReserva({ reservas = [] }) {
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {reservasPaginadas.map((reserva) => {
-                                    const visiblePrice = (typeof reserva.ultimo_pago_monto === 'number' && reserva.ultimo_pago_monto !== null)
-                                        ? parseFloat(reserva.ultimo_pago_monto)
-                                        : (reserva.pagos && reserva.pagos.length ? parseFloat(reserva.pagos[reserva.pagos.length - 1].monto) : parseFloat(reserva.precio_total || 0));
+                                    const visiblePrice =
+                                        typeof reserva.ultimo_pago_monto ===
+                                            'number' &&
+                                        reserva.ultimo_pago_monto !== null
+                                            ? parseFloat(
+                                                  reserva.ultimo_pago_monto,
+                                              )
+                                            : reserva.pagos &&
+                                                reserva.pagos.length
+                                              ? parseFloat(
+                                                    reserva.pagos[
+                                                        reserva.pagos.length - 1
+                                                    ].monto,
+                                                )
+                                              : parseFloat(
+                                                    reserva.precio_total || 0,
+                                                );
                                     return (
                                         <tr
                                             key={reserva.id}
@@ -458,7 +500,9 @@ export default function IndexReserva({ reservas = [] }) {
                                                         €
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-900">
-                                                        {visiblePrice.toFixed(2)}{' '}
+                                                        {visiblePrice.toFixed(
+                                                            2,
+                                                        )}{' '}
                                                         €
                                                     </span>
                                                 </div>

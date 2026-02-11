@@ -59,7 +59,7 @@ export function useEmpleado(
         } else {
             form.limpiar();
         }
-    }, [empleado?.id]);
+    }, [empleado, form]);
 
     return {
         formulario: form.formulario,

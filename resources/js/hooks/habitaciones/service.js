@@ -23,7 +23,10 @@ export async function fetchHabitacionesDisponibles(
         });
         return data;
     } catch (err) {
-        const msg = err?.response?.data || err?.message || 'Error obteniendo habitaciones disponibles';
+        const msg =
+            err?.response?.data ||
+            err?.message ||
+            'Error obteniendo habitaciones disponibles';
         throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
 }

@@ -2,6 +2,8 @@ export default function ApplicationLogo(props) {
     return (
         <svg
             {...props}
+            role="img"
+            aria-label={props['aria-label'] || 'Hotel Gludio logo'}
             viewBox="0 0 316 316"
             xmlns="http://www.w3.org/2000/svg"
         >

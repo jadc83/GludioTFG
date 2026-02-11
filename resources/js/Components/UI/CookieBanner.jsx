@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { t } from '@/i18n';
+import { useEffect, useState } from 'react';
 
 export default function CookieBanner() {
     const [showBanner, setShowBanner] = useState(false);
@@ -48,8 +48,12 @@ export default function CookieBanner() {
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
                     <div className="flex-1">
-                        <h3 className="accent-1366 mb-2 text-lg font-bold">🍪 {t('cookie.title')}</h3>
-                        <p className="text-sm text-gray-700">{t('cookie.desc')}</p>
+                        <h3 className="accent-1366 mb-2 text-lg font-bold">
+                            🍪 {t('cookie.title')}
+                        </h3>
+                        <p className="text-sm text-gray-700">
+                            {t('cookie.desc')}
+                        </p>
                     </div>
 
                     <div className="flex flex-col gap-3 whitespace-nowrap sm:flex-row">

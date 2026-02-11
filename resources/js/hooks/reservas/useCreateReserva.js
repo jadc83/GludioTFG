@@ -1,15 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
-import { router } from '@inertiajs/react';
-import {
-    obtenerTarifas,
-    obtenerHabitacionesDisponibles,
-    calcularPrecio,
-} from './service';
-import { emitToast } from '@/utils/toast';
-import { t } from '@/i18n';
 import * as reservasApi from '@/api/reservas';
-import { getReservaPayload } from '@/utils/reservaPayload';
 import { useFormGenerico } from '@/hooks/useFormGenerico';
+import { t } from '@/i18n';
+import { getReservaPayload } from '@/utils/reservaPayload';
+import { emitToast } from '@/utils/toast';
+import { router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import {
+    calcularPrecio,
+    obtenerHabitacionesDisponibles,
+    obtenerTarifas,
+} from './service';
 
 export default function useCreateReserva() {
     const [abierto, setAbierto] = useState(false);
@@ -22,7 +22,8 @@ export default function useCreateReserva() {
     const [tarifas, setTarifas] = useState([]);
     const [tarifasSeleccionadas, setTarifasSeleccionadas] = useState([]);
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
-    const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
+    const [mostrarModalConfirmacion, setMostrarModalConfirmacion] =
+        useState(false);
     const [datosReservaConfirmada, setDatosReservaConfirmada] = useState(null);
 
     const datosIniciales = {
@@ -52,14 +53,13 @@ export default function useCreateReserva() {
         estaCargando,
         actualizarCampo,
         setData,
-        guardar: guardarForm,
-    } = useFormGenerico(datosIniciales, '/reservas', '', (page) => {
+    } = useFormGenerico(datosIniciales, '/reservas', '', () => {
         // On success: close modal (delegated to hook state)
         // Default behavior: close modal. If it's a checkout flow, the caller will handle redirect.
         handleCerrar();
     });
 
-    const [creandoConCheckout, setCreandoConCheckout] = useState(false);
+    const [, setCreandoConCheckout] = useState(false);
     // Ref para debounce de calcular precio
     const calcularTimerRefGlobal = useRef({ current: null });
 
@@ -85,10 +85,14 @@ export default function useCreateReserva() {
 
             // Seleccionar automáticamente tarifas con valor 0
             const iniciales = (data || [])
-                .filter((t) => Number(t.valor ?? t.modificador_precio ?? 0) === 0)
+                .filter(
+                    (t) => Number(t.valor ?? t.modificador_precio ?? 0) === 0,
+                )
                 .map((t) => t.id);
 
-            setTarifasSeleccionadas((prev) => Array.from(new Set([...(prev || []), ...iniciales])));
+            setTarifasSeleccionadas((prev) =>
+                Array.from(new Set([...(prev || []), ...iniciales])),
+            );
         });
     }, [abierto]);
 
@@ -106,7 +110,10 @@ export default function useCreateReserva() {
         }
 
         setCargandoHabitaciones(true);
-        obtenerHabitacionesDisponibles(formulario.check_in, formulario.check_out)
+        obtenerHabitacionesDisponibles(
+            formulario.check_in,
+            formulario.check_out,
+        )
             .then((data) => {
                 setHabitacionesDisponibles(data || []);
 
@@ -134,10 +141,14 @@ export default function useCreateReserva() {
     // Calcular precio cuando cambian las habitaciones seleccionadas o tarifas
     useEffect(() => {
         const habitacionesConCantidad = Object.entries(habitacionesPorTipo)
-            .filter(([_, info]) => info.cantidad > 0)
+            .filter(([, info]) => info.cantidad > 0)
             .map(([tipo, info]) => ({ tipo, cantidad: info.cantidad }));
 
-        if (!formulario.check_in || !formulario.check_out || habitacionesConCantidad.length === 0) {
+        if (
+            !formulario.check_in ||
+            !formulario.check_out ||
+            habitacionesConCantidad.length === 0
+        ) {
             setPrecioCalculado(0);
             actualizarCampo('precio_total', 0);
             return;
@@ -163,15 +174,26 @@ export default function useCreateReserva() {
                 })
                 .catch((err) => {
                     // Error handled by user-facing toast; removed console logging for cleanliness
-                    const msg = err?.error || err?.message || err?.response?.data?.error || 'Error calculando precio';
+                    const msg =
+                        err?.error ||
+                        err?.message ||
+                        err?.response?.data?.error ||
+                        'Error calculando precio';
                     emitToast(msg, 'error');
                 });
         }, 350);
 
         return () => {
-            if (calcularTimerRef.current) clearTimeout(calcularTimerRef.current);
+            if (calcularTimerRef.current)
+                clearTimeout(calcularTimerRef.current);
         };
-    }, [habitacionesPorTipo, formulario.check_in, formulario.check_out, tarifasSeleccionadas]);
+    }, [
+        habitacionesPorTipo,
+        formulario.check_in,
+        formulario.check_out,
+        tarifasSeleccionadas,
+        actualizarCampo,
+    ]);
 
     // Cambiar cantidad de habitaciones por tipo
     const cambiarCantidadHabitaciones = (tipo, cantidad) => {
@@ -179,7 +201,10 @@ export default function useCreateReserva() {
             ...prev,
             [tipo]: {
                 ...prev[tipo],
-                cantidad: Math.max(0, Math.min(cantidad, prev[tipo]?.disponibles ?? 0)),
+                cantidad: Math.max(
+                    0,
+                    Math.min(cantidad, prev[tipo]?.disponibles ?? 0),
+                ),
             },
         }));
     };
@@ -191,32 +216,46 @@ export default function useCreateReserva() {
         if (valor === 0) return;
 
         setTarifasSeleccionadas((prev) =>
-            prev.includes(tarifaId) ? prev.filter((id) => id !== tarifaId) : [...prev, tarifaId],
+            prev.includes(tarifaId)
+                ? prev.filter((id) => id !== tarifaId)
+                : [...prev, tarifaId],
         );
     };
 
     // Objeto de selección para `TarifasSelector` y handler para sincronizar con el array de IDs
-    const seleccionObj = Object.fromEntries((tarifas || []).map((t) => [t.id, tarifasSeleccionadas.includes(t.id)]));
+    const seleccionObj = Object.fromEntries(
+        (tarifas || []).map((t) => [t.id, tarifasSeleccionadas.includes(t.id)]),
+    );
 
     const onTarifasSeleccionChange = (next) => {
-        const ids = Object.keys(next).filter((k) => next[k]).map((k) => Number(k));
+        const ids = Object.keys(next)
+            .filter((k) => next[k])
+            .map((k) => Number(k));
         setTarifasSeleccionadas(ids);
     };
 
     const handleSeleccionarCliente = (cliente) => {
         setClienteSeleccionado(cliente);
 
-            if (cliente) {
+        if (cliente) {
             // Actualizar todos los campos de una vez para evitar actualizaciones parciales
             setData({
                 ...formulario,
                 reservable_id: cliente.id,
-                reservable_type: cliente.tipo_usuario === 'user' ? 'App\\Models\\User' : 'App\\Models\\Cliente',
+                reservable_type:
+                    cliente.tipo_usuario === 'user'
+                        ? 'App\\Models\\User'
+                        : 'App\\Models\\Cliente',
                 nombre_cliente: cliente.name || formulario.nombre_cliente,
                 email_cliente: cliente.email || formulario.email_cliente,
-                telefono_cliente: cliente.telefono || formulario.telefono_cliente,
-                tipo_documento: cliente.tipo_documento || formulario.tipo_documento || 'dni',
-                numero_documento: cliente.numero_documento || formulario.numero_documento,
+                telefono_cliente:
+                    cliente.telefono || formulario.telefono_cliente,
+                tipo_documento:
+                    cliente.tipo_documento ||
+                    formulario.tipo_documento ||
+                    'dni',
+                numero_documento:
+                    cliente.numero_documento || formulario.numero_documento,
                 nacionalidad: cliente.nacionalidad || formulario.nacionalidad,
                 direccion: cliente.direccion || formulario.direccion,
             });
@@ -239,27 +278,41 @@ export default function useCreateReserva() {
 
     const esFormularioCompleto = () => {
         if (!formulario.check_in || !formulario.check_out) return false;
-        if (!Object.values(habitacionesPorTipo).some((info) => info.cantidad > 0)) return false;
-        if (!formulario.nombre_cliente || !formulario.email_cliente) return false;
+        if (
+            !Object.values(habitacionesPorTipo).some(
+                (info) => info.cantidad > 0,
+            )
+        )
+            return false;
+        if (!formulario.nombre_cliente || !formulario.email_cliente)
+            return false;
         if (!formulario.numero_documento) return false;
         if (!formulario.metodo_pago) return false;
-        if (formulario.metodo_pago === 'tarjeta' && !aceptaTerminos) return false;
+        if (formulario.metodo_pago === 'tarjeta' && !aceptaTerminos)
+            return false;
         return true;
     };
 
     // Envía la reserva al servidor usando el helper de useFormGenerico
-    const [estaGuardando, setEstaGuardando] = useState(false);
+    const [, setEstaGuardando] = useState(false);
 
     const guardarReserva = async (e = null) => {
         if (e && e.preventDefault) e.preventDefault();
 
-        const habitacionesConCantidad = Object.entries(habitacionesPorTipo).filter(([_, info]) => Number(info.cantidad) > 0);
+        const habitacionesConCantidad = Object.entries(
+            habitacionesPorTipo,
+        ).filter(([, info]) => Number(info.cantidad) > 0);
 
         if (habitacionesConCantidad.length === 0) {
             setTabActiva('fechas');
-            const counts = Object.entries(habitacionesPorTipo).map(([t, i]) => `${t}:${i.cantidad}`).join(', ');
+            const counts = Object.entries(habitacionesPorTipo)
+                .map(([t, i]) => `${t}:${i.cantidad}`)
+                .join(', ');
             if (import.meta.env.DEV && counts && counts.length) {
-                emitToast(t('toasts.select_room_required') + ` (actual: ${counts})`, 'error');
+                emitToast(
+                    t('toasts.select_room_required') + ` (actual: ${counts})`,
+                    'error',
+                );
             } else {
                 emitToast(t('toasts.select_room_required'), 'error');
             }
@@ -269,7 +322,10 @@ export default function useCreateReserva() {
         // Construir objeto habitacionesSeleccionadas compatible con getReservaPayload
         const habitacionesSeleccionadas = {};
         habitacionesConCantidad.forEach(([tipo, info]) => {
-            habitacionesSeleccionadas[tipo] = { cantidad: info.cantidad, personas: info.personas || 1 };
+            habitacionesSeleccionadas[tipo] = {
+                cantidad: info.cantidad,
+                personas: info.personas || 1,
+            };
         });
 
         // Preparar valores para getReservaPayload
@@ -315,12 +371,17 @@ export default function useCreateReserva() {
                 const precioRes = await calcularPrecio({
                     check_in: payload.check_in,
                     check_out: payload.check_out,
-                    habitaciones: Object.entries(habitacionesSeleccionadas).map(([tipo, r]) => ({ tipo, cantidad: r.cantidad })),
+                    habitaciones: Object.entries(habitacionesSeleccionadas).map(
+                        ([tipo, r]) => ({ tipo, cantidad: r.cantidad }),
+                    ),
                     tarifas: payload.tarifas,
                 });
 
                 if (!precioRes || precioRes?.success === false) {
-                    const msg = precioRes?.error || precioRes?.message || 'No se pudo calcular el precio';
+                    const msg =
+                        precioRes?.error ||
+                        precioRes?.message ||
+                        'No se pudo calcular el precio';
                     emitToast(msg, 'error');
                     setEstaGuardando(false);
                     return;
@@ -331,7 +392,8 @@ export default function useCreateReserva() {
                 actualizarCampo('precio_total', total);
                 payload.precio_total = total;
             } catch (err) {
-                const msg = err?.error || err?.message || 'Error calculando precio';
+                const msg =
+                    err?.error || err?.message || 'Error calculando precio';
                 emitToast(msg, 'error');
                 setEstaGuardando(false);
                 return;
@@ -344,7 +406,7 @@ export default function useCreateReserva() {
             setEstaGuardando(true);
 
             router.post('/reservas', payload, {
-                onSuccess: (resp) => {
+                onSuccess: () => {
                     // Cerrar y recargar para que la UI muestre la nueva reserva
                     try {
                         handleCerrar();
@@ -361,7 +423,7 @@ export default function useCreateReserva() {
                 },
                 onFinish: () => {
                     setEstaGuardando(false);
-                }
+                },
             });
         } catch (err) {
             const msg = err?.message || 'Error creando la reserva';
@@ -372,7 +434,9 @@ export default function useCreateReserva() {
 
     // Crea reserva y abre Stripe Checkout en una sola operación (admin)
     const crearReservaConCheckout = async () => {
-        const habitacionesConCantidad = Object.entries(habitacionesPorTipo).filter(([_, info]) => info.cantidad > 0);
+        const habitacionesConCantidad = Object.entries(
+            habitacionesPorTipo,
+        ).filter(([, info]) => info.cantidad > 0);
 
         if (habitacionesConCantidad.length === 0) {
             emitToast(t('toasts.select_room_required'), 'error');
@@ -386,10 +450,12 @@ export default function useCreateReserva() {
             return;
         }
 
-        const habitacionesParaReserva = habitacionesConCantidad.map(([tipo, info]) => ({
-            tipo,
-            cantidad: info.cantidad,
-        }));
+        const habitacionesParaReserva = habitacionesConCantidad.map(
+            ([tipo, info]) => ({
+                tipo,
+                cantidad: info.cantidad,
+            }),
+        );
 
         const payload = {
             check_in: formulario.check_in,
@@ -406,7 +472,10 @@ export default function useCreateReserva() {
                 reservable_id: formulario.reservable_id,
             }),
             habitaciones: habitacionesParaReserva,
-            tarifas: tarifasSeleccionadas.length > 0 ? tarifasSeleccionadas : undefined,
+            tarifas:
+                tarifasSeleccionadas.length > 0
+                    ? tarifasSeleccionadas
+                    : undefined,
             num_huespedes: formulario.num_huespedes || 1,
             metodo_pago: formulario.metodo_pago || 'recepcion',
             notas: formulario.notas || undefined,
@@ -426,11 +495,20 @@ export default function useCreateReserva() {
                 handleCerrar();
                 window.location.href = res.sessionUrl;
             } else {
-                emitToast(res?.message || res?.error || 'No se pudo iniciar el checkout', 'error');
+                emitToast(
+                    res?.message ||
+                        res?.error ||
+                        'No se pudo iniciar el checkout',
+                    'error',
+                );
             }
         } catch (err) {
             // Error handled by user-facing toast; removed console logging for cleanliness
-            emitToast(t('toasts.error_starting_checkout') + (err?.message ? ': ' + (err?.message || '') : ''), 'error');
+            emitToast(
+                t('toasts.error_starting_checkout') +
+                    (err?.message ? ': ' + (err?.message || '') : ''),
+                'error',
+            );
         } finally {
             setCreandoConCheckout(false);
         }
@@ -440,7 +518,9 @@ export default function useCreateReserva() {
         try {
             const confirm = data?.confirmData || {};
             const localizador = confirm?.localizador || null;
-            const cantidad_habitaciones = Object.values(habitacionesPorTipo).reduce((s, info) => s + (info.cantidad || 0), 0);
+            const cantidad_habitaciones = Object.values(
+                habitacionesPorTipo,
+            ).reduce((s, info) => s + (info.cantidad || 0), 0);
 
             const datosConfirmacion = {
                 localizador,
@@ -500,6 +580,7 @@ export default function useCreateReserva() {
         handleSeleccionarCliente,
         esFormularioCompleto,
         guardarReserva,
+        crearReservaConCheckout,
         onPagoExitoso,
     };
 }

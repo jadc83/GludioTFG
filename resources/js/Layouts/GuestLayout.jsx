@@ -1,4 +1,3 @@
-import React from 'react';
 import BarraReservas from '@/Components/buscadores/BarraReservas';
 import CookieBanner from '@/Components/UI/CookieBanner';
 import Footer from '@/Components/UI/Footer';
@@ -6,7 +5,7 @@ import Navbar from '@/Components/UI/Nav';
 import Toast from '@/Components/UI/Toast';
 import { emitToast } from '@/utils/toast';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function GuestLayout({ children }) {
     const page = usePage();
@@ -40,15 +39,24 @@ export default function GuestLayout({ children }) {
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
-            emitToast(`Se ha solicitado un reembolso parcial de ${amt}€`, 'success');
+            emitToast(
+                `Se ha solicitado un reembolso parcial de ${amt}€`,
+                'success',
+            );
         }
 
         // Mostrar flash.success como toast (si existe)
         const successMsg = page?.props?.flash?.success;
         if (successMsg) {
-            const safeMsg = typeof successMsg === 'string' ? successMsg : JSON.stringify(successMsg);
+            const safeMsg =
+                typeof successMsg === 'string'
+                    ? successMsg
+                    : JSON.stringify(successMsg);
             if (typeof safeMsg === 'string' && safeMsg.length === 1) {
-                console.warn('Ignored suspicious short flash.success:', page.props.flash);
+                console.warn(
+                    'Ignored suspicious short flash.success:',
+                    page.props.flash,
+                );
             } else {
                 emitToast(safeMsg, 'success');
             }

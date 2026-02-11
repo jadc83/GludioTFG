@@ -16,7 +16,7 @@ export default function TabCupones({ cupones = {} }) {
         ['cupones'],
     );
 
-    const cuponesData = cupones.data || [];
+    const cuponesData = useMemo(() => cupones?.data || [], [cupones?.data]);
 
     useEffect(() => {
         setPaginaActual(1);

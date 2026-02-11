@@ -1,22 +1,23 @@
 import useTarifasSelector from '@/hooks/reservas/useTarifasSelector';
-import { formatearModificador } from '@/utils/formatters';
 import { t as translate } from '@/i18n';
+import { formatearModificador } from '@/utils/formatters';
 
 export default function TarifasSelector({
     tarifas = [],
     seleccion = {},
     onChange,
 }) {
-    const { ordenadasVisibles, toggleTarifa, esDesayuno, isChecked } = useTarifasSelector({
-        tarifas,
-        seleccion,
-        onChange,
-    });
+    const { ordenadasVisibles, toggleTarifa, esDesayuno, isChecked } =
+        useTarifasSelector({
+            tarifas,
+            seleccion,
+            onChange,
+        });
 
     return (
         <aside>
             <div className="sticky top-6 overflow-hidden rounded-xl bg-white shadow-sm">
-                <div className="border-b border-gray-200 bg-gray-50 p-4 rounded-t-xl">
+                <div className="rounded-t-xl border-b border-gray-200 bg-gray-50 p-4">
                     <h4 className="text-sm font-bold text-gray-900">
                         {translate('paso2.services_title')}
                     </h4>
@@ -38,12 +39,20 @@ export default function TarifasSelector({
                                     const checked = isChecked(tarifa);
                                     const priceText = breakfast
                                         ? translate('paso2.free')
-                                        : formatearModificador(tarifa.modificador_precio ?? 0, 'fijo');
+                                        : formatearModificador(
+                                              tarifa.modificador_precio ?? 0,
+                                              'fijo',
+                                          );
 
-                                    const keySlug = String(tarifa.slug || tarifa.id).replace(/-/g, '_');
+                                    const keySlug = String(
+                                        tarifa.slug || tarifa.id,
+                                    ).replace(/-/g, '_');
                                     const transKey = `tarifas.${keySlug}.name`;
                                     const translatedName = translate(transKey);
-                                    const displayName = translatedName === transKey ? tarifa.nombre : translatedName;
+                                    const displayName =
+                                        translatedName === transKey
+                                            ? tarifa.nombre
+                                            : translatedName;
 
                                     return (
                                         <label

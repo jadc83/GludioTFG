@@ -2,7 +2,10 @@ import axios from 'axios';
 
 export async function crearCheckoutSession(reservaId, payload) {
     try {
-        const res = await axios.post('/pagos/crear-checkout-session', { reserva_id: reservaId, ...payload });
+        const res = await axios.post('/pagos/crear-checkout-session', {
+            reserva_id: reservaId,
+            ...payload,
+        });
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, error: err.message };
@@ -16,7 +19,9 @@ export async function crearCheckoutSessionRaw(reservaId, payload) {
 
 export async function checkSession(sessionId) {
     try {
-        const res = await axios.get('/pagos/check-session', { params: { session_id: sessionId } });
+        const res = await axios.get('/pagos/check-session', {
+            params: { session_id: sessionId },
+        });
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, error: err.message };
@@ -37,9 +42,13 @@ export async function confirmar(paymentIntentId, pagoId = null) {
 
 export async function crearPaymentIntent(reservaId, monto) {
     try {
-        const res = await axios.post('/pagos/crear-payment-intent', { reserva_id: reservaId, monto }, {
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const res = await axios.post(
+            '/pagos/crear-payment-intent',
+            { reserva_id: reservaId, monto },
+            {
+                headers: { 'Content-Type': 'application/json' },
+            },
+        );
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, error: err.message };
@@ -66,9 +75,13 @@ export async function crearPaymentIntentStandalone(monto, opts = {}) {
         // Permitir forzar creación sin metadata (opción de emergencia)
         if (opts.allow_without_metadata) payload.allow_without_metadata = true;
 
-        const res = await axios.post('/pagos/crear-payment-intent-standalone', payload, {
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const res = await axios.post(
+            '/pagos/crear-payment-intent-standalone',
+            payload,
+            {
+                headers: { 'Content-Type': 'application/json' },
+            },
+        );
         return res?.data ?? null;
     } catch (err) {
         return err?.response?.data ?? { success: false, error: err?.message };

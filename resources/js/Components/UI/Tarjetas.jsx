@@ -75,31 +75,50 @@ export default function Tarjetas() {
     ];
 
     return (
-        <div className="flex w-full justify-center bg-gris px-6 pb-6 pt-4">
-            <div className="grid max-w-[72rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {tarjetas.map(({ color, icon, titulo, descripcion }, idx) => (
-                    <div
-                        key={idx}
-                        className="mx-1 flex max-w-[18rem] flex-col items-center rounded-xl py-4"
-                    >
-                        <svg
-                            className={`mb-3 h-10 w-10 ${color}`}
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+        <section
+            aria-label="Tarjetas informativas"
+            className="flex w-full justify-center bg-gris px-6 pb-6 pt-4"
+        >
+            <div
+                role="list"
+                className="grid max-w-[72rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
+                {tarjetas.map(({ color, icon }, idx) => {
+                    const titleId = `card-title-${idx}`;
+                    return (
+                        <article
+                            key={idx}
+                            role="listitem"
+                            aria-labelledby={titleId}
+                            className="mx-1 flex max-w-[18rem] flex-col items-center rounded-xl py-4"
                         >
-                            {icon}
-                        </svg>
-                        <h2 className="mb-1 text-center text-base font-semibold">
-                            {t(`home.cards.${['rooms_title','pool_title','restaurant_title','wifi_title'][idx]}`)}
-                        </h2>
-                        <p className="text-center text-sm leading-snug text-gray-600">
-                            {t(`home.cards.${['rooms_desc','pool_desc','restaurant_desc','wifi_desc'][idx]}`)}
-                        </p>
-                    </div>
-                ))}
+                            <svg
+                                className={`mb-3 h-10 w-10 ${color}`}
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                {icon}
+                            </svg>
+                            <h3
+                                id={titleId}
+                                className="mb-1 text-center text-base font-semibold"
+                            >
+                                {t(
+                                    `home.cards.${['rooms_title', 'pool_title', 'restaurant_title', 'wifi_title'][idx]}`,
+                                )}
+                            </h3>
+                            <p className="text-center text-sm leading-snug text-gray-600">
+                                {t(
+                                    `home.cards.${['rooms_desc', 'pool_desc', 'restaurant_desc', 'wifi_desc'][idx]}`,
+                                )}
+                            </p>
+                        </article>
+                    );
+                })}
             </div>
-        </div>
+        </section>
     );
 }

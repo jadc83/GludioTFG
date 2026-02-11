@@ -1,8 +1,7 @@
-import React from 'react';
-import { Link } from '@inertiajs/react';
 import { formatearFecha } from '@/utils/formatters';
+import { Link } from '@inertiajs/react';
 
-export default function ReservaHeader({ reserva, isCancelled, onOpenDateModal }) {
+export default function ReservaHeader({ reserva = {} }) {
     return (
         <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
             <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-4 py-6 md:flex-row md:items-center">
@@ -11,7 +10,7 @@ export default function ReservaHeader({ reserva, isCancelled, onOpenDateModal })
                         <h1 className="text-2xl font-black tracking-tight text-gray-900">
                             Reserva{' '}
                             <span className="font-mono text-gray-400">
-                                {reserva.localizador}
+                                {reserva?.localizador}
                             </span>
                         </h1>
 
@@ -20,16 +19,35 @@ export default function ReservaHeader({ reserva, isCancelled, onOpenDateModal })
                         {/* Estado de pago mostrado en el sidebar; oculto en la cabecera para evitar duplicidad */}
                     </div>
                     <p className="mt-1 text-sm font-medium text-gray-500">
-                        {reserva.cliente?.name || reserva.cliente?.nombre} • {formatearFecha(reserva.check_in)} al {formatearFecha(reserva.check_out)}
+                        {reserva?.cliente?.name || reserva?.cliente?.nombre} •{' '}
+                        {formatearFecha(reserva?.check_in)} al{' '}
+                        {formatearFecha(reserva?.check_out)}
                         {(() => {
-                            const bookedName = reserva.booked_by_user?.name || null;
-                            const bookedEmail = reserva.booked_by_user?.email || null;
-                            const clientName = reserva.cliente?.name || reserva.cliente?.nombre || null;
-                            const clientEmail = reserva.cliente?.email || null;
-                            const isSame = (bookedName && clientName && bookedName === clientName) || (bookedEmail && clientEmail && bookedEmail === clientEmail);
+                            const bookedName =
+                                reserva?.booked_by_user?.name || null;
+                            const bookedEmail =
+                                reserva?.booked_by_user?.email || null;
+                            const clientName =
+                                reserva?.cliente?.name ||
+                                reserva?.cliente?.nombre ||
+                                null;
+                            const clientEmail = reserva?.cliente?.email || null;
+                            const isSame =
+                                (bookedName &&
+                                    clientName &&
+                                    bookedName === clientName) ||
+                                (bookedEmail &&
+                                    clientEmail &&
+                                    bookedEmail === clientEmail);
                             if (!reserva.booked_by_user || isSame) return null;
                             return (
-                                <span className="ml-2 text-sm text-gray-400">Reservado por: {reserva.booked_by_user.name}{reserva.booked_by_user.email ? ` ({reserva.booked_by_user.email})` : ''}</span>
+                                <span className="ml-2 text-sm text-gray-400">
+                                    Reservado por:{' '}
+                                    {reserva?.booked_by_user?.name}
+                                    {reserva?.booked_by_user?.email
+                                        ? ` (${reserva.booked_by_user.email})`
+                                        : ''}
+                                </span>
                             );
                         })()}
                     </p>

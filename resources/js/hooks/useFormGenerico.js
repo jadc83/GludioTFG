@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { useCallback } from 'react';
 import { limpiarFormulario } from './useFormHelpers';
 
 /**
@@ -26,119 +27,155 @@ export function useFormGenerico(
     } = useForm(datosIniciales);
 
     /* Actualiza un campo del formulario */
-    const cambiar = (evento) => {
-        const { name, value, type, checked } = evento.target;
-        const valorFinal = type === 'checkbox' ? checked : value;
-        setData(name, valorFinal);
-    };
+    const cambiar = useCallback(
+        (evento) => {
+            const { name, value, type, checked } = evento.target;
+            const valorFinal = type === 'checkbox' ? checked : value;
+            setData(name, valorFinal);
+        },
+        [setData],
+    );
 
     /* Pre-rellena el formulario con datos existentes */
-    const cargarDatos = (datos) => {
-        if (datos) {
-            setData(datos);
-        }
-    };
+    const cargarDatos = useCallback(
+        (datos) => {
+            if (datos) {
+                setData(datos);
+            }
+        },
+        [setData],
+    );
 
     /**
      * Resetea el formulario a valores iniciales
      */
-    const limpiar = () => {
+    const limpiar = useCallback(() => {
         limpiarFormulario(resetFormulario, clearErrors);
-    };
+    }, [resetFormulario, clearErrors]);
 
     /**
      * Envía el formulario al servidor
      */
-    const guardar = (evento = null, options = {}) => {
-        // Support calling guardar(payload, options) to submit a given payload directly
-        // If "evento" is a DOM event, prevent Default as usual.
-        // If it's a plain object (no preventDefault) we treat it as a data override.
-        let dataOverride = null;
-        if (evento && typeof evento === 'object' && typeof evento.preventDefault === 'function') {
-            evento.preventDefault();
-        } else if (evento && typeof evento === 'object' && typeof evento.preventDefault === 'undefined') {
-            dataOverride = evento;
-            evento = null;
-        }
-
-        const mergedOptions = Object.assign({}, options);
-
-        if (esEdicion) {
-            // Actualizar registro
-            const metodo = metodoActualizacion === 'patch' ? patch : put;
-
-            if (dataOverride) {
-                // post/put with explicit data override (inertia supports post/put(url, data, options))
-                metodo(rutaActualizar, dataOverride, Object.assign({}, mergedOptions, {
-                    onSuccess: (page) => {
-                        if (alGuardar) {
-                            alGuardar(page);
-                        }
-                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
-                    }
-                }));
-            } else {
-                metodo(rutaActualizar, Object.assign({}, mergedOptions, {
-                    onSuccess: (page) => {
-                        if (alGuardar) {
-                            alGuardar(page);
-                        }
-                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
-                    }
-                }));
+    const guardar = useCallback(
+        (evento = null, options = {}) => {
+            // Support calling guardar(payload, options) to submit a given payload directly
+            // If "evento" is a DOM event, prevent Default as usual.
+            // If it's a plain object (no preventDefault) we treat it as a data override.
+            let dataOverride = null;
+            if (
+                evento &&
+                typeof evento === 'object' &&
+                typeof evento.preventDefault === 'function'
+            ) {
+                evento.preventDefault();
+            } else if (
+                evento &&
+                typeof evento === 'object' &&
+                typeof evento.preventDefault === 'undefined'
+            ) {
+                dataOverride = evento;
+                evento = null;
             }
-        } else {
-            // Crear nuevo registro
-            if (dataOverride) {
-                post(rutaCrear, dataOverride, Object.assign({}, mergedOptions, {
-                    onSuccess: (page) => {
-                        // Si el llamante proporcionó un callback 'alGuardar', delegamos la lógica
-                        // (por ejemplo cerrar el modal o limpiar), para evitar borrar campos
-                        // inesperadamente en flujos compuestos como CreateReserva.
-                        if (alGuardar) {
-                            alGuardar(page);
-                        } else {
-                            limpiar();
-                        }
-                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
-                    },
-                    onError: (errors) => {
-                        if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
-                    },
-                    onFinish: () => {
-                        if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
-                    }
-                }));
+
+            const mergedOptions = Object.assign({}, options);
+
+            if (esEdicion) {
+                // Actualizar registro
+                const metodo = metodoActualizacion === 'patch' ? patch : put;
+
+                if (dataOverride) {
+                    metodo(
+                        rutaActualizar,
+                        dataOverride,
+                        Object.assign({}, mergedOptions, {
+                            onSuccess: (page) => {
+                                if (alGuardar) alGuardar(page);
+                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                            },
+                        }),
+                    );
+                } else {
+                    metodo(
+                        rutaActualizar,
+                        formulario,
+                        Object.assign({}, mergedOptions, {
+                            onSuccess: (page) => {
+                                if (alGuardar) alGuardar(page);
+                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                            },
+                        }),
+                    );
+                }
             } else {
-                post(rutaCrear, Object.assign({}, mergedOptions, {
-                    onSuccess: (page) => {
-                        // Si el llamante proporcionó un callback 'alGuardar', delegamos la lógica
-                        // (por ejemplo cerrar el modal o limpiar), para evitar borrar campos
-                        // inesperadamente en flujos compuestos como CreateReserva.
-                        if (alGuardar) {
-                            alGuardar(page);
-                        } else {
-                            limpiar();
-                        }
-                        if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
-                    },
-                    onError: (errors) => {
-                        if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
-                    },
-                    onFinish: () => {
-                        if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
-                    }
-                }));
+                // Crear nuevo registro
+                if (dataOverride) {
+                    post(
+                        rutaCrear,
+                        dataOverride,
+                        Object.assign({}, mergedOptions, {
+                            onSuccess: (page) => {
+                                if (alGuardar) {
+                                    alGuardar(page);
+                                } else {
+                                    limpiar();
+                                }
+                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                            },
+                            onError: (errors) => {
+                                if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                            },
+                            onFinish: () => {
+                                if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
+                            },
+                        }),
+                    );
+                } else {
+                    post(
+                        rutaCrear,
+                        formulario,
+                        Object.assign({}, mergedOptions, {
+                            onSuccess: (page) => {
+                                if (alGuardar) {
+                                    alGuardar(page);
+                                } else {
+                                    limpiar();
+                                }
+                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                            },
+                            onError: (errors) => {
+                                if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                            },
+                            onFinish: () => {
+                                if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
+                            },
+                        }),
+                    );
+                }
             }
-        }
-    };
+        },
+        [
+            esEdicion,
+            rutaActualizar,
+            rutaCrear,
+            metodoActualizacion,
+            alGuardar,
+            post,
+            put,
+            patch,
+            limpiar,
+            formulario,
+        ],
+    );
 
     /**
      * Actualiza un campo específico directamente
      */
-    const actualizarCampo = (campo, valor) => {
-        setData(campo, valor);
-    };
+    const actualizarCampo = useCallback(
+        (campo, valor) => {
+            setData(campo, valor);
+        },
+        [setData],
+    );
 
     return {
         // Estado del formulario

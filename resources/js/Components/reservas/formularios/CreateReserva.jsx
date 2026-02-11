@@ -1,29 +1,19 @@
-import Campo from '@/Components/reservas/utilidades/Campo';
-import FormularioPago from '@/Components/formularios/create/FormularioPago';
-import BusquedaClientes from '@/Components/buscadores/BusquedaClientes';
 import Boton from '@/Components/UI/Boton';
 import useCreateReserva from '@/hooks/reservas/useCreateReserva';
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-import {
-    CalendarIcon,
-    CreditCardIcon,
-    HomeIcon,
-    TagIcon,
-    UserIcon,
-    XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 
-import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
-import CreateReservaHeader from '@/Components/UI/CreateReservaHeader';
-import CreateReservaTabs from '@/Components/tabs/CreateReservaTabs';
 import FechasPanel from '@/Components/buscadores/FechasPanel';
-import HabitacionesSelector from '@/Components/reservas/formularios/HabitacionesSelector';
 import ClientePanel from '@/Components/formularios/create/ClientePanel';
+import HabitacionesSelector from '@/Components/reservas/formularios/HabitacionesSelector';
 import PagoPanel from '@/Components/reservas/formularios/PagoPanel.jsx';
+import ModalConfirmacionReserva from '@/Components/reservas/modales/ModalConfirmacionReserva';
+import CreateReservaTabs from '@/Components/tabs/CreateReservaTabs';
 import CreateReservaFooter from '@/Components/UI/CreateReservaFooter';
+import CreateReservaHeader from '@/Components/UI/CreateReservaHeader';
 
 import TarifasSelector from '@/Components/reservas/formularios/TarifasSelector';
 
@@ -33,16 +23,12 @@ export default function CreateReserva({ iconOnly = false }) {
         setAbierto,
         tabActiva,
         setTabActiva,
-        habitacionesDisponibles,
         cargandoHabitaciones,
         clienteSeleccionado,
-        setClienteSeleccionado,
         habitacionesPorTipo,
-        setHabitacionesPorTipo,
         precioCalculado,
         tarifas,
         tarifasSeleccionadas,
-        setTarifasSeleccionadas,
         aceptaTerminos,
         setAceptaTerminos,
         mostrarModalConfirmacion,
@@ -54,20 +40,15 @@ export default function CreateReserva({ iconOnly = false }) {
         errores,
         estaCargando,
         actualizarCampo,
-        setData,
         handleCerrar,
         // Handlers moved to hook
         cambiarCantidadHabitaciones,
-        toggleTarifa,
         seleccionObj,
         onTarifasSeleccionChange,
         handleSeleccionarCliente,
         esFormularioCompleto,
         guardarReserva,
         onPagoExitoso,
-        // Admin checkout helpers
-        crearReservaConCheckout,
-        creandoConCheckout,
         // Guard while saving
         estaGuardando,
     } = useCreateReserva();
@@ -79,15 +60,9 @@ export default function CreateReserva({ iconOnly = false }) {
         if (errors && errors.habitaciones) {
             setTabActiva('fechas');
         }
+        // Intentionally only depend on server errors; `setTabActiva` may be unstable
+        // if provided by the hook and would cause re-render loops.
     }, [page?.props?.errors]);
-
-
-
-
-
-
-
-
 
     return (
         <>
@@ -119,24 +94,38 @@ export default function CreateReserva({ iconOnly = false }) {
                     <CreateReservaHeader onCerrar={handleCerrar} />
 
                     {/* Navegación por Pestañas */}
-                    <CreateReservaTabs tabActiva={tabActiva} setTabActiva={setTabActiva} errores={errores} />
+                    <CreateReservaTabs
+                        tabActiva={tabActiva}
+                        setTabActiva={setTabActiva}
+                        errores={errores}
+                    />
 
                     {/* Formulario con scroll independiente */}
                     <form
                         onSubmit={guardarReserva}
                         className="flex min-h-0 flex-1 flex-col bg-white"
+                        role="form"
+                        aria-label="Formulario nueva reserva"
                     >
                         <div className="flex-1 space-y-8 overflow-y-auto p-8">
                             {/* Pestaña: Fechas */}
                             {tabActiva === 'fechas' && (
                                 <div className="animate-in fade-in space-y-6 duration-300">
-                                    <FechasPanel formulario={formulario} cambiar={cambiar} errores={errores} />
+                                    <FechasPanel
+                                        formulario={formulario}
+                                        cambiar={cambiar}
+                                        errores={errores}
+                                    />
 
                                     <HabitacionesSelector
                                         formulario={formulario}
                                         cargando={cargandoHabitaciones}
-                                        habitacionesPorTipo={habitacionesPorTipo}
-                                        cambiarCantidadHabitaciones={cambiarCantidadHabitaciones}
+                                        habitacionesPorTipo={
+                                            habitacionesPorTipo
+                                        }
+                                        cambiarCantidadHabitaciones={
+                                            cambiarCantidadHabitaciones
+                                        }
                                     />
                                 </div>
                             )}
@@ -145,12 +134,16 @@ export default function CreateReserva({ iconOnly = false }) {
                             {tabActiva === 'cliente' && (
                                 <div className="animate-in fade-in space-y-6 duration-300">
                                     <ClientePanel
-                                formulario={formulario}
-                                cambiar={cambiar}
-                                errores={errores}
-                                clienteSeleccionado={clienteSeleccionado}
-                                onSeleccionarCliente={handleSeleccionarCliente}
-                            />
+                                        formulario={formulario}
+                                        cambiar={cambiar}
+                                        errores={errores}
+                                        clienteSeleccionado={
+                                            clienteSeleccionado
+                                        }
+                                        onSeleccionarCliente={
+                                            handleSeleccionarCliente
+                                        }
+                                    />
                                 </div>
                             )}
 
@@ -165,22 +158,24 @@ export default function CreateReserva({ iconOnly = false }) {
                                 </div>
                             )}
 
-
-
-
                             {/* Pestaña: Pago */}
                             {tabActiva === 'pago' && (
                                 <div className="animate-in fade-in space-y-6 duration-300">
                                     <PagoPanel
                                         formulario={formulario}
                                         cambiar={(eOrId, value) => {
-                                            if (typeof eOrId === 'string') actualizarCampo(eOrId, value);
+                                            if (typeof eOrId === 'string')
+                                                actualizarCampo(eOrId, value);
                                             else cambiar(eOrId);
                                         }}
                                         errores={errores}
                                         precioCalculado={precioCalculado}
-                                        habitacionesPorTipo={habitacionesPorTipo}
-                                        tarifasSeleccionadas={tarifasSeleccionadas}
+                                        habitacionesPorTipo={
+                                            habitacionesPorTipo
+                                        }
+                                        tarifasSeleccionadas={
+                                            tarifasSeleccionadas
+                                        }
                                         aceptaTerminos={aceptaTerminos}
                                         setAceptaTerminos={setAceptaTerminos}
                                         onPagoExitoso={onPagoExitoso}
@@ -190,7 +185,10 @@ export default function CreateReserva({ iconOnly = false }) {
                         </div>
 
                         {/* Footer con botones - oculto cuando pago con tarjeta y Stripe está configurado */}
-                        {!(formulario.metodo_pago === 'tarjeta' && import.meta.env.VITE_STRIPE_PUBLIC_KEY) && (
+                        {!(
+                            formulario.metodo_pago === 'tarjeta' &&
+                            import.meta.env.VITE_STRIPE_PUBLIC_KEY
+                        ) && (
                             <CreateReservaFooter
                                 precioCalculado={precioCalculado}
                                 estaCargando={estaCargando}

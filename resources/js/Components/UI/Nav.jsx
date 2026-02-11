@@ -1,9 +1,9 @@
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import ApplicationLogo from '@/Components/UI/ApplicationLogo';
 import NavLink from '@/Components/UI/NavLink';
+import { getLocale, setLocale } from '@/i18n';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { setLocale, getLocale } from '@/i18n';
 
 export default function Navbar() {
     const { user } = usePage().props.auth;
@@ -20,7 +20,10 @@ export default function Navbar() {
     const firstName = user ? (user.name || '').split(' ')[0] : '';
 
     return (
-        <nav className="fixed top-0 z-50 w-full border-b border-gray-100 bg-gris">
+        <nav
+            aria-label="Main navigation"
+            className="fixed top-0 z-50 w-full border-b border-gray-100 bg-gris"
+        >
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex flex-1 items-center space-x-4">
@@ -52,6 +55,8 @@ export default function Navbar() {
                                     onClick={() =>
                                         setOpenUserMenu(!openUserMenu)
                                     }
+                                    aria-haspopup="true"
+                                    aria-expanded={openUserMenu}
                                     className="inline-flex items-center gap-3 rounded-md border border-gray-200 bg-gris px-3 py-1 text-sm font-medium hover:shadow-sm"
                                 >
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-semibold text-gray-900">
@@ -75,11 +80,16 @@ export default function Navbar() {
                                     </svg>
                                 </button>
                                 {openUserMenu && (
-                                    <div className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                                    <div
+                                        className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                                        role="menu"
+                                        aria-label="User menu"
+                                    >
                                         <div className="py-1">
                                             <Link
                                                 href={route('profile.edit')}
                                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                role="menuitem"
                                             >
                                                 Perfil
                                             </Link>
@@ -88,6 +98,7 @@ export default function Navbar() {
                                                 href={route('logout')}
                                                 as="button"
                                                 className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                role="menuitem"
                                             >
                                                 Cerrar sesión
                                             </Link>
@@ -106,15 +117,16 @@ export default function Navbar() {
                             </div>
                         )}
 
-                        <div className="hidden sm:flex items-center gap-2">
+                        <div className="hidden items-center gap-2 sm:flex">
                             <button
                                 onClick={() => {
                                     if (getLocale() !== 'es') {
                                         setLocale('es', { persist: true });
-                                        if (typeof window !== 'undefined') window.location.reload();
+                                        if (typeof window !== 'undefined')
+                                            window.location.reload();
                                     }
                                 }}
-                                className={`px-2 py-1 rounded text-sm ${getLocale() === 'es' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                                className={`rounded px-2 py-1 text-sm ${getLocale() === 'es' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
                             >
                                 ES
                             </button>
@@ -122,10 +134,11 @@ export default function Navbar() {
                                 onClick={() => {
                                     if (getLocale() !== 'en') {
                                         setLocale('en', { persist: true });
-                                        if (typeof window !== 'undefined') window.location.reload();
+                                        if (typeof window !== 'undefined')
+                                            window.location.reload();
                                     }
                                 }}
-                                className={`px-2 py-1 rounded text-sm ${getLocale() === 'en' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                                className={`rounded px-2 py-1 text-sm ${getLocale() === 'en' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
                             >
                                 EN
                             </button>
@@ -134,6 +147,8 @@ export default function Navbar() {
                         <div className="flex lg:hidden">
                             <button
                                 onClick={() => setAbrir(!AbrirDesplegable)}
+                                aria-controls="mobile-menu"
+                                aria-expanded={AbrirDesplegable}
                                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
                                 aria-label="Toggle navigation menu"
                             >
@@ -166,7 +181,10 @@ export default function Navbar() {
             </div>
 
             <div
+                id="mobile-menu"
                 className={`${AbrirDesplegable ? 'block' : 'hidden'} border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur lg:hidden`}
+                role="navigation"
+                aria-label="Mobile navigation"
             >
                 <div className="flex flex-col space-y-1 px-4 py-3">
                     <ResponsiveNavLink

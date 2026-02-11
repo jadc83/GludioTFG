@@ -1,4 +1,3 @@
-import InputError from '@/Components/InputError';
 import Campo from '@/Components/reservas/utilidades/Campo';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { Transition } from '@headlessui/react';
@@ -9,18 +8,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { useForm, usePage } from '@inertiajs/react';
 
-export default function UpdateProfileInformation({
-    mustVerifyEmail,
-    status,
-    className = '',
-}) {
+export default function UpdateProfileInformation({ className = '' }) {
     const user = usePage().props.auth.user;
 
     const {
         data,
         setData,
         patch,
-        errors,
         processing,
         recentlySuccessful,
         reset,
@@ -66,7 +60,6 @@ export default function UpdateProfileInformation({
                                     }
                                     required
                                 />
-                                <InputError message={errors.name} />
                             </div>
 
                             <div className="space-y-1">
@@ -86,7 +79,6 @@ export default function UpdateProfileInformation({
                                         required
                                     />
                                 </div>
-                                <InputError message={errors.email} />
                             </div>
                         </div>
                     </div>
@@ -98,8 +90,10 @@ export default function UpdateProfileInformation({
                                 <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
                                     Tipo Doc.
                                 </label>
-                                <select
-                                    className="w-full appearance-none rounded-xl border-none bg-gray-50 py-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#7a0202]/10"
+                                <Campo
+                                    id="tipo_documento"
+                                    as="select"
+                                    clase="w-full appearance-none rounded-xl border-none bg-gray-50 py-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#7a0202]/10"
                                     value={data.tipo_documento}
                                     onChange={(e) =>
                                         setData(
@@ -112,8 +106,7 @@ export default function UpdateProfileInformation({
                                     <option value="dni">DNI</option>
                                     <option value="pasaporte">Pasaporte</option>
                                     <option value="tie">TIE</option>
-                                </select>
-                                <InputError message={errors.tipo_documento} />
+                                </Campo>
                             </div>
 
                             <div className="space-y-1">
@@ -131,7 +124,6 @@ export default function UpdateProfileInformation({
                                         )
                                     }
                                 />
-                                <InputError message={errors.numero_documento} />
                             </div>
 
                             <div className="space-y-1">
@@ -150,7 +142,6 @@ export default function UpdateProfileInformation({
                                         }
                                     />
                                 </div>
-                                <InputError message={errors.telefono} />
                             </div>
                         </div>
                     </div>
@@ -170,7 +161,6 @@ export default function UpdateProfileInformation({
                                         setData('direccion', e.target.value)
                                     }
                                 />
-                                <InputError message={errors.direccion} />
                             </div>
 
                             <div className="space-y-1 md:col-span-4">
@@ -185,7 +175,6 @@ export default function UpdateProfileInformation({
                                         setData('nacionalidad', e.target.value)
                                     }
                                 />
-                                <InputError message={errors.nacionalidad} />
                             </div>
 
                             <div className="space-y-1 md:col-span-8">
@@ -200,7 +189,6 @@ export default function UpdateProfileInformation({
                                         setData('ciudad', e.target.value)
                                     }
                                 />
-                                <InputError message={errors.ciudad} />
                             </div>
 
                             <div className="space-y-1 md:col-span-4">
@@ -215,7 +203,6 @@ export default function UpdateProfileInformation({
                                         setData('codigo_postal', e.target.value)
                                     }
                                 />
-                                <InputError message={errors.codigo_postal} />
                             </div>
                         </div>
                     </div>

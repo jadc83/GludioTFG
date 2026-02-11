@@ -72,13 +72,15 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                         />
                     </div>
                     <div className="form-control w-full">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor="estado-select">
                             <span className="label-text text-xs md:text-sm">
                                 Estado
                             </span>
                         </label>
-                        <select
-                            className="select-bordered select w-full"
+                        <Campo
+                            id="estado-select"
+                            as="select"
+                            clase="select-bordered select w-full"
                             value={filtros.estado}
                             onChange={(e) =>
                                 actualizarFiltro('estado', e.target.value)
@@ -89,17 +91,19 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                             <option value="ocupada">Ocupadas</option>
                             <option value="mantenimiento">Mantenimiento</option>
                             <option value="limpieza">Limpieza</option>
-                        </select>
+                        </Campo>
                     </div>
 
                     <div className="form-control w-full">
-                        <label className="label py-1">
+                        <label className="label py-1" htmlFor="tipo-select">
                             <span className="label-text text-xs font-medium md:text-sm">
                                 Tipo
                             </span>
                         </label>
-                        <select
-                            className="select-bordered select w-full"
+                        <Campo
+                            id="tipo-select"
+                            as="select"
+                            clase="select-bordered select w-full"
                             value={filtros.tipo}
                             onChange={(e) =>
                                 actualizarFiltro('tipo', e.target.value)
@@ -109,7 +113,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                             <option value="doble">Doble</option>
                             <option value="suite">Suite</option>
                             <option value="familiar">Familiar</option>
-                        </select>
+                        </Campo>
                     </div>
 
                     <div className="form-control w-full">

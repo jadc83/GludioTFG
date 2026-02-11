@@ -60,7 +60,7 @@ export default function IndexEstadisticas({
         fecha_hasta: fHastaCargada,
     } = datos || {};
 
-    const porDia = porDiaRaw ?? [];
+    const porDia = useMemo(() => porDiaRaw ?? [], [porDiaRaw]);
 
     // 1. Eje X: Solo el número del día
     const categoriasDía = useMemo(

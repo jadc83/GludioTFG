@@ -1,4 +1,3 @@
-import React from 'react';
 import Boton from '@/Components/UI/Boton';
 
 export default function CreateReservaFooter({
@@ -11,15 +10,21 @@ export default function CreateReservaFooter({
 }) {
     const disabled = estaCargando || estaGuardando || !esFormularioCompleto();
     return (
-        <footer className="flex flex-none items-center justify-between border-t border-gray-100 bg-gray-50 p-6">
+        <footer
+            aria-label="Acciones de crear reserva"
+            className="flex flex-none items-center justify-between border-t border-gray-100 bg-gray-50 p-6"
+        >
             <div className="flex items-center gap-2">
                 {precioCalculado > 0 && (
-                    <span className="text-sm font-bold text-gray-700">
+                    <p
+                        className="text-sm font-bold text-gray-700"
+                        aria-live="polite"
+                    >
                         Total:{' '}
                         <span className="text-lg text-[#7a0202]">
                             €{precioCalculado.toFixed(2)}
                         </span>
-                    </span>
+                    </p>
                 )}
             </div>
             <div className="flex items-center gap-4">
@@ -39,7 +44,8 @@ export default function CreateReservaFooter({
                     loading={estaGuardando}
                     disabled={disabled}
                 >
-                    {formulario.metodo_pago === 'tarjeta' && !import.meta.env.VITE_STRIPE_PUBLIC_KEY
+                    {formulario.metodo_pago === 'tarjeta' &&
+                    !import.meta.env.VITE_STRIPE_PUBLIC_KEY
                         ? 'Crear Reserva (Pago en Recepción)'
                         : 'Crear Reserva'}
                 </Boton>

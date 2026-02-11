@@ -1,10 +1,18 @@
-import React from 'react';
-import Campo from '@/Components/reservas/utilidades/Campo';
 import BusquedaClientes from '@/Components/buscadores/BusquedaClientes';
+import Campo from '@/Components/reservas/utilidades/Campo';
 
-export default function ClientePanel({ formulario, cambiar, errores, clienteSeleccionado, onSeleccionarCliente }) {
+export default function ClientePanel({
+    formulario,
+    cambiar,
+    errores,
+    clienteSeleccionado,
+    onSeleccionarCliente,
+}) {
     return (
-        <div className="animate-in fade-in space-y-6 duration-300">
+        <section
+            aria-label="Información del cliente"
+            className="animate-in fade-in space-y-6 duration-300"
+        >
             <BusquedaClientes
                 onSeleccionar={onSeleccionarCliente}
                 clienteSeleccionado={clienteSeleccionado}
@@ -49,7 +57,11 @@ export default function ClientePanel({ formulario, cambiar, errores, clienteSele
                     error={errores.tipo_documento}
                     required
                 >
-                    {Object.entries({ dni: 'dni', pasaporte: 'pasaporte', tie: 'tie' }).map(([clave, valor]) => (
+                    {Object.entries({
+                        dni: 'dni',
+                        pasaporte: 'pasaporte',
+                        tie: 'tie',
+                    }).map(([clave, valor]) => (
                         <option key={clave} value={valor}>
                             {valor.toUpperCase()}
                         </option>
@@ -84,6 +96,6 @@ export default function ClientePanel({ formulario, cambiar, errores, clienteSele
                 error={errores.direccion}
                 required
             />
-        </div>
+        </section>
     );
 }

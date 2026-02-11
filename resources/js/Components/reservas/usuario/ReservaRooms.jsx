@@ -1,9 +1,14 @@
 export default function ReservaRooms({ habitaciones = [], localizador }) {
     if (!habitaciones || habitaciones.length === 0) return null;
     return (
-        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-gris shadow-sm">
+        <section
+            aria-label="Habitaciones reservadas"
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-gris shadow-sm"
+        >
             <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-800">Contrato y Activos</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-800">
+                    Contrato y Activos
+                </h3>
             </div>
             <div className="divide-y divide-gray-100">
                 {habitaciones.map((hab, idx) => (
@@ -17,10 +22,14 @@ export default function ReservaRooms({ habitaciones = [], localizador }) {
                             </div>
                             <div>
                                 <span className="block text-lg font-black uppercase leading-tight text-gray-900">
-                                    {hab.numero ? `Habitación ${hab.numero}` : hab.tipo}
+                                    {hab.numero
+                                        ? `Habitación ${hab.numero}`
+                                        : hab.tipo}
                                 </span>
                                 <span className="font-mono text-[10px] uppercase tracking-tighter text-gray-400">
-                                    {hab.numero ? hab.tipo : `ID: ${localizador}-${idx + 1}`}
+                                    {hab.numero
+                                        ? hab.tipo
+                                        : `ID: ${localizador}-${idx + 1}`}
                                 </span>
                             </div>
                         </div>

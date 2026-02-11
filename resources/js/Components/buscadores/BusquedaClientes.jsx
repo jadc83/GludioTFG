@@ -77,7 +77,12 @@ export default function BusquedaClientes({
     };
 
     return (
-        <div ref={contenedorRef} className="relative">
+        <div
+            ref={contenedorRef}
+            className="relative"
+            role="search"
+            aria-label="Buscar cliente"
+        >
             <label className="mb-2 block text-sm font-medium text-gray-700">
                 Buscar Cliente Existente
                 <span className="ml-1 text-xs text-gray-500">(Opcional)</span>
@@ -97,6 +102,7 @@ export default function BusquedaClientes({
                     }}
                     onFocus={() => setMostrarResultados(true)}
                     placeholder="Buscar por nombre, email o documento..."
+                    aria-label="Campo búsqueda clientes"
                     className="block w-full rounded-lg border border-gray-300 py-3 pl-10 pr-10 text-sm shadow-sm transition-colors focus:border-[#7a0202] focus:outline-none focus:ring-2 focus:ring-[#7a0202]/20"
                 />
 
@@ -113,7 +119,11 @@ export default function BusquedaClientes({
 
             {/* Resultados de búsqueda */}
             {mostrarResultados && busqueda && (
-                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg">
+                <div
+                    role="listbox"
+                    aria-label="Resultados de búsqueda"
+                    className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg"
+                >
                     {cargando ? (
                         <div className="px-4 py-3 text-sm text-gray-500">
                             Cargando clientes...
@@ -127,6 +137,8 @@ export default function BusquedaClientes({
                             {filtrados.map((cliente) => (
                                 <li
                                     key={`${cliente.tipo_usuario}-${cliente.id}`}
+                                    role="option"
+                                    aria-selected={false}
                                 >
                                     <button
                                         type="button"

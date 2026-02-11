@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
-export default function useTarifasSelector({ tarifas = [], seleccion = {}, onChange }) {
+export default function useTarifasSelector({
+    tarifas = [],
+    seleccion = {},
+    onChange,
+}) {
     const esDesayuno = (t) => {
         const nombre = String(t?.nombre || '').toLowerCase();
         const slug = String(t?.slug || '').toLowerCase();
@@ -26,9 +30,11 @@ export default function useTarifasSelector({ tarifas = [], seleccion = {}, onCha
         }
 
         if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('tarifasLista', { detail: tarifas }));
+            window.dispatchEvent(
+                new CustomEvent('tarifasLista', { detail: tarifas }),
+            );
         }
-    }, [tarifas, onChange]);
+    }, [tarifas, onChange, seleccion]);
 
     // Auto-seleccionar tarifas gratuitas (valor === 0) para que estén incluidas aunque no se muestren
     useEffect(() => {
@@ -50,7 +56,7 @@ export default function useTarifasSelector({ tarifas = [], seleccion = {}, onCha
         if (necesitaUpdate) {
             onChange(next);
         }
-    }, [tarifas, onChange]);
+    }, [tarifas, onChange, seleccion]);
 
     function toggleTarifa(id) {
         const tarifa = tarifas.find((t) => t.id === id);

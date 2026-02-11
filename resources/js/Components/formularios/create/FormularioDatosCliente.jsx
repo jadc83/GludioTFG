@@ -12,7 +12,13 @@ export default function FormularioDatosCliente({
     formId = 'form-datos-cliente',
 }) {
     return (
-        <form id={formId} onSubmit={onNext} className="flex h-full flex-col p-2 text-sm">
+        <form
+            id={formId}
+            onSubmit={onNext}
+            role="form"
+            aria-label="Datos del cliente"
+            className="flex h-full flex-col p-2 text-sm"
+        >
             <div className="divider text-xs uppercase opacity-50">
                 Datos de la Reserva
             </div>
@@ -78,7 +84,11 @@ export default function FormularioDatosCliente({
                     />
                 </div>
 
-                <div className="mt-2 text-xs text-gray-700">
+                <div
+                    className="mt-2 text-xs text-gray-700"
+                    role="region"
+                    aria-label="Aviso legal sobre datos"
+                >
                     <span>
                         Por ley, este establecimiento está obligado a conservar
                         los datos de identidad de los huéspedes (nombre,
@@ -125,6 +135,7 @@ export default function FormularioDatosCliente({
             {!hideNextButton && (
                 <div className="flex justify-end pt-2">
                     <PrimaryButton
+                        aria-label="Siguiente paso - datos cliente"
                         disabled={
                             !form.name ||
                             !form.numero_documento ||
@@ -132,7 +143,10 @@ export default function FormularioDatosCliente({
                         }
                     >
                         Siguiente Paso{' '}
-                        <ArrowRightIcon className="ml-2 h-4 w-4" />
+                        <ArrowRightIcon
+                            className="ml-2 h-4 w-4"
+                            aria-hidden="true"
+                        />
                     </PrimaryButton>
                 </div>
             )}

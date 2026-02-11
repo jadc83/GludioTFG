@@ -4,9 +4,9 @@ import InputLabel from '@/Components/InputLabel';
 import Campo from '@/Components/reservas/utilidades/Campo';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { limpiarFormulario } from '@/hooks/useFormHelpers';
+import { t } from '@/i18n';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { t } from '@/i18n';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -50,7 +50,10 @@ export default function Login({ status, canResetPassword }) {
                 <form onSubmit={submit} className="space-y-3.5">
                     {/* Email */}
                     <div>
-                        <InputLabel htmlFor="email" value={t('auth.email_label')} />
+                        <InputLabel
+                            htmlFor="email"
+                            value={t('auth.email_label')}
+                        />
                         <div className="relative mt-1">
                             <EnvelopeIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Campo
@@ -75,7 +78,10 @@ export default function Login({ status, canResetPassword }) {
 
                     {/* Password */}
                     <div>
-                        <InputLabel htmlFor="password" value={t('auth.password_label')} />
+                        <InputLabel
+                            htmlFor="password"
+                            value={t('auth.password_label')}
+                        />
                         <div className="relative mt-1">
                             <LockClosedIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Campo
@@ -100,12 +106,12 @@ export default function Login({ status, canResetPassword }) {
                     {/* Remember me & Forgot password */}
                     <div className="flex items-center justify-between text-xs">
                         {canResetPassword && (
-                                <Link
-                                    href={route('password.request')}
-                                    className="font-medium text-[#7a0202] transition hover:text-[#920303]"
-                                >
-                                    {t('auth.forgot_password')}
-                                </Link>
+                            <Link
+                                href={route('password.request')}
+                                className="font-medium text-[#7a0202] transition hover:text-[#920303]"
+                            >
+                                {t('auth.forgot_password')}
+                            </Link>
                         )}
                         <label className="flex items-center">
                             <Checkbox
@@ -116,7 +122,9 @@ export default function Login({ status, canResetPassword }) {
                                 }
                                 className="rounded border-[#E2E0DC] text-[#7a0202] focus:ring-[#7a0202]"
                             />
-                            <span className="ms-1.5">{t('auth.remember_me')}</span>
+                            <span className="ms-1.5">
+                                {t('auth.remember_me')}
+                            </span>
                         </label>
                     </div>
 
@@ -175,7 +183,7 @@ export default function Login({ status, canResetPassword }) {
                     <div className="flex items-center justify-center gap-2 text-xs">
                         <span className="inline-flex items-center gap-0.5">
                             <span className="text-[#7a0202]">✓</span>
-                                {t('auth.trust_secure')}
+                            {t('auth.trust_secure')}
                         </span>
                         <span className="text-gray-300">•</span>
                         <span className="inline-flex items-center gap-0.5">

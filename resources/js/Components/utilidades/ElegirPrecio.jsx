@@ -1,6 +1,6 @@
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
 import axios from 'axios';
+import { useState } from 'react';
 
 export default function ElegirPrecio({ tiposHabitacion = [] }) {
     const [tipos, setTipos] = useState(tiposHabitacion);
@@ -27,8 +27,10 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
 
     const guardarCambios = async (id) => {
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const { data } = await axios.put(`/api/tipos-habitacion/${id}`, formData, {
+            const csrf = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content');
+            await axios.put(`/api/tipos-habitacion/${id}`, formData, {
                 headers: { 'X-CSRF-Token': csrf },
             });
 
@@ -50,7 +52,9 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
             <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 {tipos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 text-center">
-                        <p className="text-sm text-gray-400">No hay tipos registrados.</p>
+                        <p className="text-sm text-gray-400">
+                            No hay tipos registrados.
+                        </p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -114,7 +118,9 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                     <input
                                                         type="number"
                                                         name="capacidad"
-                                                        value={formData.capacidad}
+                                                        value={
+                                                            formData.capacidad
+                                                        }
                                                         onChange={handleChange}
                                                         className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
                                                     />
@@ -126,7 +132,9 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                     <input
                                                         type="number"
                                                         name="precio_base"
-                                                        value={formData.precio_base}
+                                                        value={
+                                                            formData.precio_base
+                                                        }
                                                         onChange={handleChange}
                                                         step="0.01"
                                                         className="w-32 rounded border border-gray-300 px-2 py-1 text-sm"
@@ -138,7 +146,9 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                 >
                                                     <button
                                                         onClick={() =>
-                                                            guardarCambios(tipo.id)
+                                                            guardarCambios(
+                                                                tipo.id,
+                                                            )
                                                         }
                                                         className="inline-flex items-center gap-1 rounded bg-green-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-600"
                                                     >
@@ -146,7 +156,9 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                         Guardar
                                                     </button>
                                                     <button
-                                                        onClick={cancelarEdicion}
+                                                        onClick={
+                                                            cancelarEdicion
+                                                        }
                                                         className="inline-flex items-center gap-1 rounded bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600"
                                                     >
                                                         <XMarkIcon className="h-4 w-4" />

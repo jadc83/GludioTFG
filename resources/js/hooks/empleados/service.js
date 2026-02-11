@@ -13,7 +13,9 @@ export async function fetchEmpleados(params = {}, { signal } = {}) {
         });
         return data;
     } catch (err) {
-        throw new Error(err?.response?.data || err?.message || 'Error cargando empleados');
+        throw new Error(
+            err?.response?.data || err?.message || 'Error cargando empleados',
+        );
     }
 }
 
@@ -25,7 +27,9 @@ export async function fetchEmpleado(id, { signal } = {}) {
         });
         return data;
     } catch (err) {
-        throw new Error(err?.response?.data || err?.message || 'Error cargando empleado');
+        throw new Error(
+            err?.response?.data || err?.message || 'Error cargando empleado',
+        );
     }
 }
 
@@ -37,7 +41,9 @@ export async function crearEmpleado(payload, { signal } = {}) {
         });
         return data;
     } catch (err) {
-        throw new Error(err?.response?.data || err?.message || 'Error creando empleado');
+        throw new Error(
+            err?.response?.data || err?.message || 'Error creando empleado',
+        );
     }
 }
 
@@ -49,7 +55,11 @@ export async function actualizarEmpleado(id, payload, { signal } = {}) {
         });
         return data;
     } catch (err) {
-        throw new Error(err?.response?.data || err?.message || 'Error actualizando empleado');
+        throw new Error(
+            err?.response?.data ||
+                err?.message ||
+                'Error actualizando empleado',
+        );
     }
 }
 
@@ -61,6 +71,8 @@ export async function eliminarEmpleado(id, { signal } = {}) {
         });
         return data;
     } catch (err) {
-        throw new Error(err?.response?.data || err?.message || 'Error eliminando empleado');
+        throw new Error(
+            err?.response?.data || err?.message || 'Error eliminando empleado',
+        );
     }
 }

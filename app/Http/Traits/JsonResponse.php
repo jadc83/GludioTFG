@@ -37,36 +37,4 @@ trait JsonResponse
         ), $status);
     }
 
-    /**
-     * Respuesta JSON de error con detalles
-     * Útil para mostrar errores de validación o problemas específicos
-     *
-     * @param string $message Mensaje principal
-     * @param array $details Detalles del error
-     * @param int $status Código HTTP (default: 400)
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function errorWithDetails(string $message, array $details, int $status = 400)
-    {
-        return response()->json([
-            'success' => false,
-            'error' => $message,
-            'details' => $details
-        ], $status);
-    }
-
-    /**
-     * Respuesta JSON para errores de validación
-     *
-     * @param array $errors Array de errores por campo
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function validationError(array $errors)
-    {
-        return response()->json([
-            'success' => false,
-            'error' => 'Validation failed',
-            'validation_errors' => $errors
-        ], 422);
-    }
 }

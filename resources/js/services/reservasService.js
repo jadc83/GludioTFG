@@ -4,9 +4,12 @@ export async function buscarReserva(localizador) {
     return api.buscarReserva(localizador);
 }
 
-export async function modificarEstancia(localizador, payload) {
+export async function modificarEstancia() {
     // Endpoint removed server-side. Return controlled error to avoid backend calls.
-    throw { status: 410, error: 'La funcionalidad de modificación de estancia ha sido eliminada' };
+    throw {
+        status: 410,
+        error: 'La funcionalidad de modificación de estancia ha sido eliminada',
+    };
 }
 
 export async function previewModificarEstancia(localizador, params) {

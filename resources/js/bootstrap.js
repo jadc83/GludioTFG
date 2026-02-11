@@ -10,7 +10,6 @@ window.axios.defaults.withCredentials = true;
 window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
 window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
-
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 

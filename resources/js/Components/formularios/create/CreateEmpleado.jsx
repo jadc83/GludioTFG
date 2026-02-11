@@ -9,7 +9,7 @@ import {
     UserIcon,
     XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const INITIAL_DATA = {
     name: '',
@@ -35,7 +35,16 @@ export default function CreateEmpleado({ iconOnly = false }) {
     useEffect(() => {
         fetch('/api/roles', { credentials: 'same-origin' })
             .then((r) => r.json())
-            .then((data) => setRoles((data || []).filter((r) => !['admin','user'].includes((r||'').toString().trim().toLowerCase()))))
+            .then((data) =>
+                setRoles(
+                    (data || []).filter(
+                        (r) =>
+                            !['admin', 'user'].includes(
+                                (r || '').toString().trim().toLowerCase(),
+                            ),
+                    ),
+                ),
+            )
             .catch(() => setRoles([]));
 
         fetch('/api/departamentos', { credentials: 'same-origin' })
@@ -151,9 +160,7 @@ export default function CreateEmpleado({ iconOnly = false }) {
                         </button>
                         <button
                             type="button"
-                            className={getTabClass('laboral', [
-                                'departamento',
-                            ])}
+                            className={getTabClass('laboral', ['departamento'])}
                             onClick={() => setTabActiva('laboral')}
                         >
                             <IdentificationIcon className="h-4 w-4" /> Laboral
@@ -255,7 +262,7 @@ export default function CreateEmpleado({ iconOnly = false }) {
                             {/* Pestaña: Información Laboral */}
                             {tabActiva === 'laboral' && (
                                 <div className="animate-in fade-in space-y-6 duration-300">
-                                            <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <Campo
                                             id="departamento_id"
                                             name="departamento_id"
@@ -265,10 +272,18 @@ export default function CreateEmpleado({ iconOnly = false }) {
                                             onChange={cambiar}
                                             error={errores.departamento_id}
                                         >
-                                            <option value="">Seleccionar departamento</option>
-                                            {Array.isArray(departamentos) && departamentos.map((d) => (
-                                                <option key={d.id} value={d.id}>{d.name.toUpperCase()}</option>
-                                            ))}
+                                            <option value="">
+                                                Seleccionar departamento
+                                            </option>
+                                            {Array.isArray(departamentos) &&
+                                                departamentos.map((d) => (
+                                                    <option
+                                                        key={d.id}
+                                                        value={d.id}
+                                                    >
+                                                        {d.name.toUpperCase()}
+                                                    </option>
+                                                ))}
                                         </Campo>
                                         <Campo
                                             id="role"
@@ -278,13 +293,17 @@ export default function CreateEmpleado({ iconOnly = false }) {
                                             onChange={cambiar}
                                             error={errores.role}
                                         >
-                                            <option value="">Seleccionar rol</option>
-                                            {Array.isArray(roles) && roles.map((r) => (
-                                                <option key={r} value={r}>{r.toUpperCase()}</option>
-                                            ))}
+                                            <option value="">
+                                                Seleccionar rol
+                                            </option>
+                                            {Array.isArray(roles) &&
+                                                roles.map((r) => (
+                                                    <option key={r} value={r}>
+                                                        {r.toUpperCase()}
+                                                    </option>
+                                                ))}
                                         </Campo>
                                     </div>
-
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <Campo

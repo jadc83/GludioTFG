@@ -46,7 +46,11 @@ export default function CookieBanner() {
     if (isLoading || !showBanner) return null;
 
     return (
-        <div className="border-top-accent-1366 fixed bottom-0 left-0 right-0 z-50 border-t-4 bg-gris shadow-2xl">
+        <aside
+            role="region"
+            aria-label="Aviso de cookies"
+            className="border-top-accent-1366 fixed bottom-0 left-0 right-0 z-50 border-t-4 bg-gris shadow-2xl"
+        >
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
                     {/* Contenido */}
@@ -88,6 +92,6 @@ export default function CookieBanner() {
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
     );
 }

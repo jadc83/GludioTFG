@@ -5,7 +5,9 @@ const LOCALES = { en, es };
 
 function readCookie(name) {
     try {
-        const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]+)'));
+        const m = document.cookie.match(
+            new RegExp('(?:^|; )' + name + '=([^;]+)'),
+        );
         return m ? decodeURIComponent(m[1]) : null;
     } catch (e) {
         return null;
@@ -26,7 +28,12 @@ function detectLocale() {
     if (typeof window === 'undefined') return 'es';
     const cookie = readCookie('app_locale');
     if (cookie) return cookie;
-    if (window.location && window.location.pathname && window.location.pathname.startsWith('/en')) return 'en';
+    if (
+        window.location &&
+        window.location.pathname &&
+        window.location.pathname.startsWith('/en')
+    )
+        return 'en';
     return 'es';
 }
 
@@ -47,7 +54,9 @@ export function setLocale(locale, { persist = true, reload = false } = {}) {
 }
 
 function lookup(obj, path) {
-    return path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj);
+    return path
+        .split('.')
+        .reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj);
 }
 
 function interpolate(str, params = {}) {
@@ -63,7 +72,10 @@ function interpolate(str, params = {}) {
 
 export function t(key, maybe = null) {
     // `maybe` can be a fallback string or an object with params for interpolation
-    const params = maybe && typeof maybe === 'object' && !Array.isArray(maybe) ? maybe : null;
+    const params =
+        maybe && typeof maybe === 'object' && !Array.isArray(maybe)
+            ? maybe
+            : null;
     const fallback = params ? null : maybe;
 
     const localeObj = LOCALES[currentLocale] || LOCALES.es;
@@ -75,7 +87,7 @@ export function t(key, maybe = null) {
     return fallback || key;
 }
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 export function useTranslation() {
     const [locale, setLoc] = useState(currentLocale);
     useEffect(() => {

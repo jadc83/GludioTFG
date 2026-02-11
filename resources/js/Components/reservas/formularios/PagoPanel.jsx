@@ -1,10 +1,7 @@
-import React from 'react';
-import Campo from '@/Components/reservas/utilidades/Campo';
 import FormularioPago from '@/Components/formularios/create/FormularioPago';
-import { CreditCardIcon } from '@heroicons/react/24/outline';
-import { router } from '@inertiajs/react';
-import { emitToast } from '@/utils/toast';
+import Campo from '@/Components/reservas/utilidades/Campo';
 import { t } from '@/i18n';
+import { emitToast } from '@/utils/toast';
 
 export default function PagoPanel({
     formulario,
@@ -56,9 +53,13 @@ export default function PagoPanel({
                     error={errores.metodo_pago}
                     required
                 >
-                    <option value="recepcion">{t('payment.pay_at_reception')}</option>
+                    <option value="recepcion">
+                        {t('payment.pay_at_reception')}
+                    </option>
                     <option value="tarjeta">{t('payment.credit_card')}</option>
-                    <option value="transferencia">{t('payment.bank_transfer')}</option>
+                    <option value="transferencia">
+                        {t('payment.bank_transfer')}
+                    </option>
                 </Campo>
             </div>
 
@@ -96,7 +97,15 @@ export default function PagoPanel({
                         mostrarAceptacion={true}
                         onCambioAceptaTerminos={setAceptaTerminos}
                         onPagoExitoso={onPagoExitoso}
-                        onError={(err) => emitToast(t('toasts.payment_error') + (err?.message ? ': ' + (err?.message || '') : ''), 'error')}
+                        onError={(err) =>
+                            emitToast(
+                                t('toasts.payment_error') +
+                                    (err?.message
+                                        ? ': ' + (err?.message || '')
+                                        : ''),
+                                'error',
+                            )
+                        }
                     />
                 </div>
             )}
