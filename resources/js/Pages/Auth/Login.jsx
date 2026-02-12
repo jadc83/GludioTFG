@@ -7,6 +7,7 @@ import { limpiarFormulario } from '@/hooks/useFormHelpers';
 import { t } from '@/i18n';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -16,8 +17,40 @@ export default function Login({ status, canResetPassword }) {
             remember: false,
         });
 
+    // Cargar credenciales guardadas (email + password + remember) desde localStorage
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('datoslogin');
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed?.email) setData('email', parsed.email);
+            if (parsed?.password) setData('password', parsed.password);
+            if (parsed?.remember) setData('remember', true);
+        } catch (e) {
+            // ignorar errores de parseo o entorno sin localStorage
+        }
+    }, [setData]);
+
     const submit = (e) => {
         e.preventDefault();
+
+        // Guardar en localStorage (email, password y flag remember) si el usuario lo pide
+        try {
+            if (data.remember) {
+                localStorage.setItem(
+                    'datoslogin',
+                    JSON.stringify({
+                        email: data.email,
+                        password: data.password,
+                        remember: true,
+                    }),
+                );
+            } else {
+                localStorage.removeItem('datoslogin');
+            }
+        } catch (e) {
+            // silenciar errores de localStorage
+        }
 
         post(route('login'), {
             onFinish: () => limpiarFormulario(reset, clearErrors, 'password'),
