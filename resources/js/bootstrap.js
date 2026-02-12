@@ -53,3 +53,36 @@ window.Echo = new Echo({
         },
     },
 });
+
+// Helper: obtener token CSRF (meta tag o cookie XSRF-TOKEN)
+window.getCsrfToken = function () {
+    if (typeof document === 'undefined') return '';
+    const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    if (meta) return meta;
+    const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+    if (!cookie) return '';
+    try {
+        return decodeURIComponent(cookie.split('=')[1] || '');
+    } catch (e) {
+        return '';
+    }
+};
+
+// Asegurar que axios también tenga el header X-CSRF-TOKEN (por si no hay cookie pero sí meta)
+const _csrf = window.getCsrfToken();
+if (_csrf) {
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = _csrf;
+}
+
+// Wrapper de fetch que inyecta CSRF y cabeceras por defecto
+window.fetchWithCsrf = async function (url, options = {}) {
+    const opts = Object.assign({ credentials: 'same-origin', headers: {} }, options || {});
+    const headers = Object.assign({}, opts.headers || {});
+    if (!headers['X-CSRF-TOKEN'] && !headers['x-csrf-token']) {
+        const t = window.getCsrfToken();
+        if (t) headers['X-CSRF-TOKEN'] = t;
+    }
+    // cabeceras por defecto para peticiones internas
+    opts.headers = Object.assign({ 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' }, headers);
+    return fetch(url, opts);
+};

@@ -92,17 +92,46 @@ class HabitacionController extends Controller
      */
     public function update(UpdateHabitacionRequest $request, Habitacion $habitacion)
     {
-        return DB::transaction(function () use ($request, $habitacion) {
-            $validado = $request->validated();
-            $habitacion->update($validado);
+        try {
+            return DB::transaction(function () use ($request, $habitacion) {
+                $validado = $request->validated();
+                $habitacion->update($validado);
 
-            $this->eliminarFotos($habitacion, $request->input('fotos_eliminar', []));
-            $this->agregarFotos($habitacion, $request->file('fotos'));
+                $this->eliminarFotos($habitacion, $request->input('fotos_eliminar', []));
+                $this->agregarFotos($habitacion, $request->file('fotos'));
 
-            return $request->header('X-Inertia')
-                ? redirect()->back()
-                : redirect()->route('panel');
-        });
+                // Only return plain JSON for pure AJAX/JSON requests (not Inertia visits)
+                if (($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) && ! $request->header('X-Inertia')) {
+                        // Refresh the model to ensure latest state
+                        $habitacion->refresh();
+                        // Broadcast update to connected clients so UI can refresh in real-time
+                        try {
+                            event(new \App\Events\HabitacionUpdated($habitacion));
+                        } catch (\Throwable $e) {
+                            Log::error('Failed to broadcast HabitacionUpdated', ['error' => $e->getMessage()]);
+                        }
+                        return response()->json(['success' => true, 'habitacion' => $habitacion]);
+                }
+
+                // If this is an Inertia request, respond with an Inertia-compatible
+                // redirect so the client does not receive plain JSON.
+                if ($request->header('X-Inertia')) {
+                    return \Inertia\Inertia::location(route('panel', ['tab' => 'habitaciones']));
+                }
+
+                return redirect()->route('panel');
+            });
+        } catch (\Throwable $e) {
+            Log::error('HabitacionController::update exception', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
+            if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) {
+                $code = $e->getCode() ?: 500;
+                $msg = $e->getMessage() ?: 'Error al actualizar habitación. Revisa los logs.';
+                return response()->json(['error' => $msg], $code);
+            }
+
+            return redirect()->back()->with('error', 'Error al actualizar habitación. Revisa los logs.');
+        }
     }
 
     /**

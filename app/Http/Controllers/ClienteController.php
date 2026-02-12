@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
@@ -96,8 +97,14 @@ class ClienteController extends Controller
 
         // Devolver JSON solo para peticiones API/JSON puras. No devolver JSON para peticiones Inertia
         // (Inertia espera una respuesta con cabeceras especiales). Si es Inertia, mantener la redirección.
-        if (($request->ajax() || $request->wantsJson()) && !$request->header('X-Inertia')) {
+        // Return JSON only for pure AJAX/JSON requests (not Inertia visits)
+        if (($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) && ! $request->header('X-Inertia')) {
             return response()->json(['success' => true, 'cliente' => $cliente]);
+        }
+
+        // If the request is an Inertia request, redirect to the panel with the clientes tab
+        if ($request->header('X-Inertia')) {
+            return Inertia::location(route('panel', ['tab' => 'clientes']));
         }
 
         return redirect()->route('panel');

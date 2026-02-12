@@ -28,6 +28,11 @@ Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
+// Canal privado para actualizaciones de habitaciones (permite usuarios autenticados)
+Broadcast::channel('habitaciones', function ($user) {
+    return $user !== null;
+});
+
 // Puedes añadir reglas más estrictas, p.e. usando una policy:
 // Broadcast::channel('reservas.{id}', function ($user, $id) {
 //     return $user->can('view', App\Models\Reserva::find($id));

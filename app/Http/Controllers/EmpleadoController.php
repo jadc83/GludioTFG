@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateEmpleadoRequest;
 use App\Models\Empleado;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -60,7 +61,7 @@ class EmpleadoController extends Controller
     return redirect()->route('empleados.index')->with('status', 'Empleado creado correctamente.');
 }
 
-    public function update(UpdateEmpleadoRequest $request, Empleado $empleado): RedirectResponse
+    public function update(UpdateEmpleadoRequest $request, Empleado $empleado): Response|RedirectResponse
     {
         $user = $empleado->user;
         $user->update($request->only(['name','email','tipo_documento','numero_documento','nacionalidad','direccion','ciudad','codigo_postal','telefono']));
@@ -70,6 +71,14 @@ class EmpleadoController extends Controller
         }
 
         $empleado->update($request->only(['departamento_id']));
+
+        if (($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) && ! $request->header('X-Inertia')) {
+            return response()->json(['success' => true, 'empleado' => $empleado]);
+        }
+
+        if ($request->header('X-Inertia')) {
+            return Inertia::location(route('panel', ['tab' => 'empleados']));
+        }
 
         return redirect()->route('empleados.index')->with('status', 'Empleado actualizado correctamente.');
     }

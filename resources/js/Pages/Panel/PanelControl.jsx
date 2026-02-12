@@ -108,7 +108,7 @@ function TabContenido({
                         </div>
                     }
                 >
-                    <TabEstadisticas />
+                    <TabEstadisticas reservas={reservas} />
                 </Suspense>
             );
         default:
@@ -130,22 +130,26 @@ export default function PanelControl({
     cupones = {},
     tiposHabitacion = [],
 }) {
-    const [tabActiva, setTabActiva] = useState('reservas');
-
-    // Forzar siempre la pestaña 'reservas' al entrar al panel
-    useEffect(() => {
-        setTabActiva('reservas');
+    const [tabActiva, setTabActiva] = useState(() => {
         try {
-            localStorage.removeItem('panelControlTab');
+            const params = new URLSearchParams(window.location.search);
+            const fromUrl = params.get('tab');
+            if (fromUrl) return fromUrl;
+            const stored = localStorage.getItem('panelControlTab');
+            return stored || 'reservas';
         } catch (e) {
-            // silenciar errores en entornos sin localStorage
+            return 'reservas';
         }
-    }, []);
+    });
 
     // Guardar tab en localStorage cuando cambia
     const cambiarTab = (tabId) => {
         setTabActiva(tabId);
-        localStorage.setItem('panelControlTab', tabId);
+        try {
+            localStorage.setItem('panelControlTab', tabId);
+        } catch (e) {
+            // silenciar errores en entornos sin localStorage
+        }
     };
 
     return (

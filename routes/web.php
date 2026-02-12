@@ -68,11 +68,18 @@ Route::get('/api/tareas/completed', [\App\Http\Controllers\TareaController::clas
 
 // API: habitaciones en limpieza (excluye habitaciones con tareas activas)
 Route::get('/api/habitaciones/limpieza', function (Illuminate\Http\Request $request) {
-    $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
-        ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
-        ->with('fotos')
-        ->limit(200)
-        ->get();
+    // by default exclude habitaciones that have active tareas (pendiente|en_progreso)
+    // but allow overriding with ?include_assigned=1 for debugging or alternative UI needs
+    $includeAssigned = (bool) $request->query('include_assigned');
+
+    $query = \App\Models\Habitacion::where('estado', 'limpieza');
+    if (! $includeAssigned) {
+        $query = $query->whereDoesntHave('tareas', function($q){
+            $q->whereIn('status', ['pendiente', 'en_progreso']);
+        });
+    }
+
+    $habitaciones = $query->with('fotos')->limit(200)->get();
     $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
     return response()->json(['habitaciones' => $action->handle($habitaciones)]);
 })->middleware('auth');
@@ -161,5 +168,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('cupones', \App\Http\Controllers\CuponController::class)->parameters(['cupones' => 'cupon']);
     Route::post('cupones/{cupon}/toggle', [\App\Http\Controllers\CuponController::class, 'toggle'])->name('cupones.toggle');
 });
+
+// Nota: la ruta de depuración para broadcasts fue eliminada.
 
 require __DIR__ . '/auth.php';

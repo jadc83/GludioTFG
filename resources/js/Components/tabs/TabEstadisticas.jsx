@@ -2,12 +2,13 @@ import * as api from '@/api/estadisticas';
 import IndexEstadisticas from '@/Components/indexes/IndexEstadisticas';
 import { useEffect, useState } from 'react';
 
-export default function TabEstadisticas() {
+export default function TabEstadisticas({ reservas = [] }) {
     const [cargando, setCargando] = useState(false);
     const [datos, setDatos] = useState(null);
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
     const [mostrarGrafico, setMostrarGrafico] = useState(false);
+    const [finanzas, setFinanzas] = useState({ ingresos: 0, reembolsos: 0, neto: 0 });
 
     useEffect(() => {
         const today = new Date().toISOString().slice(0, 10);
@@ -15,6 +16,45 @@ export default function TabEstadisticas() {
         setFechaHasta(today);
         obtenerDatos(today, today, false);
     }, []);
+
+    // Recalcular finanzas cuando cambian las reservas o el rango de fechas
+    useEffect(() => {
+        try {
+            const desde = fechaDesde ? new Date(fechaDesde) : null;
+            const hasta = fechaHasta ? new Date(fechaHasta) : null;
+
+            // Calcular ingresos: sumar pagos con estado 'completado' cuyo created_at esté en rango
+            let ingresos = 0;
+            let reembolsos = 0;
+
+            reservas.forEach((r) => {
+                // Sumar reembolsos asociados a la reserva (campo precomputado)
+                const reservaCreated = r.created_at ? new Date(r.created_at) : null;
+                const inRangeReserva = (!desde || (reservaCreated && reservaCreated >= desde)) && (!hasta || (reservaCreated && reservaCreated <= new Date(hasta.getTime() + 24*60*60*1000 - 1)));
+                // Para reembolsos usamos el created_at de la reserva como aproximación
+                if (inRangeReserva && r.reembolsos_total) {
+                    reembolsos += parseFloat(r.reembolsos_total) || 0;
+                }
+
+                // Pagos: iterar pagos y filtrar por fecha y estado
+                if (Array.isArray(r.pagos)) {
+                    r.pagos.forEach((p) => {
+                        const pagoDate = p.created_at ? new Date(p.created_at) : null;
+                        const inRangePago = (!desde || (pagoDate && pagoDate >= desde)) && (!hasta || (pagoDate && pagoDate <= new Date(hasta.getTime() + 24*60*60*1000 - 1)));
+                        if (inRangePago && (p.estado === 'completado' || p.estado === 'paid' || p.estado === 'completado')) {
+                            ingresos += parseFloat(p.monto) || 0;
+                        }
+                    });
+                }
+            });
+
+            const neto = ingresos - reembolsos;
+            setFinanzas({ ingresos: Number(ingresos.toFixed(2)), reembolsos: Number(reembolsos.toFixed(2)), neto: Number(neto.toFixed(2)) });
+        } catch (e) {
+            console.debug('Error calculando finanzas', e);
+            setFinanzas({ ingresos: 0, reembolsos: 0, neto: 0 });
+        }
+    }, [reservas, fechaDesde, fechaHasta]);
 
     const obtenerDatos = async (desde, hasta, activarGrafico = true) => {
         setCargando(true);
@@ -61,6 +101,7 @@ export default function TabEstadisticas() {
                 fechaHasta={fechaHasta}
                 onFechaChange={handleFechaChange}
                 onBuscar={handleBuscar}
+                finanzas={finanzas}
             />
         </div>
     );

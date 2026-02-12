@@ -76,6 +76,32 @@ class ProfileController extends Controller
                 'numero_documento' => $targetUser->numero_documento ?? null,
             ];
 
+            // Buscar encargado del mismo departamento (usuario con rol 'encargado')
+            $departamentoId = $targetUser->empleado->departamento?->id ?? null;
+            $departamentoEncargado = null;
+            if ($departamentoId) {
+                try {
+                    $enc = \App\Models\User::role('encargado')
+                        ->whereHas('empleado', function ($q) use ($departamentoId) {
+                            $q->where('departamento_id', $departamentoId);
+                        })
+                        ->with('empleado')
+                        ->first();
+                    if ($enc) {
+                        $departamentoEncargado = [
+                            'name' => $enc->name,
+                            'email' => $enc->email ?? null,
+                            'telefono' => $enc->telefono ?? null,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // no hacemos nada, solo evitamos romper la vista
+                    \Log::debug('No se pudo obtener encargado de departamento', ['error' => (string) $e]);
+                }
+            }
+
+            $empleadoData['departamento_encargado'] = $departamentoEncargado;
+
             // Cargar habitaciones en estado 'limpieza' para mostrar en el perfil de empleado
             // Excluir habitaciones que ya tienen una tarea activa (pendiente|en_progreso)
             $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')

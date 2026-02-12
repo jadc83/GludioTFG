@@ -5,6 +5,7 @@ import Paginacion from '@/Components/UI/Paginacion';
 import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { InboxIcon, PencilIcon, UsersIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
+import { Inertia } from '@inertiajs/inertia';
 
 export default function IndexHabitacion({ habitaciones = [] }) {
     const [habitacionEditar, setHabitacionEditar] = useState(null);
@@ -21,6 +22,28 @@ export default function IndexHabitacion({ habitaciones = [] }) {
     useEffect(() => {
         setPaginaActual(1);
     }, [habitaciones.length, filtros.busqueda, filtros.estado, filtros.tipo]);
+
+    // Suscripción a broadcasts para actualizar la vista en otras pestañas
+    useEffect(() => {
+        if (!window?.Echo) return;
+
+        const channel = window.Echo.private('habitaciones');
+
+        const handler = () => {
+            Inertia.reload();
+        };
+
+        channel.listen('HabitacionUpdated', handler);
+
+        return () => {
+            try {
+                channel.stopListening('HabitacionUpdated');
+                window.Echo.leave('habitaciones');
+            } catch (e) {
+                // ignorar errores en cleanup
+            }
+        };
+    }, []);
 
     const abrirEdicion = (habitacion) => {
         setHabitacionEditar(habitacion);
