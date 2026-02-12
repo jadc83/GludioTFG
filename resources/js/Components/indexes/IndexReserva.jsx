@@ -272,8 +272,8 @@ export default function IndexReserva({ reservas = [] }) {
     return (
         <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
             <HeaderPanel
-                titulo="Reservas"
-                subtitulo="Panel de control y gestión de reservas"
+                titulo="Reservas y reembolsos"
+                subtitulo="Consultas y acciones administrativas"
             />
 
             {/* Barra de filtros */}

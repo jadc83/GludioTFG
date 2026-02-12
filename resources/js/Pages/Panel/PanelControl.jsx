@@ -21,13 +21,12 @@ import {
 import React, { Suspense, useEffect, useState } from 'react';
 
 const TABS = [
-    { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
+    { id: 'reservas', label: 'Reservas y reembolsos', icon: InboxIcon },
     { id: 'clientes', label: 'Clientes', icon: UsersIcon },
+    { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
     { id: 'departamentos', label: 'Departamentos', icon: ChartBarIcon },
-    { id: 'reservas', label: 'Reservas', icon: InboxIcon },
-    { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
-
     { id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon },
+    { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
 ];
 
 // `BotonTab` was removed because it was defined but not used.
@@ -131,13 +130,15 @@ export default function PanelControl({
     cupones = {},
     tiposHabitacion = [],
 }) {
-    const [tabActiva, setTabActiva] = useState('habitaciones');
+    const [tabActiva, setTabActiva] = useState('reservas');
 
-    // Cargar tab desde localStorage al montar
+    // Forzar siempre la pestaña 'reservas' al entrar al panel
     useEffect(() => {
-        const tabGuardado = localStorage.getItem('panelControlTab');
-        if (tabGuardado && TABS.some((t) => t.id === tabGuardado)) {
-            setTabActiva(tabGuardado);
+        setTabActiva('reservas');
+        try {
+            localStorage.removeItem('panelControlTab');
+        } catch (e) {
+            // silenciar errores en entornos sin localStorage
         }
     }, []);
 
