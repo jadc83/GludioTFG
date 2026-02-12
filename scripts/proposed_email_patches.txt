@@ -1,0 +1,80 @@
+Proposed patches (show-only) - apply after your approval
+
+1) resources/views/emails/layout.blade.php
+--- before
+    <style>
+      body { margin:0; padding:0; background-color:#E2E0DC; font-family:Inter, Arial, Helvetica, sans-serif; color:#222; }
+      .container { width:100%; max-width:600px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+      .header { background:#83122A; padding:18px 24px; color:#fff; font-size:20px; font-weight:700; }
+      .content { padding:20px 24px; color:#333; }
+      .footer { background:#f7f7f7; padding:12px 24px; font-size:13px; color:#777; text-align:center; }
+      .table { width:100%; margin-bottom:12px; }
+    </style>
+--- after
+    <style>
+      body { margin:0; padding:0; background-color:#E2E0DC; font-family:Inter, Arial, Helvetica, sans-serif; color:#222; }
+      .container { width:100%; max-width:600px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+      .header { background:#83122A; padding:18px 24px; color:#fff; font-size:20px; font-weight:700; }
+      .content { padding:20px 24px; color:#333; }
+      .footer { background:#f7f7f7; padding:12px 24px; font-size:13px; color:#777; text-align:center; }
+      .table { width:100%; margin-bottom:12px; }
+
+      /* Helper classes to replace inline styles in emails (safe, minimal) */
+      .lead { margin:0 0 8px 0; font-size:16px; }
+      .muted { margin:0 0 12px 0; color:#555; }
+      .strong-label { font-weight:600; color:#444; }
+      .center-block { text-align:center; margin:18px 0; }
+      .qr-img { width:100%; max-width:260px; height:auto; border-radius:6px; border:4px solid #f5f5f5; display:block; margin:0 auto; }
+      .note-box { background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:6px; color:#333; margin-bottom:12px; }
+    </style>
+
+Rationale: add small set of classes to replace repetitive inline styles and keep email look identical.
+
+2) resources/views/emails/reserva_completada.blade.php
+--- before (snippet)
+  <p style="margin:0 0 8px 0;font-size:16px;">Estimado/a <strong>{{ optional($reserva->reservable)->name ?? 'cliente' }}</strong>,</p>
+  <p style="margin:0 0 12px 0;color:#555;">Su reserva se ha creado correctamente. A continuación los detalles:</p>
+...
+  <div style="text-align:center;margin:18px 0;">
+    <p style="margin:0 0 8px 0;font-weight:600;color:#444;">Tu código QR de reserva</p>
+    <img alt="QR Reserva {{ $reserva->localizador }}" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($reserva->localizador) }}" style="width:100%;max-width:260px;height:auto;border-radius:6px;border:4px solid #f5f5f5;display:block;margin:0 auto;" />
+  </div>
+--- after (snippet)
+  <p class="lead">Estimado/a <strong>{{ optional($reserva->reservable)->name ?? 'cliente' }}</strong>,</p>
+  <p class="muted">Su reserva se ha creado correctamente. A continuación los detalles:</p>
+...
+  <div class="center-block">
+    <p class="strong-label">Tu código QR de reserva</p>
+    <img alt="QR Reserva {{ $reserva->localizador }}" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&amp;data={{ urlencode($reserva->localizador) }}" class="qr-img">
+  </div>
+
+Rationale: replace inline styles by classes and escape & to &amp; inside URL.
+
+3) resources/views/emails/refund_request_created.blade.php (and _processed)
+--- before: multiple <p style=...> and a <div style=...> for notes and table-style rows
+--- after: replace repeated inline styles with classes: use .muted, .note-box, .strong-label; table rows already wrapped in <tbody> (done before).
+
+4) resources/views/pdf/comprobante-reserva.blade.php
+--- before: $qrUrl string used contains unescaped & and img was self-closing; title uses raw localizador
+--- after (snippet)
+@php
+  $title_loc = $reserva['localizador'] ?? $reserva_model->localizador ?? '';
+  $title_short = strlen($title_loc) > 60 ? substr($title_loc, 0, 57) . '...' : $title_loc;
+@endphp
+<title>Factura {{ $title_short }} - Hotel Gludio</title>
+...
+@php
+  $qrUrl = !empty($qr_data_uri)
+    ? $qr_data_uri
+    : (isset($reserva['localizador'])
+        ? "https://chart.googleapis.com/chart?chs=150x150&amp;cht=qr&amp;chl=" . urlencode(url('/reserva/'.$reserva['localizador']))
+        : "https://chart.googleapis.com/chart?chs=150x150&amp;cht=qr&amp;chl=" . urlencode(url('/reserva/'.$reserva_model->localizador)));
+@endphp
+
+And add to the <style> block:
+.qr-box img { width:120px; height:120px; border:1px solid #e5e7eb; padding:4px; background:#fff; }
+
+Rationale: escape ampersands in QR URL and centralize QR image style.
+
+====
+If you approve these patches, I will apply them as concrete edits (apply_patch) and then re-run the render and html-validate. Reply "apply" to proceed or "cancel" to stop.

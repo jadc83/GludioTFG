@@ -418,15 +418,19 @@ function FormularioPagoInterno({
 
                 <div className="space-y-6">
                     {mostrarAceptacion && (
-                        <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:bg-gray-50">
+                        <label
+                            onClick={(e) => e.stopPropagation()}
+                            className="group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:bg-gray-50"
+                        >
                             <input
                                 type="checkbox"
                                 checked={acepta}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
                                     setAcepta(e.target.checked);
                                     onCambioAceptaTerminos?.(e.target.checked);
                                 }}
-                                className="mt-0.5 h-5 w-5 cursor-pointer rounded border-gray-300 text-black focus:ring-black"
+                                className="mt-0.5 h-5 w-5 cursor-pointer rounded border-gray-300 text-black focus:ring-black pointer-events-auto"
                             />
                             <span className="text-[10px] font-bold uppercase leading-relaxed tracking-tight text-gray-500 transition-colors group-hover:text-gray-700">
                                 He leído y acepto los{' '}

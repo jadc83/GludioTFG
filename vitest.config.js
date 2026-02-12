@@ -11,5 +11,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./resources/js/tests/setupTests.js'],
+    // Only include test files by glob; exclude node_modules and e2e tests
+    include: [
+      'tests/**/*.test.{js,jsx,ts,tsx}',
+      'tests/**/*.spec.{js,jsx,ts,tsx}'
+    ],
+    exclude: ['node_modules/**', 'tests/e2e/**']
   },
 });

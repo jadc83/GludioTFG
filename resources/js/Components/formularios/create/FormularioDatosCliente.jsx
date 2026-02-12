@@ -15,7 +15,6 @@ export default function FormularioDatosCliente({
         <form
             id={formId}
             onSubmit={onNext}
-            role="form"
             aria-label="Datos del cliente"
             className="flex h-full flex-col p-2 text-sm"
         >

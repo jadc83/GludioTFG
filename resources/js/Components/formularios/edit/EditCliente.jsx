@@ -27,7 +27,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
         datosIniciales,
         '',
         cliente ? `/clientes/${cliente.id}` : '',
-        (page) => {
+        () => {
             onCerrar?.();
             limpiar();
             // Forzar recarga de las props que usa la vista (clientes y clientesFiltrados)
@@ -50,7 +50,7 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
         } else {
             limpiar();
         }
-    }, [cliente?.id]);
+    }, [cliente, cargarDatos, limpiar]);
 
     const handleCerrar = () => {
         onCerrar?.();
@@ -99,7 +99,6 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
                 {cliente && (
                     <form
                         onSubmit={guardar}
-                        role="form"
                         aria-label="Formulario editar cliente"
                         className="flex min-h-0 flex-1 flex-col bg-white"
                     >

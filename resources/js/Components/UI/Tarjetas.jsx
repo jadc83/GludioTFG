@@ -79,16 +79,12 @@ export default function Tarjetas() {
             aria-label="Tarjetas informativas"
             className="flex w-full justify-center bg-gris px-6 pb-6 pt-4"
         >
-            <div
-                role="list"
-                className="grid max-w-[72rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-            >
+            <div className="grid max-w-[72rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {tarjetas.map(({ color, icon }, idx) => {
                     const titleId = `card-title-${idx}`;
                     return (
                         <article
                             key={idx}
-                            role="listitem"
                             aria-labelledby={titleId}
                             className="mx-1 flex max-w-[18rem] flex-col items-center rounded-xl py-4"
                         >

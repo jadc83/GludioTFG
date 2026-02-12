@@ -90,9 +90,9 @@ export default function CardConfirmForm({
 
     return (
         <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">
+            <div className="block text-sm font-medium text-gray-700">
                 Datos de tarjeta
-            </label>
+            </div>
             <div className="mt-2 rounded-md border border-gray-200 p-3">
                 <CardElement options={{ hidePostalCode: true }} />
             </div>

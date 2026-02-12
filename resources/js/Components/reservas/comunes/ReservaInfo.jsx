@@ -334,39 +334,52 @@ export default function ReservaInfo({
 
                         {/* Acciones principales */}
                         <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-6">
-                            <a
-                                href={
-                                    reserva?.localizador
-                                        ? route(
-                                              'reservas.descargar-comprobante',
-                                              {
-                                                  localizador:
-                                                      reserva.localizador,
-                                              },
-                                          )
-                                        : '#'
-                                }
-                                className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gray-900"
-                                onClick={(e) => {
-                                    if (!reserva?.localizador)
-                                        e.preventDefault();
-                                }}
-                            >
-                                <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                            {reserva?.localizador ? (
+                                <a
+                                    href={route(
+                                        'reservas.descargar-comprobante',
+                                        {
+                                            localizador: reserva.localizador,
+                                        },
+                                    )}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gray-900"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                    />
-                                </svg>
-                                {t('edit_reserva.download_pdf')}
-                            </a>
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                        />
+                                    </svg>
+                                    {t('edit_reserva.download_pdf')}
+                                </a>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-5 py-2.5 text-sm font-bold text-gray-400"
+                                >
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                        />
+                                    </svg>
+                                    {t('edit_reserva.download_pdf')}
+                                </button>
+                            )}
 
                             <div className="flex gap-2">
                                 {!isCheckedIn && !isCheckedOut && (
@@ -427,23 +440,18 @@ export default function ReservaInfo({
                     <div className="col-span-12 border-l border-gray-100 bg-gray-50/30 p-6 lg:col-span-4">
                         <div className="flex flex-col items-center">
                             <div className="mb-6 flex flex-col items-center rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
-                                <img
-                                    src={qrUrlSmall}
-                                    alt="QR de acceso"
-                                    className="h-40 w-40 cursor-pointer"
-                                    role="button"
-                                    tabIndex={0}
+                                <button
+                                    type="button"
                                     onClick={() => setQrOpen(true)}
-                                    onKeyDown={(e) => {
-                                        if (
-                                            e.key === 'Enter' ||
-                                            e.key === ' '
-                                        ) {
-                                            e.preventDefault();
-                                            setQrOpen(true);
-                                        }
-                                    }}
-                                />
+                                    className="h-40 w-40 p-0"
+                                    aria-label="Abrir QR"
+                                >
+                                    <img
+                                        src={qrUrlSmall}
+                                        alt="QR de acceso"
+                                        className="h-40 w-40 object-cover"
+                                    />
+                                </button>
                                 <p className="mt-2 text-center text-[10px] font-bold uppercase tracking-tighter text-gray-400">
                                     {t('modal.gallery.quick_pass')}
                                 </p>
@@ -541,23 +549,14 @@ export default function ReservaInfo({
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
                     role="dialog"
                     aria-modal="true"
-                    onClick={() => setQrOpen(false)}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setQrOpen(false);
-                        }
-                        if (e.key === 'Escape') {
-                            e.preventDefault();
-                            setQrOpen(false);
-                        }
-                    }}
                 >
-                    <div
-                        className="mx-4 w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <button
+                        type="button"
+                        aria-label="Cerrar"
+                        className="absolute inset-0 h-full w-full bg-transparent p-0"
+                        onClick={() => setQrOpen(false)}
+                    />
+                    <div className="mx-4 w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
                         <div className="flex items-center justify-between bg-[#7a0202] p-4">
                             <h4 className="font-bold text-white">
                                 Pase de acceso rápido
@@ -742,23 +741,14 @@ export default function ReservaInfo({
                     className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-28"
                     role="dialog"
                     aria-modal="true"
-                    onClick={() => setScannerOpen(false)}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setScannerOpen(false);
-                        }
-                        if (e.key === 'Escape') {
-                            e.preventDefault();
-                            setScannerOpen(false);
-                        }
-                    }}
                 >
-                    <div
-                        className="mx-4 w-full max-w-3xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <button
+                        type="button"
+                        aria-label="Cerrar"
+                        className="absolute inset-0 h-full w-full bg-transparent p-0"
+                        onClick={() => setScannerOpen(false)}
+                    />
+                    <div className="mx-4 w-full max-w-3xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
                         <div className="flex items-center justify-between bg-[#7a0202] p-4">
                             <div className="flex items-center gap-4">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-black text-white">

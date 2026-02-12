@@ -88,7 +88,6 @@ export default function CreateCliente({ iconOnly = false }) {
                     {/* Formulario con scroll independiente */}
                     <form
                         onSubmit={guardar}
-                        role="form"
                         aria-label="Formulario crear cliente"
                         className="flex min-h-0 flex-1 flex-col bg-white"
                     >

@@ -15,20 +15,22 @@
 @extends('emails.layout')
 
 @section('content')
-  <p style="margin:0 0 8px 0;font-size:16px;">Hola,</p>
-  <p style="margin:0 0 12px 0;color:#555;">Su solicitud de reembolso para la reserva <strong>{{ $refundRequest->reserva->localizador ?? 'N/D' }}</strong> ha sido <strong>{{ $statusLabel }}</strong>.</p>
+  <p class="lead">Hola,</p>
+  <p class="muted">Su solicitud de reembolso para la reserva <strong>{{ $refundRequest->reserva->localizador ?? 'N/D' }}</strong> ha sido <strong>{{ $statusLabel }}</strong>.</p>
 
-  <table class="table" role="presentation">
-    <tr><td style="font-weight:600;width:180px;color:#444;">ID solicitud</td><td>{{ $refundRequest->id }}</td></tr>
-    <tr><td style="font-weight:600;color:#444;">Solicitado</td><td>€{{ number_format(($refundRequest->requested_amount_cents ?? 0)/100, 2) }}</td></tr>
-    <tr><td style="font-weight:600;color:#444;">Procesado</td><td>{{ $refundRequest->processed_at ?? 'N/D' }}</td></tr>
-    <tr><td style="font-weight:600;color:#444;">Estado</td><td>{{ ucfirst($statusLabel) }}</td></tr>
-  </table>
+    <table class="table" role="presentation">
+      <tbody>
+      <tr><td class="table-key w-180">ID solicitud</td><td>{{ $refundRequest->id }}</td></tr>
+      <tr><td class="table-key">Solicitado</td><td>€{{ number_format(($refundRequest->requested_amount_cents ?? 0)/100, 2) }}</td></tr>
+      <tr><td class="table-key">Procesado</td><td>{{ $refundRequest->processed_at ?? 'N/D' }}</td></tr>
+      <tr><td class="table-key">Estado</td><td>{{ ucfirst($statusLabel) }}</td></tr>
+      </tbody>
+    </table>
 
   @if(!empty($refundRequest->admin_reason))
-    <p style="margin:8px 0 12px 0;font-weight:600;color:#444;">Motivo del administrador</p>
-    <div style="background:#f9f9f9;border:1px solid #eee;padding:12px;border-radius:6px;color:#333;margin-bottom:12px;">{{ $refundRequest->admin_reason }}</div>
+    <p class="strong-label">Motivo del administrador</p>
+    <div class="note-box">{{ $refundRequest->admin_reason }}</div>
   @endif
 
-  <p style="margin:0;color:#666;">Si tiene preguntas, contacte con soporte.</p>
+  <p class="muted">Si tiene preguntas, contacte con soporte.</p>
 @endsection

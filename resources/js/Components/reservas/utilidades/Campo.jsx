@@ -43,7 +43,7 @@ const Campo = forwardRef(
         ]);
         const esVoid =
             typeof InputTag === 'string' && voidElements.has(InputTag);
-        const descritoPor = error ? `${id}-error` : undefined;
+        // descritoPor se calculará más abajo cuando `atributos` esté disponible
 
         // Validador DNI/NIE
         const validarDniNIE = (value) => {
@@ -102,12 +102,16 @@ const Campo = forwardRef(
         };
 
         const referenciaLocal = useRef(null);
+        const contenedorRef = useRef(null);
         useImperativeHandle(ref, () => ({
             focus: () => referenciaLocal.current?.focus(),
         }));
         useEffect(() => {
             if (estaFocalizado) referenciaLocal.current?.focus();
         }, [estaFocalizado]);
+
+        // Asociar dinámicamente la etiqueta previa al control si la etiqueta no tiene htmlFor
+        // (el efecto se define más abajo, tras la creación de `finalId`)
 
         // children real (soporta pasar hijos por JSX o por prop `hijos`)
         const contenido = typeof hijos !== 'undefined' ? hijos : props.children;
@@ -148,6 +152,32 @@ const Campo = forwardRef(
         }
 
         const nombre = (atributos.name || id || '').toString().toLowerCase();
+        // Garantizar un `id` estable: usar `id`/`atributos.id`/`atributos.name` o generar uno único
+        const idStableRef = useRef(id || atributos.id || null);
+        if (!idStableRef.current) {
+            const base = (atributos.name || id || 'campo')
+                .toString()
+                .replace(/[^a-z0-9]+/gi, '_')
+                .toLowerCase();
+            idStableRef.current = `${base}_${Math.random().toString(36).slice(2, 8)}`;
+        }
+        const finalId = idStableRef.current;
+
+        const descritoPor = error ? `${finalId}-error` : undefined;
+
+        // Asociar dinámicamente la etiqueta previa al control si la etiqueta no tiene htmlFor
+        useEffect(() => {
+            try {
+                const cont = contenedorRef.current;
+                if (!cont) return;
+                const labelEl = cont.querySelector('label');
+                if (labelEl && !labelEl.getAttribute('for')) {
+                    labelEl.setAttribute('for', finalId);
+                }
+            } catch (err) {
+                /* noop */
+            }
+        }, [finalId]);
         if (!atributos.pattern) {
             if (nombre.includes('email')) {
                 atributos.pattern = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
@@ -328,15 +358,15 @@ const Campo = forwardRef(
         };
 
         return (
-            <div className={claseContenedor}>
+            <div ref={contenedorRef} className={claseContenedor}>
                 {label && (
-                    <label className={claseEtiqueta} htmlFor={id}>
+                    <label className={claseEtiqueta} htmlFor={finalId}>
                         {label}
                     </label>
                 )}
                 {esVoid ? (
                     <InputTag
-                        id={id}
+                        id={finalId}
                         name={atributos.name || id}
                         ref={referenciaLocal}
                         className={clasesCombinadas}
@@ -346,7 +376,7 @@ const Campo = forwardRef(
                     />
                 ) : (
                     <InputTag
-                        id={id}
+                        id={finalId}
                         name={atributos.name || id}
                         ref={referenciaLocal}
                         className={clasesCombinadas}

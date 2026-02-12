@@ -127,10 +127,13 @@ export default function QRScanner({ onScanSuccess }) {
                     Permiso de cámara denegado.
                 </div>
             )}
+            {/* Camera feed - captions not applicable. Disable caption rule for this element. */}
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
                 ref={videoRef}
                 className="w-full rounded-lg border-2 border-gray-300 bg-black"
                 style={{ minHeight: '400px' }}
+                aria-hidden="true"
             />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>

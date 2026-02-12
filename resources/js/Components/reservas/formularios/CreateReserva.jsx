@@ -60,9 +60,7 @@ export default function CreateReserva({ iconOnly = false }) {
         if (errors && errors.habitaciones) {
             setTabActiva('fechas');
         }
-        // Intentionally only depend on server errors; `setTabActiva` may be unstable
-        // if provided by the hook and would cause re-render loops.
-    }, [page?.props?.errors]);
+    }, [page?.props?.errors, setTabActiva]);
 
     return (
         <>
@@ -85,7 +83,17 @@ export default function CreateReserva({ iconOnly = false }) {
                 {/* Backdrop */}
                 <div
                     className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
+                    role="button"
+                    tabIndex={0}
                     onClick={handleCerrar}
+                    onKeyDown={(e) => {
+                        if (
+                            e.key === 'Escape' ||
+                            e.key === 'Enter' ||
+                            e.key === ' '
+                        )
+                            handleCerrar();
+                    }}
                 />
                 <div
                     className={`absolute inset-0 flex w-full max-w-full transform flex-col bg-white shadow-2xl transition-transform duration-500 md:bottom-0 md:left-auto md:right-0 md:top-0 md:max-w-2xl ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden rounded-none md:!rounded-l-[2rem]`}
@@ -104,7 +112,6 @@ export default function CreateReserva({ iconOnly = false }) {
                     <form
                         onSubmit={guardarReserva}
                         className="flex min-h-0 flex-1 flex-col bg-white"
-                        role="form"
                         aria-label="Formulario nueva reserva"
                     >
                         <div className="flex-1 space-y-8 overflow-y-auto p-8">

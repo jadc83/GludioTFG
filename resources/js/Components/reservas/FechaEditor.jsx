@@ -146,7 +146,6 @@ export default function FechaEditor({
     const formContent = (
         <form
             onSubmit={onSave}
-            role="form"
             aria-label="Editor de fechas"
             className={`${noWrapper ? 'w-full p-0' : 'w-full p-5'}`}
         >

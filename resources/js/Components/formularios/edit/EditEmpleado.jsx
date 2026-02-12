@@ -99,7 +99,12 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
         >
             <div
                 className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
+                role="button"
+                tabIndex={0}
                 onClick={handleCerrar}
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') handleCerrar();
+                }}
             />
 
             <div

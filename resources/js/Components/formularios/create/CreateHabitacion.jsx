@@ -8,7 +8,7 @@ import {
     PhotoIcon,
     XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export default function CreateHabitacion({ iconOnly = false }) {
     const [abierto, setAbierto] = useState(false);
@@ -121,7 +121,12 @@ export default function CreateHabitacion({ iconOnly = false }) {
                 {/* Fondo oscuro (Backdrop) - ERROR DE SINTAXIS CORREGIDO AQUÍ */}
                 <div
                     className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
+                    role="button"
+                    tabIndex={0}
                     onClick={handleCerrar}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') handleCerrar();
+                    }}
                 />
 
                 {/* Panel Lateral (Slide-over) */}
@@ -329,75 +334,72 @@ const InputFotos = ({
     onQuitar,
     error,
     maxFotos,
-}) => (
-    <div className="space-y-4">
-        <label className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
-            Galería Multimedia{' '}
-            <span className="rounded-md bg-gray-100 px-2 py-1 text-gray-600">
-                {fotos.length} / {maxFotos}
-            </span>
-        </label>
+}) => {
+    const fileInputRef = useRef(null);
 
-        <div className="grid grid-cols-3 gap-3">
-            {previews.map((src, indice) => (
-                <div
-                    key={indice}
-                    className="group relative aspect-square overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-sm"
-                >
-                    <img
-                        src={src}
-                        alt={`Preview ${indice}`}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
-                    />
+    return (
+        <div className="space-y-4">
+            <label className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Galería Multimedia{' '}
+                <span className="rounded-md bg-gray-100 px-2 py-1 text-gray-600">
+                    {fotos.length} / {maxFotos}
+                </span>
+            </label>
+
+            <div className="grid grid-cols-3 gap-3">
+                {previews.map((src, indice) => (
+                    <div
+                        key={indice}
+                        className="group relative aspect-square overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-sm"
+                    >
+                        <img
+                            src={src}
+                            alt={`Preview ${indice}`}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => onQuitar(indice)}
+                            className="absolute right-2 top-2 scale-0 rounded-xl bg-white/90 p-1.5 text-gray-500 shadow-md transition-all hover:bg-red-50 hover:text-red-600 group-hover:scale-100"
+                        >
+                            <XMarkIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                ))}
+
+                {fotos.length < maxFotos && (
                     <button
                         type="button"
-                        onClick={() => onQuitar(indice)}
-                        className="absolute right-2 top-2 scale-0 rounded-xl bg-white/90 p-1.5 text-gray-500 shadow-md transition-all hover:bg-red-50 hover:text-red-600 group-hover:scale-100"
-                    >
-                        <XMarkIcon className="h-4 w-4" />
-                    </button>
-                </div>
-            ))}
-
-            {fotos.length < maxFotos && (
-                <label
-                    className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 transition-all hover:border-[#7a0202] hover:bg-red-50/30"
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Subir fotos"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            const input =
-                                e.currentTarget.querySelector(
-                                    'input[type=file]',
-                                );
-                            if (input) input.click();
+                        className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 transition-all hover:border-[#7a0202] hover:bg-red-50/30"
+                        aria-label="Subir fotos"
+                        onClick={() =>
+                            fileInputRef.current && fileInputRef.current.click()
                         }
-                    }}
-                >
-                    <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        hidden
-                        onChange={onAgregar}
-                    />
-                    <PhotoIcon
-                        className="h-6 w-6 text-gray-300 transition-colors group-hover:text-[#7a0202]"
-                        aria-hidden="true"
-                    />
-                    <span className="mt-2 text-[9px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-[#7a0202]">
-                        Subir
-                    </span>
-                </label>
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            hidden
+                            onChange={onAgregar}
+                        />
+                        <PhotoIcon
+                            className="h-6 w-6 text-gray-300 transition-colors group-hover:text-[#7a0202]"
+                            aria-hidden="true"
+                        />
+                        <span className="mt-2 text-[9px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-[#7a0202]">
+                            Subir
+                        </span>
+                    </button>
+                )}
+            </div>
+
+            {error && (
+                <span className="animate-pulse text-[10px] font-black uppercase tracking-wide text-red-600">
+                    {Array.isArray(error) ? error[0] : error}
+                </span>
             )}
         </div>
-
-        {error && (
-            <span className="animate-pulse text-[10px] font-black uppercase tracking-wide text-red-600">
-                {Array.isArray(error) ? error[0] : error}
-            </span>
-        )}
-    </div>
-);
+    );
+};

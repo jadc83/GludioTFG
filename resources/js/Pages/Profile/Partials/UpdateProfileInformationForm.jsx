@@ -48,7 +48,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="space-y-1">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="name"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Nombre Completo
                                 </label>
                                 <Campo
@@ -63,7 +66,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="email"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Correo Electrónico
                                 </label>
                                 <div className="relative">
@@ -87,7 +93,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                             <div className="space-y-1">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="tipo_documento"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Tipo Doc.
                                 </label>
                                 <Campo
@@ -110,7 +119,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="numero_documento"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Nº Identificación
                                 </label>
                                 <Campo
@@ -127,7 +139,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="telefono"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Teléfono
                                 </label>
                                 <div className="relative">
@@ -150,7 +165,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
                             <div className="space-y-1 md:col-span-8">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="direccion"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Dirección Postal
                                 </label>
                                 <Campo
@@ -164,7 +182,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1 md:col-span-4">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="nacionalidad"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Nacionalidad
                                 </label>
                                 <Campo
@@ -178,7 +199,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1 md:col-span-8">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="ciudad"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Ciudad
                                 </label>
                                 <Campo
@@ -192,7 +216,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                             </div>
 
                             <div className="space-y-1 md:col-span-4">
-                                <label className="ml-1 text-[10px] font-black uppercase text-gray-400">
+                                <label
+                                    htmlFor="codigo_postal"
+                                    className="ml-1 text-[10px] font-black uppercase text-gray-400"
+                                >
                                     Cód. Postal
                                 </label>
                                 <Campo

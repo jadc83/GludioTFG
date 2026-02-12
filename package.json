@@ -7,6 +7,10 @@
         "dev": "vite",
         "test:e2e": "playwright test",
         "lint": "eslint resources/js --ext .js,.jsx --ignore-path .gitignore --fix",
+        "html-validate": "html-validate -c .htmlvalidate.json \"resources/views/**/*.blade.php\" && html-validate -c .htmlvalidate-emails.json \"resources/views/emails/**/*.blade.php\"",
+        "validate:all": "npm run lint && npm run html-validate",
+        "render-views": "php scripts/render_views.php",
+        "html-validate-rendered": "html-validate storage/html-validate/**/*.html -c .htmlvalidate.json",
         "test": "vitest"
     },
     "devDependencies": {
@@ -27,9 +31,11 @@
         "concurrently": "^9.0.1",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-prettier": "^5.1.3",
         "eslint-plugin-react": "^7.34.4",
         "eslint-plugin-react-hooks": "^4.6.2",
+        "html-validate": "^10.7.0",
         "jsdom": "^28.0.0",
         "laravel-echo": "^2.3.0",
         "laravel-vite-plugin": "^2.0.0",

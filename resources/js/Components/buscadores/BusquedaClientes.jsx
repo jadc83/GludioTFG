@@ -83,7 +83,10 @@ export default function BusquedaClientes({
             role="search"
             aria-label="Buscar cliente"
         >
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label
+                htmlFor="busqueda-clientes"
+                className="mb-2 block text-sm font-medium text-gray-700"
+            >
                 Buscar Cliente Existente
                 <span className="ml-1 text-xs text-gray-500">(Opcional)</span>
             </label>
@@ -94,6 +97,7 @@ export default function BusquedaClientes({
                 </div>
 
                 <input
+                    id="busqueda-clientes"
                     type="text"
                     value={busqueda}
                     onChange={(e) => {

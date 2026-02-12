@@ -41,6 +41,15 @@ const Trigger = ({ children }) => {
                 <div
                     className="fixed inset-0 z-40"
                     onClick={() => setOpen(false)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setOpen(false);
+                        }
+                        if (e.key === 'Escape') setOpen(false);
+                    }}
                 ></div>
             )}
         </>
@@ -84,7 +93,15 @@ const Content = ({
                     className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
                     role="menu"
                     aria-hidden={!open}
+                    tabIndex={0}
                     onClick={() => setOpen(false)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setOpen(false);
+                        }
+                        if (e.key === 'Escape') setOpen(false);
+                    }}
                 >
                     <div
                         className={

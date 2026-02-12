@@ -55,7 +55,10 @@ export default function TabHabitaciones({ habitaciones = [] }) {
             <div className="mb-4">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-3">
                     <div className="form-control w-full">
-                        <label className="label py-1">
+                        <label
+                            htmlFor="habitacion_busqueda"
+                            className="label py-1"
+                        >
                             <span className="label-text text-xs font-medium md:text-sm">
                                 Búsqueda
                             </span>
@@ -117,7 +120,7 @@ export default function TabHabitaciones({ habitaciones = [] }) {
                     </div>
 
                     <div className="form-control w-full">
-                        <label className="label py-1">
+                        <label htmlFor="precio_min" className="label py-1">
                             <span className="label-text text-xs md:text-sm">
                                 Precio
                             </span>

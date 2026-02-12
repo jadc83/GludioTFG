@@ -378,9 +378,12 @@ export default function Register() {
                 {/* Terms */}
                 <p className="mt-3 text-center text-xs text-gray-600">
                     {t('auth.terms_prefix')}{' '}
-                    <a href="#" className="text-[#7a0202] hover:underline">
+                    <Link
+                        href="/terminos-servicio"
+                        className="text-[#7a0202] hover:underline"
+                    >
                         {t('auth.terms')}
-                    </a>
+                    </Link>
                 </p>
             </div>
         </AuthLayout>

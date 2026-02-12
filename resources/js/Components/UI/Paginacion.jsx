@@ -64,10 +64,10 @@ export default function Paginacion({
                 </button>
 
                 {/* Botones de página */}
-                <ul role="list" className="flex gap-1.5">
+                <ul className="flex gap-1.5">
                     {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(
                         (pagina) => (
-                            <li key={pagina} role="listitem">
+                            <li key={pagina}>
                                 <button
                                     onClick={() => onCambiarPagina(pagina)}
                                     aria-current={

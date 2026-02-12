@@ -164,14 +164,14 @@ function CalendarioPicker({
     );
 
     const CalendarioMobile = () => (
-        <div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50"
-            onClick={() => setCalendarioAbierto(null)}
-        >
-            <div
-                className="mx-4 flex max-h-[85vh] w-full max-w-sm flex-col rounded-xl bg-white px-4 py-6 shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-            >
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
+            <button
+                type="button"
+                aria-label="Cerrar calendario"
+                className="absolute inset-0 h-full w-full bg-transparent p-0"
+                onClick={() => setCalendarioAbierto(null)}
+            />
+            <div className="mx-4 flex max-h-[85vh] w-full max-w-sm flex-col rounded-xl bg-white px-4 py-6 shadow-2xl">
                 <h3 className="mb-4 text-center text-lg font-semibold text-gray-800">
                     {t('barra.' + (tipo === 'entrada' ? 'entrada' : 'salida'))}
                 </h3>

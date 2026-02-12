@@ -90,7 +90,11 @@ export function useFormGenerico(
                         Object.assign({}, mergedOptions, {
                             onSuccess: (page) => {
                                 if (alGuardar) alGuardar(page);
-                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                                if (
+                                    typeof mergedOptions.onSuccess ===
+                                    'function'
+                                )
+                                    mergedOptions.onSuccess(page);
                             },
                         }),
                     );
@@ -101,7 +105,11 @@ export function useFormGenerico(
                         Object.assign({}, mergedOptions, {
                             onSuccess: (page) => {
                                 if (alGuardar) alGuardar(page);
-                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                                if (
+                                    typeof mergedOptions.onSuccess ===
+                                    'function'
+                                )
+                                    mergedOptions.onSuccess(page);
                             },
                         }),
                     );
@@ -119,13 +127,21 @@ export function useFormGenerico(
                                 } else {
                                     limpiar();
                                 }
-                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                                if (
+                                    typeof mergedOptions.onSuccess ===
+                                    'function'
+                                )
+                                    mergedOptions.onSuccess(page);
                             },
                             onError: (errors) => {
-                                if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                                if (typeof mergedOptions.onError === 'function')
+                                    mergedOptions.onError(errors);
                             },
                             onFinish: () => {
-                                if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
+                                if (
+                                    typeof mergedOptions.onFinish === 'function'
+                                )
+                                    mergedOptions.onFinish();
                             },
                         }),
                     );
@@ -140,13 +156,21 @@ export function useFormGenerico(
                                 } else {
                                     limpiar();
                                 }
-                                if (typeof mergedOptions.onSuccess === 'function') mergedOptions.onSuccess(page);
+                                if (
+                                    typeof mergedOptions.onSuccess ===
+                                    'function'
+                                )
+                                    mergedOptions.onSuccess(page);
                             },
                             onError: (errors) => {
-                                if (typeof mergedOptions.onError === 'function') mergedOptions.onError(errors);
+                                if (typeof mergedOptions.onError === 'function')
+                                    mergedOptions.onError(errors);
                             },
                             onFinish: () => {
-                                if (typeof mergedOptions.onFinish === 'function') mergedOptions.onFinish();
+                                if (
+                                    typeof mergedOptions.onFinish === 'function'
+                                )
+                                    mergedOptions.onFinish();
                             },
                         }),
                     );

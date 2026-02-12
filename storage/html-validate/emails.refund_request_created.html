@@ -1,14 +1,9 @@
-@php
-  $title = $title ?? 'Hotel GLudio';
-  $preheader = $preheader ?? '';
-@endphp
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }}</title>
+    <title>Nueva solicitud de reembolso</title>
     <style>
       body { margin:0; padding:0; background-color:#E2E0DC; font-family:Inter, Arial, Helvetica, sans-serif; color:#222; }
       .container { width:100%; max-width:600px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
@@ -35,7 +30,7 @@
     </style>
   </head>
   <body>
-    <span class="preheader">{{ $preheader }}</span>
+    <span class="preheader">Se ha creado una nueva solicitud de reembolso para la reserva </span>
       <table class="email-outer" role="presentation">
         <tbody>
         <tr>
@@ -43,10 +38,25 @@
             <table class="container" role="presentation">
               <tbody>
               <tr>
-                <td class="header">{{ $title }}</td>
+                <td class="header">Nueva solicitud de reembolso</td>
               </tr>
               <tr>
-                <td class="content">@yield('content')</td>
+                <td class="content">  <p class="lead">Hola,</p>
+  <p class="muted">Se ha creado una nueva solicitud de reembolso relacionada con la reserva <strong>N/D</strong>.</p>
+
+  <table class="table" role="presentation">
+    <tbody>
+    <tr><td class="table-key w-180">ID solicitud</td><td>1</td></tr>
+    <tr><td class="table-key">Reserva</td><td>N/D</td></tr>
+    <tr><td class="table-key">Solicitado</td><td>€0.00</td></tr>
+    <tr><td class="table-key">Penalización</td><td>€0.00</td></tr>
+    <tr><td class="table-key">Estado</td><td>Pendiente</td></tr>
+    </tbody>
+  </table>
+
+
+  <p class="muted">Puedes ver y gestionar la solicitud en el panel administrativo.</p>
+</td>
               </tr>
               <tr>
                 <td class="footer"><small>Hotel GLudio — Si tienes preguntas responde a este correo.</small></td>

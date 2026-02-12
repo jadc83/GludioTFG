@@ -4,15 +4,15 @@ import { describe, it, expect } from 'vitest';
 import ReservaPayments from '@/Components/reservas/utilidades/ReservaPayments';
 
 describe('ReservaPayments', () => {
-    it('renders amounts and buttons', () => {
+    it('renders status and payment badge', () => {
         const reserva = { precio_total: 200, pago: 'pagado', reembolsos_total: 20, status: 'confirmed', localizador: 'ABC' };
         const { getByText } = render(
-            <ReservaPayments reserva={reserva} estaCancelada={false} onSolicitarReembolso={() => {}} />,
+            <ReservaPayments reserva={reserva} />,
         );
 
-        expect(getByText(/Total a cobrar/i)).toBeTruthy();
-        expect(getByText('200.00€')).toBeTruthy();
-        // Expect one of the action buttons to be present
-        expect(getByText('Solicitar Reembolso')).toBeTruthy();
+        // Component now renders status and pago badge
+        expect(getByText(/Estado/i)).toBeTruthy();
+        expect(getByText(/confirmed/i)).toBeTruthy();
+        expect(getByText(/pagado/i)).toBeTruthy();
     });
 });

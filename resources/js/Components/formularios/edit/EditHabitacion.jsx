@@ -120,7 +120,12 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
         >
             <div
                 className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
+                role="button"
+                tabIndex={0}
                 onClick={handleCerrar}
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') handleCerrar();
+                }}
             />
 
             <div
@@ -384,6 +389,7 @@ const InputFotos = ({
     error,
     maxFotos,
 }) => {
+    const fileInputRef = useRef(null);
     const totalFotos = (fotosGuardadas?.length || 0) + (fotos?.length || 0);
 
     return (
@@ -405,23 +411,16 @@ const InputFotos = ({
                     </div>
                 ))}
                 {totalFotos < maxFotos && (
-                    <label
+                    <button
+                        type="button"
                         className="foto-agregar"
-                        role="button"
-                        tabIndex={0}
                         aria-label="Añadir fotos"
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const input =
-                                    e.currentTarget.querySelector(
-                                        'input[type=file]',
-                                    );
-                                if (input) input.click();
-                            }
-                        }}
+                        onClick={() =>
+                            fileInputRef.current && fileInputRef.current.click()
+                        }
                     >
                         <input
+                            ref={fileInputRef}
                             type="file"
                             accept="image/*"
                             multiple
@@ -432,7 +431,7 @@ const InputFotos = ({
                             +
                         </span>
                         <span className="foto-agregar-text">Añadir</span>
-                    </label>
+                    </button>
                 )}
             </div>
             {error && <span className="campo-error">{error}</span>}

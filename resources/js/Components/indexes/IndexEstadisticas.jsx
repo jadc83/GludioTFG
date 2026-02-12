@@ -160,12 +160,16 @@ export default function IndexEstadisticas({
             <div className="flex flex-col items-end gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all md:flex-row">
                 <div className="grid w-full flex-1 grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-1">
-                        <label className="ml-2 text-[10px] font-black uppercase text-gray-400">
+                        <label
+                            htmlFor="fecha-desde"
+                            className="ml-2 text-[10px] font-black uppercase text-gray-400"
+                        >
                             Fecha Inicio
                         </label>
                         <div className="relative">
                             <CalendarIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
+                                id="fecha-desde"
                                 type="date"
                                 value={fechaDesde}
                                 onChange={(e) =>
@@ -176,12 +180,16 @@ export default function IndexEstadisticas({
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <label className="ml-2 text-[10px] font-black uppercase text-gray-400">
+                        <label
+                            htmlFor="fecha-hasta"
+                            className="ml-2 text-[10px] font-black uppercase text-gray-400"
+                        >
                             Fecha Fin
                         </label>
                         <div className="relative">
                             <CalendarIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
+                                id="fecha-hasta"
                                 type="date"
                                 value={fechaHasta}
                                 onChange={(e) =>

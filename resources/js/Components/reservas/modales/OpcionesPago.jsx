@@ -270,14 +270,18 @@ export default function OpcionesPago({
                         </div>
                     )}
 
-                    <label className="mt-1 flex cursor-pointer items-start gap-2">
+                    <label
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 flex cursor-pointer items-start gap-2"
+                    >
                         <input
                             type="checkbox"
                             checked={aceptaTerminos}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) =>
                                 setAceptaTerminos(e.target.checked)
                             }
-                            className="mt-0.5 rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202]"
+                            className="mt-0.5 rounded border-gray-300 text-[#7a0202] focus:ring-[#7a0202] pointer-events-auto"
                         />
                         <span className="text-[10px] font-bold uppercase leading-tight tracking-tight text-gray-400">
                             Acepto las{' '}
