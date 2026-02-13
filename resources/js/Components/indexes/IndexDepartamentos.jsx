@@ -5,9 +5,9 @@ import HeaderPanel from '@/Components/UI/HeaderPanel';
 import { InboxIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
 import useIndexDepartamentos from '@/hooks/useIndexDepartamentos';
-import EmptyState from '@/Components/UI/EmptyState';
-import TableWrapper from '@/Components/UI/TableWrapper';
-import DepartmentRow from '@/Components/indexes/DepartmentRow';
+import EstadoVacio from '@/Components/UI/EstadoVacio';
+import TablaContenedor from '@/Components/UI/TablaContenedor';
+import FilaDepartamento from '@/Components/indexes/FilaDepartamento';
 
 export default function IndexDepartamentos({ empleados = [] }) {
     const { props } = usePage();
@@ -33,10 +33,10 @@ export default function IndexDepartamentos({ empleados = [] }) {
             />
 
             {departamentos.length === 0 ? (
-                <EmptyState Icon={InboxIcon} title="No hay departamentos" subtitle="Crea departamentos mediante seeders o el panel." />
+                <EstadoVacio Icon={InboxIcon} title="No hay departamentos" subtitle="Crea departamentos mediante seeders o el panel." />
             ) : (
                 <>
-                    <TableWrapper caption="Departamentos">
+                    <TablaContenedor caption="Departamentos">
                         <thead>
                             <tr className="border-b border-gray-100 bg-gray-50/50">
                                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Nombre</th>
@@ -45,10 +45,10 @@ export default function IndexDepartamentos({ empleados = [] }) {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {departamentosPaginados.map((d) => (
-                                <DepartmentRow key={d.id} departamento={d} onView={abrirDetalle} />
+                                <FilaDepartamento key={d.id} departamento={d} onView={abrirDetalle} />
                             ))}
                         </tbody>
-                    </TableWrapper>
+                    </TablaContenedor>
                 </>
             )}
 

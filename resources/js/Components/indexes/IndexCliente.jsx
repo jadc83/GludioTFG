@@ -1,11 +1,11 @@
 import EditCliente from '@/Components/formularios/edit/EditCliente';
-import BarraBuscador from '@/Components/UI/BarraBuscador';
+import ControlesFiltros from '@/Components/UI/ControlesFiltros';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
 import { InboxIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
 import useIndexCliente from '@/hooks/useIndexCliente';
-import ClientesTable from '@/Components/indexes/ClientesTable';
+import TablaClientes from '@/Components/indexes/TablaClientes';
 
 export default function IndexCliente({ clientes = [], users = [], clientesFiltrados = [] }) {
     const {
@@ -36,7 +36,7 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
             />
 
             {/* Barra de filtros */}
-            <BarraBuscador
+            <ControlesFiltros
                 filtros={filtros}
                 onActualizarFiltro={actualizarFiltro}
                 onLimpiarFiltros={limpiarFiltros}
@@ -84,7 +84,7 @@ export default function IndexCliente({ clientes = [], users = [], clientesFiltra
                     </div>
                 ) : (
                     <>
-                        <ClientesTable clientes={clientesPaginados} abrirEdicion={abrirEdicion} />
+                        <TablaClientes clientes={clientesPaginados} abrirEdicion={abrirEdicion} />
 
                         {/* Paginación */}
                         <Paginacion paginaActual={paginaActual} totalPaginas={totalPaginas} inicio={inicio} fin={fin} total={todosLosRegistros.length} onCambiarPagina={setPaginaActual} etiqueta="Clientes" />
