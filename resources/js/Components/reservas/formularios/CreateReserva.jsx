@@ -41,7 +41,6 @@ export default function CreateReserva({ iconOnly = false }) {
         estaCargando,
         actualizarCampo,
         handleCerrar,
-        // Handlers moved to hook
         cambiarCantidadHabitaciones,
         seleccionObj,
         onTarifasSeleccionChange,
@@ -49,7 +48,6 @@ export default function CreateReserva({ iconOnly = false }) {
         esFormularioCompleto,
         guardarReserva,
         onPagoExitoso,
-        // Guard while saving
         estaGuardando,
     } = useCreateReserva();
 
@@ -76,7 +74,6 @@ export default function CreateReserva({ iconOnly = false }) {
                 {!iconOnly && 'Nueva Reserva'}
             </Boton>
 
-            {/* CONTENEDOR RAIZ: Z-index extremo para flotar */}
             <div
                 className={`fixed inset-0 z-[9999] overflow-hidden transition-all duration-300 md:top-16 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
             >
@@ -191,7 +188,6 @@ export default function CreateReserva({ iconOnly = false }) {
                             )}
                         </div>
 
-                        {/* Footer con botones - oculto cuando pago con tarjeta y Stripe está configurado */}
                         {!(
                             formulario.metodo_pago === 'tarjeta' &&
                             import.meta.env.VITE_STRIPE_PUBLIC_KEY

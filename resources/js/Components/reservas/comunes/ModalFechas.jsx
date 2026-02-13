@@ -401,4 +401,3 @@ export default function ModalFechas({
     );
 }
 
-// PaymentConfirm refactorizado a Componentes reutilizables (CardConfirmForm + PaymentBox)

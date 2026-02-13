@@ -53,6 +53,7 @@ export default function useCreateReserva() {
         estaCargando,
         actualizarCampo,
         setData,
+        guardar,
     } = useFormGenerico(datosIniciales, '/reservas', '', () => {
         // On success: close modal (delegated to hook state)
         // Default behavior: close modal. If it's a checkout flow, the caller will handle redirect.
@@ -405,9 +406,8 @@ export default function useCreateReserva() {
         try {
             setEstaGuardando(true);
 
-            router.post('/reservas', payload, {
+            guardar(payload, {
                 onSuccess: () => {
-                    // Cerrar y recargar para que la UI muestre la nueva reserva
                     try {
                         handleCerrar();
                         router.reload();
