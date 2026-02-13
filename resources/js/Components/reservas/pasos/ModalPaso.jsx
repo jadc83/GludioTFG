@@ -15,9 +15,7 @@ export default function ModalPaso({ paso, pasoActual, onClose, children }) {
                 className="absolute inset-0 h-full w-full bg-transparent p-0 z-0"
                 onClick={onClose}
             />
-            {/* Cambiamos 'md:max-w-2xl' por 'max-w-none'.
-          Ahora el contenedor es tan ancho como el hijo (Paso4) le pida.
-      */}
+
             <div
                 className="flex h-fit w-full max-w-none justify-center relative z-10 pointer-events-auto"
                 role="document"
