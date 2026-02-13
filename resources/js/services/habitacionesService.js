@@ -21,6 +21,17 @@ export async function updateHabitacionFormData(id, formData) {
     }
 }
 
+export async function createHabitacionFormData(formData) {
+    try {
+        const res = await axios.post('/habitaciones', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res?.data ?? null;
+    } catch (err) {
+        return Promise.reject(err?.response?.data ?? { error: err.message });
+    }
+}
+
 export async function getHabitacionesLimpieza(includeAssigned = false) {
     try {
         const params = {};
@@ -46,6 +57,7 @@ export async function getHabitacionesMantenimiento(includeAssigned = false) {
 export default {
     updateHabitacionJson,
     updateHabitacionFormData,
+    createHabitacionFormData,
     getHabitacionesLimpieza,
     getHabitacionesMantenimiento,
 };
