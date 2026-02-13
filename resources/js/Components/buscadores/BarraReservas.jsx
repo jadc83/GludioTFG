@@ -3,74 +3,26 @@ import ModalPaso from '@/Components/reservas/pasos/ModalPaso';
 import Paso2Habitaciones from '@/Components/reservas/pasos/Paso2Habitaciones';
 import Paso3Datos from '@/Components/reservas/pasos/Paso3Datos';
 import Paso4Confirmacion from '@/Components/reservas/pasos/Paso4Confirmacion';
-import CalendarioPicker, {
-    CalendarioStyles,
-} from '@/Components/reservas/utilidades/CalendarioPicker';
-import Campo from '@/Components/reservas/utilidades/Campo';
-import { t } from '@/i18n';
-import {
-    ArrowDownOnSquareIcon,
-    ArrowUpOnSquareIcon,
-    CalendarIcon,
-    UserGroupIcon,
-} from '@heroicons/react/24/outline';
-import { usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import useBarraReservas from '@/hooks/reservas/useBarraReservas';
+import FechaEntrada from './FechaEntrada';
+import FechaSalida from './FechaSalida';
+import HuespedesField from './HuespedesField';
 import '../../../css/createHabitacion.css';
 import '../../../css/estiloCalendario.css';
 import '../../../css/estiloMenuLateral.css';
-import useCalendarioDia from '../../hooks/calendario/useCalendarioDia';
-import useCalendarioPrecios from '../../hooks/calendario/useCalendarioPrecios';
-import useReservaForm from '../../hooks/reservas/useReservaForm';
-import { formatearFecha } from '../../utils/formatters';
 
 export default function BarraReservas() {
-    const formularioReserva = useReservaForm();
-    const pagina = usePage();
-    const esPanelControl =
-        pagina.url?.includes('panel') || pagina.component === 'PanelControl';
-    const [calendarioAbierto, setCalendarioAbierto] = useState(null);
-    const { preciosPorDia, consultaPrecios, formatearISO, esMobile } =
-        useCalendarioPrecios();
-    const calendarioRef = useRef(null);
-
-    // Cerrar calendario al hacer click fuera
-    useEffect(() => {
-        if (!calendarioAbierto) return;
-
-        const handleClickOutside = (event) => {
-            if (
-                calendarioRef.current &&
-                !calendarioRef.current.contains(event.target)
-            ) {
-                setCalendarioAbierto(null);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () =>
-            document.removeEventListener('mousedown', handleClickOutside);
-    }, [calendarioAbierto]);
-
-    useEffect(() => {
-        const handler = (event) => setCalendarioAbierto(event.detail);
-        window.addEventListener('abrirCalendario', handler);
-        return () => window.removeEventListener('abrirCalendario', handler);
-    }, []);
-
-    // Cargar precios cuando se abre el calendario
-    useEffect(() => {
-        if (!calendarioAbierto) return;
-        const inicio = new Date();
-        const fin = new Date();
-        fin.setDate(fin.getDate() + 365);
-        const start = formatearISO(inicio);
-        const end = formatearISO(fin);
-        consultaPrecios(start, end);
-    }, [calendarioAbierto, consultaPrecios, formatearISO]);
-
-    const mapaPrecios = useMemo(() => preciosPorDia || {}, [preciosPorDia]);
-    const componentesDia = useCalendarioDia(mapaPrecios, formatearISO);
+    const {
+        formularioReserva,
+        esPanelControl,
+        calendarioAbierto,
+        setCalendarioAbierto,
+        calendarioRef,
+        preciosPorDia,
+        componentesDia,
+        esMobile,
+        formatearISO,
+    } = useBarraReservas();
 
     return (
         <>
@@ -121,146 +73,29 @@ export default function BarraReservas() {
                     <div className="relative px-4 py-3">
                         <div className="flex items-center justify-center gap-3 md:justify-center">
                             <div className="flex flex-wrap items-center justify-center gap-3">
-                                <div className="hidden items-center gap-1 text-[#7a0202] sm:flex">
-                                    <CalendarIcon className="h-5 w-5" />
-                                </div>
+                                <FechaEntrada
+                                    formularioReserva={formularioReserva}
+                                    calendarioAbierto={calendarioAbierto}
+                                    setCalendarioAbierto={setCalendarioAbierto}
+                                    calendarioRef={calendarioRef}
+                                    preciosPorDia={preciosPorDia}
+                                    componentesDia={componentesDia}
+                                    esMobile={esMobile}
+                                    formatearISO={formatearISO}
+                                />
 
-                                {/* INPUT ENTRADA */}
-                                <div className="relative flex items-center gap-2">
-                                    <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
-                                        <span className="hidden sm:inline">
-                                            {t('barra.entrada')}
-                                        </span>
-                                        <span className="inline-flex sm:hidden">
-                                            <ArrowDownOnSquareIcon className="h-5 w-5 text-[#7a0202]" />
-                                        </span>
-                                    </label>
-                                    <button
-                                        onClick={() =>
-                                            setCalendarioAbierto(
-                                                calendarioAbierto === 'entrada'
-                                                    ? null
-                                                    : 'entrada',
-                                            )
-                                        }
-                                        className="truncate rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-left text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner"
-                                        aria-label={t('barra.aria_entrada')}
-                                    >
-                                        {formularioReserva.rango?.from
-                                            ? formatearFecha(
-                                                  formularioReserva.rango.from,
-                                                  'corta',
-                                              )
-                                            : '—'}
-                                    </button>
-                                    <CalendarioPicker
-                                        esMobile={esMobile}
-                                        calendarioAbierto={calendarioAbierto}
-                                        handleSeleccionRango={(rango) =>
-                                            formularioReserva.setRango(rango)
-                                        }
-                                        formularioReserva={formularioReserva}
-                                        preciosPorDia={preciosPorDia}
-                                        setCalendarioAbierto={
-                                            setCalendarioAbierto
-                                        }
-                                        tipo="entrada"
-                                        formatearISO={formatearISO}
-                                        calendarioRef={calendarioRef}
-                                        components={componentesDia}
-                                    />
-                                </div>
+                                <FechaSalida
+                                    formularioReserva={formularioReserva}
+                                    calendarioAbierto={calendarioAbierto}
+                                    setCalendarioAbierto={setCalendarioAbierto}
+                                    calendarioRef={calendarioRef}
+                                    preciosPorDia={preciosPorDia}
+                                    componentesDia={componentesDia}
+                                    esMobile={esMobile}
+                                    formatearISO={formatearISO}
+                                />
 
-                                {/* INPUT SALIDA */}
-                                <div className="relative flex items-center gap-2">
-                                    <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
-                                        <span className="hidden sm:inline">
-                                            {t('barra.salida')}
-                                        </span>
-                                        <span className="inline-flex sm:hidden">
-                                            <ArrowUpOnSquareIcon className="h-5 w-5 text-gray-700" />
-                                        </span>
-                                    </label>
-                                    <button
-                                        onClick={() =>
-                                            setCalendarioAbierto(
-                                                calendarioAbierto === 'salida'
-                                                    ? null
-                                                    : 'salida',
-                                            )
-                                        }
-                                        disabled={
-                                            !formularioReserva.rango?.from
-                                        }
-                                        className="truncate rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-left text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#7a0202] focus:ring-offset-1 active:shadow-inner disabled:cursor-not-allowed disabled:opacity-50"
-                                        aria-label={t('barra.aria_salida')}
-                                    >
-                                        {formularioReserva.rango?.to
-                                            ? formatearFecha(
-                                                  formularioReserva.rango.to,
-                                                  'corta',
-                                              )
-                                            : '—'}
-                                    </button>
-                                    <CalendarioStyles />
-                                    {formularioReserva.rango?.from && (
-                                        <CalendarioPicker
-                                            esMobile={esMobile}
-                                            calendarioAbierto={
-                                                calendarioAbierto
-                                            }
-                                            handleSeleccionRango={(rango) =>
-                                                formularioReserva.setRango(
-                                                    rango,
-                                                )
-                                            }
-                                            formularioReserva={
-                                                formularioReserva
-                                            }
-                                            preciosPorDia={preciosPorDia}
-                                            setCalendarioAbierto={
-                                                setCalendarioAbierto
-                                            }
-                                            tipo="salida"
-                                            formatearISO={formatearISO}
-                                            calendarioRef={calendarioRef}
-                                            components={componentesDia}
-                                        />
-                                    )}
-                                </div>
-
-                                <div className="flex flex-row items-center gap-1.5 rounded bg-gris px-2 py-1">
-                                    <label className="whitespace-nowrap text-xs font-semibold text-gray-700">
-                                        <span className="hidden sm:inline">
-                                            {t('barra.huespedes')}:
-                                        </span>
-                                        <span className="inline-flex sm:hidden">
-                                            <UserGroupIcon className="h-5 w-5 text-gray-700" />
-                                        </span>
-                                    </label>
-                                    <Campo
-                                        id="num_huespedes_barra"
-                                        type="number"
-                                        min={1}
-                                        max={4}
-                                        sinEstilosPorDefecto={true}
-                                        value={formularioReserva.numHuespedes}
-                                        onChange={(e) =>
-                                            formularioReserva.setNumHuespedes(
-                                                Math.min(
-                                                    4,
-                                                    Math.max(
-                                                        1,
-                                                        Number(
-                                                            e.target.value,
-                                                        ) || 1,
-                                                    ),
-                                                ),
-                                            )
-                                        }
-                                        clase="w-16 text-sm px-2 py-1 rounded border border-gray-300 bg-white text-gray-700"
-                                    />
-                                </div>
+                                <HuespedesField formularioReserva={formularioReserva} />
                             </div>
 
                             <div className="absolute right-4 hidden items-center gap-4 px-2 py-1 lg:flex">
