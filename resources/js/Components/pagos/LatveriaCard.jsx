@@ -13,7 +13,6 @@ const LatveriaCard = ({
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
-    const [completed, setCompleted] = useState(false);
     const { confirmarPaymentIntent } = usePayments();
 
     // Configuración de Stripe
@@ -32,7 +31,6 @@ const LatveriaCard = ({
     };
 
     const handleConfirm = async () => {
-        if (completed) return; // prevent duplicate submissions after success
         if (!stripe || !elements) {
             onError && onError('Stripe no inicializado');
             return;
@@ -58,13 +56,14 @@ const LatveriaCard = ({
                 const backendResp =
                     await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
-                    setCompleted(true);
+                    // Notify parent and keep showing spinner until parent navigates/unmounts
                     onSuccess &&
                         onSuccess({
                             pago_id: backendResp.pago_id,
                             paymentIntentId,
                             localizador: backendResp.localizador,
                         });
+                    return;
                 } else {
                     onError &&
                         onError(
@@ -161,16 +160,12 @@ const LatveriaCard = ({
                         <div className="mt-3 flex justify-end">
                             <button
                                 onClick={handleConfirm}
-                                disabled={loadingConfirm || completed}
+                                disabled={loadingConfirm}
                                 aria-busy={loadingConfirm}
-                                aria-disabled={loadingConfirm || completed}
-                                className={`mt-4 rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                                aria-disabled={loadingConfirm}
+                                className={`mt-4 rounded px-4 py-2 font-bold text-white ${loadingConfirm ? 'opacity-80 cursor-wait bg-[#7a0202]' : 'bg-[#7a0202]'}`}
                             >
-                                {completed
-                                    ? 'Confirmado'
-                                    : loadingConfirm
-                                      ? 'Confirmando...'
-                                      : 'Confirmar pago'}
+                                {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
                             </button>
                         </div>
 

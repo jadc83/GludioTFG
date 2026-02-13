@@ -36,7 +36,7 @@ export default function Paso4Confirmacion({
 
     const [mostrarModalConfirmacion, setMostrarModalConfirmacion] =
         useState(false);
-    const [datosReservaConfirmada] = useState(null);
+    const [datosReservaConfirmada, setDatosReservaConfirmada] = useState(null);
     const [pagarAlLlegar, setPagarAlLlegar] = useState(false);
     const [opcionPagoSeleccionada, setOpcionPagoSeleccionada] = useState(true);
     const [monto, setMonto] = useState(0);
@@ -224,6 +224,8 @@ export default function Paso4Confirmacion({
                                     setPasoActual={setPasoActual}
                                     formData={formData}
                                     getTotalHabitaciones={getTotalHabitaciones}
+                                    setDatosReservaConfirmada={setDatosReservaConfirmada}
+                                    setMostrarModalConfirmacion={setMostrarModalConfirmacion}
                                 />
                             </div>
                         </section>

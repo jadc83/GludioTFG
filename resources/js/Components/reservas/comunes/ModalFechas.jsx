@@ -204,10 +204,7 @@ export default function ModalFechas({
                         {/* Auto-init payment intent; no manual 'I agree' CTA */}
                         {needPayment && piClientSecret && stripePromise && (
                             <div className="mt-4 w-full">
-                                <Elements
-                                    stripe={stripePromise}
-                                    options={{ clientSecret: piClientSecret }}
-                                >
+                                <Elements key={piClientSecret} stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
                                     <PaymentBox
                                         clientSecret={piClientSecret}
                                         paymentIntentId={piPaymentIntentId}

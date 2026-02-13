@@ -11,23 +11,44 @@ export default function CardConfirmForm({
     name,
     email,
     localizador,
+    onPrepare,
 }) {
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
-    const [completed, setCompleted] = useState(false);
     const { confirmarPaymentIntent } = usePayments();
+    const [cardReady, setCardReady] = useState(false);
 
     const handleConfirm = async () => {
-        if (completed) return; // prevent double submits when already completed
         if (!stripe || !elements) {
             onError && onError('Stripe no inicializado');
             return;
         }
+
+        if (!cardReady) {
+            onError && onError('El formulario de tarjeta no está listo. Espera un momento e inténtalo de nuevo.');
+            return;
+        }
+
         setLoadingConfirm(true);
         const card = elements.getElement(CardElement);
         try {
-            const res = await stripe.confirmCardPayment(clientSecret, {
+            // If no clientSecret provided yet, call onPrepare to create PaymentIntent/reserva
+            let cs = clientSecret;
+            let piId = paymentIntentId;
+            if (!cs && typeof onPrepare === 'function') {
+                try {
+                    const prep = await onPrepare();
+                    cs = prep?.clientSecret || cs;
+                    piId = prep?.paymentIntentId || piId;
+                } catch (e) {
+                    onError && onError(e?.message || 'Error preparando el pago');
+                    setLoadingConfirm(false);
+                    return;
+                }
+            }
+
+            const res = await stripe.confirmCardPayment(cs, {
                 payment_method: {
                     card,
                     billing_details: { name: name || '', email: email || '' },
@@ -43,17 +64,19 @@ export default function CardConfirmForm({
 
             if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp =
-                    await confirmarPaymentIntent(paymentIntentId);
+                    await confirmarPaymentIntent(piId || paymentIntentId);
                 if (backendResp && backendResp.success) {
-                    setCompleted(true);
                     const loc = backendResp.localizador || localizador;
                     const resultData = {
                         pago_id: backendResp.pago_id,
-                        paymentIntentId,
+                        paymentIntentId: piId || paymentIntentId,
                         localizador: loc,
                     };
+                    // Notify parent and let it handle UI/redirect; keep showing spinner until
+                    // parent unmounts this component or navigates away.
                     onCompleted && onCompleted(resultData);
                     onSuccess && onSuccess(resultData);
+                    return;
                 } else {
                     onError &&
                         onError(
@@ -78,21 +101,17 @@ export default function CardConfirmForm({
                 Datos de tarjeta
             </div>
             <div className="mt-2 rounded-md border border-gray-200 p-3">
-                <CardElement options={{ hidePostalCode: true }} />
+                <CardElement options={{ hidePostalCode: true }} onReady={() => setCardReady(true)} />
             </div>
             <div className="mt-3 flex justify-end">
                 <button
                     onClick={handleConfirm}
-                    disabled={loadingConfirm || completed}
+                    disabled={loadingConfirm || !cardReady}
                     aria-busy={loadingConfirm}
-                    aria-disabled={loadingConfirm || completed}
-                    className={`rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                    aria-disabled={loadingConfirm || !cardReady}
+                    className={`rounded px-4 py-2 font-bold text-white ${loadingConfirm ? 'opacity-80 cursor-wait bg-[#7a0202]' : 'bg-[#7a0202]'}`}
                 >
-                    {completed
-                        ? 'Confirmado'
-                        : loadingConfirm
-                          ? 'Confirmando...'
-                          : 'Confirmar pago'}
+                    {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
                 </button>
             </div>
         </div>
