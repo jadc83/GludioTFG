@@ -10,8 +10,6 @@ import { useEffect } from 'react';
 export default function GuestLayout({ children }) {
     const page = usePage();
     const user = page?.props?.auth?.user;
-    // Ocultar barra de reservas para usuarios autenticados que tengan cualquier role
-    // o pertenezcan a algún departamento, para evitar que inicien reservas desde el home.
     const hideBarraForAuthedStaff = !!user && ((Array.isArray(user.roles) && user.roles.length > 0) || !!user.empleado_departamento);
     useEffect(() => {
         const errors = page?.props?.errors || {};
@@ -34,9 +32,6 @@ export default function GuestLayout({ children }) {
             if (msg) emitToast(msg, 'error');
         }
 
-        // Nota: logs de depuración eliminados para mantener la consola limpia
-
-        // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
@@ -46,7 +41,6 @@ export default function GuestLayout({ children }) {
             );
         }
 
-        // Mostrar flash.success como toast (si existe)
         const successMsg = page?.props?.flash?.success;
         if (successMsg) {
             const safeMsg =

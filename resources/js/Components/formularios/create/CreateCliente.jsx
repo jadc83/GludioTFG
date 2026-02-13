@@ -44,25 +44,21 @@ export default function CreateCliente({ iconOnly = false }) {
                 {!iconOnly && 'Nuevo Cliente'}
             </Boton>
 
-            {/* CONTENEDOR RAIZ: Z-index extremo para flotar entre header y footer */}
             <div
                 className={`fixed inset-0 z-[9999] overflow-hidden transition-all duration-300 md:top-16 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="create-client-title"
             >
-                {/* Backdrop (Oscurecimiento del fondo) */}
                 <div
                     className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
                     onClick={handleCerrar}
                     aria-hidden="true"
                 />
 
-                {/* Panel Lateral (Slide-over) */}
                 <div
                     className={`absolute inset-0 flex w-full max-w-full transform flex-col bg-white shadow-2xl transition-transform duration-500 md:bottom-0 md:left-auto md:right-0 md:top-0 md:max-w-md ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden rounded-none md:!rounded-l-[2rem]`}
                 >
-                    {/* Header estilo Gludio */}
                     <header className="flex flex-none items-center justify-between border-b border-gray-100 bg-white p-6">
                         <div>
                             <h3
@@ -85,7 +81,6 @@ export default function CreateCliente({ iconOnly = false }) {
                         </button>
                     </header>
 
-                    {/* Formulario con scroll independiente */}
                     <form
                         onSubmit={guardar}
                         aria-label="Formulario crear cliente"
@@ -167,7 +162,6 @@ export default function CreateCliente({ iconOnly = false }) {
                             </div>
                         </div>
 
-                        {/* Footer con botón fijo abajo */}
                         <div className="flex-none border-t border-gray-100 bg-gray-50 p-6">
                             <button
                                 type="submit"

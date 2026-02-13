@@ -11,15 +11,12 @@ export default function AuthenticatedLayout({ children }) {
     const page = usePage();
     const user = page.props.auth.user;
     const { component } = page;
-
-    // Ocultar BarraReservas en el dashboard
     const showBarraReservas = !component.startsWith('Dashboard');
 
     useEffect(() => {
         const errors = page?.props?.errors || {};
         if (errors && Object.keys(errors).length > 0) {
             const first = Object.keys(errors)[0];
-            // Manejar tanto arrays como strings (Inertia algunos drivers devuelven string)
             let msg = null;
             try {
                 const val = errors[first];
@@ -46,9 +43,6 @@ export default function AuthenticatedLayout({ children }) {
             }
         }
 
-        // Nota: se omiten logs de depuración para mantener consola limpia en desarrollo
-
-        // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;
         if (refund && refund.amount) {
             const amt = Number(refund.amount || 0).toFixed(2);
@@ -58,14 +52,12 @@ export default function AuthenticatedLayout({ children }) {
             );
         }
 
-        // Mostrar flash.success como toast (si existe)
         const successMsg = page?.props?.flash?.success;
         if (successMsg) {
             const safeMsg =
                 typeof successMsg === 'string'
                     ? successMsg
                     : JSON.stringify(successMsg);
-            // Evitar toasts demasiado cortos (p. ej. un solo carácter 'D') que suelen indicar un valor no esperado
             if (typeof safeMsg === 'string' && safeMsg.length === 1) {
                 console.warn(
                     'Ignored suspicious short flash.success:',

@@ -14,9 +14,6 @@ export default function ReservaHeader({ reserva = {} }) {
                             </span>
                         </h1>
 
-                        {/* Estado de reserva: movido al resumen principal */}
-
-                        {/* Estado de pago mostrado en el sidebar; oculto en la cabecera para evitar duplicidad */}
                     </div>
                     <p className="mt-1 text-sm font-medium text-gray-500">
                         {reserva?.cliente?.name || reserva?.cliente?.nombre} •{' '}
