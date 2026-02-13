@@ -156,7 +156,7 @@ export default function useEditarReserva({
             }
         } catch (e) {
             // Fallback: set directly if anything unexpected
-            // Nota: registros de depuración eliminados
+
             setHabitacionesDisponibles(initialHabitacionesDisponibles || []);
         }
     }, [
@@ -247,7 +247,7 @@ export default function useEditarReserva({
                 error?.response ||
                 error?.message ||
                 String(error);
-            // Nota: registros de depuración eliminados
+
             if (apiErr && typeof apiErr === 'object') {
                 showToast?.(
                     apiErr.error ||

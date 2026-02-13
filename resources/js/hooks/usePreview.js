@@ -319,7 +319,7 @@ export default function usePreview() {
                     per_night_net: perNightNet,
                 };
 
-                // Nota: registros de depuración eliminados para mantener la consola limpia
+                 para mantener la consola limpia
 
                 setPreview(result);
                 return result;

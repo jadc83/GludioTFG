@@ -3,6 +3,7 @@
 namespace App\Actions\Reservas;
 
 use App\Models\Reserva;
+use App\Services\ReservaFormatterService;
 use App\Services\ReservaService;
 use Carbon\Carbon;
 
@@ -24,8 +25,7 @@ class BuscarPorLocalizadorAction
             return ['success' => false, 'error' => 'No se encontró reserva con ese localizador'];
         }
 
-        // Return a consistent formatted reservation (same shape used by edit view)
-        $formateador = app(\App\Services\ReservaFormatterService::class);
+        $formateador = app(ReservaFormatterService::class);
         try {
             $reservaFormateada = $formateador->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
         } catch (\Throwable $_e) {

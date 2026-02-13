@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified']);
+Route::get('/panel', [PanelController::class, 'index'])->name('panel');
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
 // Páginas públicas: política, términos y contacto
 Route::get('/politica-privacidad', function () { return Inertia::render('PoliticaPrivacidad'); })->name('politica.privacidad');

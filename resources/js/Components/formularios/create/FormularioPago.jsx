@@ -87,7 +87,6 @@ function FormularioPagoInterno({
         }
 
         setProcesando(true);
-        // usar `crearPayloadRef` para almacenar el payload actual
         try {
             setFieldErrors({});
             setDebugErrorJson(null);
@@ -178,7 +177,7 @@ function FormularioPagoInterno({
                                 new CustomEvent('faltanFechas', { detail: {} }),
                             );
                     } catch (e) {
-                                // Nota: registros de depuración eliminados
+
                     }
                 } else {
                     const joined = Object.values(err.errors).flat().join('; ');
@@ -240,7 +239,7 @@ function FormularioPagoInterno({
                         });
                     }
                 } catch (e) {
-                            // Nota: registros de depuración eliminados
+
                 }
             }, 50);
 
@@ -253,7 +252,7 @@ function FormularioPagoInterno({
                         ),
                     );
                 } catch (e) {
-                        // Nota: registros de depuración eliminados
+
                     setDebugErrorJson(String(err));
                 }
         } finally {
@@ -289,7 +288,7 @@ function FormularioPagoInterno({
                     ),
                 );
             } catch (e) {
-                        // Nota: registros de depuración eliminados
+
             }
         } finally {
             setProcesando(false);
@@ -310,7 +309,7 @@ function FormularioPagoInterno({
                     }),
                 );
         } catch (e) {
-                    // Nota: registros de depuración eliminados
+
         }
     };
 
@@ -660,7 +659,7 @@ function FormularioPagoInterno({
                     <div className="flex flex-col items-center gap-4">
                         <div className="h-10 w-10 animate-spin rounded-full border-[4px] border-gray-100 border-t-[#7a0202]"></div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-900">
-                            Sincronizando...
+                            Efectuando el pago...
                         </p>
                     </div>
                 </div>

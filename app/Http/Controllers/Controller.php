@@ -6,6 +6,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Inertia\Inertia;
 
 class Controller extends BaseController
 {
@@ -32,7 +34,13 @@ class Controller extends BaseController
                 abort(response()->json(['success' => false, 'message' => 'Acceso denegado'], 403));
             }
 
-            abort(403, 'Acceso denegado');
+            // Para peticiones HTML normales devolvemos la plantilla Blade de error
+            try {
+                $view = response()->view('errors.403', ['message' => 'Acceso denegado'], 403);
+                throw new HttpResponseException($view);
+            } catch (\Throwable $e) {
+                abort(403, 'Acceso denegado');
+            }
         }
     }
 

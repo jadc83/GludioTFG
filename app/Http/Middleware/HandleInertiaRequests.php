@@ -42,8 +42,12 @@ class HandleInertiaRequests extends Middleware
                     $roles = [];
                 }
 
-                // Por simplificar: cualquier usuario autenticado puede ver el panel
-                $canViewPanel = true;
+                // Mostrar el botón de Panel sólo si el usuario tiene al menos un rol
+                // y además pertenece a un departamento (empleado). Según política:
+                // usuarios sin role o sin departamento NO verán el botón.
+                $hasRoles = is_array($roles) && count($roles) > 0;
+                $hasDepartamento = !empty($user->empleado?->departamento?->name);
+                $canViewPanel = $hasRoles && $hasDepartamento;
 
                 $userData = array_merge($user->only([
                     'id', 'name', 'email', 'tipo_documento', 'numero_documento', 'nacionalidad',

@@ -49,7 +49,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 try {
                     // Nota: vista previa de depuración eliminada
                     } catch (e) {
-                        // Nota: registros de depuración eliminados
+
                     }
                 setHabitaciones(Array.isArray(datos) ? datos : []);
 
@@ -70,7 +70,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                         // optimizaciones futuras.
                     }
                     } catch (err) {
-                        // Nota: registros de depuración eliminados
+
                     }
             } catch (err) {
                 if (err?.name !== 'AbortError') setHabitaciones([]);
@@ -174,7 +174,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                                 if (!Number.isNaN(n)) return n;
                             }
                             } catch (e) {
-                                // Nota: registros de depuración eliminados
+
                             }
                     }
                     // Recurse into children
@@ -183,7 +183,7 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                             const r = walk(v);
                             if (!Number.isNaN(r)) return r;
                             } catch (e) {
-                                    // Nota: registros de depuración eliminados
+
                                 }
                     }
                     return NaN;

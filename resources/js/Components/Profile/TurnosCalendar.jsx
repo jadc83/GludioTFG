@@ -251,7 +251,7 @@ export default function TurnosCalendar({ empleado = null }) {
                     const j = await res.json();
                     if (j && j.error) err = j.error;
                     } catch (e) {
-                        // Nota: registros de depuración eliminados
+
                     }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -317,7 +317,7 @@ export default function TurnosCalendar({ empleado = null }) {
                     const j = await res.json();
                     if (j && j.error) msg = j.error;
                 } catch (e) {
-                    // Nota: registros de depuración eliminados
+
                 }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -435,7 +435,7 @@ export default function TurnosCalendar({ empleado = null }) {
                                 const j = await res.json();
                                 if (j && j.error) err = j.error;
                             } catch (e) {
-                                // Nota: registros de depuración eliminados
+
                             }
                             window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: err, type: 'error' } }));
                             console.error('clear failed', res.status);
