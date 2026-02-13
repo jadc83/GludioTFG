@@ -37,7 +37,6 @@ export default function DesgloseFactura({
                     match.precioAvg ?? match.precio ?? match.precioMinimo ?? 0,
                 );
         } catch (e) {
-            console.debug(e);
         }
 
         const datosHabitacion = agruparHabitacionesPorTipo()[tipo] || {};

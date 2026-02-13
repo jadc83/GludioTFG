@@ -12,14 +12,11 @@ use Spatie\Permission\Models\Role;
 $email = 'joseantonio.dominguez@iesdonana.org';
 $roleName = 'admin';
 
-// Asegurarse de que el rol exista
-Role::firstOrCreate(['name' => $roleName]);
-
+// Role management skipped: this script no longer assigns roles.
 $user = User::where('email', $email)->first();
 if (!$user) {
     echo "User with email {$email} not found.\n";
     exit(1);
 }
 
-$user->assignRole($roleName);
-echo "Assigned role '{$roleName}' to user {$user->email} (id={$user->id}).\n";
+echo "Role assignment skipped for user {$user->email} (id={$user->id}).\n";

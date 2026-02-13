@@ -1,5 +1,6 @@
 import { t } from '@/i18n';
 import { emitToast } from '@/utils/toast';
+import * as reservasService from '@/hooks/reservas/service';
 import {
     ArrowPathIcon,
     CalendarIcon,
@@ -67,22 +68,11 @@ export default function FechaEditor({
         setSaving(true);
         try {
             if (!esFechaOriginal(checkIn, checkOut)) {
-                console.log(
-                    '--- [FechaEditor] Solicitud de confirmacion de fechas:',
-                    { checkIn, checkOut },
-                );
-                console.log(
-                    '--- [FechaEditor] typeof onRequestConfirmDates:',
-                    typeof onRequestConfirmDates,
-                );
+
                 if (typeof onRequestConfirmDates === 'function') {
                     try {
                         onRequestConfirmDates(checkIn, checkOut);
                     } catch (err) {
-                        console.error(
-                            '--- [FechaEditor] onRequestConfirmDates threw:',
-                            err,
-                        );
                         try {
                             window.dispatchEvent(
                                 new CustomEvent(
@@ -97,15 +87,12 @@ export default function FechaEditor({
                                 ),
                             );
                         } catch (e) {
-                            console.debug(e);
                         }
                     }
                     setSaving(false);
                     return;
                 } else {
-                    console.warn(
-                        '--- [FechaEditor] onRequestConfirmDates not provided, dispatching fallback event',
-                    );
+                    if (import.meta.env.DEV) console.warn('--- [FechaEditor] onRequestConfirmDates not provided, dispatching fallback event');
                     try {
                         window.dispatchEvent(
                             new CustomEvent('showModalFechasFallback', {
@@ -113,7 +100,6 @@ export default function FechaEditor({
                             }),
                         );
                     } catch (e) {
-                        console.debug(e);
                     }
                     setSaving(false);
                     return;
@@ -130,7 +116,8 @@ export default function FechaEditor({
                     .filter((n) => Number.isInteger(n)),
             };
 
-            await axios.put(`/reservas/${reserva.id}`, payload);
+            const identifier = reserva?.id ?? reserva?.localizador;
+            await reservasService.modificarEstancia(identifier, payload);
             emitToast(t('toasts.dates_updated'), 'success');
             if (refresh) await refresh();
         } catch (err) {

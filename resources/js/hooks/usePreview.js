@@ -319,20 +319,7 @@ export default function usePreview() {
                     per_night_net: perNightNet,
                 };
 
-                // Debug logging to help trace unexpected small deltas in UI
-                try {
-                    // eslint-disable-next-line no-console
-                    console.debug('[usePreview] debug', {
-                        viejoTotal,
-                        nuevoTotal,
-                        nightsOld,
-                        nightsNew,
-                        baseAssignedTotal,
-                        grupos,
-                    });
-                } catch (e) {
-                    console.debug(e);
-                }
+                // para mantener la consola limpia
 
                 setPreview(result);
                 return result;

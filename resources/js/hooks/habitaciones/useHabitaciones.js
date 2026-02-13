@@ -47,10 +47,10 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                 );
                 // Debug: loguear respuesta para verificar formato y claves de precio
                 try {
-                    // debug preview removed
-                } catch (e) {
-                    console.debug(e);
-                }
+                    // Nota: vista previa de depuración eliminada
+                    } catch (e) {
+
+                    }
                 setHabitaciones(Array.isArray(datos) ? datos : []);
 
                 // Intentar obtener precios por tipo mediante la API de cálculo de precios
@@ -69,9 +69,9 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                         // `useReservaForm`). Mantener la detección para posibles
                         // optimizaciones futuras.
                     }
-                } catch (err) {
-                    console.debug(err);
-                }
+                    } catch (err) {
+
+                    }
             } catch (err) {
                 if (err?.name !== 'AbortError') setHabitaciones([]);
             } finally {
@@ -173,18 +173,18 @@ export default function useHabitaciones({ paso, rango, setRango }) {
                                 const n = parseNumber(v);
                                 if (!Number.isNaN(n)) return n;
                             }
-                        } catch (e) {
-                            console.debug(e);
-                        }
+                            } catch (e) {
+
+                            }
                     }
                     // Recurse into children
                     for (const v of Object.values(obj)) {
                         try {
                             const r = walk(v);
                             if (!Number.isNaN(r)) return r;
-                        } catch (e) {
-                            console.debug(e);
-                        }
+                            } catch (e) {
+
+                                }
                     }
                     return NaN;
                 };

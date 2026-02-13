@@ -131,7 +131,14 @@ export default function EditEmpleado({ empleado, abierto, onCerrar }) {
 
                 {empleado && (
                     <form
-                        onSubmit={enviar}
+                        onSubmit={(e) =>
+                            enviar(e, {
+                                onSuccess: (page) => {
+                                    onCerrar?.();
+                                    limpiar();
+                                },
+                            })
+                        }
                         className="flex min-h-0 flex-1 flex-col bg-white"
                     >
                         <div className="flex-1 space-y-6 overflow-y-auto p-8">

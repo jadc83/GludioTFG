@@ -21,7 +21,7 @@ export default function CompletedTasks({ tareas = [] }) {
                                     No hay tareas completadas.
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="completed-grid">
                                     {tareas.map((t) => (
                                         <div
                                             key={t.id}

@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::get('/panel', [PanelController::class, 'index'])->name('panel')->middleware(['auth', 'verified', \App\Http\Middleware\EnsureEncargado::class]);
+Route::get('/panel', [PanelController::class, 'index'])->name('panel');
 Route::get('/terminos', function () { return Inertia::render('Legal/TerminosCondiciones'); })->name('terminos');
 // Páginas públicas: política, términos y contacto
 Route::get('/politica-privacidad', function () { return Inertia::render('PoliticaPrivacidad'); })->name('politica.privacidad');
@@ -68,11 +68,34 @@ Route::get('/api/tareas/completed', [\App\Http\Controllers\TareaController::clas
 
 // API: habitaciones en limpieza (excluye habitaciones con tareas activas)
 Route::get('/api/habitaciones/limpieza', function (Illuminate\Http\Request $request) {
-    $habitaciones = \App\Models\Habitacion::where('estado', 'limpieza')
-        ->whereDoesntHave('tareas', function($q){ $q->whereIn('status', ['pendiente', 'en_progreso']); })
-        ->with('fotos')
-        ->limit(200)
-        ->get();
+    // Por defecto se excluyen habitaciones con tareas activas (pendiente|en_progreso)
+    // Se puede sobreescribir con ?include_assigned=1 para depuración o necesidades de UI alternativas
+    $includeAssigned = (bool) $request->query('include_assigned');
+
+    $query = \App\Models\Habitacion::where('estado', 'limpieza');
+    if (! $includeAssigned) {
+        $query = $query->whereDoesntHave('tareas', function($q){
+            $q->whereIn('status', ['pendiente', 'en_progreso']);
+        });
+    }
+
+    $habitaciones = $query->with('fotos')->limit(200)->get();
+    $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
+    return response()->json(['habitaciones' => $action->handle($habitaciones)]);
+})->middleware('auth');
+
+// API: habitaciones en mantenimiento (excluye habitaciones con tareas activas)
+Route::get('/api/habitaciones/mantenimiento', function (Illuminate\Http\Request $request) {
+    $includeAssigned = (bool) $request->query('include_assigned');
+
+    $query = \App\Models\Habitacion::where('estado', 'mantenimiento');
+    if (! $includeAssigned) {
+        $query = $query->whereDoesntHave('tareas', function($q){
+            $q->whereIn('status', ['pendiente', 'en_progreso']);
+        });
+    }
+
+    $habitaciones = $query->with('fotos')->limit(200)->get();
     $action = app(\App\Actions\Habitaciones\FormatHabitacionesAction::class);
     return response()->json(['habitaciones' => $action->handle($habitaciones)]);
 })->middleware('auth');
@@ -93,10 +116,11 @@ Route::get('/api/departamentos/{departamento}', function (App\Models\Departament
     $empleados = $departamento->empleados->map(function ($e) {
         return [
             'id' => $e->id,
+            'user_id' => $e->user?->id ?? null,
             'name' => $e->user->name ?? null,
             'email' => $e->user->email ?? null,
 
-            'role' => $e->user ? ($e->user->getRoleNames()->first() ?? null) : null,
+            'role' => $e->user ? ($e->role ?? null) : null,
         ];
     });
     return response()->json(['id' => $departamento->id, 'name' => $departamento->name, 'empleados' => $empleados]);
@@ -147,7 +171,7 @@ Route::post('/reservas/{reserva}/reembolsar', [PagoController::class, 'reembolsa
 Route::resource('habitaciones', HabitacionController::class)->parameters(['habitaciones' => 'habitacion'])->middleware('auth');
 Route::resource('clientes', ClienteController::class)->middleware('auth');
 Route::resource('users', UserController::class)->only(['store', 'update'])->middleware('auth');
-Route::resource('empleados', EmpleadoController::class)->only(['create','store','update'])->middleware('auth');
+Route::resource('empleados', EmpleadoController::class)->only(['create','store','update','show'])->middleware('auth');
 
 // Ruta index simple que redirige al panel (donde se muestran los empleados en la pestaña) para mantener compatibilidad con las redirecciones actuales
 Route::get('/empleados', function () { return redirect()->route('panel'); })->name('empleados.index')->middleware('auth');
@@ -161,5 +185,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('cupones', \App\Http\Controllers\CuponController::class)->parameters(['cupones' => 'cupon']);
     Route::post('cupones/{cupon}/toggle', [\App\Http\Controllers\CuponController::class, 'toggle'])->name('cupones.toggle');
 });
+
+// Nota: la ruta de depuración para broadcasts fue eliminada.
 
 require __DIR__ . '/auth.php';

@@ -27,11 +27,10 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
 
     const guardarCambios = async (id) => {
         try {
-            const csrf = document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content');
+            const csrf = window.getCsrfToken?.() || '';
             await axios.put(`/api/tipos-habitacion/${id}`, formData, {
-                headers: { 'X-CSRF-Token': csrf },
+                headers: { 'X-XSRF-TOKEN': csrf },
+                withCredentials: true,
             });
 
             // Asumimos éxito si no lanza error
@@ -39,8 +38,7 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
             setEditando(null);
             setFormData({});
         } catch (error) {
-            console.error('Error guardando cambios:', error?.response || error);
-        }
+            }
     };
 
     return (

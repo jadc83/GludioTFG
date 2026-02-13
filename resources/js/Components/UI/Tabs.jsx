@@ -15,16 +15,25 @@ export default function Tabs({
                     key={tab.id}
                     id={`tab-${tab.id}`}
                     onClick={() => onChange(tab.id)}
-                    className={`flex items-center gap-2.5 rounded-xl px-5 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${isActive ? 'active' : ''}`}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[12px] font-black uppercase tracking-widest transition-all duration-300 ${isActive ? 'active' : ''}`}
                     role="tab"
                     aria-selected={isActive ? 'true' : 'false'}
                     aria-controls={`panel-${tab.id}`}
                     tabIndex={isActive ? 0 : -1}
                 >
-                    <Icon
-                        className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-400'}`}
-                    />
-                    <span>{tab.label}</span>
+                        <span className={`flex h-8 w-8 items-center justify-center rounded-md ${isActive ? 'bg-white/10' : 'bg-white/0'}`}>
+                            <Icon
+                                className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-400'}`}
+                            />
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <span className="whitespace-nowrap truncate max-w-[9rem] md:max-w-none">{tab.label}</span>
+                            {typeof tab.count === 'number' ? (
+                                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white/90">
+                                    {tab.count}
+                                </span>
+                            ) : null}
+                        </span>
                 </button>
             );
         }

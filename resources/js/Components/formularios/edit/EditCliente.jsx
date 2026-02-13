@@ -98,7 +98,14 @@ export default function EditCliente({ cliente, abierto, onCerrar }) {
 
                 {cliente && (
                     <form
-                        onSubmit={guardar}
+                        onSubmit={(e) =>
+                            guardar(e, {
+                                onSuccess: (page) => {
+                                    onCerrar?.();
+                                    limpiar();
+                                },
+                            })
+                        }
                         aria-label="Formulario editar cliente"
                         className="flex min-h-0 flex-1 flex-col bg-white"
                     >

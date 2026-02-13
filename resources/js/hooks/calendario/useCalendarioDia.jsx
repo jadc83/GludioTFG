@@ -65,6 +65,14 @@ export default function useCalendarioDia(mapaPrecios, formatearISO) {
 
                 // Mostrar barra de ocupación si no es día pasado, no está deshabilitado, hay ocupación y no está al 100%
                 if (!ayer && !disabled && ocupacion > 0 && ocupacion !== 100) {
+                    const getOccupancyColor = (pct) => {
+                        // Map 0 -> 120 (green), 50 -> 60 (yellow), 100 -> 0 (red)
+                        const clamped = Math.max(0, Math.min(100, Number(pct) || 0));
+                        const hue = Math.round((1 - clamped / 100) * 120);
+                        // keep saturation and lightness balanced for good contrast
+                        return `hsl(${hue} 70% 45%)`;
+                    };
+
                     elementosAdicionales.push(
                         <div
                             key="ocupacion"
@@ -74,12 +82,7 @@ export default function useCalendarioDia(mapaPrecios, formatearISO) {
                                 bottom: 0,
                                 left: 0,
                                 height: '6px',
-                                backgroundColor:
-                                    ocupacion > 80
-                                        ? '#7a0202'
-                                        : ocupacion > 50
-                                          ? '#6b7280'
-                                          : '#d1d5db',
+                                backgroundColor: getOccupancyColor(ocupacion),
                                 width: `${ocupacion}%`,
                                 borderRadius: '0 0 8px 8px',
                                 zIndex: 5,

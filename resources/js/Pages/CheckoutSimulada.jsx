@@ -149,10 +149,7 @@ export default function CheckoutSimulada() {
                         </div>
                     ) : clientSecret && stripePromise ? (
                         <div className="animate-in fade-in slide-in-from-right-8 flex w-full justify-center duration-1000">
-                            <Elements
-                                stripe={stripePromise}
-                                options={{ clientSecret }}
-                            >
+                            <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret }}>
                                 <LatveriaCard
                                     clientSecret={clientSecret}
                                     paymentIntentId={paymentIntentId}

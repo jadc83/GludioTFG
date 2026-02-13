@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 
-export default function ReservationRow({ reserva, configEstado }) {
+export default function FilaReserva({ reserva, configEstado }) {
     return (
         <tr className="group transition-colors hover:bg-gray-50/50">
             <td className="py-6" data-label="Localizador">

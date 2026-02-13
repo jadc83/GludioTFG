@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Turno;
+use App\Models\Empleado;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,32 @@ class TurnoController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        $empleadoId = $request->query('empleado_id');
+
+        // if empleado_id provided, ensure the user can view that empleado's turnos
+        if ($empleadoId) {
+            $target = Empleado::find($empleadoId);
+            if (!$target) return response()->json(['turnos' => []]);
+
+            $canView = $user->hasRole('admin') || (
+                is_array($user->roles ?? []) && in_array('encargado', $user->roles) &&
+                $user->empleado && $user->empleado->departamento && $user->empleado->departamento === $target->departamento
+            );
+
+            if (!$canView) return response()->json(['turnos' => []]);
+
+            $turnos = Turno::where('empleado_id', $target->id)->orderBy('starts_at', 'asc')->get()->map(function ($t) {
+                return [
+                    'id' => $t->id,
+                    'title' => $t->actividad ?: 'Turno',
+                    'start' => $t->starts_at?->toDateTimeString(),
+                    'end' => $t->ends_at?->toDateTimeString(),
+                    'meta' => $t->meta,
+                ];
+            });
+            return response()->json(['turnos' => $turnos]);
+        }
+
         if (!$user->empleado) {
             return response()->json(['turnos' => []]);
         }
@@ -44,22 +71,43 @@ class TurnoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->empleado) {
-            return response()->json(['error' => 'Empleado no encontrado'], 422);
-        }
-
         $data = $request->validate([
             'starts_at' => 'required|date',
             'ends_at' => 'required|date|after:starts_at',
             'actividad' => 'nullable|string|max:255',
             'meta' => 'nullable|array',
+            'empleado_id' => 'nullable|integer|exists:empleados,id',
         ]);
+        // Determine target empleado: either provided (admin/encargado) or the logged-in user's empleado
+        $targetEmpleadoId = null;
+        if (!empty($data['empleado_id'])) {
+            $target = Empleado::find($data['empleado_id']);
+            if (!$target) {
+                return response()->json(['error' => 'Empleado no encontrado'], 422);
+            }
+
+            $canAssign = $user->hasRole('admin') || (
+                is_array($user->roles ?? []) && in_array('encargado', $user->roles) &&
+                $user->empleado && $user->empleado->departamento && $user->empleado->departamento === $target->departamento
+            );
+
+            if (!$canAssign) {
+                return response()->json(['error' => 'No autorizado para asignar turno a este empleado'], 403);
+            }
+
+            $targetEmpleadoId = $target->id;
+        } else {
+            if (!$user->empleado) {
+                return response()->json(['error' => 'Empleado no encontrado'], 422);
+            }
+            $targetEmpleadoId = $user->empleado->id;
+        }
 
         $starts = Carbon::parse($data['starts_at']);
         $ends = Carbon::parse($data['ends_at']);
 
         // Check overlap (exclusive): allow back-to-back shifts (e.g. 08:00-12:00 and 12:00-16:00)
-        $exists = Turno::where('empleado_id', $user->empleado->id)
+        $exists = Turno::where('empleado_id', $targetEmpleadoId)
             ->where(function ($q) use ($starts, $ends) {
                 // overlap iff existing.starts_at < new_ends AND existing.ends_at > new_starts
                 $q->where('starts_at', '<', $ends)
@@ -71,7 +119,7 @@ class TurnoController extends Controller
         }
 
         $turno = Turno::create([
-            'empleado_id' => $user->empleado->id,
+            'empleado_id' => $targetEmpleadoId,
             'created_by' => $user->id,
             'actividad' => $data['actividad'] ?? null,
             'starts_at' => $starts,
@@ -143,11 +191,27 @@ class TurnoController extends Controller
     public function clear(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->empleado) {
-            return response()->json(['error' => 'Empleado no encontrado'], 422);
-        }
+        $empleadoId = $request->query('empleado_id');
 
-        $turnos = Turno::where('empleado_id', $user->empleado->id)->get();
+        if ($empleadoId) {
+            $target = Empleado::find($empleadoId);
+            if (!$target) return response()->json(['error' => 'Empleado no encontrado'], 422);
+
+            $canClear = $user->hasRole('admin') || (
+                is_array($user->roles ?? []) && in_array('encargado', $user->roles) &&
+                $user->empleado && $user->empleado->departamento && $user->empleado->departamento === $target->departamento
+            );
+
+            if (!$canClear) return response()->json(['error' => 'No autorizado'], 403);
+
+            $turnos = Turno::where('empleado_id', $target->id)->get();
+        } else {
+            if (!$user->empleado) {
+                return response()->json(['error' => 'Empleado no encontrado'], 422);
+            }
+
+            $turnos = Turno::where('empleado_id', $user->empleado->id)->get();
+        }
         $deleted = $turnos->map(function ($t) {
             return [
                 'actividad' => $t->actividad,
@@ -158,7 +222,7 @@ class TurnoController extends Controller
         })->values();
 
         // Delete all
-        Turno::where('empleado_id', $user->empleado->id)->delete();
+        Turno::whereIn('id', $turnos->pluck('id'))->delete();
 
         return response()->json(['deleted' => $deleted]);
     }

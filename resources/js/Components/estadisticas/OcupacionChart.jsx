@@ -25,10 +25,7 @@ ChartJS.register(
 
 export default function OcupacionChart({ porDia }) {
     React.useEffect(() => {
-        console.debug(
-            'OcupacionChart montado, porDia.length=',
-            porDia?.length ?? 0,
-        );
+        // debug logs removed
     }, [porDia]);
 
     if (!porDia || porDia.length === 0) {

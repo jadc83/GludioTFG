@@ -69,7 +69,7 @@ class RefundRequestController extends Controller
                 'status' => 'pending',
             ]);
 
-            // Log creation for debugging visibility in admin index
+            // Registrar creación para visibilidad en el índice de administración (depuración)
             Log::info('RefundRequest creada', ['id' => $rr->id, 'reserva_id' => $rr->reserva_id, 'user_id' => $rr->user_id, 'requested_amount_cents' => $rr->requested_amount_cents]);
 
             // Notificar a admins por correo y broadcast
@@ -112,6 +112,7 @@ class RefundRequestController extends Controller
      */
     public function index(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $list = RefundRequest::with(['reserva', 'user'])->orderByDesc('created_at')->paginate(25);
         return response()->json(['success' => true, 'data' => $list]);
     }
@@ -127,9 +128,10 @@ class RefundRequestController extends Controller
      */
     public function approve(Request $request, RefundRequest $refundRequest, PaymentService $paymentService, PrecioService $precioService)
     {
-        // Only admins can approve refunds
-        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        $this->denegarAccesoLimpiezaYMantenimiento();
+        // Sólo administradores pueden aprobar solicitudes de reembolso
+        if (! Auth::check() || ! (method_exists(Auth::user(), 'hasRole') && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Acceso denegado'], 403);
         }
 
         if ($refundRequest->status !== 'pending') {
@@ -242,11 +244,12 @@ class RefundRequestController extends Controller
      */
     public function reject(Request $request, RefundRequest $refundRequest)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $request->validate(['admin_reason' => 'required|string']);
 
-        // Only admins can reject refunds
-        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        // Sólo administradores pueden rechazar solicitudes de reembolso
+        if (! Auth::check() || ! (method_exists(Auth::user(), 'hasRole') && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Acceso denegado'], 403);
         }
 
         $refundRequest->update([
@@ -282,9 +285,10 @@ class RefundRequestController extends Controller
      */
     public function destroy(RefundRequest $refundRequest)
     {
-        // Only admins can delete refund requests
-        if (! (Auth::user() && Auth::user()->hasRole('admin'))) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        $this->denegarAccesoLimpiezaYMantenimiento();
+        // Sólo administradores pueden eliminar solicitudes de reembolso
+        if (! Auth::check() || ! (method_exists(Auth::user(), 'hasRole') && Auth::user()->hasRole('admin'))) {
+            return response()->json(['success' => false, 'message' => 'Acceso denegado'], 403);
         }
 
         try {

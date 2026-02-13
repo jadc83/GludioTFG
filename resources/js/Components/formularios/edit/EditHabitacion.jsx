@@ -9,7 +9,9 @@ import {
     SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Inertia } from '@inertiajs/inertia';
+import habitacionesService from '@/services/habitacionesService';
+import { useEffect, useMemo, useState, useRef } from 'react';
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
     const datosIniciales = {
@@ -104,10 +106,55 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
     };
 
     const enviar = (e) => {
-        setData('fotos[]', fotosNuevas);
-        setData('fotos_eliminar[]', fotosAEliminar);
-        guardar(e);
+        e.preventDefault();
+        // Envío via fetch/FormData para evitar cabecera X-Inertia y recibir JSON 200
+        const rutaActualizar = habitacion ? `/habitaciones/${habitacion.id}` : null;
+        if (!rutaActualizar) return;
+        (async () => {
+            try {
+                setLocalErrors({});
+                setSubmitting(true);
+                const csrf = window.getCsrfToken?.() || '';
+                const fd = new FormData();
+                fd.append('_method', 'PUT');
+                fd.append('numero', formulario.numero || '');
+                fd.append('tipo', formulario.tipo || 'doble');
+                fd.append('capacidad', formulario.capacidad || 1);
+                fd.append('estado', formulario.estado || 'disponible');
+                fd.append('descripcion', formulario.descripcion || '');
+                fd.append('notas', formulario.notas || '');
+                fotosNuevas.forEach((f) => fd.append('fotos[]', f));
+                fotosAEliminar.forEach((id) => fd.append('fotos_eliminar[]', id));
+
+                let data;
+                try {
+                    data = await habitacionesService.updateHabitacionFormData(habitacion.id, fd);
+                } catch (err) {
+                    const resp = err || {};
+                    setLocalErrors(resp.errors || resp || { _general: resp.error || 'Error' });
+                    window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: resp.error || 'Error al actualizar habitación', type: 'error' } }));
+                    return;
+                }
+
+                // éxito
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Habitación actualizada', type: 'success' } }));
+                onCerrar?.();
+                limpiar();
+                // refrescar vista mediante evento global
+                window.dispatchEvent(new Event('habitaciones:updated'));
+                // Forzar recarga Inertia para asegurar que la vista refleja el cambio inmediatamente
+                try { Inertia.reload(); } catch (e) { /* registros de depuración eliminados */ }
+            } catch (e) {
+                console.error(e);
+                window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Error al actualizar habitación', type: 'error' } }));
+            } finally {
+                setSubmitting(false);
+            }
+        })();
     };
+
+    const [localErrors, setLocalErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     const handleCerrar = () => {
         onCerrar?.();
@@ -165,8 +212,8 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     onChange={cambiar}
                                     placeholder="Ej: 101"
                                     claseExtra="font-mono"
-                                    required
-                                    error={errores.numero}
+                                        required
+                                        error={localErrors.numero || errores.numero}
                                     sinEstilosPorDefecto={true}
                                     claseContenedor="contenedorCampo"
                                     claseEtiqueta="etiquetaCampo"
@@ -311,11 +358,11 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                     </button>
                                 </div>
 
-                                {errores.estado && (
+                                {(localErrors.estado || errores.estado) && (
                                     <span className="campo-error">
-                                        {Array.isArray(errores.estado)
-                                            ? errores.estado[0]
-                                            : errores.estado}
+                                        {Array.isArray(localErrors.estado || errores.estado)
+                                            ? (localErrors.estado || errores.estado)[0]
+                                            : (localErrors.estado || errores.estado)}
                                     </span>
                                 )}
                             </div>
@@ -326,7 +373,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                                 fotosGuardadas={fotosGuardadas}
                                 onAgregar={agregarFotos}
                                 onQuitar={quitarFoto}
-                                error={errores.fotos}
+                                error={localErrors.fotos || errores.fotos}
                                 maxFotos={MAX_FOTOS}
                             />
 
@@ -365,10 +412,10 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                         <div className="flex-none border-t border-gray-100 bg-gray-50 p-6">
                             <button
                                 type="submit"
-                                disabled={estaCargando}
+                                disabled={estaCargando || submitting}
                                 className="w-full rounded-2xl bg-gray-900 py-5 text-[11px] font-black uppercase tracking-[0.25em] text-white shadow-xl transition-all hover:bg-[#7a0202] disabled:opacity-50"
                             >
-                                {estaCargando
+                                {estaCargando || submitting
                                     ? 'Guardando...'
                                     : 'Actualizar Habitación'}
                             </button>

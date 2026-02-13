@@ -50,10 +50,7 @@ export default function usePaymentModal({
 
     const onPagoExitoso = useCallback(
         async (paymentResult = {}) => {
-            console.log(
-                '--- [usePaymentModal] onPagoExitoso called with:',
-                paymentResult,
-            );
+            // Nota: onPagoExitoso invocado (sin logs)
             setMostrar(false);
             if (!pendienteAplicar)
                 return { success: false, reason: 'no_pending' };

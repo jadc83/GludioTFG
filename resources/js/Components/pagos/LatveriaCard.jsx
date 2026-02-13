@@ -13,7 +13,6 @@ const LatveriaCard = ({
     const stripe = useStripe();
     const elements = useElements();
     const [loadingConfirm, setLoadingConfirm] = useState(false);
-    const [completed, setCompleted] = useState(false);
     const { confirmarPaymentIntent } = usePayments();
 
     // Configuración de Stripe
@@ -32,7 +31,6 @@ const LatveriaCard = ({
     };
 
     const handleConfirm = async () => {
-        if (completed) return; // prevent duplicate submissions after success
         if (!stripe || !elements) {
             onError && onError('Stripe no inicializado');
             return;
@@ -54,26 +52,18 @@ const LatveriaCard = ({
                 return;
             }
 
-            if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
+                if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp =
                     await confirmarPaymentIntent(paymentIntentId);
-                console.log('--- [LatveriaCard] backendResp:', backendResp);
                 if (backendResp && backendResp.success) {
-                    setCompleted(true);
-                    console.log(
-                        '--- [LatveriaCard] about to call onSuccess, pago_id:',
-                        backendResp.pago_id,
-                    );
-                    console.log(
-                        'Is onSuccess a function?',
-                        typeof onSuccess === 'function',
-                    );
+                    // Notify parent and keep showing spinner until parent navigates/unmounts
                     onSuccess &&
                         onSuccess({
                             pago_id: backendResp.pago_id,
                             paymentIntentId,
                             localizador: backendResp.localizador,
                         });
+                    return;
                 } else {
                     onError &&
                         onError(
@@ -156,7 +146,7 @@ const LatveriaCard = ({
                     <div className="card-body p-8">
                         <div className="mb-10 flex items-start justify-between">
                             <div className="text-[10px] font-black tracking-[0.2em] text-white/90">
-                                BANK OF LATVERIA
+                                BANCO DE GLUDIO
                             </div>
                             <div className="select-none text-5xl leading-none opacity-10">
                                 ❁
@@ -170,34 +160,22 @@ const LatveriaCard = ({
                         <div className="mt-3 flex justify-end">
                             <button
                                 onClick={handleConfirm}
-                                disabled={loadingConfirm || completed}
+                                disabled={loadingConfirm}
                                 aria-busy={loadingConfirm}
-                                aria-disabled={loadingConfirm || completed}
-                                className={`mt-4 rounded px-4 py-2 font-bold text-white ${completed ? 'bg-green-600' : 'bg-[#7a0202]'}`}
+                                aria-disabled={loadingConfirm}
+                                className={`mt-4 rounded px-4 py-2 font-bold text-white ${loadingConfirm ? 'opacity-80 cursor-wait bg-[#7a0202]' : 'bg-[#7a0202]'}`}
                             >
-                                {completed
-                                    ? 'Confirmado'
-                                    : loadingConfirm
-                                      ? 'Confirmando...'
-                                      : 'Confirmar pago'}
+                                {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
                             </button>
                         </div>
 
                         <div className="mt-8 flex items-end justify-between">
                             <div className="space-y-1">
                                 <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
-                                    Card Holder
+                                    Titular
                                 </div>
                                 <div className="text-sm font-bold uppercase italic tracking-tight">
                                     {name || 'Titular'}
-                                </div>
-                            </div>
-                            <div className="space-y-1 text-right">
-                                <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
-                                    Expires
-                                </div>
-                                <div className="font-mono text-sm font-bold tracking-tight">
-                                    29/08
                                 </div>
                             </div>
                         </div>

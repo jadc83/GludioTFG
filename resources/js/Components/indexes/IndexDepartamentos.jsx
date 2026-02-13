@@ -1,14 +1,15 @@
 import ShowDepartamento from '@/Components/formularios/show/ShowDepartamento';
 import IndexEmpleados from '@/Components/indexes/IndexEmpleados';
+import { usePage } from '@inertiajs/react';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
-import Paginacion from '@/Components/UI/Paginacion';
 import { EyeIcon, InboxIcon } from '@heroicons/react/24/outline';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function IndexDepartamentos({ empleados = [] }) {
+    const { props } = usePage();
+    const roles = props?.auth?.user?.roles || [];
+    const isAdmin = Array.isArray(roles) && roles.includes('admin');
     const [departamentos, setDepartamentos] = useState([]);
-    const [paginaActual, setPaginaActual] = useState(1);
-    const itemsPorPagina = 10;
 
     const [departamentoSeleccionado, setDepartamentoSeleccionado] =
         useState(null);
@@ -30,15 +31,11 @@ export default function IndexDepartamentos({ empleados = [] }) {
         setDrawerAbierto(false);
     };
 
-    const { departamentosPaginados, totalPaginas, inicio, fin } =
-        useMemo(() => {
-            const total = departamentos.length;
-            const totalPaginas = Math.max(1, Math.ceil(total / itemsPorPagina));
-            const inicio = (paginaActual - 1) * itemsPorPagina;
-            const fin = inicio + itemsPorPagina;
-            const departamentosPaginados = departamentos.slice(inicio, fin);
-            return { departamentosPaginados, totalPaginas, inicio, fin };
-        }, [departamentos, paginaActual]);
+    // Mostrar todos los departamentos sin paginación
+    const departamentosPaginados = departamentos;
+    const inicio = departamentos.length > 0 ? 1 : 0;
+    const fin = departamentos.length;
+    const totalPaginas = 1;
 
     return (
         <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
@@ -108,15 +105,7 @@ export default function IndexDepartamentos({ empleados = [] }) {
                         </table>
                     </div>
 
-                    <Paginacion
-                        paginaActual={paginaActual}
-                        totalPaginas={totalPaginas}
-                        inicio={inicio}
-                        fin={fin}
-                        total={departamentos.length}
-                        onCambiarPagina={setPaginaActual}
-                        etiqueta="Departamentos"
-                    />
+                    {/* Paginación eliminada: se muestran todos los departamentos */}
                 </>
             )}
 
@@ -128,7 +117,7 @@ export default function IndexDepartamentos({ empleados = [] }) {
 
             {/* Empleados: tabla embebida dentro de Departamentos */}
             <div className="mt-12">
-                <IndexEmpleados empleados={empleados} embedded />
+                {isAdmin && <IndexEmpleados empleados={empleados} embedded />}
             </div>
         </div>
     );

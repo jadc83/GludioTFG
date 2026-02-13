@@ -86,7 +86,7 @@ class PaymentServiceFallbackTest extends TestCase
 
         $respuesta = $servicio->confirmarPaymentIntent($piStub->id);
 
-        // DEBUG: print response
+        // Imprime respuesta para depuración del test
         fwrite(STDERR, "confirm_placeholder resp: " . json_encode($respuesta) . "\n");
 
         $this->assertTrue(!empty($respuesta['success']), 'Response should be success');
@@ -150,7 +150,7 @@ class PaymentServiceFallbackTest extends TestCase
 
         $respuesta = $servicio->confirmarPaymentIntent($piStub->id);
 
-        // DEBUG: print response
+        // Imprime respuesta para depuración del test
         fwrite(STDERR, "confirm_link resp: " . json_encode($respuesta) . "\n");
 
         $this->assertTrue(!empty($respuesta['success']), 'Response should be success');

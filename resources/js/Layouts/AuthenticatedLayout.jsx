@@ -46,10 +46,7 @@ export default function AuthenticatedLayout({ children }) {
             }
         }
 
-        // Debug: mostrar flash en consola en desarrollo para investigar casos raros (p.ej. toast con "D")
-        if (import.meta.env.DEV && page?.props?.flash) {
-            console.debug('DEBUG: page.props.flash =>', page.props.flash);
-        }
+        // Nota: se omiten logs de depuración para mantener consola limpia en desarrollo
 
         // Mostrar notificación si el backend puso refund_info en flash
         const refund = page?.props?.flash?.refund_info;

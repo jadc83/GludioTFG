@@ -30,6 +30,69 @@ class PanelController extends Controller
      */
     public function index(Request $request)
     {
+        // Control de acceso: el panel sólo es accesible para administradores, encargados,
+        // o empleados asignados a Recepción/Mantenimiento con rol operativo.
+        $viewerCheck = $request->user();
+        try {
+            if (! $viewerCheck) {
+                abort(403);
+            }
+
+            $hasRoleMethod = method_exists($viewerCheck, 'hasRole');
+            $isAdmin = $hasRoleMethod && $viewerCheck->hasRole('admin');
+            $isEncargado = $hasRoleMethod && $viewerCheck->hasRole('encargado');
+
+            if ($isAdmin || $isEncargado) {
+                // permitido
+            } elseif ($viewerCheck->empleado) {
+                $dept = strtolower($viewerCheck->empleado->departamento?->name ?? '');
+                $empRole = strtolower($viewerCheck->empleado->role ?? '');
+                if (! (in_array($dept, ['recepcion', 'mantenimiento']) && in_array($empRole, ['operario', 'auxiliar', 'encargado']))) {
+                    abort(403);
+                }
+            } else {
+                abort(403);
+            }
+        } catch (\Throwable $e) {
+            abort(403);
+        }
+        // Si se solicita explícitamente la pestaña 'configuracion', permitir solo a administradores
+        $requestedTab = $request->query('tab');
+        if ($requestedTab === 'configuracion') {
+            $viewer = $request->user();
+            try {
+                if (!($viewer && method_exists($viewer, 'hasRole') && $viewer->hasRole('admin'))) {
+                    abort(403);
+                }
+            } catch (\Throwable $e) {
+                abort(403);
+            }
+        }
+
+        // Si se solicita explícitamente la pestaña 'estadisticas', permitir solo a administradores o encargados
+        // Nota: encargados del departamento 'Limpieza' no tienen acceso
+        if ($requestedTab === 'estadisticas') {
+            $viewer = $request->user();
+            try {
+                if (! $viewer) {
+                    abort(403);
+                }
+
+                if (method_exists($viewer, 'hasRole') && $viewer->hasRole('admin')) {
+                    // admin ok
+                } elseif (method_exists($viewer, 'hasRole') && $viewer->hasRole('encargado')) {
+                    // revisar departamento
+                    $dept = strtolower($viewer->empleado?->departamento?->name ?? '');
+                    if (in_array($dept, ['limpieza', 'mantenimiento'])) {
+                        abort(403);
+                    }
+                } else {
+                    abort(403);
+                }
+            } catch (\Throwable $e) {
+                abort(403);
+            }
+        }
         $clientes = Cliente::buscar($request->busqueda)
             ->tipoDocumento($request->tipo_documento)
             ->orderBy('name')
@@ -53,7 +116,16 @@ class PanelController extends Controller
             $query = $query->onlyTrashed();
         }
 
-        $reservas = $query->orderBy('check_in', 'desc')->get();
+        // Support sorting from the frontend (e.g., sort_by=created_at, sort_dir=asc|desc)
+        $sortBy = $request->input('sort_by');
+        $sortDir = strtolower($request->input('sort_dir') ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        if ($sortBy === 'created_at') {
+            $reservas = $query->orderBy('created_at', $sortDir)->get();
+        } else {
+            // default ordering remains by check_in desc
+            $reservas = $query->orderBy('check_in', 'desc')->get();
+        }
 
         $habitaciones = Habitacion::with('fotos')
             ->buscar($request->busqueda)

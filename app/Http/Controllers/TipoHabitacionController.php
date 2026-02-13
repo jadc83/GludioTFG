@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\TipoHabitacion;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class TipoHabitacionController extends Controller
 {
@@ -25,6 +26,10 @@ class TipoHabitacionController extends Controller
      */
     public function update(TipoHabitacion $tipoHabitacion, \Illuminate\Http\Request $request): JsonResponse
     {
+        if (Gate::denies('puedeVer')) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'nombre' => 'required|string',
             'capacidad' => 'required|integer|min:1',

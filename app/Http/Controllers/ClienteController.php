@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
@@ -15,6 +16,7 @@ class ClienteController extends Controller
      */
     public function index(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $clientes = Cliente::buscar($request->busqueda)
             ->tipoDocumento($request->tipo_documento)
             ->orderBy('name')
@@ -59,6 +61,7 @@ class ClienteController extends Controller
      */
     public function store(StoreClienteRequest $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $validado = $request->validated();
         $cliente = Cliente::create($validado);
         $cliente->save();
@@ -88,6 +91,7 @@ class ClienteController extends Controller
      */
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $validado = $request->validated();
 
         // actualización recibida
@@ -96,8 +100,14 @@ class ClienteController extends Controller
 
         // Devolver JSON solo para peticiones API/JSON puras. No devolver JSON para peticiones Inertia
         // (Inertia espera una respuesta con cabeceras especiales). Si es Inertia, mantener la redirección.
-        if (($request->ajax() || $request->wantsJson()) && !$request->header('X-Inertia')) {
+        // Return JSON only for pure AJAX/JSON requests (not Inertia visits)
+        if (($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) && ! $request->header('X-Inertia')) {
             return response()->json(['success' => true, 'cliente' => $cliente]);
+        }
+
+        // If the request is an Inertia request, redirect to the panel with the clientes tab
+        if ($request->header('X-Inertia')) {
+            return Inertia::location(route('panel', ['tab' => 'clientes']));
         }
 
         return redirect()->route('panel');
@@ -115,6 +125,7 @@ class ClienteController extends Controller
 
     public function buscar(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $query = $request->get('query');
 
         if (strlen($query) < 1) {

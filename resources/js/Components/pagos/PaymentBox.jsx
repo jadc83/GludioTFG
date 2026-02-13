@@ -40,7 +40,6 @@ export default function PaymentBox({
                     name={name || reserva?.reservable?.name}
                     email={email || reserva?.reservable?.email}
                     onSuccess={(data) => {
-                        console.log('--- [PaymentBox] onSuccess data:', data);
                         onConfirmed && onConfirmed(data);
                     }}
                     onError={onError}

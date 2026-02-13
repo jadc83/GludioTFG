@@ -42,8 +42,16 @@ export default function UpdateProfileInformation({ className = '' }) {
     return (
         <section className={`mx-auto max-w-4xl ${className}`}>
             {/* --- CONTENEDOR ÚNICO DEL FORMULARIO --- */}
-            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-                <form onSubmit={submit} className="space-y-10 p-8">
+            <div className="overflow-hidden rounded-3xl bg-white">
+                <form onSubmit={submit} className="space-y-8 p-6 md:p-8">
+                    <header className="mb-2 pb-4">
+                        <h2 className="text-lg font-extrabold text-gray-800">
+                            Editar información
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Actualiza tus datos personales. Estos datos son usados en reservas y comunicaciones.
+                        </p>
+                    </header>
                     {/* SECCIÓN 1: IDENTIDAD */}
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -237,10 +245,10 @@ export default function UpdateProfileInformation({ className = '' }) {
                     {/* VERIFICACIÓN (Alerta sutil) */}
 
                     {/* --- ACCIONES --- */}
-                    <div className="perfil-form-actions flex items-center gap-6 border-t border-gray-50 pt-6">
+                    <div className="perfil-form-actions flex items-center gap-4 pt-6">
                         <button
                             disabled={processing}
-                            className="rounded-2xl bg-gray-900 px-10 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-gray-200 transition hover:bg-black disabled:opacity-50"
+                            className="rounded-2xl bg-[#920303] px-6 py-3 text-sm font-black uppercase tracking-widest text-white shadow hover:bg-[#7a0202] disabled:opacity-50 transition"
                         >
                             {processing ? 'Procesando...' : 'Actualizar Perfil'}
                         </button>

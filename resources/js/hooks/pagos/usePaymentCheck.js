@@ -41,7 +41,7 @@ export default function usePaymentCheck({
                     }
                 });
             } catch (e) {
-                console.debug(e);
+                // Ignorar error silencioso al suscribirse a Echo en entornos sin Echo
             }
         }
 
@@ -61,7 +61,7 @@ export default function usePaymentCheck({
                     return;
                 }
             } catch (e) {
-                console.debug(e);
+                // Ignorar errores de polling intermitentes
             }
 
             if (
@@ -82,9 +82,9 @@ export default function usePaymentCheck({
             if (listener && typeof listener.stopListening === 'function') {
                 try {
                     listener.stopListening();
-                } catch (e) {
-                    console.debug(e);
-                }
+                    } catch (e) {
+                        // Ignorar errores al detener el listener
+                    }
             }
             if (typeof timerId === 'number') clearTimeout(timerId);
         };

@@ -23,6 +23,8 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(<App {...props} />);
+
+        // No listeners globales: los componentes interesados se suscriben localmente.
     },
     progress: {
         color: '#4B5563',

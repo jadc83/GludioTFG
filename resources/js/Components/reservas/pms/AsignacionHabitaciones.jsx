@@ -148,22 +148,7 @@ export default function AsignacionHabitaciones({
                                 );
 
                                 try {
-                                    // eslint-disable-next-line no-console
-                                    console.debug(
-                                        '[AsignacionHabitaciones] slot',
-                                        idx,
-                                        {
-                                            slotTipo: hSlot.tipo,
-                                            availableCount:
-                                                habitacionesDisponibles.length,
-                                            filteredCount: filtered.length,
-                                            availableTipos: (
-                                                habitacionesDisponibles || []
-                                            ).map((h) => h.tipo),
-                                        },
-                                    );
                                 } catch (e) {
-                                    console.debug(e);
                                 }
 
                                 if (filtered.length === 0) {

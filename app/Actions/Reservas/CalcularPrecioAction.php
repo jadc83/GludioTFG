@@ -2,6 +2,7 @@
 
 namespace App\Actions\Reservas;
 
+use App\Models\Reserva;
 use App\Services\PrecioService;
 use Carbon\Carbon;
 
@@ -21,18 +22,13 @@ class CalcularPrecioAction
     {
         $checkIn = Carbon::createFromFormat('Y-m-d', $data['check_in']);
         $checkOut = Carbon::createFromFormat('Y-m-d', $data['check_out']);
-
         $tarifas = is_array($data['tarifas'] ?? []) ? $data['tarifas'] : [];
-
-        // Mapear habitaciones a formato esperado: array de ['tipo' => string, 'cantidad' => int]
-        // Aceptamos entradas con { tipo, cantidad } o una lista de entradas individuales.
         $habitacionesMapeadas = [];
         $tiposCount = [];
         foreach ($data['habitaciones'] as $hab) {
             $tipo = $hab['tipo'] ?? $hab['tipo_habitacion'] ?? null;
             if (!$tipo) continue;
 
-            // Si se envía 'cantidad', respetarla; si no, asumir 1 por entrada
             if (array_key_exists('cantidad', $hab)) {
                 $cantidad = (int) $hab['cantidad'];
                 $tiposCount[$tipo] = ($tiposCount[$tipo] ?? 0) + max(0, $cantidad);
@@ -46,8 +42,6 @@ class CalcularPrecioAction
         }
 
         $nuevoPrecio = $this->precioService->precioConTarifas($habitacionesMapeadas, $checkIn, $checkOut, $tarifas);
-
-        // Verificar disponibilidad
         $available = $this->verificarDisponibilidad($habitacionesMapeadas, $checkIn, $checkOut, $data['reserva_id'] ?? null);
 
         $numeroNoches = $checkIn->diffInDays($checkOut);
@@ -60,16 +54,14 @@ class CalcularPrecioAction
             'nuevo_total' => $nuevoPrecio['total'] ?? 0,
             'per_night' => $perNight,
             'available' => $available,
-            // incluir desglose por tipo para que el frontend pueda mapear preciosPorTipo
             'habitaciones' => $nuevoPrecio['habitaciones'] ?? [],
         ];
 
-        // Compatibilidad: algunos consumidores esperan 'total' o 'precio_total'
         $resultado['total'] = $resultado['nuevo_total'];
         $resultado['precio_total'] = $resultado['nuevo_total'];
 
         if (isset($data['reserva_id'])) {
-            $reserva = \App\Models\Reserva::find($data['reserva_id']);
+            $reserva = Reserva::find($data['reserva_id']);
             if ($reserva) {
                 $viejoTotal = $reserva->precio_total ?? 0;
                 $diferencia = $resultado['nuevo_total'] - $viejoTotal;
@@ -117,7 +109,7 @@ class CalcularPrecioAction
                     $resultado['per_night_change'] = 0;
                 }
 
-                // Penalización por defecto no aplicada aquí (frontend la aplica), pero dejamos campo para compatibilidad
+                // Penalización por defecto no aplicada aquí
                 $penalizacion = $resultado['penalizacion'] ?? 0;
                 if ($removedNights > 0) {
                     $penalPerNight = $removedNights > 0 ? round(($penalizacion / $removedNights), 2) : 0;

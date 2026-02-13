@@ -2,6 +2,7 @@ import * as reservasApi from '@/api/reservas';
 import usePaymentCheck from '@/hooks/pagos/usePaymentCheck';
 import usePaymentModal from '@/hooks/pagos/usePaymentModal';
 import axios from 'axios';
+import * as reservasService from '@/hooks/reservas/service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -83,61 +84,28 @@ export default function useEditarReserva({
 
     const cargarHabitacionesDisponibles = useCallback(async () => {
         try {
-            const response = await axios.get(
-                `/habitaciones/disponibles?individuales=true&check_in=${reserva.check_in}&check_out=${reserva.check_out}`,
-            );
-            const data = response.data;
-            console.debug(
-                '[useEditarReserva] cargarHabitacionesDisponibles response',
-                {
-                    url: response.config.url,
-                    data,
-                },
-            );
+            const data = await reservasService.obtenerHabitacionesDisponibles(reserva.check_in, reserva.check_out);
+            // The service may return data in several shapes; normalize like before
+            let habitaciones = [];
             if (data) {
-                let habitaciones = [];
-                if (
-                    Array.isArray(data) &&
-                    data.length > 0 &&
-                    (data[0].habitaciones || data[0].id)
-                ) {
+                if (Array.isArray(data) && data.length > 0 && (data[0].habitaciones || data[0].id)) {
                     if (data[0].habitaciones) {
-                        habitaciones = data.flatMap(
-                            (grupo) => grupo.habitaciones || [],
-                        );
+                        habitaciones = data.flatMap((grupo) => grupo.habitaciones || []);
                     } else {
                         habitaciones = data;
                     }
                 } else {
-                    habitaciones = Array.isArray(data)
-                        ? data.flatMap((grupo) => grupo.habitaciones || [])
-                        : [];
+                    habitaciones = Array.isArray(data) ? data.flatMap((grupo) => grupo.habitaciones || []) : [];
                 }
-                console.debug(
-                    '[useEditarReserva] cargarHabitacionesDisponibles parsed habitaciones',
-                    { count: habitaciones.length },
-                );
-                setHabitacionesDisponibles(habitaciones);
             }
+            setHabitacionesDisponibles(habitaciones);
         } catch (error) {
+            // eslint-disable-next-line no-console
             console.error('Error cargando habitaciones disponibles:', error);
         }
     }, [reserva?.check_in, reserva?.check_out]);
 
-    // Debugging: log initial values to help trace repeated requests / empty disponible lists
-    try {
-        // eslint-disable-next-line no-console
-        console.debug('[useEditarReserva] init', {
-            reservaId: reserva?.id,
-            initialHabitacionesDisponiblesLength: Array.isArray(
-                initialHabitacionesDisponibles,
-            )
-                ? initialHabitacionesDisponibles.length
-                : null,
-        });
-    } catch (e) {
-        console.debug(e);
-    }
+    // debug logs removed
 
     useEffect(() => {
         // Update selected rooms only if the id list actually changed to avoid
@@ -172,40 +140,23 @@ export default function useEditarReserva({
                     .map((h) => h.id ?? h.habitacion_id ?? '')
                     .join(',');
                 if (prevIds !== newIds) {
-                    // eslint-disable-next-line no-console
-                    console.debug(
-                        '[useEditarReserva] setting habitacionesDisponibles from initial prop',
-                        {
-                            prevCount: prev.length,
-                            newCount: initialHabitacionesDisponibles.length,
-                        },
-                    );
+                    // Nota: actualizando disponibilidad por cambio de referencia
                     setHabitacionesDisponibles(initialHabitacionesDisponibles);
                 }
                 loadedAvailRef.current = true;
             } else {
                 // Si no hay iniciales, cargar dinámicamente sólo una vez
                 if (!loadedAvailRef.current) {
-                    // eslint-disable-next-line no-console
-                    console.debug(
-                        '[useEditarReserva] initialHabitacionesDisponibles empty, loading from API (first time)',
-                    );
+                    // Nota: cargando habitaciones disponibles inicialmente
                     cargarHabitacionesDisponibles();
                     loadedAvailRef.current = true;
                 } else {
-                    // eslint-disable-next-line no-console
-                    console.debug(
-                        '[useEditarReserva] initialHabitacionesDisponibles empty, skipping repeated load',
-                    );
+                    // Nota: disponibilidad ya inicializada
                 }
             }
         } catch (e) {
             // Fallback: set directly if anything unexpected
-            // eslint-disable-next-line no-console
-            console.debug(
-                '[useEditarReserva] fallback set habitacionesDisponibles',
-                { err: String(e) },
-            );
+
             setHabitacionesDisponibles(initialHabitacionesDisponibles || []);
         }
     }, [
@@ -265,12 +216,7 @@ export default function useEditarReserva({
 
         setGuardandoHabitaciones(true);
         try {
-            // eslint-disable-next-line no-console
-            console.debug('[useEditarReserva] desasignarHabitacion', {
-                reservaId: reserva?.id,
-                habitacionId: resolvedHabitacionId,
-                originalParam: habitacionId,
-            });
+            // Nota: enviando petición para desasignar habitación
             const data = await reservasApi.desasignarHabitaciones(reserva.id, [
                 resolvedHabitacionId,
             ]);
@@ -301,11 +247,7 @@ export default function useEditarReserva({
                 error?.response ||
                 error?.message ||
                 String(error);
-            // eslint-disable-next-line no-console
-            console.debug(
-                '[useEditarReserva] desasignarHabitacion response body',
-                apiErr,
-            );
+
             if (apiErr && typeof apiErr === 'object') {
                 showToast?.(
                     apiErr.error ||
@@ -356,7 +298,7 @@ export default function useEditarReserva({
                 try {
                     if (clearPreview) clearPreview();
                 } catch (e) {
-                    console.debug(e);
+                    // debug removed
                 }
                 setVistaPreviaCargada(false);
                 return;
@@ -402,13 +344,26 @@ export default function useEditarReserva({
         sessionId: sessionIdParam,
         onConfirmed: async (resp) => {
             showToast?.('Pago confirmado. Actualizando reserva...', 'success');
-            if (pendienteAplicarTrasPago) {
-                try {
-                    await pagoExitoso({ pago_id: resp?.pago_id });
-                } catch (e) {
+            try {
+                // Prefer calling the payment modal handler directly to ensure
+                // the modal is closed and aplicarCambioFechas is executed.
+                if (paymentModal && typeof paymentModal.onPagoExitoso === 'function') {
+                    const pagoId = resp?.pago_id || resp?.meta?.pago_id || resp?.pagoId || null;
+                    const paymentIntentId = resp?.paymentIntentId || resp?.meta?.paymentIntentId || null;
+                    // Only call modal handler if pendienteAplicar is true; otherwise just refresh
+                    if (paymentModal.pendienteAplicar) {
+                        try {
+                            await paymentModal.onPagoExitoso({ pago_id: pagoId, paymentIntentId });
+                        } catch (e) {
+                            await refresh?.();
+                        }
+                    } else {
+                        await refresh?.();
+                    }
+                } else {
                     await refresh?.();
                 }
-            } else {
+            } catch (err) {
                 await refresh?.();
             }
             const params = new URLSearchParams(window.location.search);

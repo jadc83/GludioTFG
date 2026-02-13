@@ -5,14 +5,19 @@ export async function buscarReserva(localizador) {
     return res?.data?.reserva ?? null;
 }
 
-export async function modificarEstancia() {
-    // Endpoint removed server-side. Return controlled error to avoid accidental calls.
-    return {
-        success: false,
-        error: 'funcionalidad_eliminada',
-        message: 'La modificación de estancia ha sido eliminada',
-        status: 410,
-    };
+export async function modificarEstancia(localizadorOrId, payload) {
+    try {
+        // The backend accepts PUT /reservas/{id} where {id} may be numeric id or localizador
+        const res = await axios.put(`/reservas/${localizadorOrId}`, payload, {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+        return res?.data ?? null;
+    } catch (err) {
+        return err?.response?.data ?? { success: false, message: err?.message };
+    }
 }
 
 export async function previewModificarEstancia() {

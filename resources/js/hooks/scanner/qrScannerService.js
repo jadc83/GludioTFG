@@ -15,9 +15,7 @@ export class QRScannerService {
                 }
             }
         } catch (e) {
-            console.log(
-                'No se pudo parsear como URL, usando texto completo como localizador',
-            );
+            // ignored: fallback to using the raw text as localizador
         }
 
         return localizador;
@@ -25,12 +23,7 @@ export class QRScannerService {
 
     /* Procesa un escaneo de QR enviándolo al backend */
     static async procesar(localizador, action = null) {
-        const csrf =
-            typeof document !== 'undefined'
-                ? document
-                      .querySelector('meta[name="csrf-token"]')
-                      ?.getAttribute('content')
-                : null;
+        const csrf = window.getCsrfToken?.() || null;
 
         const payload = { localizador: localizador };
         if (action) {
@@ -39,13 +32,17 @@ export class QRScannerService {
         }
 
         try {
-            const { data } = await axios.post(route('scan.procesar'), payload, {
-                headers: {
-                    'X-CSRF-TOKEN': csrf || '',
-                    Accept: 'application/json',
+            const { data } = await axios.post(
+                route('scan.procesar'),
+                payload,
+                {
+                    headers: {
+                        'X-XSRF-TOKEN': csrf || '',
+                        Accept: 'application/json',
+                    },
+                    withCredentials: true,
                 },
-                withCredentials: true,
-            });
+            );
             return data;
         } catch (err) {
             const body = err?.response?.data;

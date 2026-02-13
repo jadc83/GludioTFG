@@ -1,4 +1,3 @@
-import ReservationsTable from '@/Components/Profile/ReservationsTable';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Tabs from '@/Components/UI/Tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -12,14 +11,12 @@ import {
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import '../../../css/profile.css';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
-
-import EmpleadoProfile from '@/Components/Profile/EmpleadoProfile';
-import ProfileDashboard from '@/Components/Profile/ProfileDashboard';
-import TareasList from '@/Components/Profile/TareasList';
-import TurnosCalendar from '@/Components/Profile/TurnosCalendar';
-import ErrorBoundary from '@/Components/UI/ErrorBoundary';
+import TarjetaEncargado from '@/Components/Profile/TarjetaEncargado';
+import SeccionSeguridad from './SeccionSeguridad';
+import TarjetaReservas from '@/Components/Profile/TarjetaReservas';
+import TarjetaTurnos from '@/Components/Profile/TarjetaTurnos';
+import PestanaInformacion from '@/Components/Profile/PestanaInformacion';
+import PestanaTareas from '@/Components/Profile/PestanaTareas';
 
 export default function Edit({
     mustVerifyEmail,
@@ -33,24 +30,41 @@ export default function Edit({
     show_profile_tab = false,
 }) {
     // Construir tabs dinámicamente según permisos (Spatie)
+    // Mostrar 'turnos' solo a administradores o a encargados del mismo departamento
+    const viewerRoles = auth?.user?.roles || [];
+    const viewerIsAdmin = Array.isArray(viewerRoles) && viewerRoles.includes('admin');
+    const viewerIsEncargadoRole = Array.isArray(viewerRoles) && viewerRoles.includes('encargado');
+    const viewerIsOperarioOrAuxiliar = Array.isArray(viewerRoles) && (viewerRoles.includes('operario') || viewerRoles.includes('auxiliar'));
+    const viewerDept = (auth?.user?.empleado_departamento || '').toLowerCase();
+    const targetDept = (empleado?.departamento || '').toLowerCase();
+    // 'turnos' visible solo para admin o encargados del mismo departamento;
+    // explícitamente oculto a roles 'operario' y 'auxiliar'
+    const canSeeTurnos = (viewerIsAdmin || (viewerIsEncargadoRole && viewerDept && targetDept && viewerDept === targetDept)) && !viewerIsOperarioOrAuxiliar;
+
+    // Mostrar 'Mis Reservas' solo a usuarios que no tienen ningún role ni departamento
+    const viewerHasNoRole = !Array.isArray(viewerRoles) || viewerRoles.length === 0;
+    const viewerHasNoDept = !auth?.user?.empleado_departamento;
+    const viewerCanSeeReservas = can_view_reservas && viewerHasNoRole && viewerHasNoDept;
+
     const tabs = [
         ...(show_profile_tab
-            ? [{ id: 'informacion', label: 'Mi Perfil', icon: UserIcon }]
+            ? [{ id: 'informacion', label: 'Resumen', icon: UserIcon }]
             : []),
-        ...(can_view_reservas
+        ...(viewerCanSeeReservas
             ? [{ id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon }]
             : []),
         ...(can_view_tareas
             ? [
                   { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
-                  { id: 'turnos', label: 'Turnos', icon: CalendarIcon },
+                  ...(canSeeTurnos ? [{ id: 'turnos', label: 'Turnos', icon: CalendarIcon }] : []),
               ]
             : []),
-        { id: 'seguridad', label: 'Seguridad', icon: LockClosedIcon },
+        { id: 'seguridad', label: 'Información de cuenta', icon: LockClosedIcon },
+
     ];
 
     // Inicializar tab según query param ?tab=... o por defecto al primer tab disponible
-    const initialTabFromUrl = (() => {
+    const tabInicial = (() => {
         try {
             const params = new URLSearchParams(window.location.search);
             return params.get('tab');
@@ -60,8 +74,8 @@ export default function Edit({
     })();
 
     const [activeTab, setActiveTab] = useState(() => {
-        if (initialTabFromUrl && tabs.some((t) => t.id === initialTabFromUrl))
-            return initialTabFromUrl;
+        if (tabInicial && tabs.some((t) => t.id === tabInicial))
+            return tabInicial;
         return tabs[0]?.id || 'seguridad';
     });
 
@@ -87,6 +101,9 @@ export default function Edit({
                         subtitulo="Gestiona tu cuenta, historial de estancias y seguridad"
                         icono={IdentificationIcon}
                     />
+                    {/* Encargado principal: fuera de la info, visible bajo el header */}
+                    <TarjetaEncargado encargado={empleado?.departamento_encargado} />
+
 
                     {/* --- NAVEGACIÓN POR TABS (MOBILE FIRST) --- */}
                     <Tabs
@@ -97,96 +114,30 @@ export default function Edit({
                     />
 
                     {/* --- CONTENEDOR PRINCIPAL DE CONTENIDO --- */}
-                    <div className="perfil-card min-h-[500px] overflow-hidden">
+                    <div className="min-h-[500px] overflow-hidden">
                         {/* TAB: INFORMACIÓN PERSONAL */}
                         {activeTab === 'informacion' && (
-                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {showSummary ? (
-                                    <div className="mb-6">
-                                        <h2 className="text-lg font-extrabold">
-                                            Panel de control
-                                        </h2>
-                                        <p className="mt-1 text-sm text-gray-500">
-                                            Resumen rápido: información
-                                            personal, próximos turnos y últimas
-                                            tareas completadas.
-                                        </p>
-                                    </div>
-                                ) : null}
-
-                                <ErrorBoundary>
-                                    <ProfileDashboard
-                                        empleado={empleado}
-                                        habitaciones={habitacionesLimpieza}
-                                        canViewTareas={can_view_tareas}
-                                    />
-                                </ErrorBoundary>
-
-                                <div className="mt-6 rounded-xl border border-gray-100 bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-gray-700">
-                                        Editar información
-                                    </h3>
-                                    <div className="mt-3">
-                                        <UpdateProfileInformationForm
-                                            mustVerifyEmail={mustVerifyEmail}
-                                            status={status}
-                                            className="max-w-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                            <PestanaInformacion
+                                empleado={empleado}
+                                showSummary={showSummary}
+                                habitacionesLimpieza={habitacionesLimpieza}
+                                canViewTareas={can_view_tareas}
+                                auth={auth}
+                            />
                         )}
 
                         {/* TAB: TAREAS */}
-                        {activeTab === 'tareas' && (
-                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                    <div className="col-span-1">
-                                        <div className="rounded-xl border border-gray-100 bg-white p-4">
-                                            <div className="mt-3">
-                                                <TareasList />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 space-y-6">
-                                        <EmpleadoProfile
-                                            habitaciones={habitacionesLimpieza}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {activeTab === 'tareas' && <PestanaTareas habitaciones={habitacionesLimpieza} empleado={empleado} auth={auth} />}
+
                         {/* TAB: RESERVAS */}
-                        {activeTab === 'reservas' && (
-                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="rounded-xl border border-gray-100 bg-white p-4">
-                                    {reservas && reservas.length ? (
-                                        <ReservationsTable
-                                            reservas={reservas}
-                                        />
-                                    ) : (
-                                        <div className="p-6 text-sm text-gray-500">
-                                            No hay reservas para mostrar.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {activeTab === 'reservas' && <TarjetaReservas reservas={reservas} />}
+
                         {/* TAB: TURNOS */}
-                        {activeTab === 'turnos' && (
-                            <div className="perfil-body animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="rounded-xl border border-gray-100 bg-white p-4">
-                                    <TurnosCalendar />
-                                </div>
-                            </div>
-                        )}
+                        {activeTab === 'turnos' && <TarjetaTurnos empleado={empleado} />}
+
                         {/* TAB: SEGURIDAD */}
                         {activeTab === 'seguridad' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
-                                <div className="max-w-2xl">
-                                    <UpdatePasswordForm className="w-full" />
-                                </div>
-                            </div>
+                            <SeccionSeguridad mustVerifyEmail={mustVerifyEmail} status={status} />
                         )}
                     </div>
                 </div>

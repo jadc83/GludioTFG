@@ -122,9 +122,7 @@ export default function ReservaInfo({
                                     </span>
                                 </p>
                                 <p className="mt-1 text-lg font-bold text-gray-900">
-                                    {reserva.reservable?.name ??
-                                        reserva.cliente?.name ??
-                                        'N/A'}
+                                    {reserva.cliente?.nombre ?? reserva.cliente?.name ?? reserva.cliente?.email ?? reserva.reservable?.name ?? 'Sin nombre'}
                                 </p>
                                 <div className="mt-1 flex gap-3 text-sm text-gray-500">
                                     <span>{reserva.cliente?.email}</span>

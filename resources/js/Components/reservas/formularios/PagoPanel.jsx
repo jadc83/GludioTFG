@@ -94,7 +94,7 @@ export default function PagoPanel({
                         monto={precioCalculado}
                         reservaData={reservaData}
                         aceptaTerminos={aceptaTerminos}
-                        mostrarAceptacion={true}
+                        mostrarAceptacion={false}
                         onCambioAceptaTerminos={setAceptaTerminos}
                         onPagoExitoso={onPagoExitoso}
                         onError={(err) =>

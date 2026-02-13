@@ -12,9 +12,9 @@ $empleados = Empleado::with(['user','departamento'])->orderBy('id')->get()->map(
     if ($empleado->user) {
         $data['name'] = $empleado->user->name;
         $data['email'] = $empleado->user->email;
-        try { $roles = $empleado->user->getRoleNames()->toArray(); } catch (\Throwable $e) { $roles = []; }
-        $data['roles'] = $roles;
-        $data['role'] = $roles[0] ?? null;
+        // Role information removed from dump; keep empleado.role only
+        $data['roles'] = [];
+        $data['role'] = $empleado->role ?? null;
 
         $depModel = $empleado->relationLoaded('departamento') ? $empleado->getRelation('departamento') : (\App\Models\Departamento::find($empleado->departamento_id));
         $data['departamento'] = $depModel ? $depModel->name : null;

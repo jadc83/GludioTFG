@@ -4,11 +4,14 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import useTurnos from '@/Hooks/useTurnos';
+import ControlesTurnos from './ControlesTurnos';
+import DetalleTurno from './DetalleTurno';
 
-export default function TurnosCalendar() {
+export default function TurnosCalendar({ empleado = null }) {
     const calendarRef = useRef(null);
-    const [events, setEvents] = useState([]);
-    const [, setLoading] = useState(false);
+    const empleadoId = empleado?.id || null;
+    const { events, setEvents, loading, fetchEvents } = useTurnos(empleadoId);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const [titleRange, setTitleRange] = useState('');
@@ -59,12 +62,7 @@ export default function TurnosCalendar() {
     };
 
     const page = usePage();
-    const getCsrf = () =>
-        page?.props?.csrf_token ||
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ||
-        '';
+    const getCsrf = () => window.getCsrfToken?.() || '';
 
     const deleteSelectedTurno = async () => {
         if (!selectedTurno || !selectedTurno.id) {
@@ -78,7 +76,7 @@ export default function TurnosCalendar() {
                 method: 'DELETE',
                 credentials: 'same-origin',
                 headers: {
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
                 },
@@ -89,7 +87,6 @@ export default function TurnosCalendar() {
                     const j = await res.json();
                     if (j && j.error) err = j.error;
                 } catch (e) {
-                    console.debug(e);
                 }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -120,46 +117,7 @@ export default function TurnosCalendar() {
         }
     };
 
-    const fetchEvents = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch('/api/turnos', {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    Accept: 'application/json',
-                },
-            });
-            if (!res.ok) {
-                setEvents([]);
-                setLoading(false);
-                return;
-            }
-            const data = await res.json();
-            setEvents(
-                (data.turnos || []).map((t) => ({
-                    id: t.id,
-                    title: t.title,
-                    start: t.start,
-                    end: t.end,
-                    meta: t.meta || null,
-                })),
-            );
-        } catch (e) {
-            console.error('fetch turnos failed', e);
-            setEvents([]);
-            window.dispatchEvent(
-                new CustomEvent('app-toast', {
-                    detail: {
-                        message: 'Error al cargar turnos',
-                        type: 'error',
-                    },
-                }),
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+    // La carga de eventos se delega al hook `useTurnos` (fetchEvents)
 
     const formatRangeTitle = (start, end) => {
         try {
@@ -189,10 +147,14 @@ export default function TurnosCalendar() {
                 // restore turnos
                 for (const t of detail.payload) {
                     try {
-                        const csrf =
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') || '';
+                        const csrf = window.getCsrfToken?.() || '';
+                        const bodyPayload = {
+                            starts_at: t.starts_at,
+                            ends_at: t.ends_at,
+                            actividad: t.actividad || t.title || 'Turno',
+                        };
+                        if (empleadoId) bodyPayload.empleado_id = empleadoId;
+
                         await fetch('/api/turnos', {
                             method: 'POST',
                             credentials: 'same-origin',
@@ -200,13 +162,9 @@ export default function TurnosCalendar() {
                                 'Content-Type': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
                                 Accept: 'application/json',
-                                'X-CSRF-TOKEN': csrf,
+                                'X-XSRF-TOKEN': csrf,
                             },
-                            body: JSON.stringify({
-                                starts_at: t.starts_at,
-                                ends_at: t.ends_at,
-                                actividad: t.actividad || t.title || 'Turno',
-                            }),
+                            body: JSON.stringify(bodyPayload),
                         });
                     } catch (e) {
                         console.error('restore failed', e);
@@ -254,7 +212,7 @@ export default function TurnosCalendar() {
             if (calApi) calApi.off('datesSet', datesHandler);
             window.removeEventListener('keydown', escHandler);
         };
-    }, [isFullscreen, events]);
+    }, [isFullscreen]);
 
     const [isCreating, setIsCreating] = useState(false);
 
@@ -269,10 +227,13 @@ export default function TurnosCalendar() {
             ends_at: end,
             id: null,
         });
-        try {
+            try {
             setIsCreating(true);
             const csrf = getCsrf();
             if (!csrf) console.warn('CSRF token not found when creating turno');
+            const bodyPayload = { starts_at: start, ends_at: end, actividad: 'Turno' };
+            if (empleadoId) bodyPayload.empleado_id = empleadoId;
+
             const res = await fetch('/api/turnos', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -280,22 +241,18 @@ export default function TurnosCalendar() {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                 },
-                body: JSON.stringify({
-                    starts_at: start,
-                    ends_at: end,
-                    actividad: 'Turno',
-                }),
+                body: JSON.stringify(bodyPayload),
             });
             if (!res.ok) {
                 let err = 'Error al crear turno';
                 try {
                     const j = await res.json();
                     if (j && j.error) err = j.error;
-                } catch (e) {
-                    console.debug(e);
-                }
+                    } catch (e) {
+
+                    }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
                         detail: { message: err, type: 'error' },
@@ -336,10 +293,7 @@ export default function TurnosCalendar() {
     const handleEventDrop = async (info) => {
         const ev = info.event;
         try {
-            const csrf =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') || '';
+            const csrf = window.getCsrfToken?.() || '';
             const res = await fetch(`/api/turnos/${ev.id}`, {
                 method: 'PUT',
                 credentials: 'same-origin',
@@ -347,7 +301,7 @@ export default function TurnosCalendar() {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                 },
                 body: JSON.stringify({
                     starts_at: ev.start.toISOString(),
@@ -363,7 +317,7 @@ export default function TurnosCalendar() {
                     const j = await res.json();
                     if (j && j.error) msg = j.error;
                 } catch (e) {
-                    console.debug(e);
+
                 }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -450,146 +404,55 @@ export default function TurnosCalendar() {
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-4">
-            <div className="mb-3 flex items-center justify-between">
-                <div>
-                    <h6 className="text-sm font-semibold text-gray-700">
-                        Calendario de Turnos
-                    </h6>
-                    {titleRange ? (
-                        <div className="text-xs text-gray-500">
-                            {titleRange}
-                        </div>
-                    ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        className="rounded-md bg-rose-500 px-3 py-1 text-xs font-black text-white"
-                        onClick={async () => {
-                            // Clear all turnos for empleado
+            <ControlesTurnos
+                titleRange={titleRange}
+                isFullscreen={isFullscreen}
+                onLimpiar={async () => {
+                    try {
+                        const csrf = getCsrf();
+                        if (!csrf) console.warn('CSRF token not found when clearing turnos');
+                        const existing = events.map((e) => ({
+                            actividad: e.title,
+                            starts_at: e.start,
+                            ends_at: e.end,
+                            meta: e.meta || null,
+                        }));
+                        let url = '/api/turnos/clear';
+                        if (empleadoId) url += `?empleado_id=${encodeURIComponent(empleadoId)}`;
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                Accept: 'application/json',
+                                'X-XSRF-TOKEN': csrf,
+                            },
+                        });
+                        if (!res.ok) {
+                            let err = 'Error al eliminar turnos';
                             try {
-                                const csrf = getCsrf();
-                                if (!csrf)
-                                    console.warn(
-                                        'CSRF token not found when clearing turnos',
-                                    );
-                                const existing = events.map((e) => ({
-                                    actividad: e.title,
-                                    starts_at: e.start,
-                                    ends_at: e.end,
-                                    meta: e.meta || null,
-                                }));
-                                const res = await fetch('/api/turnos/clear', {
-                                    method: 'POST',
-                                    credentials: 'same-origin',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-Requested-With': 'XMLHttpRequest',
-                                        Accept: 'application/json',
-                                        'X-CSRF-TOKEN': csrf,
-                                    },
-                                });
-                                if (!res.ok) {
-                                    let err = 'Error al eliminar turnos';
-                                    try {
-                                        const j = await res.json();
-                                        if (j && j.error) err = j.error;
-                                    } catch (e) {
-                                        console.debug(e);
-                                    }
-                                    window.dispatchEvent(
-                                        new CustomEvent('app-toast', {
-                                            detail: {
-                                                message: err,
-                                                type: 'error',
-                                            },
-                                        }),
-                                    );
-                                    console.error('clear failed', res.status);
-                                    return;
-                                }
-                                const data = await res.json();
-                                window.dispatchEvent(
-                                    new Event('tareas:updated'),
-                                );
-                                // Emit toast with undo action
-                                window.dispatchEvent(
-                                    new CustomEvent('app-toast', {
-                                        detail: {
-                                            message: 'Turnos eliminados',
-                                            type: 'success',
-                                            action: {
-                                                name: 'undo-clear-turnos',
-                                                label: 'Deshacer',
-                                                payload:
-                                                    data.deleted || existing,
-                                            },
-                                            duration: 6000,
-                                        },
-                                    }),
-                                );
+                                const j = await res.json();
+                                if (j && j.error) err = j.error;
                             } catch (e) {
-                                console.error(e);
-                                window.dispatchEvent(
-                                    new CustomEvent('app-toast', {
-                                        detail: {
-                                            message: 'Error al eliminar turnos',
-                                            type: 'error',
-                                        },
-                                    }),
-                                );
-                            }
-                        }}
-                    >
-                        Limpiar turnos
-                    </button>
 
-                    <button
-                        className="rounded-md border border-gray-200 px-3 py-1 text-xs font-black text-gray-700"
-                        onClick={() => setIsFullscreen((s) => !s)}
-                        aria-pressed={isFullscreen}
-                        title={
-                            isFullscreen
-                                ? 'Salir de pantalla completa'
-                                : 'Ver en pantalla completa'
+                            }
+                            window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: err, type: 'error' } }));
+                            console.error('clear failed', res.status);
+                            return;
                         }
-                    >
-                        {isFullscreen ? 'Salir' : 'Ampliar'}
-                    </button>
-                </div>
-            </div>
-            {selectedTurno && (
-                <div className="mb-3 flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 p-3">
-                    <div>
-                        <div className="text-sm font-semibold text-gray-800">
-                            {selectedTurno.title ||
-                                selectedTurno.actividad ||
-                                'Turno'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                            {formatTurnoRange(
-                                selectedTurno.starts_at,
-                                selectedTurno.ends_at,
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="px-2 py-1 text-xs text-gray-600"
-                            onClick={() => setSelectedTurno(null)}
-                        >
-                            Cerrar
-                        </button>
-                        {selectedTurno.id && (
-                            <button
-                                className="rounded bg-rose-500 px-2 py-1 text-xs text-white"
-                                onClick={deleteSelectedTurno}
-                            >
-                                Eliminar
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
+                        const data = await res.json();
+                        window.dispatchEvent(new Event('tareas:updated'));
+                        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Turnos eliminados', type: 'success', action: { name: 'undo-clear-turnos', label: 'Deshacer', payload: data.deleted || existing }, duration: 6000 } }));
+                    } catch (e) {
+                        console.error(e);
+                        window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Error al eliminar turnos', type: 'error' } }));
+                    }
+                }}
+                onToggleFullscreen={() => setIsFullscreen((s) => !s)}
+            />
+
+            <DetalleTurno selectedTurno={selectedTurno} onClose={() => setSelectedTurno(null)} onDelete={deleteSelectedTurno} formatTurnoRange={formatTurnoRange} />
             <div
                 className={
                     isFullscreen ? 'fixed inset-0 z-50 bg-white p-6' : ''

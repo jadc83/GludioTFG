@@ -1,5 +1,6 @@
 import { formatearMoneda } from '@/utils/formatters';
 import { useEffect, useState } from 'react';
+import { router } from '@inertiajs/react';
 
 export default function ModalConfirmacionReserva({ reserva, isOpen, onClose }) {
     const [animarSalida, setAnimarSalida] = useState(false);

@@ -116,6 +116,25 @@ export function useFormGenerico(
                 }
             } else {
                 // Crear nuevo registro
+                // Verificación central: impedir creaciones desde departamentos no permitidos
+                try {
+                    const dept = (typeof window !== 'undefined' && window.page && window.page.props && window.page.props.auth && window.page.props.auth.user && window.page.props.auth.user.empleado_departamento)
+                        ? String(window.page.props.auth.user.empleado_departamento).toLowerCase()
+                        : '';
+                    const prohibidos = ['limpieza', 'mantenimiento'];
+                    if (prohibidos.includes(dept)) {
+                        // Invocar callbacks de error/finish si se han pasado
+                        if (typeof mergedOptions.onError === 'function') {
+                            mergedOptions.onError({ _global: ['Acceso denegado: no tiene permiso para crear registros desde el panel.'] });
+                        }
+                        if (typeof mergedOptions.onFinish === 'function') {
+                            mergedOptions.onFinish();
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    // si falla la verificación, no bloquear (evitar false positive)
+                }
                 if (dataOverride) {
                     post(
                         rutaCrear,

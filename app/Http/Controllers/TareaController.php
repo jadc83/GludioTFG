@@ -22,17 +22,33 @@ class TareaController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
-        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        $empleadoId = $request->query('empleado_id');
+
+        if ($empleadoId) {
+            $target = \App\Models\Empleado::find($empleadoId);
+            if (!$target) return response()->json(['tareas' => []]);
+
+            // Allow viewing when requesting the authenticated user's own empleado record
+            if ($user->empleado && $user->empleado->id === $target->id) {
+                $canView = true;
+            } else {
+                $canView = $user->hasRole('admin') || (
+                    is_array($user->roles ?? []) && in_array('encargado', $user->roles) &&
+                    $user->empleado && $user->empleado->departamento && $user->empleado->departamento === $target->departamento
+                );
+            }
+
+            if (!$canView) return response()->json(['tareas' => []]);
+
+            $tareasQuery = Tarea::where('empleado_id', $target->id);
+        } else {
+            if (!$user->empleado) {
+                return response()->json(['tareas' => []]);
+            }
+            $tareasQuery = Tarea::where('empleado_id', $user->empleado->id);
         }
 
-        if (!$user->empleado) {
-            return response()->json(['tareas' => []]);
-        }
-
-        $tareas = Tarea::where('empleado_id', $user->empleado->id)
-            ->whereIn('status', ['pendiente', 'en_progreso'])
+        $tareas = $tareasQuery->whereIn('status', ['pendiente', 'en_progreso'])
             ->with(['habitacion'])
             ->orderBy('status')->orderBy('created_at', 'desc')
             ->get()
@@ -56,46 +72,64 @@ class TareaController extends Controller
     }
 
     /**
-     * Asignar una habitacion al empleado logueado creando una tarea
-     * POST body: { habitacion_id }
+     * Asignar una habitacion creando una tarea.
+     * POST body: { habitacion_id, empleado_id? }
+     * Si se proporciona `empleado_id` se intentará crear la tarea para ese empleado
+     * (solo admin o encargado del mismo departamento pueden asignar a terceros).
      */
     public function assignRoom(Request $request): JsonResponse
     {
         $user = $request->user();
-        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
-        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
         $habitacionId = (int) $request->input('habitacion_id');
+        $targetEmpleadoId = $request->input('empleado_id');
+
         $habitacion = Habitacion::find($habitacionId);
         if (!$habitacion) {
             return response()->json(['error' => 'Habitación no encontrada'], 404);
         }
 
-        if (!$user->empleado) {
-            return response()->json(['error' => 'Empleado no encontrado para el usuario'], 422);
+        $targetEmpleado = null;
+        if ($targetEmpleadoId) {
+            $targetEmpleado = \App\Models\Empleado::find((int) $targetEmpleadoId);
+            if (!$targetEmpleado) {
+                return response()->json(['error' => 'Empleado objetivo no encontrado'], 422);
+            }
+
+            // Autorizar: admin o encargado del mismo departamento
+            $canAssign = $user->hasRole('admin') || (
+                is_array($user->roles ?? []) && in_array('encargado', $user->roles) &&
+                $user->empleado && $user->empleado->departamento && $user->empleado->departamento === $targetEmpleado->departamento
+            );
+
+            if (!$canAssign) {
+                return response()->json(['error' => 'No autorizado para asignar tareas a este empleado'], 403);
+            }
+        } else {
+            if (!$user->empleado) {
+                return response()->json(['error' => 'El usuario no es un empleado.'], 422);
+            }
+            $targetEmpleado = $user->empleado;
         }
 
         // No permitir asignar otra tarea si el empleado ya tiene una tarea activa
-        $hasActive = Tarea::where('empleado_id', $user->empleado->id)
+        $hasActive = Tarea::where('empleado_id', $targetEmpleado->id)
             ->whereIn('status', ['pendiente', 'en_progreso'])
             ->exists();
         if ($hasActive) {
-            return response()->json(['error' => 'Ya tienes una tarea activa. Completa o desasigna antes de asignar otra.'], 409);
+            return response()->json(['error' => 'El empleado ya tiene una tarea activa. Completa o desasigna antes de asignar otra.'], 409);
         }
 
         // Evitar duplicados: si ya existe una tarea pendiente para esta habitación y empleado, devolver 409
-        $exists = Tarea::where('empleado_id', $user->empleado->id)
+        $exists = Tarea::where('empleado_id', $targetEmpleado->id)
             ->where('habitacion_id', $habitacion->id)
             ->whereIn('status', ['pendiente', 'en_progreso'])
             ->exists();
         if ($exists) {
-            return response()->json(['error' => 'Ya existe una tarea activa para esta habitación'], 409);
+            return response()->json(['error' => 'Ya existe una tarea activa para esta habitación y empleado'], 409);
         }
 
         $tarea = Tarea::create([
-            'empleado_id' => $user->empleado->id,
+            'empleado_id' => $targetEmpleado->id,
             'habitacion_id' => $habitacion->id,
             'descripcion' => 'Atender habitación ' . $habitacion->numero,
             'status' => 'pendiente',
@@ -117,11 +151,6 @@ class TareaController extends Controller
     public function complete(Request $request, Tarea $tarea): JsonResponse
     {
         $user = $request->user();
-        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
-        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
         if (!$user->empleado || $user->empleado->id !== $tarea->empleado_id) {
             return response()->json(['error' => 'No autorizado para completar esta tarea'], 403);
         }
@@ -157,11 +186,6 @@ class TareaController extends Controller
     public function cancel(Request $request, Tarea $tarea): JsonResponse
     {
         $user = $request->user();
-        $departamento = strtolower($user->empleado?->departamento?->name ?? '');
-        if (!in_array($departamento, ['limpieza', 'mantenimiento'])) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
         if (!$user->empleado || $user->empleado->id !== $tarea->empleado_id) {
             return response()->json(['error' => 'No autorizado para desasignar esta tarea'], 403);
         }
