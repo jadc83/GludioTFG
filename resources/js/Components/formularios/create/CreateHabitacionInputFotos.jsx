@@ -1,13 +1,14 @@
 import { useRef } from 'react';
 import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function InputFotos({ fotos = [], previews = [], onAgregar, onQuitar, error, maxFotos }) {
+export default function InputFotos({ fotos = [], previews = [], fotosGuardadas = [], onAgregar, onQuitar, error, maxFotos }) {
     const fileInputRef = useRef(null);
+    const total = (fotosGuardadas?.length || 0) + (fotos?.length || 0);
 
     return (
         <div className="space-y-4">
             <label className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
-                Galería Multimedia <span className="rounded-md bg-gray-100 px-2 py-1 text-gray-600">{fotos.length} / {maxFotos}</span>
+                Galería Multimedia <span className="rounded-md bg-gray-100 px-2 py-1 text-gray-600">{total} / {maxFotos}</span>
             </label>
 
             <div className="grid grid-cols-3 gap-3">
@@ -20,7 +21,7 @@ export default function InputFotos({ fotos = [], previews = [], onAgregar, onQui
                     </div>
                 ))}
 
-                {fotos.length < maxFotos && (
+                {total < maxFotos && (
                     <button type="button" className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 transition-all hover:border-[#7a0202] hover:bg-red-50/30" aria-label="Subir fotos" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
                         <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={onAgregar} />
                         <PhotoIcon className="h-6 w-6 text-gray-300 transition-colors group-hover:text-[#7a0202]" aria-hidden="true" />

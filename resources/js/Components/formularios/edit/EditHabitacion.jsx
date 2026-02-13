@@ -1,160 +1,29 @@
 import '@/../css/createHabitacion.css';
-import Campo from '@/Components/reservas/utilidades/Campo';
-import { useFormGenerico } from '@/hooks/useFormGenerico';
-import { TIPOS_HABITACION } from '@/utils/constantes';
-import {
-    CheckCircleIcon,
-    CogIcon,
-    LockClosedIcon,
-    SparklesIcon,
-} from '@heroicons/react/24/outline';
-import { usePage } from '@inertiajs/react';
-import { Inertia } from '@inertiajs/inertia';
-import habitacionesService from '@/services/habitacionesService';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useState } from 'react';
+import useEditHabitacion from '@/hooks/useEditHabitacion';
+import EditHabitacionHeader from './EditHabitacionHeader';
+import EditHabitacionInfo from './EditHabitacionInfo';
+import EditHabitacionEstado from './EditHabitacionEstado';
+import EditHabitacionMultimedia from './EditHabitacionMultimedia';
+import EditHabitacionFooter from './EditHabitacionFooter';
 
 export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
-    const datosIniciales = {
-        numero: '',
-        tipo: 'doble',
-        capacidad: 2,
-        estado: 'disponible',
-        descripcion: '',
-        notas: '',
-    };
+    const [submitting, setSubmitting] = useState(false);
 
     const {
         formulario,
         cambiar,
         errores,
         estaCargando,
-        setData,
-        guardar,
-        cargarDatos,
+        enviar,
         limpiar,
-    } = useFormGenerico(
-        datosIniciales,
-        '',
-        habitacion ? `/habitaciones/${habitacion.id}` : '',
-        () => {
-            onCerrar?.();
-            limpiar();
-        },
-    );
-
-    const MAX_FOTOS = 4;
-    const [fotosNuevas, setFotosNuevas] = useState([]);
-    const [fotosGuardadas, setFotosGuardadas] = useState([]);
-    const [fotosAEliminar, setFotosAEliminar] = useState([]);
-
-    useEffect(() => {
-        if (habitacion) {
-            cargarDatos({
-                numero: habitacion.numero || '',
-                tipo: habitacion.tipo || 'doble',
-                capacidad: habitacion.capacidad || 2,
-                estado: habitacion.estado || 'disponible',
-                descripcion: habitacion.descripcion || '',
-                notas: habitacion.notas || '',
-            });
-            setFotosGuardadas(
-                habitacion.fotos?.map((f) => ({
-                    id: f.id,
-                    url: f.url || `/storage/${f.ruta}`,
-                })) || [],
-            );
-        }
-    }, [habitacion, cargarDatos]);
-
-    const page = usePage();
-    const tiposHabitacion = useMemo(
-        () => page.props.tiposHabitacion || {},
-        [page.props.tiposHabitacion],
-    );
-
-    const capacidadFija = useMemo(() => {
-        const tipo = (formulario.tipo || '').toString().toLowerCase();
-        return Object.prototype.hasOwnProperty.call(tiposHabitacion, tipo);
-    }, [formulario.tipo, tiposHabitacion]);
-
-    const previsualizaciones = useMemo(
-        () => [
-            ...fotosGuardadas.map((f) => f.url),
-            ...fotosNuevas.map((f) => URL.createObjectURL(f)),
-        ],
-        [fotosGuardadas, fotosNuevas],
-    );
-
-    const agregarFotos = (e) => {
-        const cupoDisp =
-            MAX_FOTOS - (fotosGuardadas.length + fotosNuevas.length);
-        const nuevosArchivos = Array.from(e.target.files).slice(0, cupoDisp);
-        setFotosNuevas((prev) => [...prev, ...nuevosArchivos]);
-        e.target.value = '';
-    };
-
-    const quitarFoto = (idx) => {
-        if (idx < fotosGuardadas.length) {
-            const foto = fotosGuardadas[idx];
-            if (foto.id) setFotosAEliminar((prev) => [...prev, foto.id]);
-            setFotosGuardadas((prev) => prev.filter((_, i) => i !== idx));
-        } else {
-            setFotosNuevas((prev) =>
-                prev.filter((_, i) => i !== idx - fotosGuardadas.length),
-            );
-        }
-    };
-
-    const enviar = (e) => {
-        e.preventDefault();
-        // Envío via fetch/FormData para evitar cabecera X-Inertia y recibir JSON 200
-        const rutaActualizar = habitacion ? `/habitaciones/${habitacion.id}` : null;
-        if (!rutaActualizar) return;
-        (async () => {
-            try {
-                setLocalErrors({});
-                setSubmitting(true);
-                const csrf = window.getCsrfToken?.() || '';
-                const fd = new FormData();
-                fd.append('_method', 'PUT');
-                fd.append('numero', formulario.numero || '');
-                fd.append('tipo', formulario.tipo || 'doble');
-                fd.append('capacidad', formulario.capacidad || 1);
-                fd.append('estado', formulario.estado || 'disponible');
-                fd.append('descripcion', formulario.descripcion || '');
-                fd.append('notas', formulario.notas || '');
-                fotosNuevas.forEach((f) => fd.append('fotos[]', f));
-                fotosAEliminar.forEach((id) => fd.append('fotos_eliminar[]', id));
-
-                let data;
-                try {
-                    data = await habitacionesService.updateHabitacionFormData(habitacion.id, fd);
-                } catch (err) {
-                    const resp = err || {};
-                    setLocalErrors(resp.errors || resp || { _general: resp.error || 'Error' });
-                    window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: resp.error || 'Error al actualizar habitación', type: 'error' } }));
-                    return;
-                }
-
-                // éxito
-                window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Habitación actualizada', type: 'success' } }));
-                onCerrar?.();
-                limpiar();
-                // refrescar vista mediante evento global
-                window.dispatchEvent(new Event('habitaciones:updated'));
-                // Forzar recarga Inertia para asegurar que la vista refleja el cambio inmediatamente
-                try { Inertia.reload(); } catch (e) { /* registros de depuración eliminados */ }
-            } catch (e) {
-                console.error(e);
-                window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Error al actualizar habitación', type: 'error' } }));
-            } finally {
-                setSubmitting(false);
-            }
-        })();
-    };
-
-    const [localErrors, setLocalErrors] = useState({});
-    const [submitting, setSubmitting] = useState(false);
+        MAX_FOTOS,
+        fotosNuevas,
+        fotosGuardadas,
+        previsualizaciones,
+        agregarFotos,
+        quitarFoto,
+    } = useEditHabitacion({ habitacion, onSuccess: () => { onCerrar?.(); } });
 
     const handleCerrar = () => {
         onCerrar?.();
@@ -162,326 +31,33 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
     };
 
     return (
-        <div
-            className={`fixed inset-0 z-[9999] transition-all duration-300 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
-        >
-            <div
-                className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`}
-                role="button"
-                tabIndex={0}
-                onClick={handleCerrar}
-                onKeyDown={(e) => {
-                    if (e.key === 'Escape') handleCerrar();
-                }}
-            />
+        <div className={`fixed inset-0 z-[9999] transition-all duration-300 ${abierto ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+            <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${abierto ? 'opacity-100' : 'opacity-0'}`} role="button" tabIndex={0} onClick={handleCerrar} onKeyDown={(e) => { if (e.key === 'Escape') handleCerrar(); }} />
 
-            <div
-                className={`absolute bottom-0 right-0 top-0 flex w-full max-w-md transform flex-col bg-white shadow-2xl transition-transform duration-500 ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden !rounded-l-[2rem]`}
-            >
-                <header className="flex flex-none items-center justify-between border-b border-gray-100 bg-white p-6">
-                    <div>
-                        <h3 className="text-xl font-black uppercase tracking-tight text-gray-900">
-                            {habitacion
-                                ? `Cambio en Habitación ${habitacion.numero}`
-                                : 'Editar Habitación'}
-                        </h3>
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                            Gestión de Activos
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleCerrar}
-                        className="rounded-2xl border border-gray-100 bg-gray-50 p-3 text-gray-400 shadow-sm transition-all hover:bg-red-50 hover:text-[#7a0202]"
-                    >
-                        ✕
-                    </button>
-                </header>
+            <div className={`absolute bottom-0 right-0 top-0 flex w-full max-w-md transform flex-col bg-white shadow-2xl transition-transform duration-500 ${abierto ? 'translate-x-0' : 'translate-x-full'} overflow-hidden !rounded-l-[2rem]`}>
+                <EditHabitacionHeader title={habitacion ? `Cambio en Habitación ${habitacion.numero}` : 'Editar Habitación'} onCerrar={handleCerrar} />
 
                 {habitacion && (
-                    <form
-                        onSubmit={enviar}
-                        className="flex min-h-0 flex-1 flex-col bg-white"
-                    >
+                    <form onSubmit={(e) => { setSubmitting(true); enviar(e).finally(() => setSubmitting(false)); }} className="flex min-h-0 flex-1 flex-col bg-white">
                         <div className="flex-1 space-y-8 overflow-y-auto p-8">
-                            <div className="form-grid">
-                                <Campo
-                                    id="numero"
-                                    label="Número"
-                                    type="text"
-                                    value={formulario.numero}
-                                    onChange={cambiar}
-                                    placeholder="Ej: 101"
-                                    claseExtra="font-mono"
-                                        required
-                                        error={localErrors.numero || errores.numero}
-                                    sinEstilosPorDefecto={true}
-                                    claseContenedor="contenedorCampo"
-                                    claseEtiqueta="etiquetaCampo"
-                                    claseError="campo-error"
-                                    clase="entradaTexto"
-                                />
+                            <EditHabitacionInfo formulario={formulario} cambiar={cambiar} errores={errores} />
 
-                                <Campo
-                                    id="tipo"
-                                    label="Tipo"
-                                    as="select"
-                                    value={formulario.tipo}
-                                    onChange={cambiar}
-                                    error={errores.tipo}
-                                    sinEstilosPorDefecto={true}
-                                    claseContenedor="contenedorCampo"
-                                    claseEtiqueta="etiquetaCampo"
-                                    claseError="campo-error"
-                                    clase="selector"
-                                >
-                                    {Object.entries(TIPOS_HABITACION).map(
-                                        ([clave, valor]) => (
-                                            <option key={clave} value={valor}>
-                                                {valor.charAt(0).toUpperCase() +
-                                                    valor.slice(1)}
-                                            </option>
-                                        ),
-                                    )}
-                                </Campo>
+                            <EditHabitacionEstado formulario={formulario} cambiar={cambiar} errores={errores} />
 
-                                {capacidadFija ? (
-                                    <input
-                                        type="hidden"
-                                        id="capacidad"
-                                        name="capacidad"
-                                        value={formulario.capacidad}
-                                        readOnly
-                                    />
-                                ) : (
-                                    <Campo
-                                        id="capacidad"
-                                        label="Capacidad"
-                                        type="number"
-                                        min="1"
-                                        value={formulario.capacidad}
-                                        onChange={cambiar}
-                                        claseExtra={
-                                            capacidadFija
-                                                ? 'readonly font-mono'
-                                                : 'font-mono'
-                                        }
-                                        readOnly={capacidadFija}
-                                        required
-                                        error={errores.capacidad}
-                                        sinEstilosPorDefecto={true}
-                                        claseContenedor="contenedorCampo"
-                                        claseEtiqueta="etiquetaCampo"
-                                        claseError="campo-error"
-                                        clase="entradaTexto"
-                                    />
-                                )}
-                            </div>
+                            <EditHabitacionMultimedia fotosNuevas={fotosNuevas} previsualizaciones={previsualizaciones} agregarFotos={agregarFotos} quitarFoto={quitarFoto} fotosGuardadas={fotosGuardadas} errores={errores} MAX_FOTOS={MAX_FOTOS} formulario={formulario} cambiar={cambiar} />
 
+                            {/* Notas internas */}
                             <div>
-                                <label className="campo-label" htmlFor="estado">
-                                    <span className="campo-label-text">
-                                        Estado
-                                    </span>
-                                </label>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            cambiar({
-                                                target: {
-                                                    name: 'estado',
-                                                    value: 'disponible',
-                                                },
-                                            })
-                                        }
-                                        className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${formulario.estado === 'disponible' ? 'bg-success/10 border-success text-success' : 'hover:border-success/50 border-gray-200'}`}
-                                    >
-                                        <CheckCircleIcon className="h-5 w-5" />
-                                        <span className="text-sm font-medium">
-                                            Disponible
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            cambiar({
-                                                target: {
-                                                    name: 'estado',
-                                                    value: 'ocupada',
-                                                },
-                                            })
-                                        }
-                                        className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${formulario.estado === 'ocupada' ? 'bg-error/10 border-error text-error' : 'hover:border-error/50 border-gray-200'}`}
-                                    >
-                                        <LockClosedIcon className="h-5 w-5" />
-                                        <span className="text-sm font-medium">
-                                            Ocupada
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            cambiar({
-                                                target: {
-                                                    name: 'estado',
-                                                    value: 'mantenimiento',
-                                                },
-                                            })
-                                        }
-                                        className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${formulario.estado === 'mantenimiento' ? 'bg-warning/10 border-warning text-warning' : 'hover:border-warning/50 border-gray-200'}`}
-                                    >
-                                        <CogIcon className="h-5 w-5" />
-                                        <span className="text-sm font-medium">
-                                            Mantenimiento
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            cambiar({
-                                                target: {
-                                                    name: 'estado',
-                                                    value: 'limpieza',
-                                                },
-                                            })
-                                        }
-                                        className={`flex items-center gap-2 rounded-lg border-2 p-3 transition-all ${formulario.estado === 'limpieza' ? 'bg-info/10 border-info text-info' : 'hover:border-info/50 border-gray-200'}`}
-                                    >
-                                        <SparklesIcon className="h-5 w-5" />
-                                        <span className="text-sm font-medium">
-                                            Limpieza
-                                        </span>
-                                    </button>
-                                </div>
-
-                                {(localErrors.estado || errores.estado) && (
-                                    <span className="campo-error">
-                                        {Array.isArray(localErrors.estado || errores.estado)
-                                            ? (localErrors.estado || errores.estado)[0]
-                                            : (localErrors.estado || errores.estado)}
-                                    </span>
-                                )}
+                                <label className="campo-label" htmlFor="notas"><span className="campo-label-text">Notas Privadas</span></label>
+                                <textarea id="notas" name="notas" value={formulario.notas} onChange={cambiar} className="campo-textarea" placeholder="Solo uso interno..." />
+                                {errores.notas && <span className="campo-error">{Array.isArray(errores.notas) ? errores.notas[0] : errores.notas}</span>}
                             </div>
-
-                            <InputFotos
-                                fotos={fotosNuevas}
-                                previews={previsualizaciones}
-                                fotosGuardadas={fotosGuardadas}
-                                onAgregar={agregarFotos}
-                                onQuitar={quitarFoto}
-                                error={localErrors.fotos || errores.fotos}
-                                maxFotos={MAX_FOTOS}
-                            />
-
-                            <Campo
-                                id="descripcion"
-                                label="Descripción"
-                                as="textarea"
-                                value={formulario.descripcion}
-                                onChange={cambiar}
-                                placeholder="Detalles públicos..."
-                                error={errores.descripcion}
-                                sinEstilosPorDefecto={true}
-                                claseContenedor="contenedorCampo"
-                                claseEtiqueta="campo-label"
-                                claseError="campo-error"
-                                clase="campo-textarea"
-                            />
-
-                            <Campo
-                                id="notas"
-                                label="Notas Privadas"
-                                as="textarea"
-                                rows={3}
-                                value={formulario.notas}
-                                onChange={cambiar}
-                                placeholder="Solo uso interno..."
-                                error={errores.notas}
-                                sinEstilosPorDefecto={true}
-                                claseContenedor="contenedorCampo"
-                                claseEtiqueta="campo-label"
-                                claseError="campo-error"
-                                clase="campo-textarea"
-                            />
                         </div>
 
-                        <div className="flex-none border-t border-gray-100 bg-gray-50 p-6">
-                            <button
-                                type="submit"
-                                disabled={estaCargando || submitting}
-                                className="w-full rounded-2xl bg-gray-900 py-5 text-[11px] font-black uppercase tracking-[0.25em] text-white shadow-xl transition-all hover:bg-[#7a0202] disabled:opacity-50"
-                            >
-                                {estaCargando || submitting
-                                    ? 'Guardando...'
-                                    : 'Actualizar Habitación'}
-                            </button>
-                        </div>
+                        <EditHabitacionFooter estaCargando={estaCargando} submitting={submitting} />
                     </form>
                 )}
             </div>
         </div>
     );
 }
-
-const InputFotos = ({
-    fotos,
-    previews,
-    fotosGuardadas = [],
-    onAgregar,
-    onQuitar,
-    error,
-    maxFotos,
-}) => {
-    const fileInputRef = useRef(null);
-    const totalFotos = (fotosGuardadas?.length || 0) + (fotos?.length || 0);
-
-    return (
-        <div className="campo">
-            <label className="campo-label">
-                Fotos ({previews?.length || 0}/{maxFotos})
-            </label>
-            <div className="fotos-grid">
-                {(previews || []).map((src, i) => (
-                    <div key={i} className="foto-preview">
-                        <img src={src} alt={`Foto ${i + 1}`} />
-                        <button
-                            type="button"
-                            onClick={() => onQuitar(i)}
-                            className="foto-quitar"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                ))}
-                {totalFotos < maxFotos && (
-                    <button
-                        type="button"
-                        className="foto-agregar"
-                        aria-label="Añadir fotos"
-                        onClick={() =>
-                            fileInputRef.current && fileInputRef.current.click()
-                        }
-                    >
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            hidden
-                            onChange={onAgregar}
-                        />
-                        <span className="foto-agregar-icon" aria-hidden="true">
-                            +
-                        </span>
-                        <span className="foto-agregar-text">Añadir</span>
-                    </button>
-                )}
-            </div>
-            {error && <span className="campo-error">{error}</span>}
-        </div>
-    );
-};
