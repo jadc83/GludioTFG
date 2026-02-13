@@ -27,7 +27,7 @@ export default function EmployeeRow({ empleado = {}, onView = () => {}, onEdit =
             </td>
 
             <td className="px-6 py-4 text-right" data-label="Acciones">
-                <ActionsCell onView={() => onView(empleado)} onEdit={() => onEdit(empleado)} />
+                <ActionsCell viewHref={`/empleados/${empleado.id}`} onEdit={() => onEdit(empleado)} />
             </td>
         </tr>
     );

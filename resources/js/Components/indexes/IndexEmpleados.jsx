@@ -4,6 +4,7 @@ import ControlesFiltros from '@/Components/UI/ControlesFiltros';
 import HeaderPanel from '@/Components/UI/HeaderPanel';
 import Paginacion from '@/Components/UI/Paginacion';
 import useIndexEmpleados from '@/hooks/useIndexEmpleados';
+import { router } from '@inertiajs/react';
 import { InboxIcon } from '@heroicons/react/24/outline';
 import EstadoVacio from '@/Components/UI/EstadoVacio';
 import TablaContenedor from '@/Components/UI/TablaContenedor';
@@ -30,6 +31,14 @@ export default function IndexEmpleados({ empleados = [], embedded = false }) {
         abrirDetalle,
         cerrarDetalle,
     } = useIndexEmpleados({ empleados });
+
+    const viewEmpleado = (empleado) => {
+        try {
+            router.visit(`/empleados/${empleado.id}`);
+        } catch (e) {
+            window.location.href = `/empleados/${empleado.id}`;
+        }
+    };
 
     if (embedded) {
         return (
@@ -69,7 +78,7 @@ export default function IndexEmpleados({ empleados = [], embedded = false }) {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {empleadosPaginados.map((e) => (
-                                        <FilaEmpleado key={e.id} empleado={e} onView={abrirDetalle} onEdit={abrirEdicion} />
+                                        <FilaEmpleado key={e.id} empleado={e} onView={viewEmpleado} onEdit={abrirEdicion} />
                                     ))}
                                 </tbody>
                             </TablaContenedor>
@@ -133,7 +142,7 @@ export default function IndexEmpleados({ empleados = [], embedded = false }) {
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {empleadosPaginados.map((e) => (
-                                    <FilaEmpleado key={e.id} empleado={e} onView={abrirDetalle} onEdit={abrirEdicion} />
+                                    <FilaEmpleado key={e.id} empleado={e} onView={viewEmpleado} onEdit={abrirEdicion} />
                                 ))}
                             </tbody>
                         </TablaContenedor>
