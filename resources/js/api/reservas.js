@@ -7,6 +7,30 @@ export async function buscarReserva(localizador) {
 
 export async function modificarEstancia(localizadorOrId, payload) {
     try {
+        // If payload is missing check_in/check_out, try to fetch current reserva
+        if (
+            (!payload || !payload.check_in || !payload.check_out) &&
+            localizadorOrId
+        ) {
+            try {
+                const getRes = await axios.get(`/reservas/${localizadorOrId}`);
+                const fetched = getRes?.data ?? null;
+                const reservaData =
+                    (fetched?.data ?? fetched)?.reserva ??
+                    fetched?.reserva ??
+                    fetched;
+                if (reservaData) {
+                    payload = {
+                        check_in: reservaData.check_in,
+                        check_out: reservaData.check_out,
+                        ...(payload || {}),
+                    };
+                }
+            } catch (err) {
+                // ignore - we'll let the PUT trigger validation error if needed
+            }
+        }
+
         // The backend accepts PUT /reservas/{id} where {id} may be numeric id or localizador
         const res = await axios.put(`/reservas/${localizadorOrId}`, payload, {
             headers: {
