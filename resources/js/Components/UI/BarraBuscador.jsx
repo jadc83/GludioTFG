@@ -12,23 +12,6 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
  * @param {Array} [props.filtrosAdicionales] - Array de configuraciones de filtros adicionales
  * @param {string} [props.layout='row'] - Layout: 'row' o 'grid'
  *
- * Ejemplo de filtrosAdicionales:
- * [
- *   {
- *     tipo: 'select',
- *     nombre: 'estado',
- *     opciones: [
- *       { valor: 'todos', etiqueta: 'Todos los estados' },
- *       { valor: 'disponible', etiqueta: 'Disponible' }
- *     ]
- *   },
- *   {
- *     tipo: 'input',
- *     nombre: 'localizador',
- *     placeholder: 'Localizador...',
- *     icono: <HomeIcon />
- *   }
- * ]
  */
 export default function BarraBuscador({
     filtros,

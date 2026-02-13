@@ -20,9 +20,6 @@ export default function TabHabitaciones({ habitaciones = [] }) {
 
     const [hayFiltrosActivos, setHayFiltrosActivos] = useState(false);
 
-    /**
-     * Verifica si hay filtros activos (distintos del valor inicial)
-     */
     useEffect(() => {
         const activos =
             filtros.estado !== 'todos' ||
