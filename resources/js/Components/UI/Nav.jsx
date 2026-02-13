@@ -187,34 +187,6 @@ export default function Navbar() {
                 aria-label="Mobile navigation"
             >
                 <div className="flex flex-col space-y-1 px-4 py-3">
-                    <ResponsiveNavLink
-                        href={route('dashboard')}
-                        active={route().current('dashboard')}
-                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
-                    >
-                        HABITACIONES
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route('home')}
-                        active={route().current('home')}
-                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
-                    >
-                        EXPERIENCIA
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route('home')}
-                        active={route().current('home')}
-                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
-                    >
-                        SERVICIOS
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route('home')}
-                        active={route().current('home')}
-                        className="block rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-100"
-                    >
-                        CONTACTO
-                    </ResponsiveNavLink>
                     {usePage().props?.auth?.user?.can_view_panel && (
                         <ResponsiveNavLink
                             href={route('panel')}
