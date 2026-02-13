@@ -116,7 +116,16 @@ class PanelController extends Controller
             $query = $query->onlyTrashed();
         }
 
-        $reservas = $query->orderBy('check_in', 'desc')->get();
+        // Support sorting from the frontend (e.g., sort_by=created_at, sort_dir=asc|desc)
+        $sortBy = $request->input('sort_by');
+        $sortDir = strtolower($request->input('sort_dir') ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        if ($sortBy === 'created_at') {
+            $reservas = $query->orderBy('created_at', $sortDir)->get();
+        } else {
+            // default ordering remains by check_in desc
+            $reservas = $query->orderBy('check_in', 'desc')->get();
+        }
 
         $habitaciones = Habitacion::with('fotos')
             ->buscar($request->busqueda)

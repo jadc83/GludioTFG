@@ -39,11 +39,16 @@ window.Echo = new Echo({
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
     // Auth headers: rely on cookie-based CSRF (XSRF-TOKEN). Keep X-Requested-With.
-    auth: {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    },
+    auth: (function() {
+        const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+        try {
+            const t = window.getCsrfToken && window.getCsrfToken();
+            if (t) headers['X-XSRF-TOKEN'] = t;
+        } catch (e) {
+            // ignore
+        }
+        return { headers };
+    })(),
 });
 
 // Helper: obtener token CSRF: prefer Inertia page.props.csrf_token, fall back to XSRF-TOKEN cookie

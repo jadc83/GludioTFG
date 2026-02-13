@@ -921,6 +921,7 @@ class ReservaService
                     'id' => $p->id,
                     'monto' => (float) ($p->monto ?? 0),
                     'estado' => $p->estado,
+                    'reembolso_estado' => $p->reembolso_estado ?? null,
                     'created_at' => $p->created_at?->toIso8601String() ?? null,
                 ]; })->values()->toArray(),
                 'ultimo_pago_monto' => $reserva->pagos->count() ? (float) $reserva->pagos->last()->monto : null,

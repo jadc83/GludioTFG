@@ -38,9 +38,21 @@ class BuscarPorLocalizadorAction
             ];
         }
 
+        // Incluir listado de pagos crudos (mínimos) para que el cliente pueda
+        // representar el estado del pago sin depender únicamente del campo `pago`.
+        $pagos = $reserva->pagos->map(function ($p) {
+            return [
+                'id' => $p->id ?? null,
+                'monto' => isset($p->monto) ? $p->monto : (isset($p->amount_cents) ? round(($p->amount_cents ?? 0) / 100, 2) : null),
+                'estado' => $p->estado ?? $p->status ?? null,
+                'reembolso_estado' => $p->reembolso_estado ?? null,
+                'created_at' => isset($p->created_at) ? $p->created_at->toIso8601String() : null,
+            ];
+        })->values()->toArray();
+
         return [
             'success' => true,
-            'reserva' => $reservaFormateada,
+            'reserva' => array_merge($reservaFormateada, ['pagos' => $pagos]),
         ];
     }
 }

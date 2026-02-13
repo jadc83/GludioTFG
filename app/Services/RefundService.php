@@ -125,8 +125,9 @@ class RefundService
         $reembolsoEstado = null;
         if ($totalReembolsado > 0) {
             if ($totalReembolsado >= $precioTotal && $precioTotal > 0) {
-                // Reembolso completo: dejar 'estado' como 'completado' (pagado originalmente) y marcar reembolso_estado
-                $nuevoEstadoPago = 'completado';
+                // Reembolso completo: marcar el pago con el estado enum correspondiente 'cancelado'
+                // (la migración define ['pendiente','procesando','completado','fallido','cancelado'])
+                $nuevoEstadoPago = 'cancelado';
                 $reembolsoEstado = 'completo';
             } else {
                 // Reembolso parcial: mantener 'completado' y usar la columna reembolso_estado para detallar
@@ -135,7 +136,8 @@ class RefundService
             }
         } else {
             // Sin reembolsos, no tocar reembolso_estado y estado pasa a 'pagado' si procede
-            $nuevoEstadoPago = $pago->estado ?: 'pagado';
+            // Usar 'completado' como valor que representa "pagado" en el enum de la tabla
+            $nuevoEstadoPago = $pago->estado ?: 'completado';
         }
 
         $updates = ['estado' => $nuevoEstadoPago];

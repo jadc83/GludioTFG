@@ -100,7 +100,7 @@ class PaymentService
 		}
 
 		try {
-			return DB::transaction(function () use ($reserva, $pago, $pi_id, $montoCents) {
+			$res = DB::transaction(function () use ($reserva, $pago, $pi_id, $montoCents) {
 				$reembolso = $this->getStripe()->refunds->create([
 					'payment_intent' => $pi_id,
 					'amount' => $montoCents,
@@ -124,6 +124,17 @@ class PaymentService
 					'refund_amount' => $reembolso->amount / 100
 				];
 			});
+
+			// Emitir evento de reserva actualizada fuera de la transacción
+			try {
+				$freshReserva = \App\Models\Reserva::with(['reservable', 'pagos'])->find($reserva->id);
+				$meta = ['pago_id' => $pago->id, 'refund_id' => $res['refund_id'] ?? null];
+				try { event(new \App\Events\ReservaActualizada($freshReserva, $meta)); } catch (\Throwable $e) { Log::warning('Emitir ReservaActualizada failed (solicitarReembolso): ' . $e->getMessage()); }
+			} catch (\Throwable $e) {
+				Log::warning('solicitarReembolso: fallo al emitir evento ReservaActualizada: ' . $e->getMessage());
+			}
+
+			return $res;
 		} catch (\Exception $e) {
 			Log::error("Error procesando reembolso: " . $e->getMessage());
 			return ['success' => false, 'message' => 'Error al procesar con Stripe: ' . $e->getMessage()];
@@ -165,6 +176,15 @@ class PaymentService
 
 				$this->sincronizarEstadosPostReembolso($pago->reserva, $pago);
 			});
+
+			// Emitir evento broadcast para notificar a clientes conectados (fuera de transacción)
+			try {
+				$freshReserva = \App\Models\Reserva::with(['reservable', 'pagos'])->find($pago->reserva_id);
+				$meta = ['pago_id' => $pago->id, 'refund_id' => $reembolsoId];
+				try { event(new \App\Events\ReservaActualizada($freshReserva, $meta)); } catch (\Throwable $e) { Log::warning('Emitir ReservaActualizada failed (webhook): ' . $e->getMessage()); }
+			} catch (\Throwable $e) {
+				Log::warning('manejarEventoReembolso: fallo al emitir evento ReservaActualizada: ' . $e->getMessage());
+			}
 
 		} catch (\Throwable $e) {
 			Log::error("Error en webhook de reembolso: " . $e->getMessage());

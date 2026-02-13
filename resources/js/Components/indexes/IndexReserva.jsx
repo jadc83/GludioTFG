@@ -25,6 +25,9 @@ export default function IndexReserva({ reservas = [] }) {
         cliente: '',
         habitacion: '',
         trashed: 'none',
+        // sorting: sort by creation date by default (newest first)
+        sort_by: 'created_at',
+        sort_dir: 'desc',
     });
     const [refrescarTabla, setRefrescarTabla] = useState(0);
     const [paginaActual, setPaginaActual] = useState(1);
@@ -41,6 +44,9 @@ export default function IndexReserva({ reservas = [] }) {
             localizador: '',
             cliente: '',
             habitacion: '',
+            trashed: 'none',
+            sort_by: 'created_at',
+            sort_dir: 'desc',
         });
     };
 
@@ -55,6 +61,9 @@ export default function IndexReserva({ reservas = [] }) {
                     filtros.trashed && filtros.trashed !== 'none'
                         ? filtros.trashed
                         : undefined,
+                // sorting params
+                sort_by: filtros.sort_by || undefined,
+                sort_dir: filtros.sort_dir || undefined,
             };
             Object.keys(criterios).forEach(
                 (key) => criterios[key] === undefined && delete criterios[key],
@@ -70,19 +79,62 @@ export default function IndexReserva({ reservas = [] }) {
 
     useEffect(() => {
         if (typeof window === 'undefined' || !window.Echo) return;
-        const handler = () => setRefrescarTabla((prev) => prev + 1);
         const channel = window.Echo.private('reservas');
-        channel
-            .listen('ReservaCreada', handler)
-            .listen('ReservaActualizada', handler)
-            .listen('ReservaBorrada', handler);
+
+        // When a ReservaActualizada event arrives, fetch the full reserva and update only that row
+        channel.listen('ReservaActualizada', async (event) => {
+            try {
+                const reservaId = event?.id;
+                if (!reservaId) return;
+
+                // find localizador from local copy
+                const local = reservasLocal.find((r) => r.id === reservaId);
+                const localizador = local?.localizador;
+                if (!localizador) {
+                    // fallback: trigger a full refresh
+                    setRefrescarTabla((prev) => prev + 1);
+                    return;
+                }
+
+                // Use the API helper to fetch the full formatted reserva (includes pagos/reembolsos)
+                try {
+                    const detalle = await api.buscarReserva(localizador);
+                    // `buscarReserva` returns the server payload; prefer `reserva` key if present
+                    const reservaData = detalle?.reserva ?? detalle?.data ?? detalle ?? null;
+                    if (!reservaData) {
+                        // fallback to small estados endpoint
+                        setRefrescarTabla((prev) => prev + 1);
+                        return;
+                    }
+
+                    setReservasLocal((prev) => {
+                        const updated = prev.map((r) => {
+                            if (r.localizador !== localizador) return r;
+                            // Merge existing object with fresh server data to keep client-only fields
+                            return { ...r, ...reservaData };
+                        });
+                        return updated;
+                    });
+                } catch (e) {
+                    // if fetching full reserva fails, fallback to refreshing table
+                    setRefrescarTabla((prev) => prev + 1);
+                }
+            } catch (e) {
+                // ignore errors
+            }
+        });
+
+        // Also listen for create/delete to refresh table conservatively
+        const simpleHandler = () => setRefrescarTabla((prev) => prev + 1);
+        channel.listen('ReservaCreada', simpleHandler).listen('ReservaBorrada', simpleHandler);
+
         return () => {
             channel
                 .stopListening('ReservaCreada')
                 .stopListening('ReservaActualizada')
                 .stopListening('ReservaBorrada');
         };
-    }, []);
+    }, [reservasLocal]);
 
     // Polling fallback: si no hay broadcasting conectado, consultar estados de pago visibles cada 10s
     useEffect(() => {
@@ -181,6 +233,14 @@ export default function IndexReserva({ reservas = [] }) {
         fetchRefunds(refundsPage);
     }, [refundsPage, fetchRefunds]);
 
+    const toggleSortByCreatedAt = () => {
+        setFiltros((prev) => ({
+            ...prev,
+            sort_by: 'created_at',
+            sort_dir: prev.sort_dir === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
     useEffect(() => {
         try {
             if (window.Echo) {
@@ -206,6 +266,30 @@ export default function IndexReserva({ reservas = [] }) {
         try {
             const res = await api.aprobarSolicitud(id);
             if (res?.success) {
+                // Intentar marcar la reserva asociada como cancelada
+                try {
+                    const found = refunds.find((r) => r.id === id);
+                    const reservaIdOrLocalizador = found?.reserva?.id ?? found?.reserva_id ?? found?.reserva?.localizador;
+                    if (reservaIdOrLocalizador) {
+                        await api.modificarEstancia(reservaIdOrLocalizador, { status: 'cancelado' });
+                        // actualizar copia local de reservas si coincide el localizador
+                        setReservasLocal((prev) =>
+                            prev.map((r) => {
+                                const loc = r.localizador || r.id;
+                                const matchLoc = found?.reserva?.localizador && found.reserva.localizador === loc;
+                                const matchId = found?.reserva?.id && found.reserva.id === r.id;
+                                if (matchLoc || matchId) {
+                                    return { ...r, status: 'cancelado' };
+                                }
+                                return r;
+                            }),
+                        );
+                    }
+                } catch (e) {
+                    // no bloquear el flujo si la actualización de estado falla
+                    console.warn('No se pudo marcar la reserva como cancelada', e);
+                }
+
                 alert('Reembolso ejecutado y solicitud aprobada');
                 fetchRefunds(refundsPage);
             } else {
@@ -334,6 +418,27 @@ export default function IndexReserva({ reservas = [] }) {
             />
 
             {/* --- TABLA DE RESERVAS --- */}
+            <div className="mt-4 flex items-center justify-end gap-3 px-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-xs font-bold uppercase text-gray-400">Ordenar por:</span>
+                    <button
+                        onClick={toggleSortByCreatedAt}
+                        className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                        title="Ordenar por fecha de creación"
+                    >
+                        Fecha creación
+                        {filtros.sort_dir === 'asc' ? (
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        ) : (
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
+            </div>
             <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 {reservas.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -511,27 +616,51 @@ export default function IndexReserva({ reservas = [] }) {
                                                 data-label="Estado Pago"
                                             >
                                                 <div className="flex w-full justify-end md:justify-center">
-                                                    <Badge
-                                                        label={
-                                                            reserva.pago ===
-                                                            'pagado'
-                                                                ? 'Pagado'
-                                                                : reserva.pago ===
-                                                                    'devuelto'
-                                                                  ? 'Devuelto'
-                                                                  : reserva.pago ===
-                                                                      'reembolso_pendiente'
-                                                                    ? 'Reembolso Pendiente'
-                                                                    : reserva.pago ===
-                                                                        'reembolso_parcial_procesado'
-                                                                      ? 'Parcialmente Reembolsado'
-                                                                      : 'Pendiente'
+                                                    {(() => {
+                                                        const pagos = reserva.pagos || [];
+                                                        // Priorizar cualquier Pago reembolsado/completo sobre pagos 'procesando'
+                                                        const pagoReembolsado = pagos.find(
+                                                            (p) => (p.reembolso_estado === 'completo') || (p.estado === 'cancelado')
+                                                        );
+                                                        if (pagoReembolsado) {
+                                                            return <Badge label={'Devuelto'} tipo={'devuelto'} />;
                                                         }
-                                                        tipo={
-                                                            reserva.pago ||
-                                                            'pendiente'
+
+                                                        const ultimoPago = pagos.length ? pagos[pagos.length - 1] : null;
+
+                                                        if (ultimoPago) {
+                                                            // Reembolso parcial procesado
+                                                            if (ultimoPago.reembolso_estado === 'parcial_procesado') {
+                                                                return <Badge label={'Parcialmente Reembolsado'} tipo={'reembolso_parcial'} />;
+                                                            }
+                                                            // Pago procesado/completado
+                                                            if (ultimoPago.estado === 'completado' || ultimoPago.estado === 'pagado') {
+                                                                return <Badge label={'Pagado'} tipo={'completado'} />;
+                                                            }
+                                                            // En procesamiento
+                                                            if (ultimoPago.estado === 'procesando') {
+                                                                return <Badge label={'Procesando'} tipo={'procesando'} />;
+                                                            }
                                                         }
-                                                    />
+
+                                                        // Fallback: usar campo reserva.pago para compatibilidad
+                                                        return (
+                                                            <Badge
+                                                                label={
+                                                                    reserva.pago === 'pagado'
+                                                                        ? 'Pagado'
+                                                                        : reserva.pago === 'devuelto'
+                                                                        ? 'Devuelto'
+                                                                        : reserva.pago === 'reembolso_pendiente'
+                                                                        ? 'Reembolso Pendiente'
+                                                                        : reserva.pago === 'reembolso_parcial_procesado'
+                                                                        ? 'Parcialmente Reembolsado'
+                                                                        : 'Pendiente'
+                                                                }
+                                                                tipo={reserva.pago || 'pendiente'}
+                                                            />
+                                                        );
+                                                    })()}
                                                 </div>
                                             </td>
 
