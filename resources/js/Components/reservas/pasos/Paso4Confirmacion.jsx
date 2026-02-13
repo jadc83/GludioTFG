@@ -77,8 +77,7 @@ export default function Paso4Confirmacion({
             }, 0);
 
             setMonto(total);
-        } catch (e) {
-            console.debug(e);
+            } catch (e) {
         }
     }, [
         habitacionesSeleccionadas,

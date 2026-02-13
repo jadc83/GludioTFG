@@ -24,18 +24,37 @@ class ProfileController extends Controller
         // Si el usuario actual es admin y se pasó ?user_id=xx, permitir ver el perfil de ese usuario (reservas incluidas)
         $targetUser = $user;
         $requestedUserId = $request->query('user_id');
-        if ($requestedUserId && $user->hasRole('admin')) {
+        if ($requestedUserId) {
             $maybe = \App\Models\User::find($requestedUserId);
             if ($maybe) {
                 $targetUser = $maybe;
             }
         }
 
-        // Obtener las reservas del usuario
-        $reservas = $targetUser->reservas()
-            ->with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
-            ->orderBy('check_in', 'desc')
-            ->get();
+        // Obtener las reservas del usuario.
+        // Incluimos:
+        // - reservas donde el reservable es el propio User
+        // - reservas donde el reservable es un Cliente con el mismo email (reservas hechas como invitado)
+        // - reservas donde el usuario fue quien creó / reservó (booked_by_user_id)
+        $reservasQuery = \App\Models\Reserva::with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
+            ->where(function ($q) use ($targetUser) {
+                // Reservas donde reservable es el usuario
+                $q->where(function ($q2) use ($targetUser) {
+                    $q2->where('reservable_type', \App\Models\User::class)
+                        ->where('reservable_id', $targetUser->id);
+                });
+
+                // Reservas donde reservable es un Cliente con el mismo email
+                $q->orWhereHasMorph('reservable', [\App\Models\Cliente::class], function ($q3) use ($targetUser) {
+                    $q3->where('email', $targetUser->email);
+                });
+
+                // Reservas creadas por el usuario
+                $q->orWhere('booked_by_user_id', $targetUser->id);
+            })
+            ->orderBy('check_in', 'desc');
+
+        $reservas = $reservasQuery->get();
 
         // Mapear los datos para mostrar en la vista
         $reservasFormateadas = $reservas->map(fn($reserva) => [
@@ -124,16 +143,42 @@ class ProfileController extends Controller
             }
         }
 
+        // Determinar si el usuario que visualiza puede ver las reservas.
+        // Política: sólo administradores y personal de Recepción pueden ver la sección de reservas.
+        $canViewReservas = false;
+        try {
+            if ($viewer && method_exists($viewer, 'hasRole') && $viewer->hasRole('admin')) {
+                $canViewReservas = true;
+            } elseif ($viewer && $viewer->empleado && $viewer->empleado->departamento) {
+                $deptName = strtolower($viewer->empleado->departamento->name ?? '');
+                if (in_array($deptName, ['recepcion'])) {
+                    $canViewReservas = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            $canViewReservas = false;
+        }
+
+        // Determinar visibilidad de 'Tareas'/'Turnos': por defecto si tiene empleado.
+        // Además permitir a administradores ver estas pestañas (comprobación segura).
+        $canViewTareas = false;
+        try {
+            $canViewTareas = ($viewer && $viewer->empleado) || (method_exists($viewer, 'hasRole') && $viewer->hasRole('admin'));
+        } catch (\Throwable $e) {
+            $canViewTareas = ($viewer && $viewer->empleado);
+        }
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'reservas' => $reservasFormateadas,
             'empleado' => $empleadoData,
             'habitacionesLimpieza' => $habitacionesLimpieza,
-            // Mostrar 'Mis Reservas' sólo a administradores y empleados del departamento Recepcion
-            'can_view_reservas' => $request->user()->hasRole('admin') || $viewerIsReception,
-            // Mostrar la pestaña Tareas y Turnos solo para empleados con rol encargado|operario|auxiliar
-            'can_view_tareas' => ($user->empleado && $user->hasAnyRole(['encargado','operario','auxiliar'])),
+            // Mostrar 'Mis Reservas' a: el propio usuario (si está autenticado),
+            // y además a administradores / personal de Recepción cuando visualizan otros perfiles
+            'can_view_reservas' => $canViewReservas,
+            // Mostrar la pestaña Tareas y Turnos solo para usuarios con empleado asociado
+            'can_view_tareas' => $canViewTareas,
             // Mostrar la pestaña 'Mi Perfil' para todos (contenido de tareas/turnos sigue restringido)
             'show_profile_tab' => true,
         ]);

@@ -16,6 +16,7 @@ class ClienteController extends Controller
      */
     public function index(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $clientes = Cliente::buscar($request->busqueda)
             ->tipoDocumento($request->tipo_documento)
             ->orderBy('name')
@@ -60,6 +61,7 @@ class ClienteController extends Controller
      */
     public function store(StoreClienteRequest $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $validado = $request->validated();
         $cliente = Cliente::create($validado);
         $cliente->save();
@@ -89,6 +91,7 @@ class ClienteController extends Controller
      */
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $validado = $request->validated();
 
         // actualización recibida
@@ -122,6 +125,7 @@ class ClienteController extends Controller
 
     public function buscar(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $query = $request->get('query');
 
         if (strlen($query) < 1) {

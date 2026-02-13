@@ -21,10 +21,7 @@ class FixEncargadosSeeder extends Seeder
                 $e = Empleado::where('departamento_id', $dep->id)->inRandomOrder()->first();
                 if ($e) {
                     $e->update(['role' => 'encargado']);
-                    $u = User::find($e->user_id);
-                    if ($u) {
-                        $u->assignRole('encargado');
-                    }
+                    // User role assignment removed - keep empleado.role only
                 }
             } elseif ($encargados->count() > 1) {
                 // Keep the first, demote the rest to operario
@@ -32,22 +29,13 @@ class FixEncargadosSeeder extends Seeder
                 $rest = $encargados->slice(1);
                 foreach ($rest as $r) {
                     $r->update(['role' => 'operario']);
-                    $u = User::find($r->user_id);
-                    if ($u) {
-                        // Remove encargado role if present and assign operario
-                        if ($u->hasRole('encargado')) {
-                            $u->removeRole('encargado');
-                        }
-                        if (! $u->hasRole('operario')) {
-                            $u->assignRole('operario');
-                        }
-                    }
+                    // User role assignments/changes removed - keep empleado.role only
                 }
 
-                // Ensure keeper user has encargado role
+                // Ensure keeper empleado has role set; do not modify User roles here
                 $uKeep = User::find($keep->user_id);
-                if ($uKeep && ! $uKeep->hasRole('encargado')) {
-                    $uKeep->assignRole('encargado');
+                if ($uKeep) {
+                    // noop: role management is handled centrally
                 }
             }
         }
@@ -57,19 +45,8 @@ class FixEncargadosSeeder extends Seeder
             $u = User::find($e->user_id);
             if (! $u) continue;
 
-            // sync roles: remove encargado/operario/auxiliar and assign according to empleado.role
-            $possible = ['encargado','operario','auxiliar','user'];
-            foreach ($possible as $r) {
-                if ($u->hasRole($r) && $r !== $e->role) {
-                    $u->removeRole($r);
-                }
-            }
-            if (! $u->getRoleNames()->contains($e->role)) {
-                // For 'user' role, do not assign a Spatie role named 'user' unless it exists; if not, keep no special role
-                if (in_array($e->role, ['encargado','operario','auxiliar'])) {
-                    $u->assignRole($e->role);
-                }
-            }
+            // sync empleado.role only; do not modify User roles here
+            // (central role assignment to be handled separately)
         }
     }
 }

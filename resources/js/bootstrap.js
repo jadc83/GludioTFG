@@ -28,13 +28,6 @@ const REVERB_SCHEME =
 
 window.Pusher = Pusher;
 
-const csrfToken =
-    typeof document !== 'undefined'
-        ? document
-              .querySelector('meta[name="csrf-token"]')
-              ?.getAttribute('content')
-        : null;
-
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: REVERB_KEY,
@@ -45,21 +38,25 @@ window.Echo = new Echo({
     forceTLS: REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
-    // Add auth headers so /broadcasting/auth receives CSRF token and proper X-Requested-With
+    // Auth headers: rely on cookie-based CSRF (XSRF-TOKEN). Keep X-Requested-With.
     auth: {
         headers: {
-            'X-CSRF-TOKEN': csrfToken || '',
             'X-Requested-With': 'XMLHttpRequest',
         },
     },
 });
 
-// Helper: obtener token CSRF (meta tag o cookie XSRF-TOKEN)
+// Helper: obtener token CSRF: prefer Inertia page.props.csrf_token, fall back to XSRF-TOKEN cookie
 window.getCsrfToken = function () {
     if (typeof document === 'undefined') return '';
-    const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    if (meta) return meta;
-    const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+    try {
+        // eslint-disable-next-line no-undef
+        const fromPage = (typeof page !== 'undefined' && page.props && page.props.csrf_token) || '';
+        if (fromPage) return fromPage;
+    } catch (e) {
+        // ignore
+    }
+    const cookie = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='));
     if (!cookie) return '';
     try {
         return decodeURIComponent(cookie.split('=')[1] || '');
@@ -68,19 +65,13 @@ window.getCsrfToken = function () {
     }
 };
 
-// Asegurar que axios también tenga el header X-CSRF-TOKEN (por si no hay cookie pero sí meta)
-const _csrf = window.getCsrfToken();
-if (_csrf) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = _csrf;
-}
-
-// Wrapper de fetch que inyecta CSRF y cabeceras por defecto
+// Wrapper de fetch que inyecta CSRF y cabeceras por defecto (usa X-XSRF-TOKEN header)
 window.fetchWithCsrf = async function (url, options = {}) {
     const opts = Object.assign({ credentials: 'same-origin', headers: {} }, options || {});
     const headers = Object.assign({}, opts.headers || {});
-    if (!headers['X-CSRF-TOKEN'] && !headers['x-csrf-token']) {
+    if (!headers['X-XSRF-TOKEN'] && !headers['x-xsrf-token'] && !headers['X-CSRF-TOKEN']) {
         const t = window.getCsrfToken();
-        if (t) headers['X-CSRF-TOKEN'] = t;
+        if (t) headers['X-XSRF-TOKEN'] = t;
     }
     // cabeceras por defecto para peticiones internas
     opts.headers = Object.assign({ 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' }, headers);

@@ -53,7 +53,20 @@ class ReservaFormatterService
                 'reembolsos_total' => $reembolsosTotal,
                 'notas' => $reserva->notas,
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
-                'cliente_name' => $nombreCliente,
+                // Resolver nombre de cliente: preferir `name`, luego `nombre`, y si no existe, buscar por email
+            'cliente_name' => (function() use ($reserva) {
+                if ($reserva->reservable) {
+                    // nombre directo (User) o nombre de Cliente
+                    $name = $reserva->reservable?->name ?? $reserva->reservable?->nombre ?? null;
+                    if ($name) return $name;
+                    // intentar búsqueda por email
+                    if (!empty($reserva->reservable->email)) {
+                        $c = \App\Models\Cliente::where('email', $reserva->reservable->email)->first();
+                        if ($c && $c->name) return $c->name;
+                    }
+                }
+                return 'Sin cliente';
+            })(),
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
                 'habitacion_numero' => (function() use ($reserva) {
                     $nums = $reserva->habitaciones->map(function(HabitacionReserva $hr) { return $hr->habitacion?->numero ?? null; })->filter()->values();
@@ -117,15 +130,28 @@ class ReservaFormatterService
             'status' => $reserva->status,
             'pago' => $reserva->pago,
             'notas' => $reserva->notas,
-            'cliente' => [
-                'id' => $reserva->reservable?->id ?? null,
-                'name' => $reserva->reservable?->name ?? 'N/A',
-                'email' => $reserva->reservable?->email ?? null,
-                'telefono' => $reserva->reservable?->telefono ?? null,
-                'numero_documento' => $reserva->reservable?->numero_documento ?? null,
-                'tipo_documento' => $reserva->reservable?->tipo_documento ?? null,
-                'direccion' => $reserva->reservable?->direccion ?? null,
-            ],
+            'cliente' => (function() use ($reserva) {
+                $clienteFromEmail = null;
+                $reservable = $reserva->reservable;
+
+                // Si el reservable no tiene nombre, intentar buscar Cliente por email
+                if ($reservable && empty($reservable->name) && empty($reservable->nombre) && !empty($reservable->email)) {
+                    $clienteFromEmail = \App\Models\Cliente::where('email', $reservable->email)->first();
+                }
+
+                $nombre = $reservable?->name ?? $reservable?->nombre ?? $clienteFromEmail?->name ?? null;
+
+                return [
+                    'id' => $reservable?->id ?? null,
+                    'name' => $nombre ?? 'Sin nombre',
+                    'nombre' => $nombre ?? 'Sin nombre',
+                    'email' => $reservable?->email ?? null,
+                    'telefono' => $reservable?->telefono ?? null,
+                    'numero_documento' => $reservable?->numero_documento ?? null,
+                    'tipo_documento' => $reservable?->tipo_documento ?? null,
+                    'direccion' => $reservable?->direccion ?? null,
+                ];
+            })(),
             'booked_by_user' => [
                 'id' => $reserva->bookedBy?->id ?? null,
                 'name' => $reserva->bookedBy?->name ?? ($reserva->booked_by_user ?? 'Sistema'),

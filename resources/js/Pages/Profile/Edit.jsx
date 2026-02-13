@@ -30,17 +30,33 @@ export default function Edit({
     show_profile_tab = false,
 }) {
     // Construir tabs dinámicamente según permisos (Spatie)
+    // Mostrar 'turnos' solo a administradores o a encargados del mismo departamento
+    const viewerRoles = auth?.user?.roles || [];
+    const viewerIsAdmin = Array.isArray(viewerRoles) && viewerRoles.includes('admin');
+    const viewerIsEncargadoRole = Array.isArray(viewerRoles) && viewerRoles.includes('encargado');
+    const viewerIsOperarioOrAuxiliar = Array.isArray(viewerRoles) && (viewerRoles.includes('operario') || viewerRoles.includes('auxiliar'));
+    const viewerDept = (auth?.user?.empleado_departamento || '').toLowerCase();
+    const targetDept = (empleado?.departamento || '').toLowerCase();
+    // 'turnos' visible solo para admin o encargados del mismo departamento;
+    // explícitamente oculto a roles 'operario' y 'auxiliar'
+    const canSeeTurnos = (viewerIsAdmin || (viewerIsEncargadoRole && viewerDept && targetDept && viewerDept === targetDept)) && !viewerIsOperarioOrAuxiliar;
+
+    // Mostrar 'Mis Reservas' solo a usuarios que no tienen ningún role ni departamento
+    const viewerHasNoRole = !Array.isArray(viewerRoles) || viewerRoles.length === 0;
+    const viewerHasNoDept = !auth?.user?.empleado_departamento;
+    const viewerCanSeeReservas = can_view_reservas && viewerHasNoRole && viewerHasNoDept;
+
     const tabs = [
         ...(show_profile_tab
             ? [{ id: 'informacion', label: 'Resumen', icon: UserIcon }]
             : []),
-        ...(can_view_reservas
+        ...(viewerCanSeeReservas
             ? [{ id: 'reservas', label: 'Mis Reservas', icon: CalendarIcon }]
             : []),
         ...(can_view_tareas
             ? [
                   { id: 'tareas', label: 'Tareas', icon: BriefcaseIcon },
-                  { id: 'turnos', label: 'Turnos', icon: CalendarIcon },
+                  ...(canSeeTurnos ? [{ id: 'turnos', label: 'Turnos', icon: CalendarIcon }] : []),
               ]
             : []),
         { id: 'seguridad', label: 'Información de cuenta', icon: LockClosedIcon },
@@ -111,13 +127,13 @@ export default function Edit({
                         )}
 
                         {/* TAB: TAREAS */}
-                        {activeTab === 'tareas' && <PestanaTareas habitaciones={habitacionesLimpieza} />}
+                        {activeTab === 'tareas' && <PestanaTareas habitaciones={habitacionesLimpieza} empleado={empleado} auth={auth} />}
 
                         {/* TAB: RESERVAS */}
                         {activeTab === 'reservas' && <TarjetaReservas reservas={reservas} />}
 
                         {/* TAB: TURNOS */}
-                        {activeTab === 'turnos' && <TarjetaTurnos />}
+                        {activeTab === 'turnos' && <TarjetaTurnos empleado={empleado} />}
 
                         {/* TAB: SEGURIDAD */}
                         {activeTab === 'seguridad' && (

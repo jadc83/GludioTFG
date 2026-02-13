@@ -3,8 +3,10 @@ const cabecerasPorDefecto = () => ({
     Accept: 'application/json',
 });
 
-export async function obtenerTurnos() {
-    const res = await fetch('/api/turnos', { credentials: 'same-origin', headers: cabecerasPorDefecto() });
+export async function obtenerTurnos(empleadoId = null) {
+    let url = '/api/turnos';
+    if (empleadoId) url += `?empleado_id=${encodeURIComponent(empleadoId)}`;
+    const res = await fetch(url, { credentials: 'same-origin', headers: cabecerasPorDefecto() });
     if (!res.ok) throw new Error('Error al obtener turnos');
     return res.json();
 }
@@ -22,11 +24,11 @@ export async function obtenerTareas() {
 }
 
 export async function eliminarTurno(id) {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrf = window.getCsrfToken?.() || '';
     const res = await fetch(`/api/turnos/${id}`, {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: { ...cabecerasPorDefecto(), 'X-CSRF-TOKEN': csrf },
+        headers: { ...cabecerasPorDefecto(), 'X-XSRF-TOKEN': csrf },
     });
     if (!res.ok) throw new Error('Error al eliminar turno');
     return res.json();

@@ -114,7 +114,6 @@ export default function QRScanner({ onScanSuccess }) {
                         .getTracks()
                         .forEach((track) => track.stop());
                 } catch (e) {
-                    console.debug(e);
                 }
             }
         };

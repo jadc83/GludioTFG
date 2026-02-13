@@ -16,7 +16,7 @@ class LocalFakeSessions {
     public function retrieve($id, $opts = []) { return $this->s; }
 }
 
-// Lightweight fake Stripe client used only in debug scripts (extends StripeClient to satisfy type hint)
+// Cliente Stripe falso ligero usado solo en scripts de depuración (para cumplir el type hint)
 class LocalFakeStripeClient extends \Stripe\StripeClient {
     public $checkout;
     public function __construct() { /* bypass parent constructor */ }

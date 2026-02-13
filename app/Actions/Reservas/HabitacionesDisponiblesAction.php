@@ -32,12 +32,12 @@ class HabitacionesDisponiblesAction
 
         $disponibles = $this->habitacionService->getDisponibles($entrada, $salida, false, $excluirReservaId);
 
-        // If debug requested, also return internal counts comparing with and without exclusion
-        if (!empty($data['debug'])) {
-            $sinExclusion = $this->habitacionService->getDisponibles($entrada, $salida, true, null);
-            $conExclusion = $this->habitacionService->getDisponibles($entrada, $salida, true, $excluirReservaId);
-            return ['success' => true, 'data' => $disponibles, 'debug' => ['sin_exclusion' => $sinExclusion, 'con_exclusion' => $conExclusion, 'excluir_reserva_id' => $excluirReservaId]];
-        }
+            // Si se solicita depuración, devolver también conteos internos comparando con/sin exclusión
+            if (!empty($data['debug'])) {
+                $sinExclusion = $this->habitacionService->getDisponibles($entrada, $salida, true, null);
+                $conExclusion = $this->habitacionService->getDisponibles($entrada, $salida, true, $excluirReservaId);
+                return ['success' => true, 'data' => $disponibles, 'debug' => ['sin_exclusion' => $sinExclusion, 'con_exclusion' => $conExclusion, 'excluir_reserva_id' => $excluirReservaId]];
+            }
 
         return ['success' => true, 'data' => $disponibles];
     }

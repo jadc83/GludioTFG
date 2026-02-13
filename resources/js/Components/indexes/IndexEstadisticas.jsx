@@ -292,7 +292,7 @@ export default function IndexEstadisticas({
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-black uppercase leading-none tracking-widest text-gray-400">
-                                        Ingresos (pagos)
+                                        Ingresos totales
                                     </span>
                                     <div className="mt-1 text-3xl font-black leading-tight text-gray-900">
                                         {finanzas ? `€ ${finanzas.ingresos.toFixed(2)}` : '€ 0.00'}
@@ -308,7 +308,7 @@ export default function IndexEstadisticas({
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-black uppercase leading-none tracking-widest text-gray-400">
-                                        Reembolsos
+                                        Reembolsos totales
                                     </span>
                                     <div className="mt-1 text-3xl font-black leading-tight text-[#7a0202]">
                                         {finanzas ? `€ ${finanzas.reembolsos.toFixed(2)}` : '€ 0.00'}

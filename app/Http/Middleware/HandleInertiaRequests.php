@@ -29,29 +29,38 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        return [
-            ...parent::share($request),
-            'auth' => [
-                'user' => ($request->user() ? array_merge($request->user()->only([
+        $shared = parent::share($request);
+
+        $user = $request->user();
+        $userData = null;
+        if ($user) {
+            try {
+                $roles = [];
+                try {
+                    $roles = $user->getRoleNames()->toArray();
+                } catch (\Throwable $e) {
+                    $roles = [];
+                }
+
+                // Por simplificar: cualquier usuario autenticado puede ver el panel
+                $canViewPanel = true;
+
+                $userData = array_merge($user->only([
                     'id', 'name', 'email', 'tipo_documento', 'numero_documento', 'nacionalidad',
                     'direccion', 'ciudad', 'codigo_postal', 'telefono', 'email_verified_at',
                 ]), [
-                    'roles' => $request->user()->getRoleNames()->toArray(),
-                    'is_encargado' => $request->user()->hasRole('encargado'),
-                    'is_admin' => $request->user()->hasRole('admin'),
-                    'is_recepcion' => strtolower($request->user()->empleado?->departamento?->name ?? '') === 'recepcion',
-                    // Can view panel: admin, encargado, operario (mantenimiento|recepcion), auxiliar(recepcion)
-                    'can_view_panel' => (
-                        $request->user() && (
-                            $request->user()->hasRole('admin') ||
-                            $request->user()->hasRole('encargado') ||
-                            ($request->user()->hasRole('operario') && in_array(strtolower($request->user()->empleado?->departamento?->name ?? ''), ['mantenimiento','recepcion'])) ||
-                            ($request->user()->hasRole('auxiliar') && strtolower($request->user()->empleado?->departamento?->name ?? '') === 'recepcion')
-                        )
-                    ),
-                ]) : null),
-            ],
+                    'roles' => $roles,
+                    'can_view_panel' => $canViewPanel,
+                    'empleado_departamento' => $user->empleado?->departamento?->name ?? null,
+                ]);
+            } catch (\Throwable $e) {
+                $userData = array_merge($user->only(['id', 'name', 'email']), ['roles' => [], 'can_view_panel' => false]);
+            }
+        }
+
+        return array_merge($shared, [
+            'auth' => ['user' => $userData],
             'csrf_token' => csrf_token(),
-        ];
+        ]);
     }
 }

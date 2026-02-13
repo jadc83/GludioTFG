@@ -1,8 +1,9 @@
-import ModalFechas from '@/Components/reservas/comunes/ModalFechas';
+import ModalFechasContainer from '@/Components/reservas/comunes/ModalFechasContainer';
 import ModalPago from '@/Components/reservas/comunes/ModalPago';
 import ModalReembolso from '@/Components/reservas/comunes/ModalReembolso';
 import ReservaInfo from '@/Components/reservas/comunes/ReservaInfo';
-import FechaEditor from '@/Components/reservas/FechaEditor';
+import FechasPanel from '@/Components/reservas/FechasPanel';
+import ReservaFondo from '@/Components/reservas/ReservaFondo';
 import AsignacionHabitaciones from '@/Components/reservas/pms/AsignacionHabitaciones';
 import AssignedHabitaciones from '@/Components/reservas/pms/AssignedHabitaciones';
 import useEditarReserva from '@/hooks/reservas/useEditarReserva';
@@ -10,7 +11,7 @@ import useReserva from '@/hooks/reservas/useReserva';
 import useReservaEvents from '@/hooks/reservas/useReservaEvents';
 import usePreview from '@/hooks/usePreview';
 import { t } from '@/i18n';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import GuestLayout from '@/Layouts/GuestLayout';
 import { emitToast } from '@/utils/toast';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -21,14 +22,7 @@ export default function EditarReserva({
 }) {
     const { reserva, setReserva, refresh, aplicarCambioFechas } =
         useReserva(initialReserva);
-    useEffect(() => {
-        try {
-            // eslint-disable-next-line no-console
-            console.log('reserva (debug):', reserva);
-        } catch (e) {
-            console.debug(e);
-        }
-    }, [reserva]);
+    // Logs de depuración eliminados
 
     const motivosReembolso = [
         {
@@ -119,46 +113,15 @@ export default function EditarReserva({
     // Estado local para reflejar que el usuario ya ha solicitado un reembolso
     const [reembolsoSolicitado, setReembolsoSolicitado] = useState(false);
 
-    // Debug: track modal fecha state when available
-    useEffect(() => {
-        try {
-            console.log('--- [EditReserva] showModalFechas change:', {
-                showModalFechas:
-                    typeof mostrarModalFechas !== 'undefined'
-                        ? mostrarModalFechas
-                        : null,
-                fechaModalCheckIn:
-                    typeof fechaModalCheckIn !== 'undefined'
-                        ? fechaModalCheckIn
-                        : null,
-                fechaModalCheckOut:
-                    typeof fechaModalCheckOut !== 'undefined'
-                        ? fechaModalCheckOut
-                        : null,
-            });
-        } catch (e) {
-            console.debug(e);
-        }
-    }, [mostrarModalFechas, fechaModalCheckIn, fechaModalCheckOut]);
+    // Seguimiento temporal del estado del editor de fechas (sin logs)
 
     // Fallback listener: if FechaEditor dispatches a fallback event, open modal here
     useEffect(() => {
         const handler = (e) => {
-            try {
-                const d = e && e.detail ? e.detail : {};
-                console.log(
-                    '--- [EditReserva] showModalFechasFallback received:',
-                    d,
-                );
-                if (d.checkIn) setFechaModalCheckIn(d.checkIn);
-                if (d.checkOut) setFechaModalCheckOut(d.checkOut);
-                setMostrarModalFechas(true);
-            } catch (err) {
-                console.error(
-                    '--- [EditReserva] showModalFechasFallback handler error:',
-                    err,
-                );
-            }
+            const d = e && e.detail ? e.detail : {};
+            if (d.checkIn) setFechaModalCheckIn(d.checkIn);
+            if (d.checkOut) setFechaModalCheckOut(d.checkOut);
+            setMostrarModalFechas(true);
         };
         window.addEventListener('showModalFechasFallback', handler);
         return () =>
@@ -191,30 +154,9 @@ export default function EditarReserva({
         : Number(reserva.precio_total ?? 0);
 
     return (
-        <AuthenticatedLayout>
+        <GuestLayout>
             <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-white to-gray-50 pb-24 font-sans text-gray-900">
-                {/* BACKGROUND DINÁMICO: Imagen de Hotel con Overlay (copiado de CheckoutSimulada) */}
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 z-10 bg-gradient-to-r from-white via-white/80 to-transparent" />
-                    <div className="bg-[#7a0202]/6 absolute inset-0 z-10 mix-blend-multiply" />
-                    <img
-                        src="https://images.unsplash.com/photo-1505691723518-36a6cc7ec9b0?q=80&w=2070&auto=format&fit=crop"
-                        className="opacity-12 animate-slow-zoom h-full w-full scale-110 object-cover"
-                        alt="Hotel Background"
-                    />
-                </div>
-
-                <style
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                    @keyframes slow-zoom {
-                        0% { transform: scale(1); }
-                        100% { transform: scale(1.1); }
-                    }
-                    .animate-slow-zoom { animation: slow-zoom 20s infinite alternate ease-in-out; }
-                `,
-                    }}
-                />
+                <ReservaFondo />
 
                 <div className="relative z-20">
                     <main className="mx-auto mt-8 max-w-7xl px-4">
@@ -267,99 +209,22 @@ export default function EditarReserva({
                             </div>
 
                             <div className="col-span-12 mt-4">
-                                <div className="w-full">
-                                    <div className="w-full overflow-hidden rounded-lg border bg-white">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setShowFechaEditor((s) => !s)
-                                            }
-                                            aria-expanded={showFechaEditor}
-                                            className="flex w-full items-center justify-between bg-[#7a0202] px-4 py-3 text-white hover:bg-[#5f0101]"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-black text-white">
-                                                    <svg
-                                                        className="h-5 w-5"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <path
-                                                            d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                                <span className="font-medium">
-                                                    {t(
-                                                        'edit_reserva.modify_dates_button',
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <svg
-                                                className={`h-5 w-5 transform text-white transition-transform duration-200 ${showFechaEditor ? 'rotate-180' : 'rotate-0'}`}
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                aria-hidden="true"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M19 9l-7 7-7-7"
-                                                />
-                                            </svg>
-                                        </button>
-
-                                        {showFechaEditor && (
-                                            <div className="p-4">
-                                                <FechaEditor
-                                                    reserva={reserva}
-                                                    setReserva={setReserva}
-                                                    refresh={refresh}
-                                                    vistaPrevia={preview}
-                                                    cargandoVistaPrevia={
-                                                        previewLoading
-                                                    }
-                                                    errorVistaPrevia={
-                                                        previewError
-                                                    }
-                                                    obtenerPreview={
-                                                        fetchPreviewHook
-                                                    }
-                                                    clearPreview={
-                                                        clearPreviewHook
-                                                    }
-                                                    noWrapper={true}
-                                                    onRequestConfirmDates={(
-                                                        ci,
-                                                        co,
-                                                    ) => {
-                                                        console.log(
-                                                            '--- [EditReserva] onRequestConfirmDates called:',
-                                                            { ci, co },
-                                                        );
-                                                        setFechaModalCheckIn(
-                                                            ci,
-                                                        );
-                                                        setFechaModalCheckOut(
-                                                            co,
-                                                        );
-                                                        setMostrarModalFechas(
-                                                            true,
-                                                        );
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                <FechasPanel
+                                    reserva={reserva}
+                                    showFechaEditor={showFechaEditor}
+                                    setShowFechaEditor={setShowFechaEditor}
+                                    vistaPrevia={preview}
+                                    previewLoading={previewLoading}
+                                    previewError={previewError}
+                                    fetchPreview={fetchPreviewHook}
+                                    clearPreview={clearPreviewHook}
+                                    setFechaModalCheckIn={setFechaModalCheckIn}
+                                    setFechaModalCheckOut={setFechaModalCheckOut}
+                                    setMostrarModalFechas={setMostrarModalFechas}
+                                    confirmarModalFechas={confirmarModalFechas}
+                                    vistaPreviaCargada={vistaPreviaCargada}
+                                    refresh={refresh}
+                                />
                             </div>
 
                             {(viewerIsAdmin || viewerIsRecepcion) &&
@@ -391,63 +256,24 @@ export default function EditarReserva({
                     </main>
                 </div>
 
-                <ModalFechas
+                <ModalFechasContainer
                     mostrar={mostrarModalFechas}
-                    modalCheckIn={fechaModalCheckIn}
-                    modalCheckOut={fechaModalCheckOut}
-                    setModalCheckIn={setFechaModalCheckIn}
-                    setModalCheckOut={setFechaModalCheckOut}
-                    isCheckedIn={isCheckedIn}
-                    vistaPrevia={preview}
-                    cargandoVistaPrevia={previewLoading}
-                    errorVistaPrevia={previewError}
-                    vistaPreviaCargada={vistaPreviaCargada}
+                    setMostrar={setMostrarModalFechas}
                     reserva={reserva}
+                    fechaCheckIn={fechaModalCheckIn}
+                    fechaCheckOut={fechaModalCheckOut}
+                    setFechaCheckIn={setFechaModalCheckIn}
+                    setFechaCheckOut={setFechaModalCheckOut}
+                    preview={preview}
+                    previewLoading={previewLoading}
+                    previewError={previewError}
+                    previewLoaded={vistaPreviaCargada}
                     clearPreview={clearPreviewHook}
-                    onCerrar={() => setMostrarModalFechas(false)}
-                    onConfirmar={confirmarModalFechas}
-                    onApplied={(resData) => {
-                        setMostrarModalFechas(false);
-                        try {
-                            const currentPrecio = Number(
-                                reserva.precio_total ?? 0,
-                            );
-                            if (originalPrecioBackup === null)
-                                setOriginalPrecioBackup(currentPrecio);
-                        } catch (e) {
-                            console.debug(e);
-                        }
-
-                        if (resData && resData.reserva) {
-                            setReserva(resData.reserva);
-                            try {
-                                clearPreviewHook();
-                            } catch (e) {
-                                console.debug(e);
-                            }
-                        } else if (
-                            preview &&
-                            preview.nuevo_total !== undefined
-                        ) {
-                            // override local reserva precio_total to match preview while we refresh
-                            setReserva((r) => ({
-                                ...r,
-                                precio_total: Number(preview.nuevo_total),
-                            }));
-                        }
-
-                        (async () => {
-                            try {
-                                await refresh();
-                                // refresh succeeded, clear backup
-                                setOriginalPrecioBackup(null);
-                            } catch (e) {
-                                // fallback: setReserva if resData contains reserva
-                                if (resData && resData.reserva)
-                                    setReserva(resData.reserva);
-                            }
-                        })();
-                    }}
+                    refresh={refresh}
+                    setReserva={setReserva}
+                    originalPrecioBackup={originalPrecioBackup}
+                    setOriginalPrecioBackup={setOriginalPrecioBackup}
+                    confirmarModalFechas={confirmarModalFechas}
                     procesando={isProcessing}
                 />
 
@@ -471,7 +297,7 @@ export default function EditarReserva({
                             try {
                                 setReembolsoSolicitado(true);
                             } catch (e) {
-                                console.debug(e);
+                                // removed debug log
                             }
                             cerrarReembolso();
                         }
@@ -493,10 +319,10 @@ export default function EditarReserva({
                         habitaciones: reserva.habitaciones,
                     }}
                     aceptaTerminos={aceptaTerminosPago}
-                    mostrarAceptacion={true}
+                    mostrarAceptacion={false}
                     onCambioAceptaTerminos={setAceptaTerminosPago}
                 />
             </div>
-        </AuthenticatedLayout>
+        </GuestLayout>
     );
 }

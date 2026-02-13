@@ -16,12 +16,8 @@ try {
         exit(0);
     }
 
-    if (method_exists($u, 'getRoleNames')) {
-        $roles = $u->getRoleNames()->toArray();
-        echo json_encode($roles, JSON_UNESCAPED_UNICODE) . "\n";
-    } else {
-        echo "NO_ROLE_METHOD\n";
-    }
+    // Role inspection removed; return basic user info
+    echo json_encode(['id' => $u->id, 'email' => $u->email], JSON_UNESCAPED_UNICODE) . "\n";
 } catch (Throwable $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     exit(1);

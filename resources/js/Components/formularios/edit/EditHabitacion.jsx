@@ -114,7 +114,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
             try {
                 setLocalErrors({});
                 setSubmitting(true);
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const csrf = window.getCsrfToken?.() || '';
                 const fd = new FormData();
                 fd.append('_method', 'PUT');
                 fd.append('numero', formulario.numero || '');
@@ -143,7 +143,7 @@ export default function EditHabitacion({ habitacion, abierto, onCerrar }) {
                 // refrescar vista mediante evento global
                 window.dispatchEvent(new Event('habitaciones:updated'));
                 // Forzar recarga Inertia para asegurar que la vista refleja el cambio inmediatamente
-                try { Inertia.reload(); } catch (e) { console.debug('Inertia.reload failed', e); }
+                try { Inertia.reload(); } catch (e) { /* registros de depuración eliminados */ }
             } catch (e) {
                 console.error(e);
                 window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Error al actualizar habitación', type: 'error' } }));

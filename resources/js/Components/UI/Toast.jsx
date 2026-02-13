@@ -36,12 +36,9 @@ export default function Toast({ duration: defaultDuration = 4500, onClose }) {
         // Listen for global toasts only
         const handler = (e) => {
             const d = e?.detail || {};
-            // Debug suspicious short messages: print stack to see where dispatch came from
+
             if (typeof d.message === 'string' && d.message.length <= 1) {
-                console.warn('DEBUG: app-toast with short message', {
-                    detail: d,
-                    stack: new Error().stack,
-                });
+                // Mensajes muy cortos suelen indicar valores no esperados; evitar log ruidoso.
             }
             show(d.message, d.type || d.tipo || 'info', d.duration);
         };

@@ -54,20 +54,11 @@ const LatveriaCard = ({
                 return;
             }
 
-            if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
+                if (res.paymentIntent && res.paymentIntent.status === 'succeeded') {
                 const backendResp =
                     await confirmarPaymentIntent(paymentIntentId);
-                console.log('--- [LatveriaCard] backendResp:', backendResp);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
-                    console.log(
-                        '--- [LatveriaCard] about to call onSuccess, pago_id:',
-                        backendResp.pago_id,
-                    );
-                    console.log(
-                        'Is onSuccess a function?',
-                        typeof onSuccess === 'function',
-                    );
                     onSuccess &&
                         onSuccess({
                             pago_id: backendResp.pago_id,
@@ -156,7 +147,7 @@ const LatveriaCard = ({
                     <div className="card-body p-8">
                         <div className="mb-10 flex items-start justify-between">
                             <div className="text-[10px] font-black tracking-[0.2em] text-white/90">
-                                BANK OF LATVERIA
+                                BANCO DE GLUDIO
                             </div>
                             <div className="select-none text-5xl leading-none opacity-10">
                                 ❁
@@ -186,18 +177,10 @@ const LatveriaCard = ({
                         <div className="mt-8 flex items-end justify-between">
                             <div className="space-y-1">
                                 <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
-                                    Card Holder
+                                    Titular
                                 </div>
                                 <div className="text-sm font-bold uppercase italic tracking-tight">
                                     {name || 'Titular'}
-                                </div>
-                            </div>
-                            <div className="space-y-1 text-right">
-                                <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">
-                                    Expires
-                                </div>
-                                <div className="font-mono text-sm font-bold tracking-tight">
-                                    29/08
                                 </div>
                             </div>
                         </div>

@@ -6,11 +6,15 @@ $kernel->bootstrap();
 
 use App\Models\Reserva;
 
-$id = $argv[1] ?? null;
-if (! $id) { echo "Usage: php scripts/inspect_reserva.php {id}\n"; exit(1); }
+$arg = $argv[1] ?? null;
+if (! $arg) { echo "Usage: php scripts/inspect_reserva.php {id|localizador}\n"; exit(1); }
 
-$res = Reserva::with(['reservable', 'habitaciones'])->find($id);
-if (! $res) { echo "Reserva {$id} no encontrada\n"; exit(1); }
+if (is_numeric($arg)) {
+    $res = Reserva::with(['reservable', 'habitaciones'])->find((int)$arg);
+} else {
+    $res = Reserva::with(['reservable', 'habitaciones'])->where('localizador', $arg)->first();
+}
+if (! $res) { echo "Reserva {$arg} no encontrada\n"; exit(1); }
 
 echo "Reserva id={$res->id} localizador={$res->localizador} check_in={$res->check_in} check_out={$res->check_out} precio_total={$res->precio_total}\n";
 echo "Reservable: "; print_r($res->reservable?->toArray());

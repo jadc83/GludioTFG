@@ -46,23 +46,7 @@ export default function CardConfirmForm({
                     await confirmarPaymentIntent(paymentIntentId);
                 if (backendResp && backendResp.success) {
                     setCompleted(true);
-                    // LOGS exhaustivos para depuración
-                    console.log('--- [CardConfirmForm] ---');
-                    console.log(
-                        'Respuesta backend confirmarPaymentIntent:',
-                        backendResp,
-                    );
-                    console.log('Prop localizador recibido:', localizador);
                     const loc = backendResp.localizador || localizador;
-                    console.log('Localizador extraído para callback:', loc);
-                    console.log(
-                        '¿onCompleted existe?',
-                        typeof onCompleted === 'function',
-                    );
-                    console.log(
-                        '¿onSuccess existe?',
-                        typeof onSuccess === 'function',
-                    );
                     const resultData = {
                         pago_id: backendResp.pago_id,
                         paymentIntentId,

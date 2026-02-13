@@ -12,7 +12,6 @@ export default function FichaPersona({ empleado, auth }) {
                     <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-extrabold text-gray-700">{initial}</div>
                     <div className="mt-3">
                         <div className="text-lg font-extrabold text-gray-800">{name}</div>
-                        <div className="text-sm text-gray-500">{empleado?.departamento || (auth?.user?.roles && auth.user.roles.join(', ')) || '—'}</div>
                     </div>
                 </div>
 
@@ -54,7 +53,12 @@ export default function FichaPersona({ empleado, auth }) {
                     {/* Departamento + Encargado (único lugar) */}
                     <div className="mt-4 border-t border-gray-100 pt-4">
                         <div className="text-xs text-gray-400 uppercase">Departamento</div>
-                        <div className="mt-1 text-sm text-gray-700 font-medium">{empleado?.departamento || '—'}</div>
+                        <div className="mt-1 text-sm text-gray-700 font-medium">
+                            {empleado?.departamento || '—'}
+                            {empleado?.role ? (
+                                <span className="ml-2 text-sm text-gray-500">· {empleado.role}</span>
+                            ) : null}
+                        </div>
 
                         {empleado?.departamento_encargado ? (
                             <div className="mt-3">

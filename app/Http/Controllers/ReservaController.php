@@ -59,6 +59,7 @@ class ReservaController extends Controller
      */
     public function index(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $query = Reserva::withReservable()
             ->with(['habitaciones.habitacion', 'bookedBy', 'pagos'])
             ->status($request->status)
@@ -137,6 +138,18 @@ class ReservaController extends Controller
                 'message' => $mensaje,
             ];
 
+            // Incluir reserva formateada en respuestas JSON para que el frontend tenga
+            // `cliente.name`/`cliente.nombre` inmediatamente después de crearla.
+            try {
+                $reservaModel = $result['reserva'] ?? null;
+                if ($reservaModel) {
+                    $reservaModel->loadMissing(['reservable', 'habitaciones.habitacion', 'tarifa', 'tarifas', 'refundRequests']);
+                    $respuesta['reserva'] = $this->formatterService->formatearReservaParaEdicion($reservaModel);
+                }
+            } catch (\Throwable $__e) {
+                // no-op: no queremos que el logging/formatting falle la creación
+            }
+
             try {
                 if (($request->input('metodo_pago') ?? '') === 'recepcion') {
                     Log::info('Reserva creada (recepcion) payload', [
@@ -164,7 +177,7 @@ class ReservaController extends Controller
                 Log::warning('ReservaController::store - fallo redirigiendo recepcion: ' . $e->getMessage());
             }
 
-            // Log session/flash/request for debugging intermittent short toasts and field loss
+            // Registrar session/flash/request para depurar toasts cortos intermitentes y pérdida de campos
             try {
                 Log::info('ReservaController::store - about to redirect back with success', [
                     'mensaje' => $mensaje,
@@ -205,7 +218,7 @@ class ReservaController extends Controller
                 return response()->json(['success' => false, 'error' => $mensajeAmigable], 400);
             }
 
-            // Log session/flash/request on error path to assist debugging
+            // Registrar session/flash/request en ruta de error para ayudar en depuración
             try {
                 Log::info('ReservaController::store - returning back with errors', [
                     'mensajeAmigable' => $mensajeAmigable,
@@ -243,11 +256,21 @@ class ReservaController extends Controller
             // Si el método de pago es "recepcion", no iniciar Checkout de Stripe
             if (($request->input('metodo_pago') ?? '') === 'recepcion') {
                 Log::info('storeConCheckout: metodo_pago=recepcion; omitiendo creación de Checkout', ['reserva_id' => $reserva->id]);
+
+                // incluir reserva formateada en la respuesta JSON
+                try {
+                    $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'tarifa', 'tarifas', 'refundRequests']);
+                    $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+                } catch (\Throwable $__e) {
+                    $reservaFormateada = null;
+                }
+
                 return response()->json([
                     'success' => true,
                     'sessionUrl' => null,
                     'reserva_id' => $reserva->id,
-                    'localizador' => $reserva->localizador
+                    'localizador' => $reserva->localizador,
+                    'reserva' => $reservaFormateada,
                 ]);
             }
 
@@ -297,11 +320,20 @@ class ReservaController extends Controller
             }
 
             if (!empty($checkout['success']) && !empty($checkout['sessionUrl'])) {
+                // También devolver la reserva formateada junto a la sessionUrl para uso inmediato en frontend
+                try {
+                    $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'tarifa', 'tarifas', 'refundRequests']);
+                    $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
+                } catch (\Throwable $__e) {
+                    $reservaFormateada = null;
+                }
+
                 return response()->json([
                     'success' => true,
                     'sessionUrl' => $checkout['sessionUrl'],
                     'reserva_id' => $reserva->id,
-                    'localizador' => $reserva->localizador
+                    'localizador' => $reserva->localizador,
+                    'reserva' => $reservaFormateada,
                 ]);
             } else {
                 return response()->json(['success' => false, 'error' => $checkout['error'] ?? 'Error creating checkout session'], 400);
@@ -347,6 +379,7 @@ class ReservaController extends Controller
      */
     public function show(Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos', 'tarifa', 'tarifas', 'refundRequests']);
         // Use the formatter service to ensure the frontend receives the full, consistent
         // structure used by the EditReserva page (includes `tarifa`, `cliente`, `habitaciones`, etc.).
@@ -402,6 +435,7 @@ class ReservaController extends Controller
      */
     public function edit(Request $request, Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $reserva->load(['reservable', 'habitaciones.habitacion.fotos', 'tarifa', 'tarifas', 'refundRequests']);
 
         [$checkIn, $checkOut] = $this->reservaService->prepararFechasParaEdicion($request->all(), $reserva);
@@ -424,6 +458,7 @@ class ReservaController extends Controller
      */
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         // Log incoming payload for debugging purposes
         try {
             Log::info('ReservaController::update called', [
@@ -517,6 +552,7 @@ class ReservaController extends Controller
      */
     public function destroy(Request $request, Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         try {
             // Leer motivo opcional enviado desde frontend
             $motivo = $request->input('motivo') ?? null;
@@ -546,6 +582,7 @@ class ReservaController extends Controller
      */
     public function asignarHabitaciones(Request $request, Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $request->validate([
             'habitacion_ids' => 'required|array|min:1',
             'habitacion_ids.*' => 'nullable|integer|exists:habitaciones,id'
@@ -608,6 +645,7 @@ class ReservaController extends Controller
      */
     public function desasignarHabitaciones(Request $request, Reserva $reserva)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $request->validate([
             'habitacion_ids' => 'required|array|min:1',
             'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'

@@ -8,9 +8,10 @@ import useTurnos from '@/Hooks/useTurnos';
 import ControlesTurnos from './ControlesTurnos';
 import DetalleTurno from './DetalleTurno';
 
-export default function TurnosCalendar() {
+export default function TurnosCalendar({ empleado = null }) {
     const calendarRef = useRef(null);
-    const { events, setEvents, loading, fetchEvents } = useTurnos();
+    const empleadoId = empleado?.id || null;
+    const { events, setEvents, loading, fetchEvents } = useTurnos(empleadoId);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const [titleRange, setTitleRange] = useState('');
@@ -61,12 +62,7 @@ export default function TurnosCalendar() {
     };
 
     const page = usePage();
-    const getCsrf = () =>
-        page?.props?.csrf_token ||
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ||
-        '';
+    const getCsrf = () => window.getCsrfToken?.() || '';
 
     const deleteSelectedTurno = async () => {
         if (!selectedTurno || !selectedTurno.id) {
@@ -80,7 +76,7 @@ export default function TurnosCalendar() {
                 method: 'DELETE',
                 credentials: 'same-origin',
                 headers: {
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
                 },
@@ -91,7 +87,6 @@ export default function TurnosCalendar() {
                     const j = await res.json();
                     if (j && j.error) err = j.error;
                 } catch (e) {
-                    console.debug(e);
                 }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -152,10 +147,14 @@ export default function TurnosCalendar() {
                 // restore turnos
                 for (const t of detail.payload) {
                     try {
-                        const csrf =
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') || '';
+                        const csrf = window.getCsrfToken?.() || '';
+                        const bodyPayload = {
+                            starts_at: t.starts_at,
+                            ends_at: t.ends_at,
+                            actividad: t.actividad || t.title || 'Turno',
+                        };
+                        if (empleadoId) bodyPayload.empleado_id = empleadoId;
+
                         await fetch('/api/turnos', {
                             method: 'POST',
                             credentials: 'same-origin',
@@ -163,13 +162,9 @@ export default function TurnosCalendar() {
                                 'Content-Type': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
                                 Accept: 'application/json',
-                                'X-CSRF-TOKEN': csrf,
+                                'X-XSRF-TOKEN': csrf,
                             },
-                            body: JSON.stringify({
-                                starts_at: t.starts_at,
-                                ends_at: t.ends_at,
-                                actividad: t.actividad || t.title || 'Turno',
-                            }),
+                            body: JSON.stringify(bodyPayload),
                         });
                     } catch (e) {
                         console.error('restore failed', e);
@@ -232,10 +227,13 @@ export default function TurnosCalendar() {
             ends_at: end,
             id: null,
         });
-        try {
+            try {
             setIsCreating(true);
             const csrf = getCsrf();
             if (!csrf) console.warn('CSRF token not found when creating turno');
+            const bodyPayload = { starts_at: start, ends_at: end, actividad: 'Turno' };
+            if (empleadoId) bodyPayload.empleado_id = empleadoId;
+
             const res = await fetch('/api/turnos', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -243,22 +241,18 @@ export default function TurnosCalendar() {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                 },
-                body: JSON.stringify({
-                    starts_at: start,
-                    ends_at: end,
-                    actividad: 'Turno',
-                }),
+                body: JSON.stringify(bodyPayload),
             });
             if (!res.ok) {
                 let err = 'Error al crear turno';
                 try {
                     const j = await res.json();
                     if (j && j.error) err = j.error;
-                } catch (e) {
-                    console.debug(e);
-                }
+                    } catch (e) {
+                        // Nota: registros de depuración eliminados
+                    }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
                         detail: { message: err, type: 'error' },
@@ -299,10 +293,7 @@ export default function TurnosCalendar() {
     const handleEventDrop = async (info) => {
         const ev = info.event;
         try {
-            const csrf =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') || '';
+            const csrf = window.getCsrfToken?.() || '';
             const res = await fetch(`/api/turnos/${ev.id}`, {
                 method: 'PUT',
                 credentials: 'same-origin',
@@ -310,7 +301,7 @@ export default function TurnosCalendar() {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf,
+                    'X-XSRF-TOKEN': csrf,
                 },
                 body: JSON.stringify({
                     starts_at: ev.start.toISOString(),
@@ -326,7 +317,7 @@ export default function TurnosCalendar() {
                     const j = await res.json();
                     if (j && j.error) msg = j.error;
                 } catch (e) {
-                    console.debug(e);
+                    // Nota: registros de depuración eliminados
                 }
                 window.dispatchEvent(
                     new CustomEvent('app-toast', {
@@ -426,14 +417,16 @@ export default function TurnosCalendar() {
                             ends_at: e.end,
                             meta: e.meta || null,
                         }));
-                        const res = await fetch('/api/turnos/clear', {
+                        let url = '/api/turnos/clear';
+                        if (empleadoId) url += `?empleado_id=${encodeURIComponent(empleadoId)}`;
+                        const res = await fetch(url, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
                                 Accept: 'application/json',
-                                'X-CSRF-TOKEN': csrf,
+                                'X-XSRF-TOKEN': csrf,
                             },
                         });
                         if (!res.ok) {
@@ -442,7 +435,7 @@ export default function TurnosCalendar() {
                                 const j = await res.json();
                                 if (j && j.error) err = j.error;
                             } catch (e) {
-                                console.debug(e);
+                                // Nota: registros de depuración eliminados
                             }
                             window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: err, type: 'error' } }));
                             console.error('clear failed', res.status);

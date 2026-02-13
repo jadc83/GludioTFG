@@ -107,6 +107,11 @@ class ReservaService
             'notas' => $datos['notas'] ?? null,
         ];
 
+        // Compatibilidad: exponer `nombre` (clave usada por algunos métodos internos)
+        $datosReturn['nombre'] = $datosReturn['name'] ?? ($datos['nombre'] ?? null);
+        // También permitir `nombre_cliente` para coherencia con frontend
+        $datosReturn['nombre_cliente'] = $datosReturn['name'] ?? ($datos['nombre_cliente'] ?? null);
+
         \Illuminate\Support\Facades\Log::info('prepararDatosReserva completado', [
             'email' => $datosReturn['email'],
             'precio_total' => $datosReturn['precio_total'],
@@ -188,7 +193,8 @@ class ReservaService
             'notas' => $reserva->notas,
             'cliente' => [
                 'id' => $reserva->reservable->id ?? null,
-                'name' => $reserva->reservable->name ?? 'N/A',
+                'name' => $reserva->reservable->name ?? $reserva->reservable->nombre ?? 'Sin nombre',
+                'nombre' => $reserva->reservable->nombre ?? $reserva->reservable->name ?? 'Sin nombre',
                 'email' => $reserva->reservable->email ?? null,
                 'telefono' => $reserva->reservable->telefono ?? null,
                 'numero_documento' => $reserva->reservable->numero_documento ?? null,
@@ -496,7 +502,8 @@ class ReservaService
         }
 
         $cliente = Cliente::create([
-            'name' => $datos['nombre'] ?? 'Sin nombre',
+            // aceptar `nombre` o `name` según venga desde frontend/preparado
+            'name' => $datos['nombre'] ?? $datos['name'] ?? 'Sin nombre',
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
             'tipo_documento' => $datos['tipo_documento'] ?? 'dni',
@@ -1021,7 +1028,7 @@ class ReservaService
             $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
             $precioTotal = $asignacionResult['precio_total'] ?? ($reserva->precio_total ?? $precioTotal);
 
-            // Log asignación manual result for debugging price differences
+            // Registrar resultado de asignación manual para depuración de diferencias de precio
             try {
                 Log::info('actualizarReserva - asignarHabitacionManual result', [
                     'reserva_id' => $reserva->id,

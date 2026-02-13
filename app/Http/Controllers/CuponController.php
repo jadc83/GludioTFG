@@ -7,6 +7,7 @@ use App\Models\CuponAplicado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 
 class CuponController extends Controller
 {
@@ -99,6 +100,10 @@ class CuponController extends Controller
      */
     public function store(Request $request)
     {
+        if (Gate::denies('puedeVer')) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'codigo' => 'required|string|unique:cupones,codigo|min:3|max:50',
             'tipo' => 'required|in:porcentaje,monto_fijo',
@@ -124,6 +129,10 @@ class CuponController extends Controller
      */
     public function update(Request $request, Cupon $cupon)
     {
+        if (Gate::denies('puedeVer')) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'codigo' => 'required|string|unique:cupones,codigo,' . $cupon->id . '|min:3|max:50',
             'tipo' => 'required|in:porcentaje,monto_fijo',
@@ -148,6 +157,10 @@ class CuponController extends Controller
      */
     public function destroy(Cupon $cupon)
     {
+        if (Gate::denies('puedeVer')) {
+            abort(403);
+        }
+
         if ($cupon->usos_realizados > 0) {
             return back()->with('error', 'No se puede eliminar un cupón que ya ha sido usado');
         }
@@ -162,6 +175,10 @@ class CuponController extends Controller
      */
     public function toggle(Cupon $cupon)
     {
+        if (Gate::denies('puedeVer')) {
+            abort(403);
+        }
+
         $cupon->update(['activo' => !$cupon->activo]);
 
         return back()->with('success', 'Cupón actualizado');

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import perfilService from '../services/perfilService';
 
-export default function usePerfilDashboard(puedeVerTareas) {
+export default function usePerfilDashboard(puedeVerTareas, empleadoId = null) {
     const [proximos, setProximos] = useState([]);
     const [completadas, setCompletadas] = useState([]);
     const [conteoActivas, setConteoActivas] = useState(0);
@@ -43,7 +43,7 @@ export default function usePerfilDashboard(puedeVerTareas) {
 
         setCargando(true);
         try {
-            const tData = await perfilService.obtenerTurnos();
+            const tData = await perfilService.obtenerTurnos(empleadoId);
             const ahora = new Date();
 
             const normalize = (s) => {

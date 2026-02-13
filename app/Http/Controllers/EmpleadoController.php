@@ -87,7 +87,12 @@ class EmpleadoController extends Controller
     public function show(Empleado $empleado)
     {
         $empleado->load('user');
-        return Inertia::render('Empleados/Show', [ 'empleado' => $empleado ]);
+        $user = $empleado->user;
+        if ($user && $user->id) {
+            return Inertia::location(route('profile.edit', ['user_id' => $user->id]));
+        }
+
+        return redirect()->route('panel');
     }
 
     public function destroy(Request $request, Empleado $empleado): RedirectResponse

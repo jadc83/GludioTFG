@@ -51,7 +51,6 @@ export default function TabEstadisticas({ reservas = [] }) {
             const neto = ingresos - reembolsos;
             setFinanzas({ ingresos: Number(ingresos.toFixed(2)), reembolsos: Number(reembolsos.toFixed(2)), neto: Number(neto.toFixed(2)) });
         } catch (e) {
-            console.debug('Error calculando finanzas', e);
             setFinanzas({ ingresos: 0, reembolsos: 0, neto: 0 });
         }
     }, [reservas, fechaDesde, fechaHasta]);

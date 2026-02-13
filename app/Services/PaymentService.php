@@ -596,7 +596,7 @@ class PaymentService
 			$paymentIntent = $this->getStripe()->paymentIntents->retrieve($paymentIntentId);
 			/** @var mixed $paymentIntent */
 			$status = $paymentIntent->status ?? null;
-			// Log basic payment intent info and metadata for debugging fallback mapping
+			// Registrar información básica del PaymentIntent y su metadata para depuración del mapeo de fallback
 			try {
 				$piMeta = isset($paymentIntent->metadata) ? (array)$paymentIntent->metadata : null;
 			} catch (\Throwable $e) {

@@ -38,17 +38,14 @@ export default function Contacto() {
                                 <p className="text-sm font-medium">
                                     Recepción (24h):{' '}
                                     <span className="text-gray-900">
-                                        +34 910 000 000
+                                        +34 999 999 000
                                     </span>
                                 </p>
                                 <p className="text-sm font-medium">
                                     Central de Reservas:{' '}
                                     <span className="text-gray-900">
-                                        +34 910 000 001
+                                        +34 999 999 999
                                     </span>
-                                </p>
-                                <p className="mt-2 text-xs font-semibold uppercase text-gray-400">
-                                    * Coste de llamada según operador nacional.
                                 </p>
                             </div>
                         </section>
@@ -66,10 +63,10 @@ export default function Contacto() {
                                         Información General
                                     </p>
                                     <a
-                                        href="mailto:info@hotelgludio.example"
+                                        href="mailto:info@hotelgludio.es"
                                         className="text-sm font-bold text-gray-900 underline decoration-[#7a0202]"
                                     >
-                                        info@hotelgludio.example
+                                        info@hotelgludio.es
                                     </a>
                                 </div>
                                 <div>
@@ -77,10 +74,10 @@ export default function Contacto() {
                                         Gestión de Reservas
                                     </p>
                                     <a
-                                        href="mailto:reservas@hotelgludio.example"
+                                        href="mailto:reservas@hotelgludio.es"
                                         className="text-sm font-bold text-gray-900 underline decoration-[#7a0202]"
                                     >
-                                        reservas@hotelgludio.example
+                                        reservas@hotelgludio.es
                                     </a>
                                 </div>
                             </div>
@@ -115,19 +112,19 @@ export default function Contacto() {
                                 <li>
                                     • Eventos y Grupos:{' '}
                                     <span className="font-semibold">
-                                        events@hotelgludio.example
+                                        events@hotelgludio.es
                                     </span>
                                 </li>
                                 <li>
                                     • Recursos Humanos:{' '}
                                     <span className="font-semibold">
-                                        rrhh@hotelgludio.example
+                                        rrhh@hotelgludio.es
                                     </span>
                                 </li>
                                 <li>
                                     • Proveedores:{' '}
                                     <span className="font-semibold">
-                                        compras@hotelgludio.example
+                                        compras@hotelgludio.es
                                     </span>
                                 </li>
                             </ul>

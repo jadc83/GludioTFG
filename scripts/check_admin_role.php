@@ -11,4 +11,5 @@ if (!$u) {
     exit(0);
 }
 
-echo json_encode($u->getRoleNames()->toArray(), JSON_UNESCAPED_UNICODE) . PHP_EOL;
+// Role listing removed
+echo json_encode(['id' => $u->id, 'email' => $u->email], JSON_UNESCAPED_UNICODE) . PHP_EOL;

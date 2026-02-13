@@ -125,7 +125,6 @@ export default function IndexReserva({ reservas = [] }) {
                     });
                 }
             } catch (e) {
-                console.debug(e);
             }
         };
 
@@ -169,7 +168,6 @@ export default function IndexReserva({ reservas = [] }) {
                 setRefunds(rows);
                 setRefundsPagination(paginator);
             } catch (e) {
-                console.error('Error loading refunds', e);
                 setRefunds([]);
                 setRefundsPagination(null);
             } finally {
@@ -190,7 +188,7 @@ export default function IndexReserva({ reservas = [] }) {
                 channel.listen('RefundRequestCreated', () => fetchRefunds(1));
             }
         } catch (e) {
-            console.warn('Echo no disponible para reembolsos', e);
+            // Echo not available
         }
 
         return () => {
@@ -199,7 +197,6 @@ export default function IndexReserva({ reservas = [] }) {
                     window.Echo.leave('refund-requests');
                 }
             } catch (e) {
-                console.debug(e);
             }
         };
     }, [fetchRefunds]);

@@ -1,13 +1,15 @@
 import { useCallback, useState } from 'react';
 
-export default function useTurnos() {
+export default function useTurnos(empleadoId = null) {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/turnos', {
+            let url = '/api/turnos';
+            if (empleadoId) url += `?empleado_id=${encodeURIComponent(empleadoId)}`;
+            const res = await fetch(url, {
                 credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',

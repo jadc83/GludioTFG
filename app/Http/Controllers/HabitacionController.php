@@ -24,6 +24,7 @@ class HabitacionController extends Controller
      */
     public function index(Request $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         $habitaciones = Habitacion::with(['fotos'])
             ->buscar($request->busqueda)
             ->estado($request->estado)
@@ -56,6 +57,7 @@ class HabitacionController extends Controller
      */
     public function store(StoreHabitacionRequest $request)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         return DB::transaction(function () use ($request) {
 
             $validado = $request->validated();
@@ -92,6 +94,7 @@ class HabitacionController extends Controller
      */
     public function update(UpdateHabitacionRequest $request, Habitacion $habitacion)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         try {
             return DB::transaction(function () use ($request, $habitacion) {
                 $validado = $request->validated();
@@ -139,6 +142,7 @@ class HabitacionController extends Controller
      */
     public function destroy(Habitacion $habitacion)
     {
+        $this->denegarAccesoLimpiezaYMantenimiento();
         //
     }
 

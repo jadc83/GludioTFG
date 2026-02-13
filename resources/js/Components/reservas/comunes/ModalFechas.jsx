@@ -9,6 +9,7 @@ import { emitToast } from '@/utils/toast';
 import { usePage } from '@inertiajs/react';
 import { Elements } from '@stripe/react-stripe-js';
 import axios from 'axios';
+import * as reservasService from '@/hooks/reservas/service';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useEffect, useMemo, useState } from 'react';
@@ -46,6 +47,47 @@ export default function ModalFechas({
         }
         return () => clearTimeout(timer);
     }, [vistaPreviaCargada, cargandoVistaPrevia]);
+
+    // Auto-create PaymentIntent when preview indicates a charge — avoid requiring an extra "I'm agree" click
+    useEffect(() => {
+        let mounted = true;
+        const charge = Number(vistaPrevia?.estimate_charge || 0);
+        if (
+            mounted &&
+            vistaPrevia &&
+            vistaPreviaCargada &&
+            charge > 0 &&
+            !needPayment &&
+            !creatingPi
+        ) {
+            (async () => {
+                setCreatingPi(true);
+                try {
+                    const resp = await pagosApi.crearPaymentIntentStandalone(
+                        charge,
+                        {
+                            receipt_email: reserva?.reservable?.email,
+                            reserva_id: reserva?.id,
+                            localizador: reserva?.localizador,
+                        },
+                    );
+                    if (!resp || resp.success === false)
+                        throw new Error(resp?.error || 'No se pudo crear PaymentIntent');
+                    setPiClientSecret(resp.clientSecret ?? null);
+                    setPiPaymentIntentId(resp.paymentIntentId ?? null);
+                    setNeedPayment(true);
+                } catch (e) {
+                    console.error('--- [ModalFechas] crearPaymentIntentStandalone error:', e);
+                    emitToast(e?.message || t('toasts.payment_error'), 'error');
+                } finally {
+                    if (mounted) setCreatingPi(false);
+                }
+            })();
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [vistaPrevia, vistaPreviaCargada, needPayment, creatingPi, reserva]);
 
     const page = usePage();
     const stripePublicKey =
@@ -159,77 +201,7 @@ export default function ModalFechas({
                 vistaPreviaCargada &&
                 Number(vistaPrevia.estimate_charge || 0) > 0 ? (
                     <div className="flex-1">
-                        {/* Importe mostrado únicamente en el formulario seguro; eliminado del CTA */}
-                        {!needPayment && (
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={async () => {
-                                        console.log(
-                                            '--- [ModalFechas] create PI clicked',
-                                        );
-                                        if (creatingPi) return;
-                                        setCreatingPi(true);
-                                        try {
-                                            // Incluir metadata para que el backend pueda mapear el PaymentIntent a la reserva
-                                            const resp =
-                                                await pagosApi.crearPaymentIntentStandalone(
-                                                    Number(
-                                                        vistaPrevia.estimate_charge ||
-                                                            0,
-                                                    ),
-                                                    {
-                                                        receipt_email:
-                                                            reserva?.reservable
-                                                                ?.email,
-                                                        reserva_id: reserva?.id,
-                                                        localizador:
-                                                            reserva?.localizador,
-                                                    },
-                                                );
-                                            console.log(
-                                                '--- [ModalFechas] crearPaymentIntentStandalone response:',
-                                                resp,
-                                            );
-                                            if (!resp || resp.success === false)
-                                                throw new Error(
-                                                    resp?.error ||
-                                                        'No se pudo crear PaymentIntent',
-                                                );
-                                            setPiClientSecret(
-                                                resp.clientSecret ?? null,
-                                            );
-                                            setPiPaymentIntentId(
-                                                resp.paymentIntentId ?? null,
-                                            );
-                                            setNeedPayment(true);
-                                        } catch (e) {
-                                            console.error(
-                                                '--- [ModalFechas] crearPaymentIntentStandalone error:',
-                                                e,
-                                            );
-                                            emitToast(
-                                                e?.message ||
-                                                    t('toasts.payment_error'),
-                                                'error',
-                                            );
-                                        } finally {
-                                            setCreatingPi(false);
-                                        }
-                                    }}
-                                    disabled={
-                                        showPreviewLoader ||
-                                        creatingPi ||
-                                        needPayment
-                                    }
-                                    aria-busy={showPreviewLoader}
-                                    className={`ml-auto flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader || creatingPi || needPayment ? 'cursor-not-allowed bg-[#7a0202] opacity-70' : 'bg-[#7a0202] hover:bg-[#5a0101]'}`}
-                                >
-                                    {creatingPi
-                                        ? t('actions_extra.preparing_payment')
-                                        : t('actions_extra.i_agree')}
-                                </button>
-                            </div>
-                        )}
+                        {/* Auto-init payment intent; no manual 'I agree' CTA */}
                         {needPayment && piClientSecret && stripePromise && (
                             <div className="mt-4 w-full">
                                 <Elements
@@ -246,10 +218,6 @@ export default function ModalFechas({
                                                 0,
                                         )}
                                         onConfirmed={async (confirmed) => {
-                                            console.log(
-                                                '--- [ModalFechas] PaymentBox confirmed:',
-                                                confirmed,
-                                            );
                                             const getCookie = (name) => {
                                                 const match =
                                                     document.cookie.match(
@@ -293,59 +261,17 @@ export default function ModalFechas({
                                             const xsrf =
                                                 getCookie('XSRF-TOKEN');
                                             try {
-                                                const res2 = await axios.put(
-                                                    `/reservas/${reserva.id}`,
-                                                    payload2,
-                                                    {
-                                                        withCredentials: true,
-                                                        headers: {
-                                                            Accept: 'application/json',
-                                                            'X-Requested-With':
-                                                                'XMLHttpRequest',
-                                                            ...(xsrf
-                                                                ? {
-                                                                      'X-XSRF-TOKEN':
-                                                                          xsrf,
-                                                                  }
-                                                                : {}),
-                                                        },
-                                                    },
-                                                );
-                                                console.log(
-                                                    '--- [ModalFechas] update response:',
-                                                    res2?.data,
-                                                );
-                                                if (res2?.data?.success) {
-                                                    emitToast(
-                                                        t(
-                                                            'toasts.dates_updated',
-                                                        ),
-                                                        'success',
-                                                    );
-                                                    onApplied &&
-                                                        onApplied(res2.data);
+                                                const identifier = reserva?.id ?? reserva?.localizador;
+                                                const result = await reservasService.modificarEstancia(identifier, payload2);
+                                                if (result?.success) {
+                                                    emitToast(t('toasts.dates_updated'), 'success');
+                                                    onApplied && onApplied(result);
                                                 } else {
-                                                    emitToast(
-                                                        res2?.data?.message ||
-                                                            t(
-                                                                'toasts.could_not_update',
-                                                            ),
-                                                        'error',
-                                                    );
+                                                    emitToast(result?.message || t('toasts.could_not_update'), 'error');
                                                 }
                                             } catch (e) {
-                                                console.error(
-                                                    '--- [ModalFechas] error applying changes:',
-                                                    e,
-                                                );
-                                                emitToast(
-                                                    e?.response?.data?.error ||
-                                                        e?.message ||
-                                                        t(
-                                                            'toasts.could_not_update',
-                                                        ),
-                                                    'error',
-                                                );
+                                                const msg = e?.error || e?.message || t('toasts.could_not_update');
+                                                emitToast(msg, 'error');
                                             } finally {
                                                 setNeedPayment(false);
                                             }
@@ -367,13 +293,12 @@ export default function ModalFechas({
                                     needPayment
                                 }
                                 aria-busy={showPreviewLoader}
-                                onClick={() => {
+                                        onClick={() => {
                                     try {
                                         if (typeof clearPreview === 'function')
                                             clearPreview();
-                                    } catch (e) {
-                                        console.debug(e);
-                                    }
+                                        } catch (e) {
+                                        }
                                     if (
                                         typeof setModalCheckIn === 'function' &&
                                         typeof setModalCheckOut === 'function'
@@ -393,11 +318,6 @@ export default function ModalFechas({
 
                             <button
                                 onClick={async () => {
-                                    console.log(
-                                        '--- [ModalFechas] apply changes (no payment) clicked with modalCheckIn/modalCheckOut:',
-                                        modalCheckIn,
-                                        modalCheckOut,
-                                    );
                                     const getCookie = (name) => {
                                         const match = document.cookie.match(
                                             new RegExp(
@@ -412,67 +332,19 @@ export default function ModalFechas({
                                         const payload = {
                                             check_in: modalCheckIn,
                                             check_out: modalCheckOut,
-                                            status:
-                                                reserva.status || 'pendiente',
-                                            pago:
-                                                typeof reserva.pago === 'string'
-                                                    ? reserva.pago
-                                                    : (reserva.pago?.estado ??
-                                                      reserva.pago ??
-                                                      'pendiente'),
+                                            status: reserva.status || 'pendiente',
+                                            pago: typeof reserva.pago === 'string' ? reserva.pago : (reserva.pago?.estado ?? reserva.pago ?? 'pendiente'),
                                         };
-                                        console.log(
-                                            '--- [ModalFechas] apply payload:',
-                                            payload,
-                                        );
-                                        const xsrf = getCookie('XSRF-TOKEN');
-                                        const res = await axios.put(
-                                            `/reservas/${reserva.id}`,
-                                            payload,
-                                            {
-                                                withCredentials: true,
-                                                headers: {
-                                                    Accept: 'application/json',
-                                                    'X-Requested-With':
-                                                        'XMLHttpRequest',
-                                                    ...(xsrf
-                                                        ? {
-                                                              'X-XSRF-TOKEN':
-                                                                  xsrf,
-                                                          }
-                                                        : {}),
-                                                },
-                                            },
-                                        );
-                                        console.log(
-                                            '--- [ModalFechas] apply response:',
-                                            res?.data,
-                                        );
-                                        if (res?.data?.success) {
-                                            emitToast(
-                                                t('toasts.dates_updated'),
-                                                'success',
-                                            );
-                                            onApplied && onApplied(res.data);
+                                        const identifier = reserva?.id ?? reserva?.localizador;
+                                        const result = await reservasService.modificarEstancia(identifier, payload);
+                                        if (result?.success) {
+                                            emitToast(t('toasts.dates_updated'), 'success');
+                                            onApplied && onApplied(result);
                                         } else {
-                                            emitToast(
-                                                res?.data?.message ||
-                                                    t(
-                                                        'toasts.could_not_update',
-                                                    ),
-                                                'error',
-                                            );
+                                            emitToast(result?.message || t('toasts.could_not_update'), 'error');
                                         }
                                     } catch (err) {
-                                        console.error(
-                                            '--- [ModalFechas] apply error:',
-                                            err,
-                                        );
-                                        const msg =
-                                            err?.response?.data?.error ||
-                                            err?.response?.data?.message ||
-                                            err?.message ||
-                                            t('toasts.could_not_update');
+                                        const msg = err?.error || err?.message || t('toasts.could_not_update');
                                         emitToast(msg, 'error');
                                     }
                                 }}

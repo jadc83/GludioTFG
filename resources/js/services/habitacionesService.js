@@ -32,8 +32,20 @@ export async function getHabitacionesLimpieza(includeAssigned = false) {
     }
 }
 
+export async function getHabitacionesMantenimiento(includeAssigned = false) {
+    try {
+        const params = {};
+        if (includeAssigned) params.include_assigned = 1;
+        const res = await axios.get('/api/habitaciones/mantenimiento', { params });
+        return res?.data ?? null;
+    } catch (err) {
+        return Promise.reject(err?.response?.data ?? { error: err.message });
+    }
+}
+
 export default {
     updateHabitacionJson,
     updateHabitacionFormData,
     getHabitacionesLimpieza,
+    getHabitacionesMantenimiento,
 };

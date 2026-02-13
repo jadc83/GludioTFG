@@ -6,7 +6,7 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <!-- CSRF token delivered via cookie (XSRF-TOKEN) for SPA requests -->
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

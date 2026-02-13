@@ -36,16 +36,8 @@ if (!$user) {
     echo "User already exists\n";
 }
 
-// 3) asignar rol operario si existe
-try {
-        if (! $user->hasRole('operario')) {
-            $user->assignRole('operario');
-            echo "Assigned role 'operario' to user\n";
-        } else {
-            echo "User already has role 'operario'\n";
-} catch (\Throwable $e) {
-    echo "Error assigning role: " . $e->getMessage() . "\n";
-}
+// 3) (Se omite asignación de roles aquí; la gestión de roles se hará centralmente.)
+echo "Skipping role assignment (managed elsewhere)\n";
 
 // 4) crear empleado si no existe
 $empleado = $user->empleado;
@@ -64,7 +56,7 @@ if (!$empleado) {
 $user->load('empleado', 'roles');
 $result = [
     'user' => $user->only(['id','name','email']),
-    'roles' => $user->getRoleNames()->toArray(),
+    'roles' => [],
     'empleado' => $user->empleado ? $user->empleado->toArray() : null,
     'departamento' => $dep->toArray(),
 ];

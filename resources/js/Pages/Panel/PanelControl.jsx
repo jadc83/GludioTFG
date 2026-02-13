@@ -19,14 +19,14 @@ import {
     UsersIcon,
 } from '@heroicons/react/24/outline';
 import React, { Suspense, useEffect, useState } from 'react';
+import { usePage } from '@inertiajs/react';
 
-const TABS = [
+// Base tabs; `configuracion` y `estadisticas` se añaden dinámicamente según permisos
+const BASE_TABS = [
     { id: 'reservas', label: 'Reservas y reembolsos', icon: InboxIcon },
     { id: 'clientes', label: 'Clientes', icon: UsersIcon },
     { id: 'habitaciones', label: 'Habitaciones', icon: HomeIcon },
     { id: 'departamentos', label: 'Departamentos', icon: ChartBarIcon },
-    { id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon },
-    { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon },
 ];
 
 // `BotonTab` was removed because it was defined but not used.
@@ -130,6 +130,19 @@ export default function PanelControl({
     cupones = {},
     tiposHabitacion = [],
 }) {
+    const { props } = usePage();
+    const roles = props?.auth?.user?.roles || [];
+    const isAdmin = Array.isArray(roles) && roles.includes('admin');
+    const isEncargadoRole = Array.isArray(roles) && roles.includes('encargado');
+    const empleadoDept = (props?.auth?.user?.empleado_departamento || '').toLowerCase();
+    const perteneceLimpiezaOMantenimiento = ['limpieza', 'mantenimiento'].includes(empleadoDept);
+    const pestañasProhibidasParaLimpieza = ['reservas', 'clientes'];
+    const visibleBaseTabs = perteneceLimpiezaOMantenimiento
+        ? BASE_TABS.filter((t) => !pestañasProhibidasParaLimpieza.includes(t.id))
+        : BASE_TABS;
+    // Encargados no pertenecientes a limpieza ni mantenimiento
+    const isEncargado = isEncargadoRole && !['limpieza', 'mantenimiento'].includes(empleadoDept);
+
     const [tabActiva, setTabActiva] = useState(() => {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -141,6 +154,19 @@ export default function PanelControl({
             return 'reservas';
         }
     });
+
+    // Si el usuario pertenece a limpieza/mantenimiento y la pestaña activa está prohibida,
+    // cambiar a la primera pestaña visible para evitar mostrar contenido no permitido.
+    React.useEffect(() => {
+        if (!perteneceLimpiezaOMantenimiento) return;
+        if (pestañasProhibidasParaLimpieza.includes(tabActiva)) {
+            const nueva = (visibleBaseTabs[0] && visibleBaseTabs[0].id) || 'departamentos';
+            setTabActiva(nueva);
+            try {
+                localStorage.setItem('panelControlTab', nueva);
+            } catch (e) {}
+        }
+    }, [perteneceLimpiezaOMantenimiento, tabActiva, visibleBaseTabs]);
 
     // Guardar tab en localStorage cuando cambia
     const cambiarTab = (tabId) => {
@@ -157,24 +183,30 @@ export default function PanelControl({
             <div className="contenedorPrincipal">
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
-                        <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md">
-                            <div className="flex flex-wrap justify-center gap-1 md:gap-2">
-                                <Tabs
-                                    tabs={TABS}
-                                    active={tabActiva}
-                                    onChange={cambiarTab}
-                                    variant="panel"
-                                />
+                        <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md text-[10px] md:text-[11px] lg:text-[12px] leading-tight">
+                            <div className="flex flex-wrap justify-center gap-1 md:gap-2 max-w-full truncate">
+                                    <Tabs
+                                        tabs={
+                                                isAdmin
+                                                    ? [...visibleBaseTabs, { id: 'configuracion', label: 'Configuración', icon: Cog6ToothIcon }, ...(isAdmin || isEncargado ? [{ id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon }] : [])]
+                                                                    : [...visibleBaseTabs, ...(isAdmin || isEncargado ? [{ id: 'estadisticas', label: 'Estadísticas', icon: ChartBarIcon }] : [])]
+                                        }
+                                        active={tabActiva}
+                                        onChange={cambiarTab}
+                                        variant="panel"
+                                    />
                             </div>
                         </div>
 
-                        <div className="acciones-rapidas-panel mb-6 flex flex-wrap items-center justify-center gap-3">
-                            <CreateReserva iconOnly />
-                            <CreateCliente iconOnly />
-                            <CreateHabitacion iconOnly />
-                            <CreateEmpleado iconOnly />
-                            <CreateCupon iconOnly />
-                        </div>
+                        {!perteneceLimpiezaOMantenimiento && (
+                            <div className="acciones-rapidas-panel mb-6 flex flex-wrap items-center justify-center gap-1 text-[10px] leading-tight">
+                                <CreateReserva iconOnly />
+                                <CreateCliente iconOnly />
+                                <CreateHabitacion iconOnly />
+                                <CreateEmpleado iconOnly />
+                                <CreateCupon iconOnly />
+                            </div>
+                        )}
 
                         <div className="contenedorContenido bg-gris">
                             <TabContenido

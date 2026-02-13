@@ -1,11 +1,10 @@
 import { usePage } from '@inertiajs/react';
 import usePerfilDashboard from '../../hooks/usePerfilDashboard';
-import Indicadores from './Indicadores';
 import TareasCompletadas from './TareasCompletadas';
 import TurnosProximos from './TurnosProximos';
 
 export default function ProfileDashboard({ empleado = null, habitaciones = [], canViewTareas = false }) {
-    const { proximos, completadas, conteoActivas, cargando, refrescar, formatearFechaConMesCapitalizado, capitalizar, eliminarTurno } = usePerfilDashboard(canViewTareas);
+    const { proximos, completadas, conteoActivas, cargando, refrescar, formatearFechaConMesCapitalizado, capitalizar, eliminarTurno } = usePerfilDashboard(canViewTareas, empleado?.id);
 
     const roles = usePage().props?.auth?.user?.roles || [];
     const contenedorPerfilPermitido = empleado || ['admin', 'encargado', 'operario', 'auxiliar'].some((r) => roles.includes(r));
@@ -21,10 +20,6 @@ export default function ProfileDashboard({ empleado = null, habitaciones = [], c
                         </div>
 
                         <div className="col-span-1 lg:col-span-2 flex flex-col gap-6">
-                            <div>
-                                <Indicadores conteoActivas={conteoActivas} />
-                            </div>
-
                             <div>
                                 <TareasCompletadas completadas={completadas} cargando={cargando} formatearFecha={formatearFechaConMesCapitalizado} />
                             </div>

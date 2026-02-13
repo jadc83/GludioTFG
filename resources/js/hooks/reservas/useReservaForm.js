@@ -157,7 +157,7 @@ export default function useReservaForm() {
                     setValue('nacionalidad', usuarioActual.nacionalidad || '');
                     setValue('direccion', usuarioActual.direccion || '');
                 } catch (e) {
-                    console.debug(e);
+                    // Nota: registros de depuración eliminados
                 }
                 setPasoActual(4);
                 return;

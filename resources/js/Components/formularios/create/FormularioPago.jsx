@@ -46,12 +46,14 @@ function FormularioPagoInterno({
     }, [aceptaTerminos]);
 
     const user = page?.props?.auth?.user;
-
     const [name, setName] = useState(reservaData?.name || user?.name || '');
     const [email, setEmail] = useState(reservaData?.email || user?.email || '');
     const [telefono, setTelefono] = useState(
         reservaData?.telefono || user?.telefono || '',
     );
+
+    const isDisabled =
+        procesando || !name?.trim() || !email?.trim() || !telefono?.trim() || !user;
 
     const nameRef = useRef(null);
     const emailRef = useRef(null);
@@ -176,7 +178,7 @@ function FormularioPagoInterno({
                                 new CustomEvent('faltanFechas', { detail: {} }),
                             );
                     } catch (e) {
-                        console.debug(e);
+                                // Nota: registros de depuración eliminados
                     }
                 } else {
                     const joined = Object.values(err.errors).flat().join('; ');
@@ -238,21 +240,22 @@ function FormularioPagoInterno({
                         });
                     }
                 } catch (e) {
-                    console.debug(e);
+                            // Nota: registros de depuración eliminados
                 }
             }, 50);
 
-            try {
-                setDebugErrorJson(
-                    JSON.stringify(
-                        { error: err, payload: crearPayloadRef.current },
-                        null,
-                        2,
-                    ),
-                );
-            } catch (e) {
-                setDebugErrorJson(String(err));
-            }
+                try {
+                    setDebugErrorJson(
+                        JSON.stringify(
+                            { error: err, payload: crearPayloadRef.current },
+                            null,
+                            2,
+                        ),
+                    );
+                } catch (e) {
+                        // Nota: registros de depuración eliminados
+                    setDebugErrorJson(String(err));
+                }
         } finally {
             setProcesando(false);
         }
@@ -286,7 +289,7 @@ function FormularioPagoInterno({
                     ),
                 );
             } catch (e) {
-                console.debug(e);
+                        // Nota: registros de depuración eliminados
             }
         } finally {
             setProcesando(false);
@@ -307,7 +310,7 @@ function FormularioPagoInterno({
                     }),
                 );
         } catch (e) {
-            console.debug(e);
+                    // Nota: registros de depuración eliminados
         }
     };
 
@@ -444,16 +447,15 @@ function FormularioPagoInterno({
 
                     <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-3">
+                            {!user && (
+                                <div className="mb-2 rounded border border-yellow-100 bg-yellow-50 p-3 text-xs text-yellow-800">
+                                    Pago con tarjeta deshabilitado para usuarios no registrados. Inicia sesión o crea una cuenta para pagar con tarjeta.
+                                </div>
+                            )}
                             <button
                                 type="button"
                                 onClick={async () => {
                                     try {
-                                        if (!acepta) {
-                                            setMensaje(
-                                                'Acepta los términos para continuar.',
-                                            );
-                                            return;
-                                        }
                                         setProcesando(true);
 
                                         const esExtension = Boolean(
@@ -465,23 +467,18 @@ function FormularioPagoInterno({
                                         if (!esExtension) {
                                             const pagosApi =
                                                 await import('@/api/pagos');
-                                            const montoFloat =
-                                                Number(monto) || 0;
+                                            const montoFloat = Number(monto) || 0;
                                             let piResp = null;
                                             try {
                                                 piResp =
                                                     await pagosApi.crearPaymentIntentStandalone(
                                                         montoFloat,
                                                         {
-                                                            receipt_email:
-                                                                email,
+                                                            receipt_email: email,
                                                             allow_without_metadata: true,
                                                         },
                                                     );
-                                                if (
-                                                    !piResp ||
-                                                    piResp.success === false
-                                                ) {
+                                                if (!piResp || piResp.success === false) {
                                                     throw new Error(
                                                         piResp?.error ||
                                                             'No se pudo crear PaymentIntent',
@@ -528,8 +525,7 @@ function FormularioPagoInterno({
                                                     );
                                                 if (
                                                     !dataReserva ||
-                                                    dataReserva.success ===
-                                                        false
+                                                    dataReserva.success === false
                                                 ) {
                                                     throw new Error(
                                                         dataReserva?.error ||
@@ -572,13 +568,15 @@ function FormularioPagoInterno({
                                         setProcesando(false);
                                     }
                                 }}
-                                disabled={
-                                    procesando ||
-                                    !name?.trim() ||
-                                    !email?.trim() ||
-                                    !telefono?.trim()
+                                disabled={isDisabled}
+                                aria-disabled={isDisabled}
+                                tabIndex={isDisabled ? -1 : 0}
+                                className={
+                                    'flex w-full items-center justify-center rounded-xl py-3 text-[12px] font-black uppercase tracking-[0.2em] transition-all ' +
+                                    (isDisabled
+                                        ? 'bg-yellow-300 text-white opacity-60 cursor-not-allowed pointer-events-none select-none'
+                                        : 'bg-yellow-600 text-white hover:bg-yellow-700')
                                 }
-                                className="flex w-full items-center justify-center rounded-xl bg-yellow-600 py-3 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-yellow-700 disabled:opacity-50"
                             >
                                 Pagar con Stripe (Checkout)
                             </button>
