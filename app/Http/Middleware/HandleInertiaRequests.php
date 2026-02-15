@@ -66,6 +66,8 @@ class HandleInertiaRequests extends Middleware
         return array_merge($shared, [
             'auth' => ['user' => $userData],
             'csrf_token' => csrf_token(),
+            // Expose Stripe public key to Inertia pages so client can initialize Elements in dev + server-rendered pages
+            'stripe_public' => config('services.stripe.public'),
         ]);
     }
 }

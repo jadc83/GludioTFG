@@ -41,10 +41,11 @@ export default function Edit({
     // explícitamente oculto a roles 'operario' y 'auxiliar'
     const canSeeTurnos = (viewerIsAdmin || (viewerIsEncargadoRole && viewerDept && targetDept && viewerDept === targetDept)) && !viewerIsOperarioOrAuxiliar;
 
-    // Mostrar 'Mis Reservas' solo a usuarios que no tienen ningún role ni departamento
+    // Mostrar 'Mis Reservas' a clientes (sin role ni departamento) —
+    // además permitir a administradores/recepción (prop `can_view_reservas`) verlo cuando corresponda.
     const viewerHasNoRole = !Array.isArray(viewerRoles) || viewerRoles.length === 0;
     const viewerHasNoDept = !auth?.user?.empleado_departamento;
-    const viewerCanSeeReservas = can_view_reservas && viewerHasNoRole && viewerHasNoDept;
+    const viewerCanSeeReservas = (viewerHasNoRole && viewerHasNoDept) || Boolean(can_view_reservas);
 
     const tabs = [
         ...(show_profile_tab

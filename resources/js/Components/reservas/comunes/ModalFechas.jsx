@@ -89,6 +89,33 @@ export default function ModalFechas({
         };
     }, [vistaPrevia, vistaPreviaCargada, needPayment, creatingPi, reserva]);
 
+    // Manual retry for payment intent creation (used by UI fallback when automatic init fails)
+    const retryInitPaymentIntent = async () => {
+        const charge = Number(vistaPrevia?.estimate_charge || 0);
+        if (!vistaPrevia || !vistaPreviaCargada || charge <= 0) return;
+        if (creatingPi) return;
+        setCreatingPi(true);
+        try {
+            const resp = await pagosApi.crearPaymentIntentStandalone(charge, {
+                receipt_email: reserva?.reservable?.email,
+                reserva_id: reserva?.id,
+                localizador: reserva?.localizador,
+            });
+            if (!resp || resp.success === false)
+                throw new Error(resp?.error || 'No se pudo crear PaymentIntent');
+            setPiClientSecret(resp.clientSecret ?? null);
+            setPiPaymentIntentId(resp.paymentIntentId ?? null);
+            setNeedPayment(true);
+            // focus the modal content so user notices the payment form when it appears
+            try { document.querySelector('#modal-fechas-title')?.focus(); } catch (e) {}
+        } catch (e) {
+            console.error('--- [ModalFechas] retry crearPaymentIntentStandalone error:', e);
+            emitToast(e?.message || t('toasts.payment_error'), 'error');
+        } finally {
+            setCreatingPi(false);
+        }
+    };
+
     const page = usePage();
     const stripePublicKey =
         import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
@@ -202,7 +229,7 @@ export default function ModalFechas({
                 Number(vistaPrevia.estimate_charge || 0) > 0 ? (
                     <div className="flex-1">
                         {/* Auto-init payment intent; no manual 'I agree' CTA */}
-                        {needPayment && piClientSecret && stripePromise && (
+                        {needPayment && piClientSecret && stripePromise ? (
                             <div className="mt-4 w-full">
                                 <Elements key={piClientSecret} stripe={stripePromise} options={{ clientSecret: piClientSecret }}>
                                     <PaymentBox
@@ -276,11 +303,53 @@ export default function ModalFechas({
                                     />
                                 </Elements>
                             </div>
+                        ) : (
+                            // Fallback UI when payment form isn't ready
+                            <div className="mt-4 w-full">
+                                {creatingPi ? (
+                                    <div className="flex items-center gap-3 rounded-md border border-gray-100 bg-white p-4">
+                                        <LoadingSpinner />
+                                        <div className="text-sm text-gray-600">Inicializando formulario de pago…</div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-md border border-amber-100 bg-amber-50 p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="text-sm font-semibold text-amber-700">Formulario de pago no disponible</div>
+                                                <div className="mt-1 text-xs text-amber-700">
+                                                    No se ha podido inicializar el formulario de pago automáticamente. Pulsa <strong>Reintentar</strong> para volver a intentarlo o contacta con recepción si el problema persiste.
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={retryInitPaymentIntent}
+                                                    disabled={creatingPi}
+                                                    className={`rounded-2xl bg-[#7a0202] px-4 py-2 text-xs font-bold text-white ${creatingPi ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#5a0101]'}`}
+                                                >
+                                                    {creatingPi ? 'Inicializando...' : 'Reintentar'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}{' '}
                     </div>
                 ) : (
                     // Sin cargo adicional: botón simple para aplicar cambios
                     <div className="flex-1">
+                        {/* Si la preview indica que hay cargo pero aún no se ha cargado completamente,
+                            evitar que el usuario pueda "Aplicar" hasta que el formulario de pago
+                            (PaymentBox) esté listo. Esto previene el estado en el que el modal
+                            muestra la advertencia pero no hay formulario para pagar.
+                        */}
+                        {vistaPrevia && Number(vistaPrevia.estimate_charge || 0) > 0 && !vistaPreviaCargada && (
+                            <div className="mb-3 rounded-md border border-amber-100 bg-amber-50 p-3 text-sm text-amber-700">
+                                <strong>Se requiere pago adicional</strong> — espera un momento mientras se inicializa el formulario de pago antes de aplicar los cambios.
+                            </div>
+                        )}
+
                         <div className="flex gap-3">
                             <button
                                 type="button"
@@ -290,12 +359,12 @@ export default function ModalFechas({
                                     needPayment
                                 }
                                 aria-busy={showPreviewLoader}
-                                        onClick={() => {
+                                onClick={() => {
                                     try {
                                         if (typeof clearPreview === 'function')
                                             clearPreview();
-                                        } catch (e) {
-                                        }
+                                    } catch (e) {
+                                    }
                                     if (
                                         typeof setModalCheckIn === 'function' &&
                                         typeof setModalCheckOut === 'function'
@@ -345,9 +414,12 @@ export default function ModalFechas({
                                         emitToast(msg, 'error');
                                     }
                                 }}
-                                disabled={showPreviewLoader}
+                                disabled={
+                                    showPreviewLoader ||
+                                    (vistaPrevia && Number(vistaPrevia.estimate_charge || 0) > 0 && !vistaPreviaCargada)
+                                }
                                 aria-busy={showPreviewLoader}
-                                className={`flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader ? 'cursor-not-allowed opacity-70' : 'hover:bg-[#5a0101]'}`}
+                                className={`flex-1 rounded-2xl bg-[#7a0202] py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-red-100 transition ${showPreviewLoader || (vistaPrevia && Number(vistaPrevia.estimate_charge || 0) > 0 && !vistaPreviaCargada) ? 'cursor-not-allowed opacity-70' : 'hover:bg-[#5a0101]'}`}
                             >
                                 {t('actions_extra.apply_changes')}
                             </button>
