@@ -4,7 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import useTurnos from '@/Hooks/useTurnos';
+import useTurnos from '@/hooks/useTurnos';
 import ControlesTurnos from './ControlesTurnos';
 import DetalleTurno from './DetalleTurno';
 
