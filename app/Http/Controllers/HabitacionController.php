@@ -103,26 +103,34 @@ class HabitacionController extends Controller
                 $this->eliminarFotos($habitacion, $request->input('fotos_eliminar', []));
                 $this->agregarFotos($habitacion, $request->file('fotos'));
 
-                // Only return plain JSON for pure AJAX/JSON requests (not Inertia visits)
-                if (($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With')) && ! $request->header('X-Inertia')) {
-                        // Refresh the model to ensure latest state
-                        $habitacion->refresh();
-                        // Broadcast update to connected clients so UI can refresh in real-time
-                        try {
-                            event(new \App\Events\HabitacionUpdated($habitacion));
-                        } catch (\Throwable $e) {
-                            Log::error('Failed to broadcast HabitacionUpdated', ['error' => $e->getMessage()]);
-                        }
-                        return response()->json(['success' => true, 'habitacion' => $habitacion]);
+                // Refresh the model to ensure latest state
+                $habitacion->refresh();
+
+                // Broadcast update to connected clients so UI can refresh in real-time
+                try {
+                    event(new \App\Events\HabitacionUpdated($habitacion));
+                } catch (\Throwable $e) {
+                    Log::error('Failed to broadcast HabitacionUpdated', ['error' => $e->getMessage()]);
                 }
 
-                // If this is an Inertia request, respond with an Inertia-compatible
-                // redirect so the client does not receive plain JSON.
-                if ($request->header('X-Inertia')) {
-                    return \Inertia\Inertia::location(route('panel', ['tab' => 'habitaciones']));
+                // 1) Pure AJAX / API callers (no Inertia): return JSON
+                $isAjax = $request->ajax() || $request->wantsJson();
+                $isInertia = $request->header('X-Inertia') !== null;
+
+                if ($isAjax && ! $isInertia) {
+                    return response()->json(['success' => true, 'habitacion' => $habitacion]);
                 }
 
-                return redirect()->route('panel');
+                // 2) Inertia visits: instruct the client to perform a location visit
+                //    including a query param so the `Panel` can open the correct drawer.
+                if ($isInertia) {
+                    // Force an absolute URL so the client performs a full location visit
+                    return \Inertia\Inertia::location(route('panel', ['tab' => 'habitaciones', 'edited' => $habitacion->id], true));
+                }
+
+                // 3) Classic HTML form submit: regular redirect with flash message
+                // Use an absolute URL to avoid relative-path issues under Apache
+                return redirect()->to(route('panel', ['tab' => 'habitaciones'], true))->with('success', 'Habitación actualizada.');
             });
         } catch (\Throwable $e) {
             Log::error('HabitacionController::update exception', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
