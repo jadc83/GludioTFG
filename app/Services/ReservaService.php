@@ -723,14 +723,28 @@ class ReservaService
 
             $placeholders = HabitacionReserva::where('reserva_id', $reserva->id)->whereNull('habitacion_id')->get();
 
+            // Track already-assigned habitación IDs in this loop to avoid duplicates
+            $alreadyAssigned = HabitacionReserva::where('reserva_id', $reserva->id)
+                ->whereNotNull('habitacion_id')
+                ->pluck('habitacion_id')
+                ->filter()
+                ->unique()
+                ->toArray();
+
             foreach ($placeholders as $ph) {
-                $candidate = Habitacion::where('tipo', $ph->tipo)
+                $query = Habitacion::where('tipo', $ph->tipo)
                     ->where('estado', 'disponible')
-                    ->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut, $reserva) {
-                        $q->where('check_in', '<', $checkOut)->where('check_out', '>', $checkIn)->where('reserva_id', '!=', $reserva->id);
-                    })
-                    ->lockForUpdate()
-                    ->first();
+                    // Exclude any habitación that has an overlapping HabitacionReserva (includes same reserva)
+                    ->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut) {
+                        $q->where('check_in', '<', $checkOut)
+                          ->where('check_out', '>', $checkIn);
+                    });
+
+                if (!empty($alreadyAssigned)) {
+                    $query->whereNotIn('id', $alreadyAssigned);
+                }
+
+                $candidate = $query->lockForUpdate()->first();
 
                 if (! $candidate) {
                     $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => false, 'reason' => 'no_available'];
@@ -743,6 +757,9 @@ class ReservaService
                     $ph->precio = is_numeric($precioFallback) ? $precioFallback : 0;
                 }
                 $ph->save();
+
+                // remember assigned id to prevent reuse within this transaction/loop
+                $alreadyAssigned[] = $candidate->id;
 
                 $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => true, 'habitacion_id' => $candidate->id, 'numero' => $candidate->numero];
             }

@@ -44,3 +44,43 @@ it('creates placeholder HabitacionReserva records when asignarHabitaciones is ca
     expect($placeholders->count())->toBe(1);
     expect($placeholders->first()->tipo)->toBe('doble');
 });
+
+it('assigns distinct habitaciones during check-in (no duplicates)', function () {
+    $service = new ReservaService();
+
+    // Crear 3 habitaciones dobles disponibles
+    $h1 = Habitacion::create(['numero' => 'D1', 'tipo' => 'doble', 'capacidad' => 2, 'estado' => 'disponible']);
+    $h2 = Habitacion::create(['numero' => 'D2', 'tipo' => 'doble', 'capacidad' => 2, 'estado' => 'disponible']);
+    $h3 = Habitacion::create(['numero' => 'D3', 'tipo' => 'doble', 'capacidad' => 2, 'estado' => 'disponible']);
+
+    $today = Carbon::today()->toDateString();
+    $tomorrow = Carbon::tomorrow()->toDateString();
+
+    $reserva = Reserva::create([
+        'localizador' => 'CHKIN1',
+        'check_in' => $today,
+        'check_out' => $tomorrow,
+        'precio_total' => 300,
+        'status' => 'pendiente',
+    ]);
+
+    // Crear 3 placeholders para la reserva
+    $service->asignarHabitaciones($reserva, [['tipo' => 'doble', 'cantidad' => 3]]);
+
+    // Ejecutar asignación física en check-in
+    $results = $service->asignarHabitacionEnCheckIn($reserva);
+
+    // Todos deberían ser 'assigned' => true
+    expect(array_filter($results, fn($r) => ($r['assigned'] ?? false) === true))->toHaveCount(3);
+
+    $assignedIds = array_map(fn($r) => $r['habitacion_id'] ?? null, $results);
+    $uniqueIds = array_unique(array_filter($assignedIds));
+
+    // Verificar que los IDs asignados sean 3 y únicos
+    expect(count($uniqueIds))->toBe(3);
+
+    // Verificar también la persistencia en la tabla habitacion_reserva
+    $slots = $reserva->habitaciones()->whereNotNull('habitacion_id')->get();
+    $slotIds = $slots->pluck('habitacion_id')->toArray();
+    expect(count(array_unique($slotIds)))->toBe(3);
+});

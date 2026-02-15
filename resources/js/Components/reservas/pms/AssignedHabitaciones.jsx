@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 
 export default function AssignedHabitaciones({
@@ -6,6 +7,10 @@ export default function AssignedHabitaciones({
     guardando,
     reserva = null,
 }) {
+    const page = usePage();
+    const viewerDept = (page?.props?.auth?.user?.empleado_departamento || '').toLowerCase();
+    const viewerIsRecepcion = viewerDept === 'recepcion';
+
     return (
         <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 bg-[#7a0202] px-6 py-4">
@@ -52,23 +57,26 @@ export default function AssignedHabitaciones({
                                         Asignada
                                     </span>
 
-                                    <button
-                                        onClick={() =>
-                                            onDesasignar(hab.habitacion_id)
-                                        }
-                                        disabled={
-                                            guardando ||
-                                            (reserva &&
-                                                String(
-                                                    reserva.status || '',
-                                                ).toLowerCase() ===
-                                                    'checked_out')
-                                        }
-                                        className="rounded-lg border border-[#7a0202] bg-white px-3 py-1 text-xs font-bold text-[#7a0202] transition hover:bg-[#7a0202] hover:text-white disabled:opacity-50"
-                                        title="Quitar asignación de habitación"
-                                    >
-                                        {guardando ? <LoadingSpinner /> : '✕'}
-                                    </button>
+                                    {/* Mostrar el botón de desasignar sólo a personal de Recepción */}
+                                    {viewerIsRecepcion && (
+                                        <button
+                                            onClick={() =>
+                                                onDesasignar(hab.habitacion_id)
+                                            }
+                                            disabled={
+                                                guardando ||
+                                                (reserva &&
+                                                    String(
+                                                        reserva.status || '',
+                                                    ).toLowerCase() ===
+                                                        'checked_out')
+                                            }
+                                            className="rounded-lg border border-[#7a0202] bg-white px-3 py-1 text-xs font-bold text-[#7a0202] transition hover:bg-[#7a0202] hover:text-white disabled:opacity-50"
+                                            title="Quitar asignación de habitación"
+                                        >
+                                            {guardando ? <LoadingSpinner /> : '✕'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* IDs internos ocultos: no mostrar habitacion_id/slot_id en la UI */}
