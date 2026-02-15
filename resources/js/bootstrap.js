@@ -35,6 +35,9 @@ window.Echo = new Echo({
     wsHost: REVERB_HOST,
     wsPort: Number(REVERB_PORT),
     wssPort: Number(REVERB_PORT),
+    // Let the Pusher client build the `/app/{appKey}` and `/apps/{appId}` segments itself
+    wsPath: '',
+    httpPath: '',
     forceTLS: REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
