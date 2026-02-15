@@ -184,7 +184,7 @@ export default function PanelControl({
                 <div className="contenidoPrincipal">
                     <div className="envoltorioContenido">
                         <div className="sticky top-16 z-30 mb-6 flex w-full justify-center rounded-lg bg-base-200 p-1 shadow-md text-[10px] md:text-[11px] lg:text-[12px] leading-tight">
-                            <div className="flex flex-wrap justify-center gap-1 md:gap-2 max-w-full truncate">
+                            <div className="flex w-full items-center gap-1 md:gap-2">
                                     <Tabs
                                         tabs={
                                                 isAdmin
