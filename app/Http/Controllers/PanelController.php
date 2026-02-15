@@ -191,6 +191,10 @@ class PanelController extends Controller
             'empleados'               => $empleados,
             'cupones'                 => Cupon::paginate(15),
             'tiposHabitacion'         => TipoHabitacion::all(),
+            // If `edited` query param is present, load that habitacion so the frontend
+            // can open the edit drawer immediately after a redirect from the controller.
+            'openEdit'                => $request->query('edited') ? true : false,
+            'habitacionToEdit'        => $request->query('edited') ? Habitacion::with('fotos')->find($request->query('edited')) : null,
         ]);
     }
 }
