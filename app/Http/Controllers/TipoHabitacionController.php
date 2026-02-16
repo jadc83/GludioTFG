@@ -28,7 +28,7 @@ class TipoHabitacionController extends Controller
     {
         // Solo permitir cambios a usuarios con rol 'admin'
         try {
-            if (! auth()->check() || ! Auth::user()->hasRole('admin')) {
+            if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
                 \Illuminate\Support\Facades\Log::info('TipoHabitacion update denied', [
                     'user' => auth()->user()?->id ?? null,
                     'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
@@ -37,6 +37,8 @@ class TipoHabitacionController extends Controller
                 abort(403);
             }
         } catch (\Throwable $e) {
+            // En caso de error al comprobar roles, denegar y loguear
+            \Illuminate\Support\Facades\Log::error('Error comprobando rol admin en TipoHabitacionController::update', ['error' => $e->getMessage()]);
             abort(403);
         }
 
