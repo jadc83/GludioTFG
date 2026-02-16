@@ -121,10 +121,4 @@ Se añadió una suite mínima de pruebas E2E con Playwright para comprobar compa
 ## 9. Estado actual y próximos pasos
 
 - Se probaron las builds y se ejecutaron pruebas E2E en **Chrome**, **Brave**, **Firefox** y **Edge**; los smoke tests pasaron correctamente en estos navegadores.
-- Si deseas, puedo:
-    - Añadir polyfills para `Intl` y regenerar la build.
-    - Eliminar los logs temporales añadidos durante depuración.
 
-
----
-*Desarrollado para la gestión eficiente de Hotel Gludio.*
