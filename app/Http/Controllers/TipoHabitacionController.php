@@ -26,7 +26,17 @@ class TipoHabitacionController extends Controller
      */
     public function update(TipoHabitacion $tipoHabitacion, \Illuminate\Http\Request $request): JsonResponse
     {
-        if (Gate::denies('puedeVer')) {
+        // Solo permitir cambios a usuarios con rol 'admin'
+        try {
+            if (! auth()->check() || ! Auth::user()->hasRole('admin')) {
+                \Illuminate\Support\Facades\Log::info('TipoHabitacion update denied', [
+                    'user' => auth()->user()?->id ?? null,
+                    'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                    'tipoHabitacion' => $tipoHabitacion->id ?? null,
+                ]);
+                abort(403);
+            }
+        } catch (\Throwable $e) {
             abort(403);
         }
 

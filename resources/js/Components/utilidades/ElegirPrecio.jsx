@@ -1,11 +1,15 @@
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 
 export default function ElegirPrecio({ tiposHabitacion = [] }) {
     const [tipos, setTipos] = useState(tiposHabitacion);
     const [editando, setEditando] = useState(null);
     const [formData, setFormData] = useState({});
+    const { props } = usePage();
+    const roles = props?.auth?.user?.roles || [];
+    const isAdmin = Array.isArray(roles) && roles.includes('admin');
 
     const iniciarEdicion = (tipo) => {
         setEditando(tipo.id);
@@ -197,15 +201,19 @@ export default function ElegirPrecio({ tiposHabitacion = [] }) {
                                                     className="whitespace-nowrap px-6 py-6"
                                                     data-label="Acciones"
                                                 >
-                                                    <button
-                                                        onClick={() =>
-                                                            iniciarEdicion(tipo)
-                                                        }
-                                                        className="inline-flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                                                    >
-                                                        <PencilIcon className="h-4 w-4" />
-                                                        Editar
-                                                    </button>
+                                                    {isAdmin ? (
+                                                        <button
+                                                            onClick={() =>
+                                                                iniciarEdicion(tipo)
+                                                            }
+                                                            className="inline-flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                                                        >
+                                                            <PencilIcon className="h-4 w-4" />
+                                                            Editar
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400">Solo administradores</span>
+                                                    )}
                                                 </td>
                                             </>
                                         )}
