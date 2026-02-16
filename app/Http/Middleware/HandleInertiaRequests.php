@@ -37,7 +37,24 @@ class HandleInertiaRequests extends Middleware
             try {
                 $roles = [];
                 try {
-                    $roles = $user->getRoleNames()->toArray();
+                    $roles = [];
+                    if (method_exists($user, 'getRoleNames')) {
+                        try {
+                            $roles = $user->getRoleNames()->toArray();
+                        } catch (\Throwable $__e) {
+                            $roles = [];
+                        }
+                    } elseif (isset($user->roles) && is_iterable($user->roles)) {
+                        try {
+                            if ($user->roles instanceof \Illuminate\Support\Collection) {
+                                $roles = $user->roles->map(fn($r) => $r->name ?? (string) $r)->filter()->values()->toArray();
+                            } elseif (is_array($user->roles)) {
+                                $roles = array_values($user->roles);
+                            }
+                        } catch (\Throwable $__e) {
+                            $roles = [];
+                        }
+                    }
                 } catch (\Throwable $e) {
                     $roles = [];
                 }

@@ -6,10 +6,13 @@ export default function AssignedHabitaciones({
     onDesasignar,
     guardando,
     reserva = null,
+    viewerCanManageRooms = false,
 }) {
     const page = usePage();
     const viewerDept = (page?.props?.auth?.user?.empleado_departamento || '').toLowerCase();
     const viewerIsRecepcion = viewerDept === 'recepcion';
+    const viewerRoles = Array.isArray(page?.props?.auth?.user?.roles) ? page.props.auth.user.roles : [];
+    const viewerIsAdmin = viewerRoles.includes('admin') || viewerRoles.includes('super-admin') || !!page?.props?.auth?.user?.is_admin;
 
     return (
         <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -58,7 +61,7 @@ export default function AssignedHabitaciones({
                                     </span>
 
                                     {/* Mostrar el botón de desasignar sólo a personal de Recepción */}
-                                    {viewerIsRecepcion && (
+                                    {(viewerIsAdmin || viewerIsRecepcion) && (
                                         <button
                                             onClick={() =>
                                                 onDesasignar(hab.habitacion_id)

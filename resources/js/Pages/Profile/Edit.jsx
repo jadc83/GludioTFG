@@ -37,9 +37,8 @@ export default function Edit({
     const viewerIsOperarioOrAuxiliar = Array.isArray(viewerRoles) && (viewerRoles.includes('operario') || viewerRoles.includes('auxiliar'));
     const viewerDept = (auth?.user?.empleado_departamento || '').toLowerCase();
     const targetDept = (empleado?.departamento || '').toLowerCase();
-    // 'turnos' visible solo para admin o encargados del mismo departamento;
-    // explícitamente oculto a roles 'operario' y 'auxiliar'
-    const canSeeTurnos = (viewerIsAdmin || (viewerIsEncargadoRole && viewerDept && targetDept && viewerDept === targetDept)) && !viewerIsOperarioOrAuxiliar;
+    // 'turnos' visible solo para usuarios con role 'admin' o 'encargado'
+    const canSeeTurnos = viewerIsAdmin || viewerIsEncargadoRole;
 
     // Mostrar 'Mis Reservas' a clientes (sin role ni departamento) —
     // además permitir a administradores/recepción (prop `can_view_reservas`) verlo cuando corresponda.

@@ -583,6 +583,43 @@ class ReservaController extends Controller
     public function asignarHabitaciones(Request $request, Reserva $reserva)
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
+
+        $user = Auth::user();
+        if (! $user) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'No autenticado'], 401);
+            }
+            abort(403, 'Acceso denegado');
+        }
+        $roles = [];
+        if ($user) {
+            if (method_exists($user, 'getRoleNames')) {
+                try {
+                    $roles = $user->getRoleNames()->toArray();
+                } catch (\Throwable $__e) {
+                    $roles = [];
+                }
+            } elseif (isset($user->roles) && is_iterable($user->roles)) {
+                try {
+                    if ($user->roles instanceof \Illuminate\Support\Collection) {
+                        $roles = $user->roles->map(fn($r) => $r->name ?? (string) $r)->filter()->values()->toArray();
+                    } elseif (is_array($user->roles)) {
+                        $roles = array_values($user->roles);
+                    }
+                } catch (\Throwable $__e) {
+                    $roles = [];
+                }
+            }
+        }
+        $isAdmin = in_array('admin', $roles) || in_array('super-admin', $roles) || ($user->is_admin ?? false);
+        $dept = strtolower($user->empleado?->departamento?->name ?? '');
+        $hasEncOrOper = in_array('encargado', $roles) || in_array('operario', $roles);
+        if (!($isAdmin || ($dept === 'recepcion' && $hasEncOrOper))) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Acceso denegado'], 403);
+            }
+            abort(403, 'Acceso denegado');
+        }
         $request->validate([
             'habitacion_ids' => 'required|array|min:1',
             'habitacion_ids.*' => 'nullable|integer|exists:habitaciones,id'
@@ -646,6 +683,44 @@ class ReservaController extends Controller
     public function desasignarHabitaciones(Request $request, Reserva $reserva)
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
+
+        // Authorization: only `admin` or reception staff with role `encargado` or `operario` may desasign
+        $user = Auth::user();
+        if (! $user) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'No autenticado'], 401);
+            }
+            abort(403, 'Acceso denegado');
+        }
+        $roles = [];
+        if ($user) {
+            if (method_exists($user, 'getRoleNames')) {
+                try {
+                    $roles = $user->getRoleNames()->toArray();
+                } catch (\Throwable $__e) {
+                    $roles = [];
+                }
+            } elseif (isset($user->roles) && is_iterable($user->roles)) {
+                try {
+                    if ($user->roles instanceof \Illuminate\Support\Collection) {
+                        $roles = $user->roles->map(fn($r) => $r->name ?? (string) $r)->filter()->values()->toArray();
+                    } elseif (is_array($user->roles)) {
+                        $roles = array_values($user->roles);
+                    }
+                } catch (\Throwable $__e) {
+                    $roles = [];
+                }
+            }
+        }
+        $isAdmin = in_array('admin', $roles) || in_array('super-admin', $roles) || ($user->is_admin ?? false);
+        $dept = strtolower($user->empleado?->departamento?->name ?? '');
+        $hasEncOrOper = in_array('encargado', $roles) || in_array('operario', $roles);
+        if (!($isAdmin || ($dept === 'recepcion' && $hasEncOrOper))) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Acceso denegado'], 403);
+            }
+            abort(403, 'Acceso denegado');
+        }
         $request->validate([
             'habitacion_ids' => 'required|array|min:1',
             'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'

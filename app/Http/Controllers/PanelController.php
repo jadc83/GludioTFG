@@ -30,8 +30,6 @@ class PanelController extends Controller
      */
     public function index(Request $request)
     {
-        // Control de acceso: el panel sólo es accesible para administradores, encargados,
-        // o empleados asignados a Recepción/Mantenimiento con rol operativo.
         $viewerCheck = $request->user();
         try {
             if (! $viewerCheck) {
@@ -43,7 +41,7 @@ class PanelController extends Controller
             $isEncargado = $hasRoleMethod && $viewerCheck->hasRole('encargado');
 
             if ($isAdmin || $isEncargado) {
-                // permitido
+
             } elseif ($viewerCheck->empleado) {
                 $dept = strtolower($viewerCheck->empleado->departamento?->name ?? '');
                 $empRole = strtolower($viewerCheck->empleado->role ?? '');
@@ -56,7 +54,7 @@ class PanelController extends Controller
         } catch (\Throwable $e) {
             abort(403);
         }
-        // Si se solicita explícitamente la pestaña 'configuracion', permitir solo a administradores
+
         $requestedTab = $request->query('tab');
         if ($requestedTab === 'configuracion') {
             $viewer = $request->user();
@@ -69,8 +67,6 @@ class PanelController extends Controller
             }
         }
 
-        // Si se solicita explícitamente la pestaña 'estadisticas', permitir solo a administradores o encargados
-        // Nota: encargados del departamento 'Limpieza' no tienen acceso
         if ($requestedTab === 'estadisticas') {
             $viewer = $request->user();
             try {
@@ -79,9 +75,8 @@ class PanelController extends Controller
                 }
 
                 if (method_exists($viewer, 'hasRole') && $viewer->hasRole('admin')) {
-                    // admin ok
+
                 } elseif (method_exists($viewer, 'hasRole') && $viewer->hasRole('encargado')) {
-                    // revisar departamento
                     $dept = strtolower($viewer->empleado?->departamento?->name ?? '');
                     if (in_array($dept, ['limpieza', 'mantenimiento'])) {
                         abort(403);
@@ -109,21 +104,18 @@ class PanelController extends Controller
             ->cliente($request->cliente)
             ->habitacion($request->habitacion);
 
-        // Soporte para mostrar registros eliminados (soft deletes) desde el panel
         if (($request->input('trashed') ?? '') === 'with') {
             $query = $query->withTrashed();
         } elseif (($request->input('trashed') ?? '') === 'only') {
             $query = $query->onlyTrashed();
         }
 
-        // Support sorting from the frontend (e.g., sort_by=created_at, sort_dir=asc|desc)
         $sortBy = $request->input('sort_by');
         $sortDir = strtolower($request->input('sort_dir') ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         if ($sortBy === 'created_at') {
             $reservas = $query->orderBy('created_at', $sortDir)->get();
         } else {
-            // default ordering remains by check_in desc
             $reservas = $query->orderBy('check_in', 'desc')->get();
         }
 
@@ -137,7 +129,6 @@ class PanelController extends Controller
             ->orderBy('numero')
             ->get();
 
-        // Empleados (unimos algunos campos del usuario para simplificar el front)
         $empleados = Empleado::with(['user','departamento'])->orderBy('id')->get()->map(function ($empleado) {
             $data = $empleado->toArray();
             if ($empleado->user) {
@@ -150,16 +141,24 @@ class PanelController extends Controller
                 $data['ciudad'] = $empleado->user->ciudad;
                 $data['codigo_postal'] = $empleado->user->codigo_postal;
                 $data['telefono'] = $empleado->user->telefono;
-                // roles/role: exponer el primer rol y la lista completa para uso en el front
+
                 try {
-                    $roles = $empleado->user->getRoleNames()->toArray();
+                    $roles = [];
+                    if (method_exists($empleado->user, 'getRoleNames')) {
+                        $roles = $empleado->user->getRoleNames()->toArray();
+                    } elseif (isset($empleado->user->roles) && is_iterable($empleado->user->roles)) {
+                        if ($empleado->user->roles instanceof \Illuminate\Support\Collection) {
+                            $roles = $empleado->user->roles->map(fn($r) => $r->name ?? (string) $r)->filter()->values()->toArray();
+                        } elseif (is_array($empleado->user->roles)) {
+                            $roles = array_values($empleado->user->roles);
+                        }
+                    }
                 } catch (\Throwable $e) {
                     $roles = [];
                 }
                 $data['roles'] = $roles;
                 $data['role'] = $roles[0] ?? null;
 
-                // departamento (relación a departamentos)
                 $depModel = $empleado->relationLoaded('departamento') ? $empleado->getRelation('departamento') : (\App\Models\Departamento::find($empleado->departamento_id));
                 $data['departamento'] = $depModel ? $depModel->name : null;
                 $data['departamento_id'] = $empleado->departamento_id ?? null;
@@ -167,13 +166,9 @@ class PanelController extends Controller
             return $data;
         });
 
-        // snapshot de clientes (logging temporal eliminado)
-
-        // Marcar tipo de origen y combinar clientes+usuarios, prefiriendo Cliente en caso de duplicado
         $clientes->each(function ($c) { $c->tipo_usuario = 'cliente'; });
         $usuarios->each(function ($u) { $u->tipo_usuario = 'user'; });
 
-        // Excluir usuarios cuyo id ya exista en clientes para preferir el registro de Cliente
         $clientesIds = $clientes->pluck('id')->all();
         $usuariosFiltrados = $usuarios->reject(function ($u) use ($clientesIds) {
             return in_array($u->id, $clientesIds);
@@ -191,8 +186,6 @@ class PanelController extends Controller
             'empleados'               => $empleados,
             'cupones'                 => Cupon::paginate(15),
             'tiposHabitacion'         => TipoHabitacion::all(),
-            // If `edited` query param is present, load that habitacion so the frontend
-            // can open the edit drawer immediately after a redirect from the controller.
             'openEdit'                => $request->query('edited') ? true : false,
             'habitacionToEdit'        => $request->query('edited') ? Habitacion::with('fotos')->find($request->query('edited')) : null,
         ]);

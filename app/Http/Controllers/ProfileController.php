@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Reserva;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,8 +21,6 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-
-        // Si el usuario actual es admin y se pasó ?user_id=xx, permitir ver el perfil de ese usuario (reservas incluidas)
         $targetUser = $user;
         $requestedUserId = $request->query('user_id');
         if ($requestedUserId) {
@@ -36,20 +35,17 @@ class ProfileController extends Controller
         // - reservas donde el reservable es el propio User
         // - reservas donde el reservable es un Cliente con el mismo email (reservas hechas como invitado)
         // - reservas donde el usuario fue quien creó / reservó (booked_by_user_id)
-        $reservasQuery = \App\Models\Reserva::with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
+        $reservasQuery = Reserva::with(['habitaciones.habitacion', 'pagos', 'reembolsos'])
             ->where(function ($q) use ($targetUser) {
-                // Reservas donde reservable es el usuario
                 $q->where(function ($q2) use ($targetUser) {
                     $q2->where('reservable_type', \App\Models\User::class)
                         ->where('reservable_id', $targetUser->id);
                 });
 
-                // Reservas donde reservable es un Cliente con el mismo email
                 $q->orWhereHasMorph('reservable', [\App\Models\Cliente::class], function ($q3) use ($targetUser) {
                     $q3->where('email', $targetUser->email);
                 });
 
-                // Reservas creadas por el usuario
                 $q->orWhere('booked_by_user_id', $targetUser->id);
             })
             ->orderBy('check_in', 'desc');
@@ -85,7 +81,7 @@ class ProfileController extends Controller
                 'email' => $targetUser->email,
                 'departamento' => $targetUser->empleado->departamento?->name ?? null,
                 // Incluir datos de perfil del usuario para mostrarlos en el perfil de empleado
-                'role' => $targetUser->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $targetUser->getRoleNames()->first())) : null,
+                'role' => (method_exists($targetUser, 'getRoleNames') ? ($targetUser->getRoleNames()->first() ? ucwords(str_replace('_', ' ', $targetUser->getRoleNames()->first())) : null) : (is_array($targetUser->roles) && count($targetUser->roles) ? ucwords(str_replace('_', ' ', $targetUser->roles[0])) : null)),
                 'telefono' => $targetUser->telefono ?? null,
                 'direccion' => $targetUser->direccion ?? null,
                 'ciudad' => $targetUser->ciudad ?? null,
@@ -245,7 +241,6 @@ class ProfileController extends Controller
                 $durationHuman = null;
                 if ($t->completed_at && $t->created_at) {
                     try {
-                        // Use absolute difference of timestamps to avoid negative diffs
                         try {
                             $completedTs = \Carbon\Carbon::parse($t->completed_at)->getTimestamp();
                             $createdTs = \Carbon\Carbon::parse($t->created_at)->getTimestamp();

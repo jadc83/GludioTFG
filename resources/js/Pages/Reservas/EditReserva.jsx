@@ -133,8 +133,12 @@ export default function EditarReserva({
 
     const page = usePage();
     const viewer = page.props.auth.user || {};
-    const viewerIsAdmin = !!viewer.is_admin;
-    const viewerIsRecepcion = !!viewer.is_recepcion;
+    const viewerRoles = Array.isArray(viewer.roles) ? viewer.roles : [];
+    const viewerDept = (viewer.empleado_departamento || '').toLowerCase();
+    const viewerIsAdmin = viewerRoles.includes('admin') || viewerRoles.includes('super-admin') || !!viewer.is_admin;
+    const viewerHasRoleEncargado = viewerRoles.includes('encargado');
+    const viewerHasRoleOperario = viewerRoles.includes('operario');
+    const viewerIsReceptionStaff = viewerDept === 'recepcion' && (viewerHasRoleEncargado || viewerHasRoleOperario);
 
     useEffect(() => {
         if (!preview && originalPrecioBackup !== null) {
@@ -199,13 +203,15 @@ export default function EditarReserva({
 
                             {/* Contenido principal debajo del resumen: habitaciones a ancho completo */}
                             <div className="col-span-12">
-                                <AssignedHabitaciones
-                                    habitaciones={reserva.habitaciones}
-                                    onDesasignar={desasignarHabitacion}
-                                    guardando={guardandoHabitaciones}
-                                    reserva={reserva}
-                                    viewerIsAdmin={viewerIsAdmin}
-                                />
+                                {(viewerIsAdmin || viewerIsReceptionStaff || (viewerRoles.length === 0 && !viewerDept)) && (
+                                    <AssignedHabitaciones
+                                        habitaciones={reserva.habitaciones}
+                                        onDesasignar={desasignarHabitacion}
+                                        guardando={guardandoHabitaciones}
+                                        reserva={reserva}
+                                        viewerCanManageRooms={viewerIsAdmin || viewerIsReceptionStaff}
+                                    />
+                                )}
                             </div>
 
                             <div className="col-span-12 mt-4">
@@ -227,7 +233,7 @@ export default function EditarReserva({
                                 />
                             </div>
 
-                            {(viewerIsAdmin || viewerIsRecepcion) &&
+                            {(viewerIsAdmin || viewerIsReceptionStaff) &&
                                 !isCheckedIn &&
                                 !isCheckedOut && (
                                     <div className="col-span-12">
