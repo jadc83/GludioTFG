@@ -100,7 +100,17 @@ class CuponController extends Controller
      */
     public function store(Request $request)
     {
-        if (Gate::denies('puedeVer')) {
+        // Restringir creación solo a usuarios con rol 'admin'
+        try {
+            if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
+                \Illuminate\Support\Facades\Log::info('Cupon store denied', [
+                    'user' => auth()->user()?->id ?? null,
+                    'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                ]);
+                abort(403);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error comprobando rol admin en CuponController::store', ['error' => $e->getMessage()]);
             abort(403);
         }
 
@@ -129,7 +139,18 @@ class CuponController extends Controller
      */
     public function update(Request $request, Cupon $cupon)
     {
-        if (Gate::denies('puedeVer')) {
+        // Restringir actualización solo a usuarios con rol 'admin'
+        try {
+            if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
+                \Illuminate\Support\Facades\Log::info('Cupon update denied', [
+                    'user' => auth()->user()?->id ?? null,
+                    'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                    'cupon' => $cupon->id ?? null,
+                ]);
+                abort(403);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error comprobando rol admin en CuponController::update', ['error' => $e->getMessage()]);
             abort(403);
         }
 
@@ -157,7 +178,18 @@ class CuponController extends Controller
      */
     public function destroy(Cupon $cupon)
     {
-        if (Gate::denies('puedeVer')) {
+        // Restringir eliminación solo a usuarios con rol 'admin'
+        try {
+            if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
+                \Illuminate\Support\Facades\Log::info('Cupon destroy denied', [
+                    'user' => auth()->user()?->id ?? null,
+                    'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                    'cupon' => $cupon->id ?? null,
+                ]);
+                abort(403);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error comprobando rol admin en CuponController::destroy', ['error' => $e->getMessage()]);
             abort(403);
         }
 
@@ -175,7 +207,18 @@ class CuponController extends Controller
      */
     public function toggle(Cupon $cupon)
     {
-        if (Gate::denies('puedeVer')) {
+        // Restringir toggle solo a usuarios con rol 'admin'
+        try {
+            if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
+                \Illuminate\Support\Facades\Log::info('Cupon toggle denied', [
+                    'user' => auth()->user()?->id ?? null,
+                    'roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                    'cupon' => $cupon->id ?? null,
+                ]);
+                abort(403);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error comprobando rol admin en CuponController::toggle', ['error' => $e->getMessage()]);
             abort(403);
         }
 
