@@ -12,6 +12,8 @@ export default function CardConfirmForm({
     email,
     localizador,
     onPrepare,
+    acepta = true,
+    requireAcceptance = false,
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -33,7 +35,6 @@ export default function CardConfirmForm({
         setLoadingConfirm(true);
         const card = elements.getElement(CardElement);
         try {
-            // If no clientSecret provided yet, call onPrepare to create PaymentIntent/reserva
             let cs = clientSecret;
             let piId = paymentIntentId;
             if (!cs && typeof onPrepare === 'function') {
@@ -72,8 +73,6 @@ export default function CardConfirmForm({
                         paymentIntentId: piId || paymentIntentId,
                         localizador: loc,
                     };
-                    // Notify parent and let it handle UI/redirect; keep showing spinner until
-                    // parent unmounts this component or navigates away.
                     onCompleted && onCompleted(resultData);
                     onSuccess && onSuccess(resultData);
                     return;
@@ -90,7 +89,6 @@ export default function CardConfirmForm({
         } catch (e) {
             onError && onError(e?.message || String(e));
         } finally {
-            // keep button disabled if completed; otherwise allow retry
             setLoadingConfirm(false);
         }
     };
@@ -106,10 +104,11 @@ export default function CardConfirmForm({
             <div className="mt-3 flex justify-end">
                 <button
                     onClick={handleConfirm}
-                    disabled={loadingConfirm || !cardReady}
+                    disabled={loadingConfirm || !cardReady || (requireAcceptance && !acepta)}
                     aria-busy={loadingConfirm}
-                    aria-disabled={loadingConfirm || !cardReady}
+                    aria-disabled={loadingConfirm || !cardReady || (requireAcceptance && !acepta)}
                     className={`rounded px-4 py-2 font-bold text-white ${loadingConfirm ? 'opacity-80 cursor-wait bg-[#7a0202]' : 'bg-[#7a0202]'}`}
+                    title={requireAcceptance && !acepta ? 'Debes aceptar los términos para continuar' : undefined}
                 >
                     {loadingConfirm ? 'Confirmando...' : 'Confirmar pago'}
                 </button>

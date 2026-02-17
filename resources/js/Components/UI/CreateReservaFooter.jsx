@@ -7,8 +7,9 @@ export default function CreateReservaFooter({
     handleCerrar,
     formulario,
     estaGuardando = false,
+    aceptaTerminos = false,
 }) {
-    const disabled = estaCargando || estaGuardando || !esFormularioCompleto();
+    const disabled = estaCargando || estaGuardando || !esFormularioCompleto() || !aceptaTerminos;
     return (
         <footer
             aria-label="Acciones de crear reserva"

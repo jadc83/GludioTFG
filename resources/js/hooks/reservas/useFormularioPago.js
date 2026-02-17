@@ -44,7 +44,14 @@ export default function useFormularioPago({
     const emailRef = useRef(null);
     const telefonoRef = useRef(null);
 
-    const isDisabled = procesando || !name?.trim() || !email?.trim() || !telefono?.trim() || !user;
+    const requireAcceptance = mostrarAceptacion || typeof onCambioAceptaTerminos === 'function';
+    const isDisabled =
+        procesando ||
+        !name?.trim() ||
+        !email?.trim() ||
+        !telefono?.trim() ||
+        !user ||
+        (requireAcceptance && !acepta);
 
     // helpers
     const focusFirstField = (errorsObj = {}) => {

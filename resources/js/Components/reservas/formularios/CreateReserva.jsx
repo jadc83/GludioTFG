@@ -199,6 +199,7 @@ export default function CreateReserva({ iconOnly = false }) {
                                 handleCerrar={handleCerrar}
                                 formulario={formulario}
                                 estaGuardando={estaGuardando}
+                                aceptaTerminos={aceptaTerminos}
                             />
                         )}
                     </form>

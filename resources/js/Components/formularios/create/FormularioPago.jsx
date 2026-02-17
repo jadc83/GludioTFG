@@ -145,12 +145,13 @@ export default function FormularioPago(props) {
                                                 localizador={reservaData?.localizador}
                                                 onCompleted={(data) => {
                                                         if (typeof onPagoExitoso === 'function') onPagoExitoso(data);
-                                                        // hide card form and then clear global spinner
                                                         setShowCardForm(false);
                                                         setProcesando(false);
                                                     }}
                                                 onError={(msg) => setMensaje(msg)}
                                                 onPrepare={startCheckout}
+                                                acepta={acepta}
+                                                requireAcceptance={mostrarAceptacion || typeof onCambioAceptaTerminos === 'function'}
                                             />
                                         </Elements>
                                     </div>
