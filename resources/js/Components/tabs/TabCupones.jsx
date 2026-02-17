@@ -5,19 +5,10 @@ import { useFiltrosPanel } from '@/hooks/useFiltrosPanel';
 import { TicketIcon } from '@heroicons/react/24/outline';
 import { router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import { usePage } from '@inertiajs/react';
 
 export default function TabCupones({ cupones = {} }) {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 10;
-
-    // Estados para edición de cupones (evitar error setFormData no definido)
-    const [showForm, setShowForm] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({});
-    const { props } = usePage();
-    const roles = props?.auth?.user?.roles || [];
-    const isAdmin = Array.isArray(roles) && roles.includes('admin');
 
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltrosPanel(
         { busqueda: '', estado: 'todos', tipo: 'todos' },
@@ -110,42 +101,6 @@ export default function TabCupones({ cupones = {} }) {
                 fin,
             };
         }, [cuponesData, paginaActual, filtros]);
-
-        // Handlers del formulario de edición
-        const abrirEditor = (cupon) => {
-            setFormData({
-                ...cupon,
-                fecha_inicio: cupon.fecha_inicio ? cupon.fecha_inicio.split('T')[0] : '',
-                fecha_fin: cupon.fecha_fin ? cupon.fecha_fin.split('T')[0] : '',
-            });
-            setEditingId(cupon.id);
-            setShowForm(true);
-        };
-
-        const cerrarEditor = () => {
-            setShowForm(false);
-            setEditingId(null);
-            setFormData({});
-        };
-
-        const handleFormChange = (e) => {
-            const { name, value, type, checked } = e.target;
-            setFormData((prev) => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value,
-            }));
-        };
-
-        const submitEdit = (e) => {
-            e.preventDefault();
-            if (!editingId) return;
-            // Usar Inertia router para enviar PUT
-            router.put(route('cupones.update', editingId), formData, {
-                onSuccess: () => {
-                    cerrarEditor();
-                },
-            });
-        };
 
     return (
         <div className="space-y-6">
@@ -287,37 +242,42 @@ export default function TabCupones({ cupones = {} }) {
                                             data-label="Acciones"
                                         >
                                             <div className="flex gap-2">
-                                                {isAdmin ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => abrirEditor(cupon)}
-                                                            className="rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-200"
-                                                        >
-                                                            Editar
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() => handleToggle(cupon.id)}
-                                                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                                cupon.activo
-                                                                    ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                                                                    : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                                                            }`}
-                                                        >
-                                                            {cupon.activo ? 'Desactivar' : 'Activar'}
-                                                        </button>
-
-                                                        {cupon.usos_realizados === 0 && (
-                                                            <button
-                                                                onClick={() => handleDelete(cupon.id)}
-                                                                className="rounded-lg bg-rose-100 px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-200"
-                                                            >
-                                                                Eliminar
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">Solo administradores</span>
+                                                <button
+                                                    onClick={() => {
+                                                        setFormData(cupon);
+                                                        setEditingId(cupon.id);
+                                                        setShowForm(true);
+                                                    }}
+                                                    className="rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-200"
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleToggle(cupon.id)
+                                                    }
+                                                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                                                        cupon.activo
+                                                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                                            : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                                    }`}
+                                                >
+                                                    {cupon.activo
+                                                        ? 'Desactivar'
+                                                        : 'Activar'}
+                                                </button>
+                                                {cupon.usos_realizados ===
+                                                    0 && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                cupon.id,
+                                                            )
+                                                        }
+                                                        className="rounded-lg bg-rose-100 px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-200"
+                                                    >
+                                                        Eliminar
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>
@@ -341,71 +301,6 @@ export default function TabCupones({ cupones = {} }) {
                     />
                 )}
             </div>
-
-            {/* Modal de edición */}
-            {showForm && (
-                <div>
-                    <div className="modal-overlay" onClick={cerrarEditor} />
-                    <div className="modal-wrapper">
-                        <form onSubmit={submitEdit} className="p-6">
-                            <h3 className="mb-4 text-lg font-semibold">Editar cupón</h3>
-
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Código</label>
-                                    <input name="codigo" value={formData.codigo || ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Descripción</label>
-                                    <textarea name="descripcion" value={formData.descripcion || ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Tipo</label>
-                                        <select name="tipo" value={formData.tipo || 'monto'} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm">
-                                            <option value="porcentaje">Porcentaje</option>
-                                            <option value="monto">Monto Fijo</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Valor</label>
-                                        <input type="number" step="0.01" name="valor" value={formData.valor ?? ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Fecha inicio</label>
-                                        <input type="date" name="fecha_inicio" value={formData.fecha_inicio || ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Fecha fin</label>
-                                        <input type="date" name="fecha_fin" value={formData.fecha_fin || ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 items-end">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Usos máximos</label>
-                                        <input type="number" name="usos_maximos" value={formData.usos_maximos ?? ''} onChange={handleFormChange} className="mt-1 block w-full rounded border border-gray-200 px-3 py-2 text-sm" />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input id="activo" name="activo" type="checkbox" checked={!!formData.activo} onChange={handleFormChange} className="h-4 w-4" />
-                                        <label htmlFor="activo" className="text-sm text-gray-700">Activo</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex items-center justify-end gap-3">
-                                <button type="button" onClick={cerrarEditor} className="px-4 py-2 rounded border border-gray-200 text-sm">Cancelar</button>
-                                <button type="submit" className="modal-footer-btn">Guardar cambios</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

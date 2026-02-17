@@ -182,13 +182,10 @@ Route::post('/reservas/{reserva}/desasignar-habitaciones', [ReservaController::c
 // Cupones
 Route::post('/cupones/validar', [CuponController::class, 'validar'])->withoutMiddleware('web');
 Route::middleware(['auth'])->group(function () {
-    // Protegemos las acciones de gestión de cupones solo con autenticación (control de permisos en el controlador)
-    Route::resource('cupones', CuponController::class)
-        ->parameters(['cupones' => 'cupon']);
-
-    Route::post('cupones/{cupon}/toggle', [CuponController::class, 'toggle'])
-        ->name('cupones.toggle');
+    Route::resource('cupones', \App\Http\Controllers\CuponController::class)->parameters(['cupones' => 'cupon']);
+    Route::post('cupones/{cupon}/toggle', [\App\Http\Controllers\CuponController::class, 'toggle'])->name('cupones.toggle');
 });
 
+// Nota: la ruta de depuración para broadcasts fue eliminada.
 
 require __DIR__ . '/auth.php';
