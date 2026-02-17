@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Reserva;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -14,7 +15,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // 'App\\Models\\Model' => 'App\\Policies\\ModelPolicy',
+        Reserva::class => \App\Policies\ReservaPolicy::class,
     ];
 
     /**
@@ -24,11 +25,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Gates en castellano para visibilidad genérica
-        // `puedeVer`: devuelve true cuando el usuario es el propio recurso (owner) o tiene rol 'admin'
         Gate::define('puedeVer', function (User $user, $target = null) {
             try {
-                // Si el target es un User, permitir al propio usuario
                 if ($target && $target instanceof \App\Models\User) {
                     if ($user->id === $target->id) {
                         return true;
@@ -40,15 +38,14 @@ class AuthServiceProvider extends ServiceProvider
                     return true;
                 }
             } catch (\Throwable $e) {
-                // En caso de error, no conceder por defecto
+
             }
             return false;
         });
 
-        // `noPuedeVer`: negación de `puedeVer` para usos explícitos
         Gate::define('noPuedeVer', function (User $user, $target = null) {
             try {
-                // Reusar la lógica de puedeVer directamente
+
                 if ($target && $target instanceof \App\Models\User) {
                     if ($user->id === $target->id) {
                         return false;

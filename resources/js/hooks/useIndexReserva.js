@@ -148,18 +148,22 @@ export default function useIndexReserva(initialReservas = []) {
         return () => clearInterval(intervalId);
     }, [paginaActual, reservasLocal]);
 
-    const eliminarReserva = useCallback(async (id) => {
+const eliminarReserva = useCallback((id) => {
         if (!confirm('¿Estás seguro de que deseas eliminar esta reserva?')) return;
         setEliminandoId(id);
 
-        try {
-            await router.delete(`/reservas/${id}`, { preserveScroll: true });
-        } finally {
-            setTimeout(() => setEliminandoId(null), 3000);
-        }
+        router.delete(`/reservas/${id}`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setReservasLocal((prev) => prev.filter((reserva) => reserva.id !== id));
+            },
+            onFinish: () => {
+                setEliminandoId(null);
+            }
+        });
     }, []);
 
-    // Pagination calculations
     const totalPaginas = Math.ceil(reservasLocal.length / itemsPorPagina);
     const inicio = (paginaActual - 1) * itemsPorPagina;
     const fin = inicio + itemsPorPagina;

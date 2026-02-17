@@ -421,17 +421,16 @@ class ReservaService
         DB::transaction(function () use ($reserva) {
             $reserva->habitaciones()->delete();
             $reserva->delete();
-            event(new ReservaBorrada($reserva));
         });
+
+        try {
+            event(new ReservaBorrada($reserva));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ReservaService::eliminarReserva - failed dispatching ReservaBorrada: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Obtiene o crea el cliente para la reserva
-     * Busca por DNI, reutiliza si coincide, crea nuevo si no existe
-     * Usado por: crearReserva()
-     * @param array<string,mixed> $datos
-     * @return string
-     */
+
     /**
      * @param array<string,mixed> $datos
      * @return string
@@ -444,13 +443,11 @@ class ReservaService
             'reservable_id' => $datos['reservable_id'] ?? 'NULL'
         ]);
 
-        // Si hay un cliente/usuario especificado, usarlo
         if (!empty($datos['reservable_id'])) {
             \Illuminate\Support\Facades\Log::info('obtenerOCrearCliente - usando reservable_id existente:', ['id' => $datos['reservable_id']]);
             return $datos['reservable_id'];
         }
 
-        // Buscar cliente existente por email primero
         if (!empty($datos['email'])) {
             $clienteExistente = Cliente::where('email', $datos['email'])->first();
             if ($clienteExistente) {
@@ -458,7 +455,6 @@ class ReservaService
             }
         }
 
-        // Buscar cliente existente por DNI si no encontró por email
         if (!empty($datos['numero_documento'])) {
             $clienteExistente = Cliente::where('numero_documento', $datos['numero_documento'])->first();
             if ($clienteExistente) {
@@ -471,13 +467,6 @@ class ReservaService
     }
 
 
-    /**
-     * Crea un nuevo cliente
-     * Procesa dirección y crea registro en base de datos
-     * Usado por: obtenerOCrearCliente()
-     * @param array<string,mixed> $datos
-     * @return string
-     */
     /**
      * @param array<string,mixed> $datos
      * @return string
@@ -502,7 +491,6 @@ class ReservaService
         }
 
         $cliente = Cliente::create([
-            // aceptar `nombre` o `name` según venga desde frontend/preparado
             'name' => $datos['nombre'] ?? $datos['name'] ?? 'Sin nombre',
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
@@ -520,12 +508,6 @@ class ReservaService
         return $cliente->id;
     }
 
-    /**
-     * Verifica disponibilidad de habitaciones para un rango de fechas
-     * Itera sobre cada tipo de habitación requerido y verifica disponibilidad
-     * Usado por: crearReserva(), actualizarReserva()
-     * Retorna: true si todas están disponibles, lanza excepción si no
-     */
     /**
      * @param array<int,array{tipo:string,cantidad:int}> $habitacionesRequeridas
      * @param Carbon $checkIn
@@ -568,7 +550,7 @@ class ReservaService
                 'cantidad' => $cantidad,
             ]);
         } catch (\Throwable $e) {
-            // no bloquear por logging
+
         }
 
         return $cantidad;
@@ -595,7 +577,7 @@ class ReservaService
                         'check_out' => $checkOut->toDateString(),
                     ]);
                 } catch (\Throwable $e) {
-                    // ignore logging error
+
                 }
                 throw new \Exception("No hay {$cantidad} habitación/es de tipo '{$tipo}' disponibles para las fechas seleccionadas.");
             }
@@ -607,11 +589,6 @@ class ReservaService
     }
 
 
-    /**
-     * Genera y devuelve el objeto PDF para una reserva delegando a PdfService
-     * Usado por: controladores que necesitan generar PDFs de reserva
-     * Retorna: objeto PDF generado
-     */
     /**
      * Genera el PDF de la reserva delegando en PdfService
      * @param \App\Models\Reserva $reserva
@@ -722,8 +699,6 @@ class ReservaService
             $checkOut = Carbon::parse($reserva->check_out);
 
             $placeholders = HabitacionReserva::where('reserva_id', $reserva->id)->whereNull('habitacion_id')->get();
-
-            // Track already-assigned habitación IDs in this loop to avoid duplicates
             $alreadyAssigned = HabitacionReserva::where('reserva_id', $reserva->id)
                 ->whereNotNull('habitacion_id')
                 ->pluck('habitacion_id')
@@ -734,7 +709,6 @@ class ReservaService
             foreach ($placeholders as $ph) {
                 $query = Habitacion::where('tipo', $ph->tipo)
                     ->where('estado', 'disponible')
-                    // Exclude any habitación that has an overlapping HabitacionReserva (includes same reserva)
                     ->whereDoesntHave('reservas', function ($q) use ($checkIn, $checkOut) {
                         $q->where('check_in', '<', $checkOut)
                           ->where('check_out', '>', $checkIn);
@@ -758,7 +732,6 @@ class ReservaService
                 }
                 $ph->save();
 
-                // remember assigned id to prevent reuse within this transaction/loop
                 $alreadyAssigned[] = $candidate->id;
 
                 $asignadas[] = ['placeholder_id' => $ph->id, 'assigned' => true, 'habitacion_id' => $candidate->id, 'numero' => $candidate->numero];
@@ -799,7 +772,6 @@ class ReservaService
         $checkIn = Carbon::parse($reserva->check_in);
         $checkOut = Carbon::parse($reserva->check_out);
 
-        // Verificar disponibilidad de las habitaciones seleccionadas (las que no son null)
         foreach ($habitacionIds as $habitacionId) {
             if ($habitacionId !== null && !$this->verificarDisponibilidadHabitacion($habitacionId, $checkIn, $checkOut, $reserva->id)) {
                 $habitacion = Habitacion::find($habitacionId);
@@ -811,7 +783,6 @@ class ReservaService
         $precioAntes = $reserva->precio_total ?? 0;
 
         DB::transaction(function () use ($reserva, $habitacionIds) {
-            // Obtener los slots existentes (HabitacionReserva) ordenados para asignar por orden
             $slots = $reserva->habitaciones()->orderBy('id')->get();
 
             foreach ($habitacionIds as $idx => $habitacionId) {
@@ -822,19 +793,15 @@ class ReservaService
                         $slot->update(['habitacion_id' => null]);
                     } else {
                         $habitacion = Habitacion::findOrFail($habitacionId);
-
-                        // Actualizar el slot con la habitación física
-                        // Mantener el precio que ya tenía el slot originalmente
                         $slot->update([
                             'habitacion_id' => $habitacionId,
-                            'tipo' => $habitacion->tipo // Opcional: actualizar tipo si la física difiere del slot
+                            'tipo' => $habitacion->tipo
                         ]);
                     }
                 }
             }
         });
 
-        // Refrescar reserva y recalcular precio_total si es necesario
         $reserva->refresh();
         $precioDespues = $reserva->precio_total ?? (float) $reserva->habitaciones->sum('precio');
 
@@ -882,7 +849,6 @@ class ReservaService
                     ->first();
 
                 if ($asignacion) {
-                    // Solo desasignar la habitación física, mantener el registro con habitacion_id = null
                     $asignacion->update(['habitacion_id' => null]);
                     $desasignadas++;
                 }
@@ -933,7 +899,6 @@ class ReservaService
                 'created_at' => $reserva->created_at ? $reserva->created_at->toIso8601String() : null,
                 'cliente_name' => $nombreCliente,
                 'booked_by_user' => $reserva->bookedBy->name ?? 'Sistema',
-                // Exponer pagos resumidos y último pago para UI (evita N+1 ya que los controllers hacen eager-load)
                 'pagos' => $reserva->pagos->map(function($p) { return [
                     'id' => $p->id,
                     'monto' => (float) ($p->monto ?? 0),
@@ -987,8 +952,6 @@ class ReservaService
         return $reserva->reembolsos->sortBy('created_at')->values()->map(function ($r) use ($reservaTotal, &$cumulative) {
             $amount = ($r->amount_cents ?? 0) / 100;
             $cumulative += $amount;
-
-            // Determinar si es reembolso parcial o completo
             $tipo = 'parcial';
             if ($reservaTotal > 0 && $cumulative >= $reservaTotal) {
                 $tipo = 'completo';
@@ -1046,7 +1009,6 @@ class ReservaService
             $asignacionResult = $this->asignarHabitacionManual($reserva, $habitacionIds);
             $precioTotal = $asignacionResult['precio_total'] ?? ($reserva->precio_total ?? $precioTotal);
 
-            // Registrar resultado de asignación manual para depuración de diferencias de precio
             try {
                 Log::info('actualizarReserva - asignarHabitacionManual result', [
                     'reserva_id' => $reserva->id,
@@ -1055,7 +1017,7 @@ class ReservaService
                 ]);
             } catch (\Throwable $_) {}
         } else {
-            // Recalcular precio usando los tipos y cantidades actuales de la reserva
+
             try {
                 $tiposMap = [];
                 foreach ($reserva->habitaciones as $hr) {
@@ -1071,8 +1033,7 @@ class ReservaService
                 }
 
                     if (!empty($habitacionesParaCalculo)) {
-                    // Evitar ambigüedad en columnas cuando se hace join: preferimos usar la relación ya cargada
-                    // o calificar la columna con el nombre de la tabla.
+
                     if ($reserva->relationLoaded('tarifas')) {
                         $tarifaIds = $reserva->tarifas->pluck('id')->toArray();
                     } else {
@@ -1083,7 +1044,6 @@ class ReservaService
                         $precioTotal = $resultadoPrecio['precio_total'];
                     }
 
-                    // Log calculated price details for comparison with preview
                     try {
                         Log::info('actualizarReserva - precio recalculado', [
                             'reserva_id' => $reserva->id,
@@ -1109,7 +1069,6 @@ class ReservaService
 
         $reserva->update(['precio_total' => $precioTotal]);
 
-        // Si se recibió payment_intent_id en la actualización, crear un Pago asociado si no existe.
         try {
             $paymentIntentId = $validated['payment_intent_id'] ?? null;
             $pagoMonto = $validated['pago_monto'] ?? ($precioTotal ?? null);
@@ -1134,7 +1093,6 @@ class ReservaService
             Log::warning('No se pudo crear Pago automático al actualizar reserva: ' . $e->getMessage());
         }
 
-        // Crear una solicitud de reembolso SOLO si cambian las fechas y cambia el importe total
         $datesChanged = ($oldCheckIn != $checkIn->format('Y-m-d')) || ($oldCheckOut != $checkOut->format('Y-m-d'));
         $priceChanged = ($totalViejo != $precioTotal);
 
@@ -1144,20 +1102,14 @@ class ReservaService
                 'amount' => round(abs($precioTotal - $totalViejo), 2),
             ];
 
-            // Crear RefundRequest tras el commit de la transacción para asegurar que el precio ya está persistido
             DB::afterCommit(function() use ($reserva, $checkIn, $checkOut, $precioTotal, $totalViejo) {
                 try {
-                    // Obtener pagos completados para determinar el importe total pagado
+
                     $pagosCompletados = $reserva->pagos()->whereIn('estado', ['pagado', 'completado'])->get();
                     $totalPagado = (float) $pagosCompletados->sum(function ($p) { return (float) ($p->monto ?? 0); });
                     $pagoId = $pagosCompletados->first()?->id ?? null;
-
-                    // Si no hay pagos detectados, como fallback pedimos el importe antiguo
                     $requestedAmount = $totalPagado > 0 ? $totalPagado : (float)$totalViejo;
-
                     $userForRefund = $reserva->user ?? $reserva->reservable ?? \Illuminate\Support\Facades\Auth::user();
-
-                    // Crear la solicitud de reembolso (pendiente) con información del nuevo total y fechas
                     $rr = \App\Models\RefundRequest::create([
                         'reserva_id' => $reserva->id,
                         'pago_id' => $pagoId,
@@ -1171,14 +1123,14 @@ class ReservaService
                         'pending_nuevo_total' => $precioTotal,
                     ]);
 
-                    // Emitir notificación para equipos/admins (no bloquear en caso de fallo)
+
                     try {
                         \Notification::route('mail', config('app.admin_email'))->notify(new \App\Notifications\RefundRequestCreatedNotification($rr));
                     } catch (\Throwable $_) {}
 
                     Log::info('RefundRequest creado tras cambio de fechas (auto-approve encolado)', ['reserva_id' => $reserva->id, 'refund_request_id' => $rr->id, 'requested_amount' => $requestedAmount]);
 
-                    // --- Procesamiento automático: aprobar y ejecutar reembolso + crear nuevo PaymentIntent ---
+
                     try {
                         // Idempotencia: si por algún motivo ya fue procesada, saltar
                         $rr->refresh();
@@ -1191,8 +1143,6 @@ class ReservaService
                         $paymentService = app(\App\Services\PaymentService::class);
                         /** @var \App\Services\RefundService $refundService */
                         $refundService = app(\App\Services\RefundService::class);
-
-                        // Ejecutar reembolso (solicitarReembolso) en modo forzado (administrativo)
                         $pagoForRefund = $rr->pago ?? $pagosCompletados->first() ?? null;
                         $res = $paymentService->solicitarReembolso(
                             $reserva,
@@ -1203,7 +1153,6 @@ class ReservaService
                         );
 
                         if (!empty($res['success'])) {
-                            // Actualizar RefundRequest como aprobada/procesada
                             try {
                                 $rr->update([
                                     'status' => 'approved',
@@ -1256,17 +1205,12 @@ class ReservaService
                 }
             });
         } catch (\Throwable $e) {
-            // Registrar advertencia pero no bloquear la operación
             Log::warning('Registrar afterCommit failed: ' . $e->getMessage());
         }
 
         return ['refund' => $refundInfo];
     }
 
-    // Métodos de extensión eliminados.
-    /**
-     * Nota: las funciones relacionadas con la extensión de reservas fueron retiradas.
-     */
 }
 
 

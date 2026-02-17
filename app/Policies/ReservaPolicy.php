@@ -44,6 +44,12 @@ class ReservaPolicy
      */
     public function delete(User $user, Reserva $reserva): bool
     {
+        try {
+            if (method_exists($user, 'hasRole') && ($user->hasRole('admin') || $user->hasRole('encargado'))) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+        }
         return false;
     }
 

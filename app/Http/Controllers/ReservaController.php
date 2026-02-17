@@ -31,7 +31,6 @@ class ReservaController extends Controller
     protected ReservaFormatterService $formatterService;
     protected PaymentService $paymentService;
 
-    /* Constructor del controlador de reservas */
     public function __construct(
         ReservaService $reservaService,
         PrecioService $precioService,
@@ -46,7 +45,6 @@ class ReservaController extends Controller
         $this->paymentService = $paymentService;
     }
 
-    // El endpoint de cambio de fechas fue eliminado; las extensiones deben usar el flujo existente de extensión.
 
     /**
      * Lista reservas con filtros y paginación
@@ -67,10 +65,6 @@ class ReservaController extends Controller
             ->cliente($request->cliente)
             ->habitacion($request->habitacion);
 
-        // Soporte para mostrar registros eliminados (soft deletes).
-        // Parámetro request 'trashed' puede ser:
-        //  - 'with' -> incluir registros borrados (withTrashed)
-        //  - 'only' -> sólo registros borrados (onlyTrashed)
         if (($request->input('trashed') ?? '') === 'with') {
             $query = $query->withTrashed();
         } elseif (($request->input('trashed') ?? '') === 'only') {
@@ -138,8 +132,6 @@ class ReservaController extends Controller
                 'message' => $mensaje,
             ];
 
-            // Incluir reserva formateada en respuestas JSON para que el frontend tenga
-            // `cliente.name`/`cliente.nombre` inmediatamente después de crearla.
             try {
                 $reservaModel = $result['reserva'] ?? null;
                 if ($reservaModel) {
@@ -147,7 +139,7 @@ class ReservaController extends Controller
                     $respuesta['reserva'] = $this->formatterService->formatearReservaParaEdicion($reservaModel);
                 }
             } catch (\Throwable $__e) {
-                // no-op: no queremos que el logging/formatting falle la creación
+                Log::warning('ReservaController::store - could not format reserva for response: ' . $__e->getMessage());
             }
 
             try {
@@ -165,7 +157,6 @@ class ReservaController extends Controller
                 return response()->json($respuesta);
             }
 
-            // Si el método de pago es 'recepcion', redirigir al detalle de la reserva (flujo de pago en recepción)
             try {
                 if (($request->input('metodo_pago') ?? '') === 'recepcion') {
                     return redirect()->route('reserva.show', $respuesta['localizador'])
@@ -177,7 +168,6 @@ class ReservaController extends Controller
                 Log::warning('ReservaController::store - fallo redirigiendo recepcion: ' . $e->getMessage());
             }
 
-            // Registrar session/flash/request para depurar toasts cortos intermitentes y pérdida de campos
             try {
                 Log::info('ReservaController::store - about to redirect back with success', [
                     'mensaje' => $mensaje,
@@ -218,7 +208,6 @@ class ReservaController extends Controller
                 return response()->json(['success' => false, 'error' => $mensajeAmigable], 400);
             }
 
-            // Registrar session/flash/request en ruta de error para ayudar en depuración
             try {
                 Log::info('ReservaController::store - returning back with errors', [
                     'mensajeAmigable' => $mensajeAmigable,
@@ -253,11 +242,9 @@ class ReservaController extends Controller
             $reserva = \App\Models\Reserva::find($reservaId);
             $monto = $request->input('monto', $reserva->precio_total ?? 0);
 
-            // Si el método de pago es "recepcion", no iniciar Checkout de Stripe
             if (($request->input('metodo_pago') ?? '') === 'recepcion') {
                 Log::info('storeConCheckout: metodo_pago=recepcion; omitiendo creación de Checkout', ['reserva_id' => $reserva->id]);
 
-                // incluir reserva formateada en la respuesta JSON
                 try {
                     $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'tarifa', 'tarifas', 'refundRequests']);
                     $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
@@ -288,19 +275,15 @@ class ReservaController extends Controller
                         'precio_total' => $incomingMonto,
                     ]);
 
-                    // También actualizar el URL de success de cualquier sesión ya creada (si existe un pago recien creado)
                     try {
                         $ultimoPago = $reserva->pagos()->whereNotNull('stripe_checkout_session_id')->orderByDesc('created_at')->first();
                         if ($ultimoPago && !empty($ultimoPago->stripe_response['session']['id'] ?? null)) {
                             $sessionId = $ultimoPago->stripe_response['session']['id'];
-                            // Intentar actualizar la session en Stripe para añadir query params si fuera necesario (no todas las propiedades son mutables)
-                            // En la práctica, recordamos que la sesión de checkout ya tiene success_url asignado en la creación desde panel.
                         }
                     } catch (\Throwable $e) {
                         Log::warning('No se pudo actualizar session existente tras aplicar cupón: ' . $e->getMessage());
                     }
 
-                    // Registrar uso del cupón en auditoría si no existe ya
                     try {
                         CuponAplicado::create([
                             'reserva_id' => $reserva->id,
@@ -320,7 +303,6 @@ class ReservaController extends Controller
             }
 
             if (!empty($checkout['success']) && !empty($checkout['sessionUrl'])) {
-                // También devolver la reserva formateada junto a la sessionUrl para uso inmediato en frontend
                 try {
                     $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'tarifa', 'tarifas', 'refundRequests']);
                     $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva);
@@ -381,17 +363,14 @@ class ReservaController extends Controller
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
         $reserva->load(['reservable', 'habitaciones.habitacion', 'reembolsos', 'tarifa', 'tarifas', 'refundRequests']);
-        // Use the formatter service to ensure the frontend receives the full, consistent
-        // structure used by the EditReserva page (includes `tarifa`, `cliente`, `habitaciones`, etc.).
+
         try {
-            // Log tarifa presence for debugging
             try {
                 \Illuminate\Support\Facades\Log::debug('ReservaController::show - tarifa check', ['reserva_id' => $reserva->id, 'tarifa_id' => $reserva->tarifa_id, 'tarifa_loaded' => (bool) $reserva->tarifa]);
             } catch (\Throwable $__e) {}
 
             $reservaData = $this->formatterService->formatearReservaParaEdicion($reserva);
 
-            // If formatter didn't include tarifa but reserva has a tarifa_id, attempt to load soft-deleted tarifa as fallback
             if (empty($reservaData['tarifa']) && !empty($reserva->tarifa_id)) {
                 try {
                     $tarifaModel = \App\Models\Tarifa::withTrashed()->find($reserva->tarifa_id);
@@ -408,7 +387,6 @@ class ReservaController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            // Fallback to a minimal payload if formatting fails
             $reservaData = [
                 'id' => $reserva->id,
                 'localizador' => $reserva->localizador,
@@ -459,7 +437,6 @@ class ReservaController extends Controller
     public function update(UpdateReservaRequest $request, Reserva $reserva)
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
-        // Log incoming payload for debugging purposes
         try {
             Log::info('ReservaController::update called', [
                 'user_id' => Auth::id(),
@@ -472,13 +449,12 @@ class ReservaController extends Controller
         $validated = $request->validated();
 
         try {
-            // Registro explícito si el frontend envía payment_intent_id para ayudar a depuración de persistencia
             try {
                 if (!empty($validated['payment_intent_id'])) {
                     Log::info('ReservaController::update - payment_intent_id presente en payload', ['reserva_id' => $reserva->id, 'payment_intent_id' => $validated['payment_intent_id'], 'pago_monto' => $validated['pago_monto'] ?? null, 'user_id' => Auth::id()]);
                 }
             } catch (\Throwable $e) { Log::warning('ReservaController::update - fallo logging payment_intent_id: ' . $e->getMessage()); }
-            // Detectar cambio de estado a 'cancelado' para enviar correo
+
             $originalStatus = $reserva->status;
             $motivo = $request->input('motivo') ?? null;
 
@@ -491,7 +467,6 @@ class ReservaController extends Controller
                 return $this->reservaService->actualizarReserva($reserva, $validated, $meta);
             });
 
-            // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
 
             $msg = "Reserva {$reserva->localizador} actualizada correctamente.";
@@ -499,18 +474,16 @@ class ReservaController extends Controller
                 $msg .= " Se ha solicitado un reembolso parcial de €" . number_format($result['refund']['amount'], 2) . ".";
             }
 
-            // Refrescar y asegurarnos de cargar relaciones necesarias antes de formatear
             $reserva->refresh();
-            // Load missing relations to avoid losing 'reservable' or habitaciones on formatted output
+
             try {
                 $reserva->loadMissing(['reservable', 'habitaciones.habitacion', 'bookedBy', 'tarifas', 'pagos', 'reembolsos']);
             } catch (\Throwable $__e) {
-                // no-op: carga de relaciones no crítica, seguimos con formateo
+
             }
 
             try {
                 $reservaFormateada = $this->formatterService->formatearReservaParaEdicion($reserva, Carbon::parse($reserva->check_in), Carbon::parse($reserva->check_out));
-                // Log para depuración: confirmamos que estamos devolviendo el objeto formateado con cliente
                 try {
                     Log::info('ReservaController::update - returning formatted reserva', ['reserva_formateada' => $reservaFormateada, 'reserva_id' => $reserva->id]);
                 } catch (\Throwable $__log_e) {}
@@ -553,14 +526,16 @@ class ReservaController extends Controller
     public function destroy(Request $request, Reserva $reserva)
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
+        $this->authorize('delete', $reserva);
+
         try {
-            // Leer motivo opcional enviado desde frontend
             $motivo = $request->input('motivo') ?? null;
 
-            // Cargar relaciones necesarias antes de borrar (evita lazy-loading en el listener)
-            $reserva->loadMissing(['reservable', 'habitaciones.habitacion']);
+            if (in_array(strtolower($reserva->status), ['checked_in', 'checked_out'], true)) {
+                return back()->withErrors(['error' => 'No se puede eliminar una reserva en estado "checked_in" o "checked_out".']);
+            }
 
-            // Ahora borrar la reserva (el método `eliminarReserva` dispara el evento `ReservaBorrada` que se encargará del email en background)
+            $reserva->loadMissing(['reservable', 'habitaciones.habitacion']);
             $this->reservaService->eliminarReserva($reserva);
 
             return redirect()->back()->with('success', 'Reserva eliminada con éxito');
@@ -569,10 +544,6 @@ class ReservaController extends Controller
         }
     }
 
-    /**
-     * Asigna habitaciones específicas manualmente a una reserva existente
-     * Usado para edición manual desde panel de control
-     */
     /**
      * Asigna habitaciones a una reserva
      *
@@ -625,13 +596,11 @@ class ReservaController extends Controller
             'habitacion_ids.*' => 'nullable|integer|exists:habitaciones,id'
         ]);
 
-        // Detectar si es solicitud JSON/AJAX por headers
         $isJson = $request->expectsJson() || $request->header('Accept') === 'application/json';
 
         try {
             $result = $this->reservaService->asignarHabitacionManual($reserva, $request->habitacion_ids);
 
-            // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
             $reserva->load(['habitaciones.habitacion', 'reservable']);
 
@@ -670,10 +639,6 @@ class ReservaController extends Controller
     }
 
     /**
-     * Desasigna habitaciones específicas de una reserva existente
-     * Usado para quitar asignaciones manuales desde panel de control
-     */
-    /**
      * Desasigna habitaciones de una reserva
      *
      * @param \Illuminate\Http\Request $request
@@ -684,7 +649,6 @@ class ReservaController extends Controller
     {
         $this->denegarAccesoLimpiezaYMantenimiento();
 
-        // Authorization: only `admin` or reception staff with role `encargado` or `operario` may desasign
         $user = Auth::user();
         if (! $user) {
             if ($request->expectsJson()) {
@@ -726,13 +690,10 @@ class ReservaController extends Controller
             'habitacion_ids.*' => 'required|integer|exists:habitaciones,id'
         ]);
 
-        // Detectar si es solicitud JSON/AJAX por headers
         $isJson = $request->expectsJson() || $request->header('Accept') === 'application/json';
 
         try {
             $result = $this->reservaService->desasignarHabitaciones($reserva, $request->habitacion_ids);
-
-            // Refrescar la instancia para obtener los cambios
             $reserva->refresh();
             $reserva->load(['habitaciones.habitacion', 'reservable']);
 
@@ -770,7 +731,6 @@ class ReservaController extends Controller
         }
     }
 
-    /* Calcula el precio dinámico para una reserva */
     /**
      * Calcula precio para un conjunto de habitaciones y fechas
      *
@@ -822,10 +782,6 @@ class ReservaController extends Controller
     }
 
     /**
-     * Devuelve estados de pago para un conjunto de localizadores (query param `localizadores` coma-separados)
-     * Ej: GET /api/reservas/estados?localizadores=GKS6BC3,G1KIR63
-     */
-    /**
      * Lista estados disponibles y filtros para reservas
      *
      * @param \Illuminate\Http\Request $request
@@ -868,14 +824,6 @@ class ReservaController extends Controller
         }
     }
 
-    // Las rutas y acciones de modificación/preview de estancia fueron eliminadas.
-
-    /**
-     * Obtiene precios y ocupación por día para calendario
-     * GET /reservas/precios-por-dia - Endpoint para componente calendario
-     * Parámetros: inicio, fin (fechas en formato YYYY-MM-DD)
-     * Devuelve: JSON con precios y ocupación diaria
-     */
     /**
      * Devuelve precios por día para un periodo solicitado
      *

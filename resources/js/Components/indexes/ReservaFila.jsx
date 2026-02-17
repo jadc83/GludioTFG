@@ -1,9 +1,14 @@
 import Badge from '@/Components/UI/Badge';
 import LoadingSpinner from '@/Components/UI/LoadingSpinner';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 
 export default function ReservaFila({ reserva, eliminandoId, eliminarReserva }) {
+    const page = usePage();
+    const viewer = page.props?.auth?.user || {};
+    const viewerRoles = Array.isArray(viewer.roles) ? viewer.roles : [];
+    const canDelete = viewerRoles.includes('admin') || viewerRoles.includes('encargado');
+
     const visiblePrice =
         typeof reserva.ultimo_pago_monto === 'number' && reserva.ultimo_pago_monto !== null
             ? parseFloat(reserva.ultimo_pago_monto)
@@ -115,13 +120,15 @@ export default function ReservaFila({ reserva, eliminandoId, eliminarReserva }) 
                     >
                         <PencilIcon className="h-4 w-4" />
                     </button>
-                    <button
-                        onClick={() => eliminarReserva(reserva.id)}
-                        disabled={eliminandoId === reserva.id}
-                        className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black disabled:opacity-50"
-                    >
-                        {eliminandoId === reserva.id ? <LoadingSpinner /> : <TrashIcon className="h-4 w-4" />}
-                    </button>
+                    {canDelete && (
+                        <button
+                            onClick={() => eliminarReserva(reserva.id)}
+                            disabled={eliminandoId === reserva.id}
+                            className="rounded-xl border border-gray-100 bg-white p-2.5 text-gray-400 shadow-sm transition-all hover:text-black disabled:opacity-50"
+                        >
+                            {eliminandoId === reserva.id ? <LoadingSpinner /> : <TrashIcon className="h-4 w-4" />}
+                        </button>
+                    )}
                 </div>
             </td>
         </tr>
